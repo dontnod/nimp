@@ -15,9 +15,9 @@ if OS == WINDOWS:
     from utilities.windows_utilities            import *
 
 #-------------------------------------------------------------------------------
-# BuildCommand
+# LooseFilesCommand
 #-------------------------------------------------------------------------------
-class BuildCommand(Command):
+class LooseFilesCommand(Command):
 
     def __init__(self):
         Command.__init__(self, "generate-loose-files", "Generate loose files")

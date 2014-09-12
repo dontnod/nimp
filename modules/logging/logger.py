@@ -12,9 +12,9 @@ class Logger:
     #---------------------------------------------------------------------------
     # __init__
     def __init__(self, name):
-        self._name      = name
-        self._format    = None
-        self._verbose   = False
+        self._name    = name
+        self._format  = None
+        self._verbose = False
 
     #---------------------------------------------------------------------------
     # name
@@ -24,8 +24,8 @@ class Logger:
     #---------------------------------------------------------------------------
     # initialize
     def initialize(self, format, context, verbose):
-        self._format    = format
-        self._verbose   = verbose
+        self._format  = format
+        self._verbose = verbose
 
     #---------------------------------------------------------------------------
     # verbose
