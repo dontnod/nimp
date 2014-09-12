@@ -19,15 +19,15 @@ def default_output_filter(line):
    return line
 
 #-------------------------------------------------------------------------------
-# crqr_tag_output_filter
-error_pattern    = "^\[CRQR_ERROR\](.*)\[/CRQR_ERROR\]$"
-warning_pattern  = "^\[CRQR_WARNING\](.*)\[/CRQR_WARNING\]$"
+# nimp_tag_output_filter
+error_pattern    = "^\[NIMP_ERROR\](.*)\[/NIMP_ERROR\]$"
+warning_pattern  = "^\[NIMP_WARNING\](.*)\[/NIMP_WARNING\]$"
 error_regexp     = re.compile(error_pattern)
 warning_regexp   = re.compile(warning_pattern)
 
 #-------------------------------------------------------------------------------
-# crqr_tag_output_filter
-def crqr_tag_output_filter(line):
+# nimp_tag_output_filter
+def nimp_tag_output_filter(line):
     match_error = error_regexp.search(line)
     if match_error:
         error_string = match_error.group(1)
@@ -43,28 +43,22 @@ def crqr_tag_output_filter(line):
 
 
 #-------------------------------------------------------------------------------
-# crqr_tag_output_filter
-def convert_relative_paths(line):
-    current_directory = os.getcwd()
-    return line.replace("../../../../..", current_directory)
-
-#-------------------------------------------------------------------------------
 # call_process
 def call_process(directory, command, output_filter = default_output_filter):
     stdout_file_name = tempfile.mktemp()
     stderr_file_name = tempfile.mktemp()
 
-    stdout_file      = open(stdout_file_name, "wb")
-    stderr_file      = open(stderr_file_name, "wb")
+    stdout_file = open(stdout_file_name, "wb")
+    stderr_file = open(stderr_file_name, "wb")
 
     log_verbose("Running {0} in directory {1}", command, directory)
 
-    process          = subprocess.Popen(command,
-                                        stdin   = None,
-                                        stdout  = stdout_file,
-                                        stderr  = stderr_file,
-                                        cwd     = directory)
-    process_ended    = threading.Event()
+    process = subprocess.Popen(command,
+                               stdin   = None,
+                               stdout  = stdout_file,
+                               stderr  = stderr_file,
+                               cwd     = directory)
+    process_ended = threading.Event()
     process_ended.clear()
 
     def redirect_output():

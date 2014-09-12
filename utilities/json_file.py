@@ -4,6 +4,7 @@
 # imports
 #-------------------------------------------------------------------------------
 import json
+import jsmin
 import os
 
 from utilities.logging  import *
@@ -24,7 +25,7 @@ def read_json(json_file_name):
         return None
 
     try:
-        result = json.loads(json_file.read())
+        result = json.loads(jsmin.jsmin(json_file.read()))
         json_file.close()
     except ValueError as value_error:
         log_error("Error while parsing file {0} : {1}.", json_file_name, value_error)

@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 from commands.command       import *
 
-from configuration.build    import *
+from configuration.system   import *
 
 from utilities.files        import *
 from utilities.hashing      import *
@@ -14,7 +14,7 @@ from utilities.processes    import *
 
 if OS == WINDOWS:
     import _winreg
-    from packages.visual_studio_tools_package   import *
+    #from packages.visual_studio_tools_package   import *
     from utilities.windows_utilities            import *
 
 #-------------------------------------------------------------------------------
@@ -30,100 +30,81 @@ class BuildCommand(Command):
     def configure_arguments(self, context, parser):
         settings = context.settings
 
+        parser.add_argument('-P',
+                            '--projects',
+                            help    = 'Projects to build',
+                            metavar = "PROJECT",
+                            nargs   = '*',
+                            default = None)
+
         parser.add_argument('-c',
                             '--configurations',
-                            help      = 'Configurations to build',
-                            metavar   = "CONFIGURATION",
-                            nargs     = '*',
-                            default   = settings.default_build_configurations,
-                            choices   = settings.build_configurations)
+                            help    = 'Configurations to build',
+                            metavar = "CONFIGURATION",
+                            nargs   = '*',
+                            default = settings.default_build_configurations)
 
         parser.add_argument('-p',
                             '--platforms',
-                            help      = 'Platforms to build',
-                            metavar   = "PLATFORM",
-                            nargs     = '*',
-                            default   = settings.default_build_platforms,
-                            choices   = settings.build_platforms)
+                            help    = 'Platforms to build',
+                            metavar = "PLATFORM",
+                            nargs   = '*',
+                            default = settings.default_build_platforms)
 
         parser.add_argument('-r',
                              '--rebuild',
-                             help     = 'Rebuild specified targets/platforms',
-                             default  = False,
-                             action   = "store_true")
+                            help    = 'Rebuild specified targets/platforms',
+                            default = False,
+                            action  = "store_true")
         return True
 
     #---------------------------------------------------------------------------
     # run
     def run(self, context):
         settings        = context.settings
-        local_directory = settings.local_directory
-        build_directory = os.path.join(settings.solutions_directory, PREMAKE_ACTION)
+        arguments       = context.arguments
 
-        if OS == WINDOWS:
-            return msvc_build(context, build_directory)
-        elif OS == LINUX:
-            make_build(context, build_directory)
+        target_name     = None
+        projects        = arguments.projects
+        platforms       = arguments.platforms
+        configurations  = arguments.configurations
+        rebuild         = arguments.rebuild
+        logger_path     = "." # FIXME: no logger path available
+        msbuild_path = find_msbuild_path(settings)
+
+        local_directory = settings.local_directory # FIXME: unused
+        build_directory = settings.solutions_directory
+
+        if rebuild:
+            target_name = "Rebuild"
         else:
-            assert(False)
+            target_name = "Build"
 
-#-------------------------------------------------------------------------------
-# msvc_build
-def make_build(context, build_directory):
-    arguments       = context.arguments
-    platforms       = arguments.platforms
-    configurations  = arguments.configurations
-    rebuild         = arguments.rebuild
+        if projects is None:
+            targets = [target_name]
+        else:
+            targets = projects
+            #targets = [p + ":" + target_name for p in projects]
 
-    if rebuild and not call_process(build_directory, ["make", "clean"]):
-        return False
-    for platform_it in platforms:
-        for configuration_it in configurations:
-            config_argument = "config={0}_{1}".format(configuration_it.lower(), platform_it.lower())
-            if not call_process(build_directory, ["make", config_argument], convert_relative_paths):
-                return False
-
-#-------------------------------------------------------------------------------
-# msvc_build
-def msvc_build(context, build_directory):
-    target_name         = None
-    arguments           = context.arguments
-    settings            = context.settings
-    platforms           = arguments.platforms
-    configurations      = arguments.configurations
-    rebuild             = arguments.rebuild
-    vs_tools_package    = VisualStudioToolsPackage()
-    logger_path         = vs_tools_package.msbuild_logger_path(context)
-
-    if logger_path is None:
-        return False
-
-    if rebuild:
-        target_name = "Rebuild"
-    else:
-        target_name = "Build"
-
-    for platform_it in platforms:
-        for configuration_it in configurations:
-            if not call_msbuild(settings, build_directory, platform_it, configuration_it, target_name, logger_path):
-                return False
+        for platform_it in platforms:
+            for configuration_it in configurations:
+                 for target_it in targets:
+                    if not call_msbuild(settings, msbuild_path, build_directory, platform_it, configuration_it, target_it, logger_path):
+                        return False
 
 #-------------------------------------------------------------------------------
 # call_msvc
-def call_msbuild(settings, build_directory, platform, configuration, target, logger_path):
-    sln_files       = regex_list_files(build_directory, ".*\.sln")
-    msbuild_path    = find_msbuild_path(settings)
+def call_msbuild(settings, msbuild_path, build_directory, platform, configuration, target, logger_path):
+    sln_files = regex_list_files(build_directory, ".*2012.*[.]sln$") # FIXME (temp)
 
     if msbuild_path is None:
-        log_error("Unable to find MSBuild, can't build solution in {0}", build_directory)
+        log_error("Unable to find MSBuild, can't build solution in {0}",
+                  build_directory)
         return False
-
-    if platform == "x32":
-        platform = "Win32"
 
     for sln_file in sln_files:
         if not build_sln(settings, sln_file, msbuild_path, platform, configuration, target, logger_path):
-            log_error("Error building {0} in {1}|{2}", sln_file, configuration, platform)
+            log_error("Error executing {0} in {1} for {2}|{3}", target, sln_file, configuration, platform)
             return False
 
     return True
@@ -133,7 +114,7 @@ def call_msbuild(settings, build_directory, platform, configuration, target, log
 def find_msbuild_path(settings):
     msbuild_path = None
     for framework_version in settings.microsoft_framework_versions:
-        msbuild_path_key_name_format = "SOFTWARE\\Microsoft\\MSBuild\\ToolsVersions\\{0}"
+        msbuild_path_key_name_format = r"SOFTWARE\Microsoft\MSBuild\ToolsVersions\{0}"
         msbuild_path_key_name        = msbuild_path_key_name_format.format(framework_version)
         msbuild_path                 = get_key_value(_winreg.HKEY_LOCAL_MACHINE,
                                                         msbuild_path_key_name,
@@ -157,5 +138,5 @@ def build_sln(settings, sln_file, msbuild_path, platform, configuration, target,
                                                       logger_path   = logger_path)
         templated_arguments.append(templated_argument)
     msbuild_arguments = [msbuild_path] + templated_arguments + [sln_file]
-    return call_process(build_directory, msbuild_arguments, crqr_tag_output_filter)
+    return call_process(build_directory, msbuild_arguments, nimp_tag_output_filter)
 
