@@ -18,7 +18,7 @@ from utilities.processes    import *
 class VsBuildCommand(Command):
 
     def __init__(self):
-        Command.__init__(self, "vsbuild", "Build using Visual Studio")
+        Command.__init__(self, 'vsbuild', 'Build using Visual Studio')
 
     #---------------------------------------------------------------------------
     # configure_arguments
@@ -64,57 +64,52 @@ class VsBuildCommand(Command):
     #---------------------------------------------------------------------------
     # run
     def run(self, context):
-        if OS != WINDOWS:
-            return False
+        settings = context.settings
+        arguments = context.arguments
 
-        settings        = context.settings
-        arguments       = context.arguments
-
-        solution        = arguments.solution
-        projects        = arguments.projects
-        versions        = settings.visual_studio_versions
-        platforms       = arguments.platform
-        configurations  = arguments.configuration
-        target          = "Build"
+        # Import settings
 
         local_directory = settings.local_directory # FIXME: unused
         build_directory = settings.solutions_directory
+        versions = settings.visual_studio_versions
+        target = 'Build'
+
+        # Import arguments
+
+        solution = arguments.solution
+        projects = arguments.projects
+        platforms = arguments.platform
+        configurations = arguments.configuration
 
         if arguments.version is not None:
             versions = [ arguments.version ]
 
         if arguments.rebuild is not None:
-            target = "Rebuild"
+            target = 'Rebuild'
 
-        devenv_path = _find_devenv_path(settings, versions)
+        # Run task
+
+        devenv_path = _find_devenv_path(versions)
         if devenv_path is None:
-            log_error("Unable to find Visual Studio {0}", versions)
+            log_error('Unable to find Visual Studio {0}', ', or '.join(versions))
             return False
 
         for (platform, configuration, project) in [(a, b, c) for a in platforms for b in configurations for c in projects]:
-            if not _build_project(settings, devenv_path, build_directory, solution, target, project, platform, configuration):
+            cmdline = [ devenv_path, solution, '/project', project, '/' + target, configuration ]
+            if not call_process(build_directory, cmdline, nimp_tag_output_filter):
                 return False
-
-#-------------------------------------------------------------------------------
-# _build_project
-def _build_project(settings, devenv_path, build_directory, solution, target, project, platform, configuration):
-    cmdline = [ devenv_path,
-                solution,
-                "/project", project,
-                "/" + target,
-                configuration ]
-    return call_process(build_directory, cmdline, nimp_tag_output_filter)
+        return True
 
 #-------------------------------------------------------------------------------
 # _find_devenv_path
-def _find_devenv_path(settings, versions):
+def _find_devenv_path(versions):
     devenv_path = None
     for vs_version in versions:
-        vstools_path = os.getenv("VS" + vs_version + "0COMNTOOLS")
+        vstools_path = os.getenv('VS' + vs_version + '0COMNTOOLS')
         if vstools_path is not None:
-            devenv_path = os.path.join(vstools_path, "../../Common7/IDE/devenv.com")
+            devenv_path = os.path.join(vstools_path, '../../Common7/IDE/devenv.com')
             if os.path.exists(devenv_path):
-                log_verbose("Found Visual Studio at {0}", devenv_path)
+                log_verbose('Found Visual Studio at {0}', devenv_path)
                 break
     return devenv_path
 
