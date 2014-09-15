@@ -9,7 +9,6 @@ import time
 from    modules.module          import *
 
 from    utilities.files         import *
-from    utilities.json_file     import *
 from    utilities.logging       import *
 from    utilities.paths         import *
 
@@ -36,19 +35,28 @@ class ConfigurationModule(Module):
         return _load_settings(context) and _load_arguments(context, parser)
 
 #---------------------------------------------------------------------------
-# _load_workspace_settings
+# _read_config_file
+def _read_config_file(filename):
+    try:
+        locals = {}
+        exec(compile(open(filename, "rb").read(), filename, 'exec'), None, locals)
+        if locals.has_key("config"):
+            return locals["config"]
+        log_error("Configuration file {0} has no 'config' section.", filename)
+    except Exception as e:
+        log_error("Unable to load configuration file {0}: {1}", filename, str(e))
+    return {}
+
+#---------------------------------------------------------------------------
+# _load_settings
 def _load_settings(context):
     class Settings:
         pass
 
-    json_settings = read_json("settings.json")
-
-    if json_settings is None:
-        log_error("Unable to load json settings.")
-        return False
+    global_settings = _read_config_file("settings.conf")
 
     settings = Settings()
-    for key, value in json_settings.items():
+    for key, value in global_settings.items():
         setattr(settings, key, value)
     setattr(context, 'settings', settings)
 
@@ -64,18 +72,12 @@ def _load_arguments(context, parser):
             if( not module.configure_arguments(context, parser)):
                 return False
 
-
-    local_configuration_file_name = os.path.join(get_settings_directory(), "Dne/pytools_local_settings.json")
+    local_configuration_file_name = os.path.join(get_settings_directory(), "Dne/pytools_local_settings.conf")
     log_verbose("Loading config file {0}", local_configuration_file_name)
-    json_configuration = read_json(local_configuration_file_name)
-
-    if json_configuration is not None:
-        parser.set_defaults(**json_configuration)
-        log_verbose("Default configuration loaded")
-    else:
-        log_verbose("Can't parse repository configuration file {0}. Default configuration will be used.", local_configuration_file_name)
+    parser.set_defaults(*_read_config_file(local_configuration_file_name))
 
     (arguments, unknown_args) = parser.parse_known_args()
     setattr(arguments, "unknown_args", unknown_args)
     setattr(context, 'arguments', arguments)
     return True
+
