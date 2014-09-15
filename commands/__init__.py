@@ -1,5 +1,6 @@
 __all__ = ["command",
-           "build",
+           "msbuild",
+           "vsbuild",
            "generate-loose-files",
            "sha1"]
 
