@@ -14,16 +14,15 @@ from utilities.processes    import *
 
 if OS == WINDOWS:
     import _winreg
-    #from packages.visual_studio_tools_package   import *
-    from utilities.windows_utilities            import *
+    from utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
-# BuildCommand
+# MsBuildCommand
 #-------------------------------------------------------------------------------
-class BuildCommand(Command):
+class MsBuildCommand(Command):
 
     def __init__(self):
-        Command.__init__(self, "build", "Builds chgr")
+        Command.__init__(self, "msbuild", "Build using msbuild")
 
     #---------------------------------------------------------------------------
     # configure_arguments
@@ -42,14 +41,14 @@ class BuildCommand(Command):
                             help    = 'Configurations to build',
                             metavar = "CONFIGURATION",
                             nargs   = '*',
-                            default = settings.default_build_configurations)
+                            default = settings.default_msbuild_configurations)
 
         parser.add_argument('-p',
                             '--platforms',
                             help    = 'Platforms to build',
                             metavar = "PLATFORM",
                             nargs   = '*',
-                            default = settings.default_build_platforms)
+                            default = settings.default_msbuild_platforms)
 
         parser.add_argument('-r',
                              '--rebuild',

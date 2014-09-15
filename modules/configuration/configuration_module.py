@@ -53,7 +53,7 @@ def _load_settings(context):
     class Settings:
         pass
 
-    global_settings = _read_config_file("settings.conf")
+    global_settings = _read_config_file("nimp.conf")
 
     settings = Settings()
     for key, value in global_settings.items():
