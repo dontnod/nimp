@@ -61,6 +61,9 @@ class BuildCommand(Command):
     #---------------------------------------------------------------------------
     # run
     def run(self, context):
+        if OS != WINDOWS:
+            return False
+
         settings        = context.settings
         arguments       = context.arguments
 
@@ -70,7 +73,7 @@ class BuildCommand(Command):
         configurations  = arguments.configurations
         rebuild         = arguments.rebuild
         logger_path     = "." # FIXME: no logger path available
-        msbuild_path = find_msbuild_path(settings)
+        msbuild_path    = find_msbuild_path(settings)
 
         local_directory = settings.local_directory # FIXME: unused
         build_directory = settings.solutions_directory
