@@ -15,12 +15,12 @@ if OS == WINDOWS:
     from utilities.windows_utilities            import *
 
 #-------------------------------------------------------------------------------
-# LooseFilesCommand
+# Ue3LooseFilesCommand
 #-------------------------------------------------------------------------------
-class LooseFilesCommand(Command):
+class Ue3LooseFilesCommand(Command):
 
     def __init__(self):
-        Command.__init__(self, "generate-loose-files", "Generate loose files")
+        Command.__init__(self, "ue3-loose", "Generate loose files")
 
     #---------------------------------------------------------------------------
     # configure_arguments
@@ -32,8 +32,8 @@ class LooseFilesCommand(Command):
                             help      = 'Platforms to build',
                             metavar   = "PLATFORM",
                             nargs     = '*',
-                            default   = settings.default_platforms,
-                            choices   = settings.platforms)
+                            default   = settings.default_ue3_platforms,
+                            choices   = settings.ue3_platforms)
 
         parser.add_argument('-r',
                              '--rebuild',
@@ -45,5 +45,7 @@ class LooseFilesCommand(Command):
     #---------------------------------------------------------------------------
     # run
     def run(self, context):
-        settings        = context.settings
-        call_process(".", settings.unreal_executable)
+        settings = context.settings
+        executable = os.path.join(settings.ue3_directory, "Binaries", "Win64", settings.ue3_game + ".exe")
+
+        call_process(".", executable)

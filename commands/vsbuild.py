@@ -32,7 +32,7 @@ class VsBuildCommand(Command):
         parser.add_argument('projects',
                             metavar = '<project>',
                             type    = str,
-                            nargs   = '+')
+                            nargs   = '*')
 
         parser.add_argument('-V',
                             '--version',
@@ -40,22 +40,22 @@ class VsBuildCommand(Command):
                             help    = 'Visual Studio version',
                             default = None)
 
-        parser.add_argument('-r',
-                             '--rebuild',
-                            help    = 'Rebuild specified targets/platforms',
-                            default = False,
-                            action  = 'store_true')
+        parser.add_argument('-t',
+                             '--targets',
+                            help    = 'targets (build, clean, rebuild)',
+                            nargs   = '+',
+                            default = 'build')
 
         parser.add_argument('-c',
                             '--configuration',
-                            help    = 'Configurations to build',
+                            help    = 'configurations to build',
                             metavar = '<configuration>',
                             nargs   = '+',
                             default = settings.default_vsbuild_configurations)
 
         parser.add_argument('-p',
                             '--platform',
-                            help    = 'Platforms to build',
+                            help    = 'platforms to build',
                             metavar = '<platform>',
                             nargs   = '+',
                             default = settings.default_vsbuild_platforms)
@@ -69,10 +69,9 @@ class VsBuildCommand(Command):
 
         # Import settings
 
-        local_directory = settings.local_directory # FIXME: unused
-        build_directory = settings.solutions_directory
+        build_directory = '.'
         versions = settings.visual_studio_versions
-        target = 'Build'
+        targets = [ 'build' ]
 
         # Import arguments
 
@@ -84,21 +83,36 @@ class VsBuildCommand(Command):
         if arguments.version is not None:
             versions = [ arguments.version ]
 
-        if arguments.rebuild is not None:
-            target = 'Rebuild'
+        if arguments.targets is not None:
+            targets = arguments.targets
 
-        # Run task
+        # Validate environment
 
         devenv_path = _find_devenv_path(versions)
         if devenv_path is None:
             log_error('Unable to find Visual Studio {0}', ', or '.join(versions))
             return False
 
-        for (platform, configuration, project) in [(a, b, c) for a in platforms for b in configurations for c in projects]:
-            cmdline = [ devenv_path, solution, '/project', project, '/' + target, configuration ]
-            if not call_process(build_directory, cmdline, nimp_tag_output_filter):
+        # Run task
+
+        cmdline = [ devenv_path, solution ]
+        for devenv_args in _enumerate_devenv_args(configurations, platforms, targets, projects):
+            if not call_process(build_directory, cmdline + devenv_args, nimp_tag_output_filter):
                 return False
         return True
+
+#-------------------------------------------------------------------------------
+# _enumerate_devenv_args
+def _enumerate_devenv_args(configurations, platforms, targets, projects):
+    for configuration in configurations:
+        for platform in platforms:
+            for target in targets:
+                args = [ '/' + target, configuration + '|' + platform ]
+                if projects:
+                    for project in projects:
+                        yield [ '/project', project ] + args
+                else:
+                    yield args
 
 #-------------------------------------------------------------------------------
 # _find_devenv_path
