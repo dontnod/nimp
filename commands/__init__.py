@@ -1,6 +1,7 @@
 __all__ = ["command",
            "msbuild",
            "vsbuild",
-           "generate-loose-files",
+           "ue3-cook",
+           "ue3-loose",
            "sha1"]
 

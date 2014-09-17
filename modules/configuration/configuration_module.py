@@ -37,14 +37,21 @@ class ConfigurationModule(Module):
 #---------------------------------------------------------------------------
 # _read_config_file
 def _read_config_file(filename):
+    # Open configuration file; ignore errors if file does not exist
+    try:
+        conf = open(filename, "rb").read()
+    except:
+        return {}
+    # Parse configuration file
     try:
         locals = {}
-        exec(compile(open(filename, "rb").read(), filename, 'exec'), None, locals)
+        exec(compile(conf, filename, 'exec'), None, locals)
         if locals.has_key("config"):
             return locals["config"]
         log_error("Configuration file {0} has no 'config' section.", filename)
     except Exception as e:
         log_error("Unable to load configuration file {0}: {1}", filename, str(e))
+
     return {}
 
 #---------------------------------------------------------------------------
