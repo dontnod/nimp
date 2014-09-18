@@ -41,14 +41,14 @@ class MsBuildCommand(Command):
                             help    = 'Configurations to build',
                             metavar = "CONFIGURATION",
                             nargs   = '*',
-                            default = settings.default_msbuild_configurations)
+                            default = [ 'Release' ])
 
         parser.add_argument('-p',
                             '--platforms',
                             help    = 'Platforms to build',
                             metavar = "PLATFORM",
                             nargs   = '*',
-                            default = settings.default_msbuild_platforms)
+                            default = [ 'Win32' ])
 
         parser.add_argument('-r',
                              '--rebuild',
