@@ -27,6 +27,12 @@ class Ue3LooseFilesCommand(Command):
     def configure_arguments(self, context, parser):
         settings = context.settings
 
+        parser.add_argument('-g',
+                            '--game',
+                            metavar = '<game>',
+                            type    = str,
+                            default = settings.default_ue3_game)
+
         parser.add_argument('-p',
                             '--platforms',
                             help      = 'Platforms to build',
@@ -46,6 +52,10 @@ class Ue3LooseFilesCommand(Command):
     # run
     def run(self, context):
         settings = context.settings
-        executable = os.path.join(settings.ue3_directory, "Binaries", "Win64", settings.ue3_game + ".exe")
+        arguments = context.arguments
+
+        game = arguments.game
+
+        executable = os.path.join(settings.ue3_directory, "Binaries", "Win64", game + ".exe")
 
         call_process(".", executable)
