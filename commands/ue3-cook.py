@@ -100,6 +100,6 @@ def _enumerate_cooker_args(configurations, platforms):
         for platform in platforms:
             cmdline = [ '-platform=' + platform ]
             if configuration in [ 'test', 'shipping' ]:
-                cmdline += [ '-cookedforfinal' ]
+                cmdline += [ '-cookforfinal' ]
             yield cmdline
 
