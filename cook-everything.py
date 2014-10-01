@@ -26,8 +26,15 @@ platforms = [
 ]
 
 configs = [
-    "release",
+    #"release",
     "test",
+]
+
+languages = [
+    "INT",
+    "FRA",
+    #"DEU",
+    "ESN",
 ]
 
 def ue3_cook(maps, args, platform, config):
@@ -37,6 +44,7 @@ def ue3_cook(maps, args, platform, config):
     cmdline += " " + " ".join(args)
     cmdline += " -p " + platform
     cmdline += " -c " + config
+    cmdline += " -l " + " ".join(languages)
     print cmdline
     subprocess.call(cmdline, shell = True)
 
