@@ -50,10 +50,17 @@ class Ue3CookCommand(Command):
 
         parser.add_argument('-p',
                             '--platform',
-                            help    = 'platforms to build',
+                            help    = 'platforms to cook',
                             metavar = '<platform>',
                             nargs   = '+',
                             default = settings.default_ue3_platforms)
+
+        parser.add_argument('-l',
+                            '--lang',
+                            help    = 'languages to cook',
+                            metavar = '<lang>',
+                            nargs   = '+',
+                            default = "INT")
         return True
 
     #---------------------------------------------------------------------------
@@ -73,6 +80,7 @@ class Ue3CookCommand(Command):
         platforms = arguments.platform
         configurations = arguments.configuration
         noexpansion = arguments.noexpansion
+        lang = arguments.lang
 
         # Validate environment
 
@@ -85,7 +93,7 @@ class Ue3CookCommand(Command):
         # Run task
 
         cmdline = [ cooker_path, 'cookpackages', '-unattended', '-nopauseonsuccess' ]
-        cmdline += [ '-multilanguagecook=INT' ]
+        cmdline += [ '-multilanguagecook=' + '+'.join(lang)  ]
         if noexpansion:
             cmdline += [ '-noexpansion' ]
         for cooker_args in _enumerate_cooker_args(configurations, platforms):
