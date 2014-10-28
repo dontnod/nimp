@@ -1,8 +1,10 @@
 __all__ = ["command",
+           "generate-version-file",
+           "bink",
            "msbuild",
-           "vsbuild",
+           "sha1",
            "ue3-build",
            "ue3-cook",
            "ue3-loose",
-           "sha1"]
+           "vsbuild"]
 

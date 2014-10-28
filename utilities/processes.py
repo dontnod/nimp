@@ -14,19 +14,16 @@ import tempfile
 from utilities.logging import *
 
 #-------------------------------------------------------------------------------
-# default_output_filter
 def default_output_filter(line):
    return line
 
 #-------------------------------------------------------------------------------
-# nimp_tag_output_filter
 error_pattern    = "^\[NIMP_ERROR\](.*)\[/NIMP_ERROR\]$"
 warning_pattern  = "^\[NIMP_WARNING\](.*)\[/NIMP_WARNING\]$"
 error_regexp     = re.compile(error_pattern)
 warning_regexp   = re.compile(warning_pattern)
 
 #-------------------------------------------------------------------------------
-# nimp_tag_output_filter
 def nimp_tag_output_filter(line):
     match_error = error_regexp.search(line)
     if match_error:
@@ -43,7 +40,21 @@ def nimp_tag_output_filter(line):
 
 
 #-------------------------------------------------------------------------------
-# call_process
+def capture_process_output(directory, command, input = None):
+    process = subprocess.Popen(command,
+                               cwd    = directory,
+                               stdout = subprocess.PIPE,
+                               stderr = subprocess.PIPE,
+                               stdin  = subprocess.PIPE)
+    if input is not None:
+        input = input.encode("iso8859-1")
+    output, error = process.communicate(input)
+
+    # Bonjour toi qui te tappe un bug parce que j'ai fait le connard et mis
+    # l'encodage en dur.
+    return process.wait(), output.decode("iso8859-1"), error.decode("iso8859-1")
+
+#-------------------------------------------------------------------------------
 def call_process(directory, command, output_filter = default_output_filter):
     stdout_file_name = tempfile.mktemp()
     stderr_file_name = tempfile.mktemp()
@@ -70,6 +81,8 @@ def call_process(directory, command, output_filter = default_output_filter):
             output = stdout_read_file.readline()
             error  = stderr_read_file.readline()
 
+            error = error.decode("iso8859-1")
+            output = output.decode("iso8859-1")
             if(error != ""):
                 current_error = current_error + error
                 if "\n" in current_error:
@@ -77,9 +90,9 @@ def call_process(directory, command, output_filter = default_output_filter):
                     current_error = current_error.replace("{", "{{")
                     current_error = current_error.replace("}", "}}")
                     current_error = output_filter(current_error)
-		    if current_error is not None:
-		        log_error(current_error)
-                    current_error = ""
+                    if current_error is not None:
+                        log_error(current_error)
+                        current_error = ""
 
             if(output != ""):
                 current_output = current_output + output
@@ -89,8 +102,8 @@ def call_process(directory, command, output_filter = default_output_filter):
                     current_output = current_output.replace("}", "}}")
                     current_output = output_filter(current_output)
                     if current_output is not None:
-		        log_verbose(current_output)
-		    current_output = ""
+                        log_verbose(current_output)
+            current_output = ""
 
             if output == "" and error == "" and process_ended.is_set():
                 return
@@ -118,7 +131,6 @@ def call_process(directory, command, output_filter = default_output_filter):
     return result
 
 #-------------------------------------------------------------------------------
-# redirect_output
 def redirect_output(process):
     output = process.stdout.read()
     error  = process.stderr.read()

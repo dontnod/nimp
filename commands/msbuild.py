@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 from commands.command       import *
 
-from configuration.system   import *
+from config.system          import *
 
 from utilities.files        import *
 from utilities.hashing      import *
@@ -13,7 +13,7 @@ from utilities.paths        import *
 from utilities.processes    import *
 
 if OS == WINDOWS:
-    import _winreg
+    import winreg
     from utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ def find_msbuild_path(settings):
     for framework_version in settings.microsoft_framework_versions:
         msbuild_path_key_name_format = r"SOFTWARE\Microsoft\MSBuild\ToolsVersions\{0}"
         msbuild_path_key_name        = msbuild_path_key_name_format.format(framework_version)
-        msbuild_path                 = get_key_value(_winreg.HKEY_LOCAL_MACHINE,
+        msbuild_path                 = get_key_value(winreg.HKEY_LOCAL_MACHINE,
                                                         msbuild_path_key_name,
                                                         "MSBuildToolsPath")
         if msbuild_path is not None:

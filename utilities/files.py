@@ -8,6 +8,7 @@ import re
 import shutil
 import stat
 import string
+import tempfile;
 import time
 
 from   utilities.logging    import *
@@ -19,7 +20,6 @@ from   utilities.units      import *
 READ_BUFFER_SIZE = 1024*1024*3
 
 #-------------------------------------------------------------------------------
-# copy_file
 def copy_file(source_path, destination_path):
     if(not os.path.exists(source_path)):
         log_error("File {0} doesn't exist", source_path)
@@ -58,7 +58,6 @@ def copy_file(source_path, destination_path):
     return True
 
 #-------------------------------------------------------------------------------
-# copy_file
 def copy_files(file_list):
     def empty_format(value, width = 7, alignement = ">"):
         return ""
@@ -84,16 +83,14 @@ def copy_files(file_list):
 
     return True
 
-#-------------------------------------------------------------------------------
-# set_executable
+#-----------------------------------------------------------------------------
 def set_executable(file_list):
     for file in file_list:
         os.chmod(file, stat.S_IXGRP | stat.S_IRGRP | stat.S_IXUSR | stat.S_IRUSR)
 
     return True
 
-#-------------------------------------------------------------------------------
-# open_readable
+#-----------------------------------------------------------------------------
 def open_readable(file_path):
     log_verbose("Opening {0} for reading", file_path)
     try:
@@ -103,8 +100,7 @@ def open_readable(file_path):
         return None
     return file
 
-#-------------------------------------------------------------------------------
-# read_file_content
+#-----------------------------------------------------------------------------
 def read_file_content(file_path):
     file_to_read = open_readable(file_path)
     if file_to_read is None:
@@ -113,8 +109,7 @@ def read_file_content(file_path):
     file_to_read.close()
     return result
 
-#-------------------------------------------------------------------------------
-# open_writable
+#-----------------------------------------------------------------------------
 def open_writable(file_path):
     log_verbose("Opening {0} for writing", file_path)
     try:
@@ -125,7 +120,12 @@ def open_writable(file_path):
     return file
 
 #-------------------------------------------------------------------------------
-# write_file_content
+def open_temp_file(suffix = ""):
+    temporary_file_name = os.tempnam()
+    temporary_file_name = "{0}_{1}".format(temporary_file_name, suffix)
+    return open_writable(temporary_file_name);
+
+#-------------------------------------------------------------------------------
 def write_file_content(file_path, content):
     file_to_read = open_writable(file_path)
     if file_to_read is None:
@@ -135,13 +135,11 @@ def write_file_content(file_path, content):
     return True
 
 #-------------------------------------------------------------------------------
-# regex_list_files
 def regex_list_files(base_directory, regex_path):
     paths_stack = regex_path.split('/')
     return recursive_regex_list_files(base_directory, paths_stack)
 
 #-------------------------------------------------------------------------------
-# recursive_regex_list_files
 def recursive_regex_list_files(base_path, paths_stack):
     if len(paths_stack) == 0:
         assert(os.path.exists(base_path))
@@ -173,7 +171,18 @@ def recursive_regex_list_files(base_path, paths_stack):
     return file_list
 
 #-------------------------------------------------------------------------------
-# start_file_progress
+def regex_delete_files(directory, pattern):
+    files_to_delete     = regex_list_files(directory, pattern)
+    deleted_files_count = 0
+
+    start_progress(len(files_to_delete))
+    for file_to_delete in files_to_delete:
+        update_progress(deleted_files_count, "Deleting {0}".format(file_to_delete))
+        os.remove(file_to_delete)
+        deleted_files_count = deleted_files_count + 1
+    end_progress
+
+#-------------------------------------------------------------------------------
 def start_file_progress(file_size):
 
     def total_formatter(value):
@@ -185,7 +194,6 @@ def start_file_progress(file_size):
                    total_formatter       = total_formatter)
 
 #-------------------------------------------------------------------------------
-# start_file_progress
 def is_binary(file_path):
     text_characters = "".join(map(chr, range(32, 127)) + list("\n\r\t\b"))
     _null_trans     = string.maketrans("", "")

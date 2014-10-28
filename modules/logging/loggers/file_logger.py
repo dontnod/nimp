@@ -26,7 +26,6 @@ class FileLogger(Logger):
         self._log_file = None
 
     #---------------------------------------------------------------------------
-    # initialize
     def initialize(self, format, context, verbose):
         Logger.initialize(self, format, context, verbose)
         configuration       = context.configuration
@@ -49,10 +48,9 @@ class FileLogger(Logger):
         except IOError as io_error:
             pass
         if(self._log_file is None):
-            print "Error while opening log file {0}".format(log_file_path)
+            print("Error while opening log file {0}".format(log_file_path))
 
     #---------------------------------------------------------------------------
-    # log_formatted_message
     def log_formatted_message(self, log_level, formatted_message):
         if self._log_file is not None:
             self._log_file.write(formatted_message)

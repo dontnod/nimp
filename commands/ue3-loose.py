@@ -10,10 +10,6 @@ from utilities.hashing      import *
 from utilities.paths        import *
 from utilities.processes    import *
 
-if OS == WINDOWS:
-    import _winreg
-    from utilities.windows_utilities            import *
-
 #-------------------------------------------------------------------------------
 # Ue3LooseFilesCommand
 #-------------------------------------------------------------------------------

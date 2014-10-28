@@ -5,13 +5,13 @@
 #-------------------------------------------------------------------------------
 from commands.command       import *
 
-from configuration.system   import *
+from config.system          import *
 
 from utilities.logging      import *
 from utilities.hashing      import *
 
 #-------------------------------------------------------------------------------
-# RunCmakeCommand
+# Sha1Command
 #-------------------------------------------------------------------------------
 class Sha1Command(Command):
 

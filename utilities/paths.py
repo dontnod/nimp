@@ -8,11 +8,10 @@ import os.path
 import shutil
 import sys
 
-from utilities.logging      import *
-from configuration.system   import *
+from utilities.logging  import *
+from config.system      import *
 
 #-------------------------------------------------------------------------------
-# check_path_exists
 def check_exists(path):
     log_verbose("Checking path {0} consistency", path)
     if(not os.path.exists(path)):
@@ -21,17 +20,23 @@ def check_exists(path):
     return True
 
 #-------------------------------------------------------------------------------
-# get_extension
 def get_extension(path):
     return os.path.splitext(path)[1]
 
 #-------------------------------------------------------------------------------
-# get_path_without_extension
 def get_path_without_extension(path):
     return os.path.splitext(path)[0]
 
 #-------------------------------------------------------------------------------
-# mkdir
+def get_file_name(path):
+    return os.path.basename(path)
+
+#-------------------------------------------------------------------------------
+def get_file_name_without_extension(path):
+    base_name = get_file_name(path)
+    return os.path.splitext(base_name)[0]
+
+#-------------------------------------------------------------------------------
 def mkdir(directory_path):
     if os.path.exists(directory_path):
         log_verbose("Directory {0} already exists.", directory_path)
@@ -40,7 +45,6 @@ def mkdir(directory_path):
     os.makedirs(directory_path)
 
 #-------------------------------------------------------------------------------
-# rmdir
 def rmdir(directory_path):
     shit_happened = [False]
     def on_error(function, path, excinfo):
@@ -51,12 +55,10 @@ def rmdir(directory_path):
     return not shit_happened[0]
 
 #-------------------------------------------------------------------------------
-# get_settings_directory
 def get_settings_directory():
     return os.getenv(USER_DIRECTORY_ENVIRONMENT_VARIABLE)
 
 #-------------------------------------------------------------------------------
-# get_settings_directory
 def split_path(path):
     splitted_path = []
     while True:
@@ -73,7 +75,6 @@ def split_path(path):
 
 
 #-------------------------------------------------------------------------------
-# get_main_path
 def get_main_path():
     try:
         return os.path.abspath(sys.modules['__main__'].__file__)
@@ -81,7 +82,6 @@ def get_main_path():
         return sys.executable
 
 #-------------------------------------------------------------------------------
-# get_python_path
 def get_python_path():
     os_module_path          = os.path.dirname(os.__file__)
     python_executable_path  = os.path.normpath(os.path.join(os_module_path, "../python"))

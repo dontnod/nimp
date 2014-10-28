@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 # Imports
 #-------------------------------------------------------------------------------
-import _winreg;
+import winreg;
 import os
 import sys
 
@@ -15,8 +15,8 @@ def get_key_value(root, key_path, sub_key_name):
     result              = None
     try:
         for next_key_path in splitted_key_path:
-            current_key = _winreg.OpenKey(current_key, next_key_path)
-        (result, type) = _winreg.QueryValueEx(current_key, sub_key_name)
+            current_key = winreg.OpenKey(current_key, next_key_path)
+        (result, type) = winreg.QueryValueEx(current_key, sub_key_name)
     except WindowsError as error:
         log_error("Error while reading registry key {0}{1} : {2}", key_path, sub_key_name, error)
         pass
