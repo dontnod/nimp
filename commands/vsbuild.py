@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 from commands.command       import *
 
-from configuration.system   import *
+from config.system          import *
 
 from utilities.files        import *
 from utilities.hashing      import *

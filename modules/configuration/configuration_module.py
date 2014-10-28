@@ -17,60 +17,34 @@ from    utilities.paths         import *
 #-------------------------------------------------------------------------------
 class ConfigurationModule(Module):
     #---------------------------------------------------------------------------
-    # __init__
     def __init__(self):
         Module.__init__(self, "configuration", [])
 
     #---------------------------------------------------------------------------
-    # configure_arguments
     def configure_arguments(self, context, parser):
         log_group = parser.add_argument_group("Configuration")
 
         return True
 
     #---------------------------------------------------------------------------
-    # load
     def load(self, context):
         parser      = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter)
         return _load_settings(context) and _load_arguments(context, parser)
 
 #---------------------------------------------------------------------------
-# _read_config_file
-def _read_config_file(filename):
-    # Open configuration file; ignore errors if file does not exist
-    try:
-        conf = open(filename, "rb").read()
-    except:
-        return {}
-    # Parse configuration file
-    try:
-        locals = {}
-        exec(compile(conf, filename, 'exec'), None, locals)
-        if locals.has_key("config"):
-            return locals["config"]
-        log_error("Configuration file {0} has no 'config' section.", filename)
-    except Exception as e:
-        log_error("Unable to load configuration file {0}: {1}", filename, str(e))
-
-    return {}
-
-#---------------------------------------------------------------------------
-# _load_settings
 def _load_settings(context):
-    class Settings:
-        pass
+    while not os.path.exists(".nimp.conf") and os.path.abspath(os.sep) != os.getcwd():
+        os.chdir("..")
 
-    global_settings = _read_config_file("nimp.conf")
+    if not os.path.isfile(".nimp.conf"):
+        log_error("Unable to find a .nimp.conf config file in current or parents directories.")
+        return False;
 
-    settings = Settings()
-    for key, value in global_settings.items():
-        setattr(settings, key, value)
-    setattr(context, 'settings', settings)
+    load_config_file(".nimp.conf", context)
 
     return True
 
 #---------------------------------------------------------------------------
-# _load_arguments
 def _load_arguments(context, parser):
     modules     = context.modules
 
@@ -79,12 +53,43 @@ def _load_arguments(context, parser):
             if( not module.configure_arguments(context, parser)):
                 return False
 
-    local_configuration_file_name = os.path.join(get_settings_directory(), "Dne/pytools_local_settings.conf")
-    log_verbose("Loading config file {0}", local_configuration_file_name)
-    parser.set_defaults(*_read_config_file(local_configuration_file_name))
-
     (arguments, unknown_args) = parser.parse_known_args()
     setattr(arguments, "unknown_args", unknown_args)
     setattr(context, 'arguments', arguments)
     return True
 
+#---------------------------------------------------------------------------
+def load_config_file(filename, context):
+    class Settings:
+        pass
+
+    settings         = Settings()
+    settings_content = read_config_file(filename)
+
+    if(settings_content is None):
+        return False
+
+    for key, value in settings_content.items():
+        setattr(settings, key, value)
+
+    setattr(context, 'settings', settings)
+    return True
+
+#---------------------------------------------------------------------------
+def read_config_file(filename):
+    try:
+        conf = open(filename, "rb").read()
+    except Exception as exception:
+        log_error("Unable to open configuration file : {0}", exception)
+        return None
+    # Parse configuration file
+    try:
+        locals = {}
+        exec(compile(conf, filename, 'exec'), None, locals)
+        if "config" in locals:
+            return locals["config"]
+        log_error("Configuration file {0} has no 'config' section.", filename)
+    except Exception as e:
+        log_error("Unable to load configuration file {0}: {1}", filename, str(e))
+
+    return {}

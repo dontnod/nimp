@@ -47,19 +47,13 @@ def log_notification(message_format, *args):
     log_message(LOG_LEVEL_NOTIFICATION, message_format, *args)
 
 #-------------------------------------------------------------------------------
-# log_warning
-#-------------------------------------------------------------------------------
 def log_warning(message_format, *args):
     log_message(LOG_LEVEL_WARNING, message_format, *args)
 
 #-------------------------------------------------------------------------------
-# log_error
-#-------------------------------------------------------------------------------
 def log_error(message_format, *args):
     log_message(LOG_LEVEL_ERROR, message_format, *args)
 
-#-------------------------------------------------------------------------------
-# start_progress
 #-------------------------------------------------------------------------------
 def start_progress(total,
                    position_formatter = None,
@@ -76,14 +70,10 @@ def start_progress(total,
                                 width               = width)
 
 #-------------------------------------------------------------------------------
-# update_progress
-#-------------------------------------------------------------------------------
 def update_progress(value, step_name = None):
     if(g_logger is not None):
         g_logger.update_progress(value, step_name)
 
-#-------------------------------------------------------------------------------
-# end_progress
 #-------------------------------------------------------------------------------
 def end_progress():
     if(g_logger is not None):

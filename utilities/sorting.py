@@ -14,7 +14,7 @@ def  topological_sort(node_list):
     if all_nodes is None:
         return None
 
-    nodes_to_sort       = copy.deepcopy(all_nodes)
+    nodes_to_sort       = all_nodes.copy()
     sorted_nodes_names  = []
 
     while len(nodes_to_sort) > 0:
@@ -35,7 +35,7 @@ def topological_sort_node(node, node_list):
     if all_nodes is None:
         return None
 
-    nodes_to_sort = copy.deepcopy(all_nodes)
+    nodes_to_sort = all_nodes.copy()
     sorted_nodes_names = []
 
     if not _recursive_topological_sort(node,
