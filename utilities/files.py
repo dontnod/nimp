@@ -126,11 +126,11 @@ def open_temp_file(suffix = ""):
     return open_writable(temporary_file_name);
 
 #-------------------------------------------------------------------------------
-def write_file_content(file_path, content):
+def write_file_content(file_path, content, encoding = "utf8"):
     file_to_read = open_writable(file_path)
     if file_to_read is None:
         return False
-    file_to_read.write(content)
+    file_to_read.write(content.encode(encoding))
     file_to_read.close()
     return True
 

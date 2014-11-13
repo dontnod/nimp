@@ -47,12 +47,12 @@ def capture_process_output(directory, command, input = None):
                                stderr = subprocess.PIPE,
                                stdin  = subprocess.PIPE)
     if input is not None:
-        input = input.encode("iso8859-1")
+        input = input.encode("cp437")
     output, error = process.communicate(input)
 
     # Bonjour toi qui te tappe un bug parce que j'ai fait le connard et mis
     # l'encodage en dur.
-    return process.wait(), output.decode("iso8859-1"), error.decode("iso8859-1")
+    return process.wait(), output.decode("cp437"), error.decode("cp437")
 
 #-------------------------------------------------------------------------------
 def call_process(directory, command, output_filter = default_output_filter):
@@ -81,8 +81,8 @@ def call_process(directory, command, output_filter = default_output_filter):
             output = stdout_read_file.readline()
             error  = stderr_read_file.readline()
 
-            error = error.decode("iso8859-1")
-            output = output.decode("iso8859-1")
+            error  = error.decode("cp437")
+            output = output.decode("cp437")
             if(error != ""):
                 current_error = current_error + error
                 if "\n" in current_error:
@@ -118,9 +118,6 @@ def call_process(directory, command, output_filter = default_output_filter):
 
     stdout_file.close()
     stderr_file.close()
-
-    os.remove(stdout_file_name)
-    os.remove(stderr_file_name)
 
     if(process_return == 0):
         result = True

@@ -1,10 +1,12 @@
 __all__ = ["command",
-           "generate-version-file",
            "bink",
            "msbuild",
            "sha1",
-           "ue3-build",
-           "ue3-cook",
-           "ue3-loose",
+           "ue3_build",
+           "ue3_cook",
+           "ue3_loose",
+           "ue3_publish_tagset",
+           "ue3_deploy_tagset",
+           "ue3_ship",
            "vsbuild"]
 

@@ -183,7 +183,7 @@ def update_video(context):
     binkc_path  = get_binkc_path(settings)
     input       = os.path.join(settings.binks_avi_directory, bink_name, "{0}.Avi".format(bink_name))
     output      = os.path.join(settings.high_res_binks_directory, "{0}.bik".format(bink_name))
-    worskpaces  = get_perforce_workspaces_containing_file(settings.high_res_binks_directory)
+    worskpaces  = p4_get_workspaces_containing_path(settings.high_res_binks_directory)
 
     if len(worskpaces) == 0:
         log_error("Unable to match file {0} to an existing workspace.", output)
@@ -193,7 +193,8 @@ def update_video(context):
     output  = output.replace("/", "\\")
 
     with PerforceTransaction(worskpaces[0], "Updated {0} BIK movie".format(bink_name), [output]) as transaction:
-        if call_process(".", [binkc_path, input, output, "/F{0}".format(arguments.framerate), "/O", "/#"]):
-            return True
+        if not call_process(".", [binkc_path, input, output, "/F{0}".format(arguments.framerate), "/O", "/#"]):
+            transaction.abort()
+            return False
 
-    return False
+    return True

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-# imports
-#-------------------------------------------------------------------------------
 import os.path
 
 from    decimal import *
@@ -13,8 +11,6 @@ from utilities.logging  import *
 from utilities.paths    import *
 
 #-------------------------------------------------------------------------------
-# Constants
-#-------------------------------------------------------------------------------
 TAR_FILE = 1
 ZIP_FILE = 2
 
@@ -23,9 +19,7 @@ DECOMLPRESS_BAR_WIDTH   = 15
 MAXIMUM_STEP_NAME_WIDTH = 57
 
 #-------------------------------------------------------------------------------
-# decompress
-#-------------------------------------------------------------------------------
-def extract(archive_file_name, destination_directory, archive_type = None):
+def extract(archive_file_name, destination_directory, archive_type = None, before_decompress_file_callback = None):
     log_verbose("Determinating type of archive {0}", archive_file_name)
     if(archive_type is None):
         first_extension             = get_extension(archive_file_name)
@@ -53,9 +47,7 @@ def extract(archive_file_name, destination_directory, archive_type = None):
     return False
 
 #-------------------------------------------------------------------------------
-# _decompress_tar
-#-------------------------------------------------------------------------------
-def _decompress_tar(file_name, destination_directory):
+def _decompress_tar(file_name, destination_directory, before_decompress_file_callback = None):
     log_verbose("Decompressing {0} in {1}", file_name, destination_directory)
     try:
         tar_file    = tarfile.open(file_name)
@@ -84,9 +76,7 @@ def _decompress_tar(file_name, destination_directory):
     return True
 
 #-------------------------------------------------------------------------------
-# _decompress_zip
-#-------------------------------------------------------------------------------
-def _decompress_zip(file_name, destination_directory):
+def _decompress_zip(file_name, destination_directory, before_decompress_file_callback = None):
     log_verbose("Decompressing {0} in {1}", file_name, destination_directory)
     try:
         zip_file    = zipfile.ZipFile(file_name, "r")
@@ -113,9 +103,7 @@ def _decompress_zip(file_name, destination_directory):
     return True
 
 #-------------------------------------------------------------------------------
-# _extract_file
-#-------------------------------------------------------------------------------
-def _extract_file(archive, destination_directory, file_name, file_index):
+def _extract_file(archive, destination_directory, file_name, file_index, before_decompress_file_callback = None):
     step_name      = file_name
     step_name_size = len(step_name)
 
@@ -123,5 +111,9 @@ def _extract_file(archive, destination_directory, file_name, file_index):
         step_name = "..." + step_name[step_name_size - MAXIMUM_STEP_NAME_WIDTH:step_name_size]
 
     update_progress(file_index, step_name)
+
+    if before_decompress_file_callback is not None:
+        before_decompress_file_callback(destination_directory, file_name)
+
     archive.extract(file_name, destination_directory)
     update_progress(file_index + 1, step_name)
