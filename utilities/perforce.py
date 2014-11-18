@@ -119,6 +119,8 @@ def p4_get_workspaces_containing_path(workspace_path):
 
     for client in workspaces:
         # FIX ME : Peut être trouver une commande qui ne renvoie pas d'erreur si un fichier n'est pas versionné
+        if os.path.isdir(workspace_path):
+            workspace_path += "/..."
         output = p4_run_command_silent(".", ["p4", "-z", "tag", "-c", client, "where", workspace_path])
 
         if(output is None):
