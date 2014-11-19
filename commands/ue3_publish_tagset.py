@@ -63,9 +63,14 @@ class Ue3PublishTagsetCommand(Command):
         settings        = context.settings
         arguments       = context.arguments
         command_line    = [COOKERSYNC_PATH, arguments.game,"-x", arguments.tagset, "-f", "-final", "-crc", "-l", "-b", "."]
+        platform        = arguments.platform
 
-        if arguments.platform is not None:
-            command_line = command_line + [ "-p", arguments.platform ]
+        if platform is not None:
+            if platform.lower() == 'win64':
+                platform = 'PC'
+            elif platform.lower() == 'win32':
+                platform = 'PCConsole'
+            command_line = command_line + [ "-p", platform ]
 
         for language in arguments.lang:
             command_line = command_line + ["-r", language]
