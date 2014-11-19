@@ -5,6 +5,7 @@ import socket
 import random
 import string
 import time
+import shutil
 
 from commands.command       import *
 from commands.vsbuild       import *
@@ -57,22 +58,79 @@ class Ue3BuildCommand(Command):
         platforms               = arguments.platform
         configurations          = arguments.configuration
         result                  = True
-        base_dir                = 'Development/Src'
         version_file_cl         = None
+
+        log_verbose("Building UBT")
+        if not self._build_project(context, "UnrealBuildTool/UnrealBuildTool.csproj",'Release'):
+            log_error("Error building UBT")
+            return False
 
         if arguments.generate_version_file:
             version_file_cl = checkout_and_generate_version_file()
 
         success = True
-        for builder_args in _enumerate_builder_args(base_dir, configurations, platforms):
-            if not self._run_sub_command(context, VsBuildCommand(), builder_args):
-                success = False
-                break
+        for platform in platforms:
+            if platform.lower() == 'win64':
+                if not self._build_editor_csharp(context):
+                    return False
+            for configuration in configurations:
+                if not self._build(context, platform, configuration):
+                    success = False
+                    break
 
         if version_file_cl is not None:
-            p4_revert_changelist(version_file_cl)
+            if not p4_revert_changelist(version_file_cl) or not p4_delete_changelist(version_file_cl):
+                log_warning("Unable to revert version file CL {0}".format(version_file_cl))
 
         return success
+
+    #-------------------------------------------------------------------------------
+    def _build(self, context, platform, configuration):
+
+        dict_vcxproj = {
+            'win32' :   'Windows/ExampleGame Win32.vcxproj',
+            'win64' :   'Windows/ExampleGame Win64.vcxproj',
+            'ps3' :     'PS3/ExampleGame PS3.vcxproj',
+            'ps4' :     'ExampleGame PS4/ExampleGame PS4.vcxproj',
+            'xbox360' : 'Xenon/ExampleGame Xbox360.vcxproj',
+            'xboxone' : 'Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
+        }
+
+        platform_project = dict_vcxproj[platform.lower()]
+        return self._build_project(context, platform_project, configuration, 'build')
+
+    def _build_editor_csharp(self, context):
+        log_notification("Building Editor C# libraries")
+
+        if not self._build_project(context, 'DNEEdCSharp/DNEEdCSharp.csproj', 'Release'):
+            return False
+
+        dll_target = os.path.join('Binaries/Win64/Editor/Release')
+        dll_source = os.path.join('Binaries/Editor/Release')
+
+        try:
+            shutil.copy(os.path.join(dll_source, 'DNEEdCSharp.dll'), dll_target)
+            shutil.copy(os.path.join(dll_source, 'DNEEdCSharp.pdb'), dll_target)
+            shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.dll'), dll_target)
+            shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.pdb'), dll_target)
+        except Exception as ex:
+            log_error("Error while copying editor dlls {0}".format(ex))
+            return False
+        return True
+
+    def _build_project(self, context,  project, configuration, target = 'rebuild'):
+        base_dir = 'Development/Src'
+        project  = os.path.join(base_dir, project)
+        lis_sln  = os.path.join(base_dir,'whatif_vs2012.sln')
+
+        vs_build_args = [ lis_sln,
+                          project,
+                          '-V11',
+                          '-t', target,
+                          '-c', configuration,
+                          '-p', 'Mixed platforms' ]
+
+        return self._run_sub_command(context, VsBuildCommand(), vs_build_args)
 
 #---------------------------------------------------------------------------
 def checkout_and_generate_version_file():
@@ -90,22 +148,3 @@ def checkout_and_generate_version_file():
      write_file_content(VERSION_FILE_PATH, version_file_content)
 
      return cl_number
-
-#-------------------------------------------------------------------------------
-def _enumerate_builder_args(base_dir, configurations, platforms):
-    args_sln = [ base_dir + '/whatif_vs2012.sln' ]
-    args_extra = [ '-V11', '-t', 'build' ]
-
-    dict_vcxproj = {
-        'win32' :   'Windows/ExampleGame Win32.vcxproj',
-        'win64' :   'Windows/ExampleGame Win64.vcxproj',
-        'ps3' :     'PS3/ExampleGame PS3.vcxproj',
-        'ps4' :     'ExampleGame PS4/ExampleGame PS4.vcxproj',
-        'xbox360' : 'Xenon/ExampleGame Xbox360.vcxproj',
-        'xboxone' : 'Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
-    }
-
-    for configuration in configurations:
-        for platform in platforms:
-            yield args_sln + [ base_dir + '/' + dict_vcxproj[platform.lower()] ] + args_extra + [ '-c', configuration, '-p', 'Mixed platforms' ]
-

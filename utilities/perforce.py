@@ -202,12 +202,13 @@ def p4_add(workspace, cl_number, file):
 
 #-------------------------------------------------------------------------------
 def p4_revert_changelist(cl_number):
-    output = p4_run_command(".", ["p4", "-z", "tag", "revert", "-c", cl_number])
+    output = p4_run_command(".", ["p4", "-z", "tag", "revert", "-c", cl_number, "//..."])
+    return output is not None
 
-    if(output is None):
-        return False
-
-    return True
+#-------------------------------------------------------------------------------
+def p4_delete_changelist(cl_number):
+    output = p4_run_command(".", ["p4", "-z", "tag", "change", "-d", cl_number])
+    return output is not None
 
 #-------------------------------------------------------------------------------
 def p4_get_last_synced_changelist(workspace):
