@@ -81,4 +81,4 @@ class Ue3PublishTagsetCommand(Command):
 
         command_line = command_line + [arguments.destination]
 
-        call_process(".", command_line)
+        return call_process(".", command_line)
