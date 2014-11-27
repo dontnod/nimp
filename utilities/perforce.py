@@ -130,6 +130,17 @@ def p4_get_workspaces_containing_path(workspace_path):
             result = result + [client]
     return result
 
+#------------------------------------------------------------------------------
+def p4_get_first_workspace_containing_path(disk_path):
+    workspaces = p4_get_workspaces_containing_path(disk_path)
+    if workspaces is None:
+        log_error("Unable to find a workspace containing file {0}", disk_path)
+        return None
+    if len(workspaces) == 0:
+        log_error("Unable to find a workspace containing file {0}", disk_path)
+        return None
+    return workspaces[0]
+
 #-------------------------------------------------------------------------------
 def p4_is_file_versionned(workspace, file_path):
     result, output, error = capture_process_output(".", ["p4", "-z", "tag", "-c", workspace, "fstat", file_path])
@@ -211,7 +222,11 @@ def p4_delete_changelist(cl_number):
     return output is not None
 
 #-------------------------------------------------------------------------------
-def p4_get_last_synced_changelist(workspace):
+def p4_get_last_synced_changelist(workspace = None):
+    if workspace is None:
+        workspace = p4_get_first_workspace_containing_path(".")
+        if workspace is None:
+            return None
     cl_number = p4_parse_command_output(".", ["p4", "-z", "tag", "changes", "-s", "submitted", "-m1", "@{0}".format(workspace)], "\.\.\. change ([0-9]*)")
 
     if(cl_number is None):

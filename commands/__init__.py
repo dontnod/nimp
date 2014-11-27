@@ -8,5 +8,6 @@ __all__ = ["command",
            "ue3_publish_tagset",
            "ue3_deploy_tagset",
            "ue3_ship",
+           "publish_symbols",
            "vsbuild"]
 
