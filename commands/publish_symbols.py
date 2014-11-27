@@ -51,7 +51,7 @@ class PublishSymbols(Command):
 
         for pattern in SYMBOLS_FILE_PATTERNS:
             for root, directories, filenames in os.walk(source):
-                for filename in fnmatch.filter(filenames, '*.pdb'):
+                for filename in fnmatch.filter(filenames, pattern):
                     symbol_path           = os.path.join(root, filename)
                     relative_destination  = os.path.relpath(symbol_path, source)
                     symbol_destination    = os.path.join(destination, relative_destination)
