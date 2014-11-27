@@ -29,7 +29,12 @@ class Ue3DeployTagsetCommand(Command):
     def configure_arguments(self, context, parser):
         settings = context.settings
 
-        parser.add_argument('source',
+        parser.add_argument('--latest',
+                            help    = 'Deploy this tagset',
+                            metavar = '<source>',
+                            type    = str)
+
+        parser.add_argument('--source',
                             help    = 'Deploy this tagset',
                             metavar = '<source>',
                             type    = str)
