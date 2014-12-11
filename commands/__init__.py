@@ -1,4 +1,5 @@
-__all__ = ["command",
+__all__ = ["clean_workspace",
+           "command",
            "bink",
            "msbuild",
            "sha1",
