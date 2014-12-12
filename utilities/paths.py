@@ -7,6 +7,7 @@ import os
 import os.path
 import shutil
 import sys
+import fnmatch
 
 from utilities.logging  import *
 from config.system      import *
@@ -28,12 +29,8 @@ def get_path_without_extension(path):
     return os.path.splitext(path)[0]
 
 #-------------------------------------------------------------------------------
-def get_file_name(path):
-    return os.path.basename(path)
-
-#-------------------------------------------------------------------------------
 def get_file_name_without_extension(path):
-    base_name = get_file_name(path)
+    base_name = os.path.basename(path)
     return os.path.splitext(base_name)[0]
 
 #-------------------------------------------------------------------------------
@@ -73,6 +70,40 @@ def split_path(path):
 
     return splitted_path
 
+#-------------------------------------------------------------------------------
+def get_matching_files(path, pattern = '*'):
+    """ Returns an array containing only path if path is a file, or all files
+        matching pattern in path and his subdirectory if path is a directory.
+    """
+    if os.path.isfile(path):
+        return [path]
+    elif os.path.isdir(path):
+        result = []
+        for root, directories, files in os.walk(path):
+            for file in files:
+                if fnmatch.fnmatch(file, pattern):
+                    result.append(os.path.join(root, file))
+        return result
+    else:
+        log_error("Can't find file or directory {0}", path)
+        return None
+
+#-------------------------------------------------------------------------------
+def get_matching_subdirectories(path, pattern = '*'):
+    """ Returns an array containing only path if path is a file, or all files
+        matching pattern in path and his subdirectory if path is a directory.
+    """
+
+    if os.path.isdir(path):
+        result = []
+        for root, directories, files in os.walk(path):
+            for directory in directories:
+                if fnmatch.fnmatch(directory, pattern):
+                    result.append(os.path.join(root, directory))
+        return result
+    else:
+        log_error("Can't find directory {0}", path)
+        return None
 
 #-------------------------------------------------------------------------------
 def get_main_path():

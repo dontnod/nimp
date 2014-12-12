@@ -192,7 +192,7 @@ def update_video(context):
     input   = input.replace("/", "\\")
     output  = output.replace("/", "\\")
 
-    with PerforceTransaction(worskpaces[0], "Updated {0} BIK movie".format(bink_name), [output]) as transaction:
+    with PerforceTransaction("Updated {0} BIK movie".format(bink_name), output) as transaction:
         if not call_process(".", [binkc_path, input, output, "/F{0}".format(arguments.framerate), "/O", "/#"]):
             transaction.abort()
             return False

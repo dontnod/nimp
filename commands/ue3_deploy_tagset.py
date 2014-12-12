@@ -48,7 +48,7 @@ class Ue3DeployTagsetCommand(Command):
         source_directory    = arguments.source
 
         result = True
-        with PerforceTransaction(arguments.workspace, "Binaries checkout") as transaction:
+        with PerforceTransaction("Binaries checkout", workspace = arguments.workspace) as transaction:
             for root, directories, files in os.walk(source_directory, topdown=False):
                 for file in files:
                     source_file     = os.path.join(root, file)
@@ -60,7 +60,7 @@ class Ue3DeployTagsetCommand(Command):
                     if not os.path.exists(local_directory):
                         mkdir(local_directory)
 
-                    transaction.add_file(local_file)
+                    transaction.add(local_file)
 
                     if os.path.exists(local_file):
                         os.chmod(local_file, stat.S_IWRITE)
