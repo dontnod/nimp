@@ -213,7 +213,7 @@ def p4_reconcile(workspace, cl_number, path):
     return True
 
 #-------------------------------------------------------------------------------
-def p4_revert_changelist(cl_number, workspace):
+def p4_revert_changelist(cl_number):
     workspace = p4_get_changelist_workspace(cl_number) # Youpi perforce tu peux pas te démerder tout seul
 
     if workspace is None:
@@ -291,6 +291,7 @@ class PerforceTransaction:
 
         if not self._success and self._cl_number is not None:
             p4_revert_changelist(self._cl_number)
+            p4_delete_changelist(self._cl_number)
         elif self._success and self._submit_on_success:
             return p4_submit(self._cl_number)
         elif self._success:

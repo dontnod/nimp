@@ -74,7 +74,6 @@ class MsBuildCommand(Command):
         logger_path     = "." # FIXME: no logger path available
         msbuild_path    = find_msbuild_path(settings)
 
-        local_directory = settings.local_directory # FIXME: unused
         build_directory = settings.solutions_directory
 
         if rebuild:

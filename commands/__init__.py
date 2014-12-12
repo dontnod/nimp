@@ -1,6 +1,7 @@
 __all__ = ["clean_workspace",
            "command",
            "bink",
+           "build_wwise_banks",
            "msbuild",
            "sha1",
            "ue3_build",

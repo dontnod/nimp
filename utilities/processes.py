@@ -105,6 +105,7 @@ def call_process(directory, command, output_filter = default_output_filter):
                         log_verbose(current_output)
             current_output = ""
 
+             # FIXME : If a process doesn't output a '\n' after terminating, this will hang
             if output == "" and error == "" and process_ended.is_set():
                 return
 

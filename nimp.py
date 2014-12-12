@@ -6,7 +6,6 @@
 #-------------------------------------------------------------------------------
 import sys
 sys.dont_write_bytecode = 1
-sys.path.append("../../third_parties/python")
 
 import inspect
 import modules
