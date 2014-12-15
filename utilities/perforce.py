@@ -146,7 +146,7 @@ def p4_get_or_create_changelist(workspace, description):
                                                               workspace     = workspace,
                                                               description   = description)
 
-    return _p4_parse_command_output(".", ["p4", "-z", "tag", "change", "-i"], "Change ([0-9]*) created\.", change_list_form)
+    return _p4_parse_command_output(".", ["p4", "-z", "tag", "-c", workspace, "change", "-i"], "Change ([0-9]*) created\.", change_list_form)
 
 #-------------------------------------------------------------------------------
 def p4_get_pending_changelists(workspace = None):
