@@ -57,6 +57,7 @@ def p4_clean_workspace(workspace = None):
 
 #-------------------------------------------------------------------------------
 def p4_delete_changelist(cl_number):
+    log_verbose("Deleting Changelist {0}", cl_number)
     workspace = p4_get_changelist_workspace(cl_number)
     output = _p4_run_command(".", ["p4", "-z", "tag", "-c", workspace, "change", "-d", cl_number])
     return output is not None
@@ -217,6 +218,7 @@ def p4_reconcile(workspace, cl_number, path):
 
 #-------------------------------------------------------------------------------
 def p4_revert_changelist(cl_number):
+    log_verbose("Reverting changelist {0}", cl_number)
     workspace = p4_get_changelist_workspace(cl_number) # Youpi perforce tu peux pas te démerder tout seul
 
     if workspace is None:
@@ -226,6 +228,7 @@ def p4_revert_changelist(cl_number):
 
 #-------------------------------------------------------------------------------
 def p4_revert_unchanged(cl_number):
+    log_verbose("Reverting unchanged files in changelist {0}", cl_number)
     workspace = p4_get_changelist_workspace(cl_number) # Youpi perforce tu peux pas te démerder tout seul
 
     if workspace is None:
@@ -235,6 +238,7 @@ def p4_revert_unchanged(cl_number):
 
 #-------------------------------------------------------------------------------
 def p4_submit(cl_number):
+    log_verbose("Submitting changelist {0}", cl_number)
     p4_command = ["p4", "-z", "tag", "-c", workspace, "submit", "-f", "revertunchanged", "-c", cl_number]
     return _p4_run_command(".", p4_command) is not None
 
@@ -293,11 +297,14 @@ class PerforceTransaction:
                 break
 
         if not self._success and self._cl_number is not None:
+            log_verbose("P4 transaction failed, reverting and deleting CLs...")
             p4_revert_changelist(self._cl_number)
             p4_delete_changelist(self._cl_number)
         elif self._success and self._submit_on_success:
+            log_verbose("P4 transaction succeed, committing result...")
             return p4_submit(self._cl_number)
         elif self._success:
+            log_verbose("P4 transaction succeed, reverting unchanged files...")
             return p4_revert_unchanged(self._cl_number)
         return True
 
