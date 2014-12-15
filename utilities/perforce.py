@@ -102,6 +102,7 @@ def p4_get_disk_path(workspace_path, client_name = None):
 
 #------------------------------------------------------------------------------
 def p4_get_first_workspace_containing_path(disk_path):
+    log_verbose('Finding workspace mapped to {0}', disk_path)
     workspaces = p4_get_workspaces_containing_path(disk_path)
     if workspaces is None:
         log_error("Unable to find a workspace containing file {0}", disk_path)
@@ -109,6 +110,7 @@ def p4_get_first_workspace_containing_path(disk_path):
     if len(workspaces) == 0:
         log_error("Unable to find a workspace containing file {0}", disk_path)
         return None
+    log_verbose('Found workspace {0}', workspaces[0])
     return workspaces[0]
 
 #-------------------------------------------------------------------------------
@@ -199,7 +201,7 @@ def p4_list_workspaces():
     client_matches = re.finditer("\.\.\. client (.*)", output)
 
     for client_match in client_matches:
-         result = result + [client_match.group(1).strip()]
+        result = result + [client_match.group(1).strip()]
 
     return result
 
