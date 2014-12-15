@@ -57,7 +57,8 @@ def p4_clean_workspace(workspace = None):
 
 #-------------------------------------------------------------------------------
 def p4_delete_changelist(cl_number):
-    output = _p4_run_command(".", ["p4", "-z", "tag", "change", "-d", cl_number])
+    workspace = p4_get_changelist_workspace(cl_number)
+    output = _p4_run_command(".", ["p4", "-z", "tag", "-c", workspace, "change", "-d", cl_number])
     return output is not None
 
 #-------------------------------------------------------------------------------
