@@ -6,6 +6,7 @@ import random
 import string
 import time
 import shutil
+from contextlib import contextmanager
 
 from commands.command       import *
 from commands.vsbuild       import *
@@ -65,22 +66,14 @@ class Ue3BuildCommand(Command):
             log_error("Error building UBT")
             return False
 
-        if arguments.generate_version_file:
-            version_file_cl = checkout_and_generate_version_file()
-
-        success = True
-        for platform in platforms:
-            if platform.lower() == 'win64':
-                if not self._build_editor_csharp(context):
-                    return False
-            for configuration in configurations:
-                if not self._build(context, platform, configuration):
-                    success = False
-                    break
-
-        if version_file_cl is not None:
-            if not p4_revert_changelist(version_file_cl) or not p4_delete_changelist(version_file_cl):
-                log_warning("Unable to revert version file CL {0}".format(version_file_cl))
+        with generate_version_file():
+            for platform in platforms:
+                if platform.lower() == 'win64':
+                    if not self._build_editor_csharp(context):
+                        return False
+                for configuration in configurations:
+                    if not self._build(context, platform, configuration):
+                        return False
 
         return success
 
@@ -133,18 +126,15 @@ class Ue3BuildCommand(Command):
         return self._run_sub_command(context, VsBuildCommand(), vs_build_args)
 
 #---------------------------------------------------------------------------
-def checkout_and_generate_version_file():
+@contextmanager
+def generate_version_file():
      version_file_format    = "#define SEE_ONLINE_SUITE_BUILD_ID \"{0}@%Y-%m-%dT%H:%M:%S.000Z@{1}-v4\"\n#define DNE_FORCE_USE_ONLINE_SUITE 1";
      machine_name           = socket.gethostname()
      random_character       = random.choice(string.ascii_lowercase)
      version_file_content   = version_file_format.format(random_character, machine_name)
      version_file_content   = time.strftime(version_file_content, time.gmtime())
 
-     cl_number = p4_edit_in_changelist("Version file checkout", VERSION_FILE_PATH)
-
-     if cl_number is None:
-         return None
-
-     write_file_content(VERSION_FILE_PATH, version_file_content)
-
-     return cl_number
+     with PerforceTransaction("Version File Checkout", VERSION_FILE_PATH) as transaction:
+        transaction.abort()
+        write_file_content(VERSION_FILE_PATH, version_file_content)
+        yield
