@@ -75,7 +75,7 @@ class Ue3BuildCommand(Command):
                     if not self._build(context, platform, configuration):
                         return False
 
-        return success
+        return True
 
     #-------------------------------------------------------------------------------
     def _build(self, context, platform, configuration):
