@@ -54,6 +54,7 @@ class PrepareFarmWorskpaceCommand(Command):
         if not p4_clean_workspace():
             return False
 
+        return True
 
 
 
