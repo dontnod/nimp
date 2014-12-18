@@ -1,5 +1,4 @@
-__all__ = ["clean_workspace",
-           "command",
+__all__ = ["command",
            "bink",
            "build_wwise_banks",
            "msbuild",
@@ -11,5 +10,6 @@ __all__ = ["clean_workspace",
            "ue3_deploy_tagset",
            "ue3_ship",
            "publish_symbols",
+           "prepare_farm_workspace",
            "vsbuild"]
 

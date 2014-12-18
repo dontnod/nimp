@@ -21,15 +21,23 @@ from utilities.processes    import *
 # TODO : Remove all non-versionned files from the repository
 # TODO : Add Clean Wwise cache
 
+FARM_P4_PORT     = "192.168.1.2:1666"
+FARM_P4_USER     = "CIS-CodeBuilder"
+FARM_P4_PASSWORD = "CIS-CodeBuilder"
+
 #-------------------------------------------------------------------------------
-class CleanWorkspaceCommand(Command):
+class PrepareFarmWorskpaceCommand(Command):
 
     def __init__(self):
-        Command.__init__(self, 'clean-workspace', 'Cleans current workspace')
+        Command.__init__(self, 'prepare-farm-workspace', 'Prepares a farm workspace.')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
         settings = context.settings
+
+        parser.add_argument('p4_client',
+                            metavar = '<CLIENT_NAME>',
+                            type    = str)
 
         parser.add_argument('--revert-only',
                             help    = 'Don\'t clean unversionned files, only revert pending changelists',
@@ -39,7 +47,13 @@ class CleanWorkspaceCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, context):
-        settings = context.settings
         arguments = context.arguments
+        if not p4_create_config_file(FARM_P4_PORT, FARM_P4_USER, FARM_P4_PASSWORD, arguments.p4_client):
+            return False
 
-        return p4_clean_workspace()
+        if not p4_clean_workspace():
+            return False
+
+
+
+

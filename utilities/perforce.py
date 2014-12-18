@@ -11,6 +11,7 @@ import threading
 import time
 import tempfile
 
+from utilities.files     import *
 from utilities.processes import *
 from utilities.paths     import *
 
@@ -39,7 +40,7 @@ def p4_add(cl_number, path, pattern = '*'):
 
 #-------------------------------------------------------------------------------
 def p4_clean_workspace():
-    log_notification("Reverting all opened files")
+    log_notification("Reverting all opened files in workspace {0}", p4_get_workspace())
     result = _p4_run_command(".", ["p4", "-z", "tag", "revert", "//..."]) is not None
 
     pending_changelists = p4_get_pending_changelists()
@@ -49,6 +50,21 @@ def p4_clean_workspace():
         result = result and p4_delete_changelist(cl_number)
 
     return result
+
+#-------------------------------------------------------------------------------
+def p4_create_config_file(port, user, password, client):
+    log_notification("Creating .p4config file")
+    p4_config_template = "\
+P4USER={user}\n\
+P4PORT={port}\n\
+P4PASSWD={password}\n\
+P4CLIENT={client}\n"
+    p4_config = p4_config_template.format(port     = port,
+                                          user     = user,
+                                          password = password,
+                                          client   = client)
+
+    return write_file_content(".p4config", p4_config)
 
 #-------------------------------------------------------------------------------
 def p4_delete_changelist(cl_number):

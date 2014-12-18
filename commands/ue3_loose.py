@@ -55,16 +55,11 @@ class Ue3LooseFilesCommand(Command):
     def run(self, context):
         settings                    = context.settings
         arguments                   = context.arguments
-        current_workspaces          = p4_get_workspaces_containing_path(".")
         shipping_directory_template = settings.shipping_directory_template
         cookersync_tagset           = shipping_cookersync_tagset
         cookersync_path             = cookersync_path
 
-        if len(current_workspaces) == 0:
-            log_error("Unable to find current workspace, can't determine last synced changelist")
-            return False
-
-        changelist  = p4_get_last_synced_changelist(current_workspaces[0])
+        changelist  = p4_get_last_synced_changelist()
 
         shipping_directory   = shipping_directory_template.format(platform   = arguments.platform,
                                                                   changelist = changelist,
