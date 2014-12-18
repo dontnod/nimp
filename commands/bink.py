@@ -183,11 +183,6 @@ def update_video(context):
     binkc_path  = get_binkc_path(settings)
     input       = os.path.join(settings.binks_avi_directory, bink_name, "{0}.Avi".format(bink_name))
     output      = os.path.join(settings.high_res_binks_directory, "{0}.bik".format(bink_name))
-    worskpaces  = p4_get_workspaces_containing_path(settings.high_res_binks_directory)
-
-    if len(worskpaces) == 0:
-        log_error("Unable to match file {0} to an existing workspace.", output)
-        return False
 
     input   = input.replace("/", "\\")
     output  = output.replace("/", "\\")

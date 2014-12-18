@@ -45,7 +45,6 @@ class BuildWwiseBanksCommand(Command):
         platform_dir     = arguments.platform if arguments.platform.lower() != "xbox360" else "X360"
         wwise_banks_path = os.path.join(settings.wwise_banks_path, platform_dir)
         cl_name          = "[CIS] Updated {0} Wwise Banks".format(arguments.platform)
-        workspace        = p4_get_first_workspace_containing_path(wwise_banks_path)
         wwise_project    = settings.wwise_project
         wwise_cli        = os.path.join(os.getenv('WWISEROOT'),  "Authoring\\x64\\Release\\bin\\WWiseCLI.exe")
         wwise_command    = [wwise_cli,
@@ -57,7 +56,6 @@ class BuildWwiseBanksCommand(Command):
         result = True
         with PerforceTransaction(cl_name,
                                  wwise_banks_path,
-                                 workspace = workspace,
                                  submit_on_success = arguments.checkin) as transaction:
             if not call_process(".", wwise_command):
                 result = False

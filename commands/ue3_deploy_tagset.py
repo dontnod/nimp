@@ -34,11 +34,6 @@ class Ue3DeployTagsetCommand(Command):
                             metavar = '<source>',
                             type    = str)
 
-        parser.add_argument('--workspace',
-                            help    = 'Workspace to use to checkout versionned files',
-                            metavar = '<workspace>',
-                            type    = str)
-
         return True
 
     #---------------------------------------------------------------------------
@@ -48,7 +43,7 @@ class Ue3DeployTagsetCommand(Command):
         source_directory    = arguments.source
 
         result = True
-        with PerforceTransaction("Binaries checkout", workspace = arguments.workspace) as transaction:
+        with PerforceTransaction("Binaries checkout") as transaction:
             for root, directories, files in os.walk(source_directory, topdown=False):
                 for file in files:
                     source_file     = os.path.join(root, file)

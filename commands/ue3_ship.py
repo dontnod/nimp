@@ -46,26 +46,13 @@ class Ue3ShipCommand(Command):
                             metavar = '<configuration>',
                             type    = str,
                             choices = ["test", "final"])
-
-        parser.add_argument('changelist',
-                            help    = 'Ship using this changelist',
-                            metavar = '<changelist>',
-                            type    = str)
         return True
 
     #--------------------------------------------------------------------------
     def run(self, context):
         settings            = context.settings
         arguments           = context.arguments
-        current_workspaces  = p4_get_workspaces_containing_path("ExampleGame")
         changelist          = arguments.changelist
-
-        if len(current_workspaces) == 0:
-            log_error("Unable to find current workspace, can't determine last synced changelist")
-            return False
-
-        if not p4_sync(current_workspaces[0], changelist):
-            return False
 
         for episode in EPISODES:
            if not self._ship_episode(context, changelist, episode, episode != "Episode01"):
