@@ -95,10 +95,10 @@ class Ue3BuildCommand(Command):
     def _build_editor_csharp(self, context):
         log_notification("Building Editor C# libraries")
 
-        if not self._build_project(context, 'DNEEdCSharp/DNEEdCSharp.csproj', 'Release'):
+        if not self._build_project(context, 'UnrealEdCSharp/UnrealEdCSharp.csproj', 'Release'):
             return False
 
-        if not self._build_project(context, 'UnrealEdCSharp/UnrealEdCSharp.csproj', 'Release'):
+        if not self._build_project(context, 'DNEEdCSharp/DNEEdCSharp.csproj', 'Release'):
             return False
 
         dll_target = os.path.join('Binaries/Win64/Editor/Release')
