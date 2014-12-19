@@ -69,7 +69,7 @@ class Ue3BuildCommand(Command):
         with generate_version_file():
             for platform in platforms:
                 if platform.lower() == 'win64':
-                    if not self._build_editor_csharp(context):
+                    if not self._build_editor_csharp(context, configuration):
                         return False
                 for configuration in configurations:
                     if not self._build(context, platform, configuration):
@@ -92,7 +92,7 @@ class Ue3BuildCommand(Command):
         platform_project = dict_vcxproj[platform.lower()]
         return self._build_project(context, platform_project, configuration, 'build')
 
-    def _build_editor_csharp(self, context):
+    def _build_editor_csharp(self, context, configuration):
         log_notification("Building Editor C# libraries")
 
         editor_config = 'Debug' if configuration.lower() == "debug" else 'Release'
