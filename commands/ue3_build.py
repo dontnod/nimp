@@ -105,6 +105,8 @@ class Ue3BuildCommand(Command):
         dll_source = os.path.join('Binaries/Editor/Release')
 
         try:
+            if not os.path.exists(dll_target):
+                mkdir(dll_target)
             shutil.copy(os.path.join(dll_source, 'DNEEdCSharp.dll'), dll_target)
             shutil.copy(os.path.join(dll_source, 'DNEEdCSharp.pdb'), dll_target)
             shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.dll'), dll_target)
