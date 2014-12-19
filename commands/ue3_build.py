@@ -68,10 +68,10 @@ class Ue3BuildCommand(Command):
 
         with generate_version_file():
             for platform in platforms:
-                if platform.lower() == 'win64':
-                    if not self._build_editor_csharp(context, configuration):
-                        return False
                 for configuration in configurations:
+                    if platform.lower() == 'win64':
+                        if not self._build_editor_csharp(context, configuration):
+                            return False
                     if not self._build(context, platform, configuration):
                         return False
 
