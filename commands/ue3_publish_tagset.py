@@ -55,6 +55,15 @@ class Ue3PublishTagsetCommand(Command):
                             help    = 'DLC to cook',
                             metavar = '<dlcname>')
 
+        parser.add_argument('-g',
+                            '--generic-var',
+                            help    = 'Generic Key / Value pair configuration value to pass to CookerSync',
+                            nargs   = 2,
+                            action  ='append',
+                            metavar = '<key> = <value>',
+                            default = [])
+
+
         return True
 
     #---------------------------------------------------------------------------
@@ -62,7 +71,7 @@ class Ue3PublishTagsetCommand(Command):
     def run(self, context):
         settings        = context.settings
         arguments       = context.arguments
-        command_line    = [COOKERSYNC_PATH, arguments.game,"-x", arguments.tagset, "-f", "-final", "-crc", "-l", "-b", "."]
+        command_line    = [COOKERSYNC_PATH, arguments.game,"-x", arguments.tagset, "-config-file", "DNE_CookerSync.xml", "-f", "-final", "-crc", "-l", "-b", "."]
         platform        = arguments.platform
 
         if platform is not None:
@@ -72,12 +81,16 @@ class Ue3PublishTagsetCommand(Command):
                 platform = 'PCConsole'
             command_line = command_line + [ "-p", platform ]
 
+        for key, value in arguments.generic_var:
+            command_line = command_line + ["-var", "{0}={1}".format(key, value)]
+
         for language in arguments.lang:
             command_line = command_line + ["-r", language]
 
         dlcname = arguments.dlcname
         if dlcname is not None:
             command_line = command_line + ["-dlcname", dlcname]
+
 
         command_line = command_line + [arguments.destination]
 
