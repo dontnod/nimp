@@ -63,7 +63,6 @@ class Ue3PublishTagsetCommand(Command):
                             metavar = '<key> = <value>',
                             default = [])
 
-
         return True
 
     #---------------------------------------------------------------------------
@@ -90,7 +89,6 @@ class Ue3PublishTagsetCommand(Command):
         dlcname = arguments.dlcname
         if dlcname is not None:
             command_line = command_line + ["-dlcname", dlcname]
-
 
         command_line = command_line + [arguments.destination]
 
