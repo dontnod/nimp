@@ -34,6 +34,10 @@ class Ue3DeployTagsetCommand(Command):
                             metavar = '<source>',
                             type    = str)
 
+        parser.add_argument('--latest',
+                            help    = 'Deploy latest version found',
+                            action  = "store_true",
+                            default = False)
         return True
 
     #---------------------------------------------------------------------------

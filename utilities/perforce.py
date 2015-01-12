@@ -252,7 +252,6 @@ def _p4_run_command(directory, command, input = None, log_errors = True):
         if log_errors:
             log_error("Error while running perforce command {0} : {1}", " ".join(command), error)
         return None
-    log_verbose(output)
     return output
 
 #-------------------------------------------------------------------------------
