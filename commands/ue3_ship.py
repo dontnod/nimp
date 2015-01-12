@@ -18,8 +18,8 @@ from utilities.processes    import *
 
 COOKERSYNC_PATH                = "Binaries/Cookersync.exe"
 SHIPPED_LANGUAGES              = ['INT', 'FRA']
-LOOSE_FILES_DIRECTORY_TEMPLATE = 'S:\\CIS\\Shipping\\LIS-{platform}-%Y%m%d-{changelist}-{build_type}\\Loose\\{episode}';
-PACKAGES_FILES_TEMPLATE        = 'S:\\CIS\\Shipping\\LIS-{platform}-%Y%m%d-{changelist}-{build_type}\\Packages\\{episode}';
+LOOSE_FILES_DIRECTORY_TEMPLATE = '\\\\build\\ship\\LIS-{platform}-%Y%m%d-{changelist}-{build_type}\\Loose\\{episode}';
+PACKAGES_FILES_TEMPLATE        = '\\\\build\\ship\\LIS-{platform}-%Y%m%d-{changelist}-{build_type}\\Packages\\{episode}';
 EPISODES                       = ["Episode01", "Episode02", "Episode03", "Episode04", "Episode05"]
 
 #--------------------------------------------------------------------------------
@@ -32,10 +32,6 @@ class Ue3ShipCommand(Command):
     def configure_arguments(self, context, parser):
         settings = context.settings
 
-        parser.add_argument('game',
-                            metavar = '<game>',
-                            type    = str)
-
         parser.add_argument('platform',
                             help    = 'Ship this platform',
                             metavar = '<platform>',
@@ -46,6 +42,17 @@ class Ue3ShipCommand(Command):
                             metavar = '<configuration>',
                             type    = str,
                             choices = ["test", "final"])
+
+        parser.add_argument('-r',
+                            '--revision',
+                            help    = 'Revision',
+                            metavar = '<revision>')
+
+        parser.add_argument('-d',
+                            '--dlc',
+                            help    = 'Dlc to cook',
+                            metavar = '<dlc_nqmd>',
+                            default = None)
         return True
 
     #--------------------------------------------------------------------------
@@ -53,43 +60,27 @@ class Ue3ShipCommand(Command):
         settings            = context.settings
         arguments           = context.arguments
         changelist          = arguments.changelist
+        dlc                 = arguments.dlc
 
-        for episode in EPISODES:
-           if not self._ship_episode(context, changelist, episode, episode != "Episode01"):
-               return False
-
-        return True
-
-    #--------------------------------------------------------------------------
-    def _build(self, context, platform):
-        pass
+        return self._ship_episode(context, changelist, dlc, dlc is not None)
 
     #--------------------------------------------------------------------------
     def _ship_episode(self, context, changelist, episode, is_dlc):
         arguments           = context.arguments
-        game                = arguments.game
+        game                = settings.game
         platform            = arguments.platform
         configuration       = arguments.configuration
-
-        log_notification("Cooking episode {0}", episode)
-        self._cook_episode(context, game, platform, configuration, episode, is_dlc)
 
         loose_files_directory   = format_directory(LOOSE_FILES_DIRECTORY_TEMPLATE, platform, episode, changelist, configuration)
         packages_directory      = format_directory(PACKAGES_FILES_TEMPLATE, platform, episode, changelist, configuration)
 
         sync_loose_files(game, platform, episode, loose_files_directory)
-        generate_chunk(loose_files_directory)
-        make_xvc(loose_files_directory, packages_directory)
+
+        if platform.lower() == 'xboxone':
+            generate_chunk(loose_files_directory)
+            make_xvc(loose_files_directory, packages_directory)
 
         return True
-
-    def _cook_episode(self, context, game, platform, configuration, episode, is_dlc):
-        """Calls ue3-cook command"""
-        cook_arguments =  ["{0}.umap".format(episode), "--game", game, "-c", configuration, "-p", platform, "--lang"] + SHIPPED_LANGUAGES
-        if is_dlc:
-            cook_arguments += ["--dlcname", episode]
-
-        self._run_sub_command(context, Ue3CookCommand(), cook_arguments)
 
 #-------------------------------------------------------------------------------
 def format_directory(template, platform, episode, changelist, build_type):
@@ -114,7 +105,7 @@ def sync_loose_files(game, platform, episode, target_directory):
 
     call_cooker_sync(game, platform, "DneShip", target_directory, episode, "INT")
 
-    if episode is not "Episode01":
+    if episode is not "Episode01" and platform.lower() == 'xboxone':
         appmanifest_file = os.path.join("ExampleGame/Build/XboxOne/DLC", episode, "AppxManifest.xml")
         shutil.copyfile(appmanifest_file, target_directory)
 

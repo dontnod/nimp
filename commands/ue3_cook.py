@@ -25,17 +25,6 @@ class Ue3CookCommand(Command):
     def configure_arguments(self, context, parser):
         settings = context.settings
 
-        parser.add_argument('maps',
-                            metavar = '<map>',
-                            type    = str,
-                            nargs   = '+')
-
-        parser.add_argument('-g',
-                            '--game',
-                            metavar = '<game>',
-                            type    = str,
-                            default = settings.default_ue3_game)
-
         parser.add_argument('--noexpansion',
                             help    = 'Do not expand map dependencies',
                             default = False,
@@ -55,16 +44,10 @@ class Ue3CookCommand(Command):
                             nargs   = '+',
                             default = settings.default_ue3_platforms)
 
-        parser.add_argument('-l',
-                            '--lang',
-                            help    = 'languages to cook',
-                            metavar = '<lang>',
-                            nargs   = '+',
-                            default = "INT")
-
-        parser.add_argument('--dlcname',
+        parser.add_argument('--dlc',
                             help    = 'DLC to cook',
-                            metavar = '<dlcnamd>')
+                            metavar = '<dlcname>',
+                            default = 'default')
         return True
 
     #---------------------------------------------------------------------------
@@ -74,14 +57,13 @@ class Ue3CookCommand(Command):
         arguments = context.arguments
 
         # Import arguments
-
-        game = arguments.game
-        maps = arguments.maps
-        dlcname = arguments.dlcname
-        platforms = arguments.platform
-        configurations = arguments.configuration
-        noexpansion = arguments.noexpansion
-        lang = arguments.lang
+        game            = settings.game
+        map             = settings.cook_maps[arguments.dlc]
+        dlcname         = arguments.dlc
+        platforms       = arguments.platform
+        configurations  = arguments.configuration
+        noexpansion     = arguments.noexpansion
+        lang            = settings.languages
 
         # Validate environment
 
@@ -96,13 +78,13 @@ class Ue3CookCommand(Command):
         cmdline = [ cooker_path, 'cookpackages', '-unattended', '-nopauseonsuccess' ]
         cmdline += [ '-multilanguagecook=' + '+'.join(lang)  ]
 
-        if dlcname is not None:
+        if dlcname is not 'default':
             cmdline += ["-dlcname={0}".format(dlcname)]
 
         if noexpansion:
             cmdline += [ '-noexpansion' ]
         for cooker_args in _enumerate_cooker_args(configurations, platforms):
-            if not call_process(cooker_dir, cmdline + cooker_args + maps, nimp_tag_output_filter):
+            if not call_process(cooker_dir, cmdline + cooker_args + [map], nimp_tag_output_filter):
                 return False
         return True
 

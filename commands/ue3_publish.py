@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#i;s. -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
 # Imports
@@ -18,15 +18,11 @@ COOKERSYNC_PATH  = "Binaries/Cookersync.exe"
 class Ue3PublishTagsetCommand(Command):
 
     def __init__(self):
-        Command.__init__(self, "ue3-publish-tagset", "Publishes a zipped tagset to a shared repository")
+        Command.__init__(self, "ue3-publish", "Publishes a zipped tagset to a shared repository")
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
         settings = context.settings
-
-        parser.add_argument('game',
-                            metavar = '<game>',
-                            type    = str)
 
         parser.add_argument('tagset',
                             help    = 'Publish this tagset',
@@ -70,7 +66,7 @@ class Ue3PublishTagsetCommand(Command):
     def run(self, context):
         settings        = context.settings
         arguments       = context.arguments
-        command_line    = [COOKERSYNC_PATH, arguments.game,"-x", arguments.tagset, "-config-file", "DNE_CookerSync.xml", "-f", "-final", "-crc", "-l", "-b", "."]
+        command_line    = [COOKERSYNC_PATH, settings.game,"-x", arguments.tagset, "-config-file", "DNE_CookerSync.xml", "-f", "-final", "-crc", "-l", "-b", "."]
         platform        = arguments.platform
 
         if platform is not None:

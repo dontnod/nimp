@@ -23,7 +23,7 @@ COOKERSYNC_PATH  = "Binaries/Cookersync.exe"
 class Ue3DeployTagsetCommand(Command):
     #---------------------------------------------------------------------------
     def __init__(self):
-        Command.__init__(self, "ue3-deploy-tagset", "Deploy a previously zipped tagset locally")
+        Command.__init__(self, "ue3-deploy", "Deploy a previously zipped tagset locally")
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
