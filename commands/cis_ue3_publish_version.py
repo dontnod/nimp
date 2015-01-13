@@ -10,7 +10,7 @@ FARM_P4_USER     = "CIS-CodeBuilder"
 FARM_P4_PASSWORD = "CIS-CodeBuilder"
 
 #-------------------------------------------------------------------------------
-class CisUe3BuildCommand(CisCommand):
+class CisUe3PublishVersion(CisCommand):
     abstract = 0
     def __init__(self):
         CisCommand.__init__(self, 'cis-ue3-publish-version', 'Gets built binaries and publishes an internal version.')
