@@ -13,6 +13,12 @@ from utilities.deployment   import *
 
 #---------------------------------------------------------------------------
 def ue3_publish_binaries(destination_format, project, game, revision, platform, configuration = None):
+    if platform.lower() == "XboxOne":
+        platform = "Dingo"
+
+    elif platform.lower() == "PS4":
+        platform = "Orbis"
+
     publisher = FilePublisher(destination_format, project, game, platform, configuration, dlc = None, language = None, revision = revision)
     publisher.delete_destination()
 

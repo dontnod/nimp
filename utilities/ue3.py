@@ -31,7 +31,7 @@ def ue3_build(sln_file, platform, configuration, vs_version, generate_version_fi
                 return False
 
         if not _ue3_build_game(sln_file, platform, configuration, vs_version):
-            return false
+            return False
 
     return True
 
