@@ -9,6 +9,8 @@ import os.path
 import tempfile;
 import shutil
 import stat
+import glob
+import re
 
 from utilities.perforce     import *
 from utilities.files        import *
@@ -38,6 +40,44 @@ def deploy(source, target):
                 shutil.copy(source_file, local_file)
     return True
 
+#---------------------------------------------------------------------------
+def get_latest_available_revision(version_directory_format, platforms, **kwargs):
+    platforms_revisions = {}
+    all_revisions       = []
+
+    for platform in platforms:
+        platforms_revisions[platform] = []
+
+        kwargs['revision'] = '*'
+        kwargs['platform'] = platform
+        version_directory_format = version_directory_format.replace('\\', '/')
+        version_directories_glob = version_directory_format.format(**kwargs)
+
+        for version_directory in glob.glob(version_directories_glob):
+            kwargs['revision'] = '([0-9]*)'
+            version_directory  = version_directory.replace('\\', '/')
+
+            version_regex      = version_directory_format.format(**kwargs)
+
+            version_match = re.match(version_regex, version_directory)
+            version_cl    = version_match.group(1)
+
+            platforms_revisions[platform].append(version_cl)
+            all_revisions.append(version_cl)
+            pass
+
+    all_revisions.sort(reverse=True)
+
+    for revision in all_revisions:
+        available_for_all_platforms = True
+        for platform in platforms:
+            if not revision in platforms_revisions[platform]:
+                available_for_all_platforms = False
+                break
+        if available_for_all_platforms:
+            return revision
+
+    return None
 #------------------------------------------------------------------------------
 class FilePublisher:
     def __init__(self, destination, project, game, platform, configuration, dlc, language, revision):

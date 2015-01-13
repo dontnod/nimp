@@ -85,6 +85,18 @@ def ue3_publish_version(destination, project, game, revision, platform):
         return False
 
     return True
+
+#---------------------------------------------------------------------------
+def ue3_deploy_version(source, project, game, revision, platform):
+    source = source.format(project          = project,
+                           game             = game,
+                           revision         = revision,
+                           platform         = platform)
+
+    if not deploy(source, '.'):
+        return False
+    return True
+
 #---------------------------------------------------------------------------
 def _ue3_build_project(sln_file, project, configuration, vs_version, target = 'rebuild'):
     base_dir = 'Development/Src'
