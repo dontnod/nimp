@@ -6,6 +6,7 @@ import random
 import string
 import time
 import contextlib
+import shutil
 
 from utilities.build        import *
 from utilities.deployment   import *
@@ -34,8 +35,8 @@ def ue3_build(sln_file, platform, configuration, vs_version, generate_version_fi
     return True
 
 #---------------------------------------------------------------------------
-def ue3_publish_binaries(destination, project, game, revision = None, platform = None, configuration = None, dlc = None, language = None):
-    publisher = FilePublisher(destination, project, game, platform, configuration, dlc, language, revision)
+def ue3_publish_binaries(destination, project, game, revision, platform, configuration = None):
+    publisher = FilePublisher(destination, project, game, platform, configuration, dlc = None, language = None, revision = revision)
     publisher.delete_destination()
 
     if (platform == 'Win32' or platform == 'Win64') and (configuration == 'Release' or configuration is None):
@@ -54,14 +55,36 @@ def ue3_publish_binaries(destination, project, game, revision = None, platform =
         publisher.add("Binaries\\",                             ['*.xml', '*.bat', '*.dll', '*.exe.config', '*.exe'], recursive = False)
         publisher.add("Binaries\\Win64\\Editor\\Release",       ['*.*'], recursive = False)
 
-    if configuration is None or configuration == 'Release':
+    if configuration == 'Release':
         publisher.add("Binaries\\{platform}", ['{game}.*'], ['*.pdb', '*.map', '*.lib'], recursive = False)
 
-    if configuration is None or configuration != 'Release':
+    if configuration is not None and configuration != 'Release':
         publisher.add("Binaries\\{platform}\\", ['{game}-{platform}-{configuration}.*'], ['*.pdb', '*.map', '*.lib'])
+
+    if configuration is None:
+        publisher.add("Binaries\\{platform}\\", ['{game}*-*.*', '{game}.*'], ['*.pdb', '*.map', '*.lib'])
 
     return True
 
+#---------------------------------------------------------------------------
+def ue3_deploy_and_clean_binaries(source, project, game, revision, platform, configuration):
+    source = source.format(project          = project,
+                           game             = game,
+                           revision         = revision,
+                           platform         = platform,
+                           configuration    = configuration)
+
+    if not deploy(source, '.'):
+        return False
+    return True
+    #shutil.rmtree(source)
+
+#---------------------------------------------------------------------------
+def ue3_publish_version(destination, project, game, revision, platform):
+    if not ue3_publish_binaries(destination, project, game, revision, platform, None):
+        return False
+
+    return True
 #---------------------------------------------------------------------------
 def _ue3_build_project(sln_file, project, configuration, vs_version, target = 'rebuild'):
     base_dir = 'Development/Src'

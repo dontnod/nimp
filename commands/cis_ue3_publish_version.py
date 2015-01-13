@@ -12,7 +12,7 @@ FARM_P4_PASSWORD = "CIS-CodeBuilder"
 class CisUe3BuildCommand(CisCommand):
     abstract = 0
     def __init__(self):
-        CisCommand.__init__(self, 'cis-ue3-build', 'Build UE3 executable and publishes it to a shared directory')
+        CisCommand.__init__(self, 'cis-ue3-publish-version', 'Gets built binaries and publishes an internal version.')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
@@ -30,10 +30,10 @@ class CisUe3BuildCommand(CisCommand):
                             metavar = '<platform>')
 
         parser.add_argument('-c',
-                            '--configuration',
-                            help    = 'configuration to build',
-                            metavar = '<configuration>')
-
+                            '--configurations',
+                            help    = 'Configurations to deploy',
+                            metavar = '<platform>',
+                            nargs = '+')
         return True
 
     #---------------------------------------------------------------------------
@@ -41,15 +41,20 @@ class CisUe3BuildCommand(CisCommand):
         settings  = context.settings
         arguments = context.arguments
 
-        if not ue3_build(settings.solution_file, arguments.platform, arguments.configuration, settings.vs_version, True):
-            return False
+        for configuration in arguments.configurations:
+            if not ue3_deploy_and_clean_binaries(settings.cis_binaries_directory,
+                                                 settings.project_name,
+                                                 settings.game,
+                                                 arguments.revision,
+                                                 arguments.platform,
+                                                 configuration):
+                return False
 
-        if not ue3_publish_binaries(settings.cis_binaries_directory,
-                                    settings.project_name,
-                                    settings.game,
-                                    arguments.revision,
-                                    arguments.platform,
-                                    arguments.configuration):
+        if not ue3_publish_version(settings.cis_version_directory,
+                                   settings.project_name,
+                                   settings.game,
+                                   arguments.revision,
+                                   arguments.platform):
             return False
 
         return True
