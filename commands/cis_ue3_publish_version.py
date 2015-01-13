@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-from commands.cis_command   import *
-from utilities.ue3           import *
+from commands.cis_command       import *
+from utilities.ue3              import *
+from utilities.ue3_deployment   import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
 FARM_P4_USER     = "CIS-CodeBuilder"
@@ -41,20 +42,25 @@ class CisUe3BuildCommand(CisCommand):
         settings  = context.settings
         arguments = context.arguments
 
+        project  = settings.project_name
+        game     = settings.game
+        revision = arguments.revision
+        platform = arguments.platform
+
         for configuration in arguments.configurations:
-            if not ue3_deploy_and_clean_binaries(settings.cis_binaries_directory,
-                                                 settings.project_name,
-                                                 settings.game,
-                                                 arguments.revision,
-                                                 arguments.platform,
-                                                 configuration):
+            if not deploy(source,
+                          project          = project,
+                          game             = game,
+                          revision         = revision,
+                          platform         = platform,
+                          configuration    = configuration):
                 return False
 
-        if not ue3_publish_version(settings.cis_version_directory,
-                                   settings.project_name,
-                                   settings.game,
-                                   arguments.revision,
-                                   arguments.platform):
+        if platform.lower() == 'win64':
+            if not ue3_build_script(context):
+                return False
+
+        if not ue3_publish_version(settings.cis_version_directory, project, game, revision, platform):
             return False
 
         return True

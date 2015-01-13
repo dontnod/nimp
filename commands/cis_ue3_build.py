@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-from commands.cis_command   import *
-from utilities.ue3           import *
+from commands.cis_command       import *
+from utilities.ue3              import *
+from utilities.ue3_deployment   import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
 FARM_P4_USER     = "CIS-CodeBuilder"

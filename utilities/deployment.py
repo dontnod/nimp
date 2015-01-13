@@ -17,16 +17,21 @@ from utilities.files        import *
 
 
 #-------------------------------------------------------------------------------
-def deploy(source, target):
+def deploy(source_format, **args):
     """ Copy the content of the given source directory, checkouting local files
         if necesseray
     """
+    source = source_format.format(**args)
+
+    if not os.path.exists(source):
+        return False
+
     with PerforceTransaction("Binaries checkout") as transaction:
         for root, directories, files in os.walk(source, topdown=False):
             for file in files:
                 source_file     = os.path.join(root, file)
                 local_directory = os.path.relpath(root, source)
-                local_file      = os.path.join(target, local_directory, file)
+                local_file      = os.path.join('.', local_directory, file)
 
                 log_verbose("{0} => {1}", source_file, local_file)
 

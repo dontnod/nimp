@@ -14,6 +14,7 @@ from utilities.deployment   import *
 
 VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
 
+
 #---------------------------------------------------------------------------
 def ue3_build(sln_file, platform, configuration, vs_version, generate_version_file = False):
     result          = True
@@ -35,67 +36,36 @@ def ue3_build(sln_file, platform, configuration, vs_version, generate_version_fi
     return True
 
 #---------------------------------------------------------------------------
-def ue3_publish_binaries(destination, project, game, revision, platform, configuration = None):
-    publisher = FilePublisher(destination, project, game, platform, configuration, dlc = None, language = None, revision = revision)
-    publisher.delete_destination()
+def ue3_commandlet(game, name, args):
+    game_directory  = os.path.join('Binaries', 'Win64')
+    game_path       = os.path.join(game_directory, game + '.exe')
 
-    if (platform == 'Win32' or platform == 'Win64') and (configuration == 'Release' or configuration is None):
-        publisher.add("Binaries\\{platform}\\{game}.exe")
-        publisher.add("Binaries\\{platform}\\{game}.exe.config")
-        publisher.add("Binaries\\{platform}\\{game}.config")
-        publisher.add("Binaries\\{platform}\\{game}.com")
-        publisher.add("Binaries\\Xbox360\\Interop.XDevkit.1.0.dll")
-        publisher.add("Binaries\\PS3\\PS3Tools_x64.dll")
-        publisher.add("Binaries\\Xbox360\\Xbox360Tools_x64.dll")
-        publisher.add("Binaries\\Orbis\\OrbisTools_x64.dll")
-        publisher.add("Binaries\\Dingo\\DingoTools_x64.dll")
-
-        publisher.add("Binaries\\Win64\\Microsoft.VC90.CRT",    ['*.*'])
-        publisher.add("Binaries\\{platform}",                   ['*.dll'], recursive = False )
-        publisher.add("Binaries\\",                             ['*.xml', '*.bat', '*.dll', '*.exe.config', '*.exe'], recursive = False)
-        publisher.add("Binaries\\Win64\\Editor\\Release",       ['*.*'], recursive = False)
-
-    if configuration == 'Release':
-        publisher.add("Binaries\\{platform}", ['{game}.*'], ['*.pdb', '*.map', '*.lib'], recursive = False)
-
-    if configuration is not None and configuration != 'Release':
-        publisher.add("Binaries\\{platform}\\", ['{game}-{platform}-{configuration}.*'], ['*.pdb', '*.map', '*.lib'])
-
-    if configuration is None:
-        publisher.add("Binaries\\{platform}\\", ['{game}*-*.*', '{game}.*'], ['*.pdb', '*.map', '*.lib'])
-
-    return True
-
-#---------------------------------------------------------------------------
-def ue3_deploy_and_clean_binaries(source, project, game, revision, platform, configuration):
-    source = source.format(project          = project,
-                           game             = game,
-                           revision         = revision,
-                           platform         = platform,
-                           configuration    = configuration)
-
-    if not deploy(source, '.'):
-        return False
-    return True
-    #shutil.rmtree(source)
-
-#---------------------------------------------------------------------------
-def ue3_publish_version(destination, project, game, revision, platform):
-    if not ue3_publish_binaries(destination, project, game, revision, platform, None):
+    if not os.path.exists(game_path):
+        log_error('Unable to find game executable at {0}', game_path)
         return False
 
-    return True
+    cmdline = [ game_path, name, '-nopause', '-buildmachine', '-forcelogflush' ] + args
+
+    return call_process(game_directory, cmdline)
 
 #---------------------------------------------------------------------------
-def ue3_deploy_version(source, project, game, revision, platform):
-    source = source.format(project          = project,
-                           game             = game,
-                           revision         = revision,
-                           platform         = platform)
+def ue3_build_script(game):
+    return ue3_commandlet(context, 'make', ['-full', '-release']) and ue3_commandlet(context, 'make', [ '-full', '-final_release' ])
 
-    if not deploy(source, '.'):
-        return False
-    return True
+#---------------------------------------------------------------------------
+def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False):
+    commandlet_arguments =  [ '-multilanguagecook=' + '+'.join(languages), '-platform='+ platform ]
+
+    if dlc is not None:
+        commandlet_arguments += ["-dlcname={0}".format(dlc)]
+
+    if noexpansion:
+        commandlet_arguments += [ '-noexpansion' ]
+
+    if configuration in [ 'test', 'shipping' ]:
+        commandlet_arguments += [ '-cookforfinal' ]
+
+    return ue3_commandlet(game, 'cookpackages', commandlet_arguments)
 
 #---------------------------------------------------------------------------
 def _ue3_build_project(sln_file, project, configuration, vs_version, target = 'rebuild'):
