@@ -1,6 +1,7 @@
 __all__ = ["command",
            "bink",
            "build_wwise_banks",
+           "cis_ue3_build",
            "msbuild",
            "sha1",
            "ue3_build",

@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# imports
-#-------------------------------------------------------------------------------
 import os.path
 import re
 import shutil
@@ -10,13 +7,11 @@ import stat
 import string
 import tempfile;
 import time
+import fnmatch
 
 from   utilities.logging    import *
 from   utilities.units      import *
 
-#-------------------------------------------------------------------------------
-# Constants
-#-------------------------------------------------------------------------------
 READ_BUFFER_SIZE = 1024*1024*3
 
 #-------------------------------------------------------------------------------
@@ -135,52 +130,61 @@ def write_file_content(file_path, content, encoding = "utf8"):
     return True
 
 #-------------------------------------------------------------------------------
-def regex_list_files(base_directory, regex_path):
-    paths_stack = regex_path.split('/')
-    return recursive_regex_list_files(base_directory, paths_stack)
+def recursive_glob(directory, include = ['*'], exclude = []):
+    for root, directories, files in os.walk(directory):
+        for file in files:
+            match = False
+            for pattern in include:
+                if fnmatch.fnmatch(file, pattern):
+                    match = True
+                    break
+            for pattern in exclude:
+                if fnmatch.fnmatch(file, pattern):
+                    match = False
+                    break
+            if match:
+                yield os.path.join(root, file)
 
 #-------------------------------------------------------------------------------
-def recursive_regex_list_files(base_path, paths_stack):
-    if len(paths_stack) == 0:
-        assert(os.path.exists(base_path))
-        if os.path.isfile(base_path):
-            return [base_path]
-        elif os.path.isdir(base_path):
-            file_list = []
-            for (directory, sub_directories, files) in os.walk(base_path):
-                for file_it in files:
-                    file_name = os.path.join(directory, file_it)
-                    file_list.append(file_name)
-            return file_list
-
-    current_path        = paths_stack.pop(0)
-
-    drop_current_base_path = False
-
-    current_path_regex  = re.compile(current_path)
-    directory_list      = os.listdir(base_path)
-    file_list           = []
-
-    for item_it in directory_list:
-        if current_path_regex.match(item_it):
-            sub_path_base   = os.path.join(base_path, item_it)
-            sub_path_files  = recursive_regex_list_files(sub_path_base, paths_stack)
-            file_list.extend(sub_path_files)
-
-    paths_stack.insert(0, current_path)
-    return file_list
+def recursive_glob_copy(source, destination, include = ['*'], exclude = [], copy_callback = None):
+    for root, directories, files in os.walk(source):
+        for file in files:
+            source_file = os.path.join(root, file)
+            _copy_file_if_matching(source_file, destination, include, exclude, copy_callback)
 
 #-------------------------------------------------------------------------------
-def regex_delete_files(directory, pattern):
-    files_to_delete     = regex_list_files(directory, pattern)
-    deleted_files_count = 0
+def glob_copy(source, destination, include = ['*'], exclude = [], copy_callback = None):
+    for source_file in os.listdir(source):
+        source_file = os.path.join(source, source_file)
+        if os.path.isfile(source_file):
+            _copy_file_if_matching(source_file, destination, include, exclude, copy_callback)
 
-    start_progress(len(files_to_delete))
-    for file_to_delete in files_to_delete:
-        update_progress(deleted_files_count, "Deleting {0}".format(file_to_delete))
-        os.remove(file_to_delete)
-        deleted_files_count = deleted_files_count + 1
-    end_progress
+def _copy_file_if_matching(source, destination, include, exclude, copy_callback):
+    match = False
+    for pattern in include:
+        if fnmatch.fnmatch(os.path.basename(source), pattern):
+            match = True
+            break
+    for pattern in exclude:
+        if fnmatch.fnmatch(os.path.basename(source), pattern):
+            match = False
+            break
+
+    if not match:
+        return
+
+    target_file         = os.path.join(destination, source)
+    target_directory    = os.path.dirname(target_file)
+
+    log_verbose("{0} => {1}", source, target_file)
+
+    if not os.path.isdir(target_directory):
+        os.makedirs(target_directory)
+
+    shutil.copy(source, target_file)
+
+    if copy_callback is not None:
+        copy_callback(source, target_file)
 
 #-------------------------------------------------------------------------------
 def start_file_progress(file_size):

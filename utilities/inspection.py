@@ -101,6 +101,6 @@ def instanciate_types_suppress_doubles(module, type):
     module_attributes = dir(module)
     for attribute_name in  module_attributes:
         attribute_value = getattr(module, attribute_name)
-        if attribute_value != type and inspect.isclass(attribute_value) and issubclass(attribute_value, type):
+        if attribute_value != type and inspect.isclass(attribute_value) and (not hasattr(attribute_value, 'abstract') or not getattr(attribute_value, 'abstract')) and issubclass(attribute_value, type):
             result[attribute_value.__name__] = attribute_value()
     return result

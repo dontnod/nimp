@@ -29,10 +29,9 @@ class VsBuildCommand(Command):
                             metavar = '<solution>',
                             type    = str)
 
-        parser.add_argument('projects',
+        parser.add_argument('project',
                             metavar = '<project>',
-                            type    = str,
-                            nargs   = '*')
+                            type    = str)
 
         parser.add_argument('-V',
                             '--version',
@@ -41,24 +40,19 @@ class VsBuildCommand(Command):
                             default = None)
 
         parser.add_argument('-t',
-                             '--targets',
-                            help    = 'targets (build, clean, rebuild)',
-                            nargs   = '+',
+                             '--target',
+                            help    = 'target (build, clean, rebuild)',
                             default = 'build')
 
         parser.add_argument('-c',
                             '--configuration',
-                            help    = 'configurations to build',
-                            metavar = '<configuration>',
-                            nargs   = '+',
-                            default = settings.default_vsbuild_configurations)
+                            help    = 'configuration to build',
+                            metavar = '<configuration>')
 
         parser.add_argument('-p',
                             '--platform',
-                            help    = 'platforms to build',
-                            metavar = '<platform>',
-                            nargs   = '+',
-                            default = settings.default_vsbuild_platforms)
+                            help    = 'platform to build',
+                            metavar = '<platform>')
         return True
 
     #---------------------------------------------------------------------------
