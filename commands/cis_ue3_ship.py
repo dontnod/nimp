@@ -106,7 +106,7 @@ def _deploy_revisions(context):
                       project  = settings.project_name,
                       game     = settings.game,
                       revision = revision,
-                      platform = platform):
+                      platform = arguments.platform):
             return False
 
     return True
