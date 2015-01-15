@@ -21,6 +21,7 @@ def deploy(source_format, **args):
         if necesseray
     """
     source = source_format.format(**args)
+    log_notification("Deploying {0} locally", source)
 
     if not os.path.exists(source):
         return False
