@@ -58,6 +58,7 @@ class CisUe3PublishVersion(CisCommand):
 
         if platform.lower() == 'win64':
             if not ue3_build_script(context):
+                log_error("Error while building script")
                 return False
 
         if not ue3_publish_version(settings.cis_version_directory, project, game, revision, platform):
