@@ -50,7 +50,7 @@ def ue3_commandlet(game, name, args):
 
 #---------------------------------------------------------------------------
 def ue3_build_script(game):
-    return ue3_commandlet(context, 'make', ['-full', '-release']) and ue3_commandlet(context, 'make', [ '-full', '-final_release' ])
+    return ue3_commandlet(game, 'make', ['-full', '-release']) and ue3_commandlet(context, 'make', [ '-full', '-final_release' ])
 
 #---------------------------------------------------------------------------
 def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False):
