@@ -48,7 +48,7 @@ class CisUe3PublishVersion(CisCommand):
         platform = arguments.platform
 
         for configuration in arguments.configurations:
-            if not deploy(source,
+            if not deploy(settings.cis_binaries_directory,
                           project          = project,
                           game             = game,
                           revision         = revision,
