@@ -54,11 +54,11 @@ class CisUe3PublishVersion(CisCommand):
                           revision         = revision,
                           platform         = platform,
                           configuration    = configuration):
-                log_error("Unable to compiled binaries for revision {0} and platform {1}, can't publish version.", revision)
+                log_error("Unable to compiled binaries for revision {0} and platform {1}, can't publish version.", revision, platform)
                 return False
 
         if platform.lower() == 'win64':
-            if not ue3_build_script(context):
+            if not ue3_build_script(game):
                 log_error("Error while building script")
                 return False
 
