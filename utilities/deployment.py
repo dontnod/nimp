@@ -15,7 +15,6 @@ import re
 from utilities.perforce     import *
 from utilities.files        import *
 
-
 #-------------------------------------------------------------------------------
 def deploy(source_format, **args):
     """ Copy the content of the given source directory, checkouting local files

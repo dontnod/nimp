@@ -49,7 +49,7 @@ class CisUe3BuildCommand(CisCommand):
                                     settings.project_name,
                                     settings.game,
                                     arguments.revision,
-                                    arguments.platform,
+                                    get_deployment_platform(arguments.platform),
                                     arguments.configuration):
             return False
 
