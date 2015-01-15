@@ -13,7 +13,7 @@ from utilities.deployment   import *
 
 #---------------------------------------------------------------------------
 def get_deployment_platform(platform):
-    if platform.lower() == "xboxOne":
+    if platform.lower() == "xboxone":
         return "Dingo"
     elif platform.lower() == "ps4":
         return "Orbis"
