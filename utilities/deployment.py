@@ -23,7 +23,6 @@ def deploy(source_format, **args):
     source = source_format.format(**args)
 
     if not os.path.exists(source):
-        log_error("Unable to find directory {0}, can't deploy.")
         return False
 
     with PerforceTransaction("Binaries checkout") as transaction:

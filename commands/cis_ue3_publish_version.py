@@ -54,6 +54,7 @@ class CisUe3PublishVersion(CisCommand):
                           revision         = revision,
                           platform         = platform,
                           configuration    = configuration):
+                log_error("Unable to compiled binaries for revision {0} and platform {1}, can't publish version.", revision)
                 return False
 
         if platform.lower() == 'win64':
