@@ -24,6 +24,7 @@ def deploy(source_format, **args):
     log_notification("Deploying {0} locally", source)
 
     if not os.path.exists(source):
+        log_notification("{0} directory was not found, can't deploy", source)
         return False
 
     with PerforceTransaction("Binaries checkout") as transaction:
