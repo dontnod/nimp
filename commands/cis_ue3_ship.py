@@ -81,7 +81,7 @@ class CisUe3Ship(CisCommand):
             return False
 
         if dlc is None:
-            if not ue3_publish_cook(cook_directory, project, game, platform, configuration, revision):
+            if not ue3_publish_cook(cook_directory, project, game, platform, configuration, revision, dlc):
                 return False
 
         return True

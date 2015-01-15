@@ -66,7 +66,7 @@ def ue3_publish_version(destination_format, project, game, revision, platform):
     return True
 
 #---------------------------------------------------------------------------
-def ue3_publish_cook(destination_format, project, game, platform, configuration, revision):
-    publisher = FilePublisher(destination_format, project, game, platform, configuration = configuration, revision = revision)
+def ue3_publish_cook(destination_format, project, game, platform, configuration, revision, dlc):
+    publisher = FilePublisher(destination_format, project, game, platform, configuration = configuration, revision = revision, dlc = dlc, language = None)
 
     return True
