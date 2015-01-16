@@ -69,7 +69,7 @@ def ue3_publish_cook(destination_format, project, game, platform, configuration,
     if platform.lower() == 'win32':
         platform = 'PCConsole'
 
-    suffix = 'Final' if configuration in ['test', 'final'] else ''
+    suffix = 'Final' if (configuration in ['test', 'final'] and dlc is None) else ''
 
     if dlc is None:
         cook_directory = '{game}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
