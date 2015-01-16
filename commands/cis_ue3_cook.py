@@ -55,8 +55,20 @@ class CisUe3CookComman(CisCommand):
         dlc              = arguments.dlc
         map              = settings.cook_maps[(dlc or 'default').lower()]
         configuration    = arguments.configuration
+
+        freezed_cook_directory = settings.freezed_cook_directory.format(platform = platform, project = project_name, configuration = configuration)
+        use_freezed_cook = False
+
+        if os.path.exists(freezed_cook_directory):
+            use_freezed_cook = True
+            main_cook_directory = freezed_cook_directory
+
+        if dlc is None and use_freezed_cook:
+            log_notification("Nothing to do, cook is frozen for this platform.")
+            return True
+
         binary_revision  = get_latest_available_revision(settings.cis_version_directory,
-                                                         platforms       = ['Win64', platform],
+                                                         platforms       = ['Win64'],
                                                          project         = project_name,
                                                          game            = game,
                                                          start_revision  =  arguments.revision)
@@ -68,8 +80,6 @@ class CisUe3CookComman(CisCommand):
 
         log_notification("Using binaries from revision {0}", arguments.revision)
 
-        cook_destination = settings.cis_cook_directory if dlc is None else settings.cis_dlc_cook_directory
-
         if not deploy(settings.cis_version_directory,
                       project  = project_name,
                       game     = game,
@@ -79,27 +89,34 @@ class CisUe3CookComman(CisCommand):
             return False
 
         if dlc is not None:
-            cook_revision = get_latest_available_revision(settings.cis_cook_directory,
-                                                          platforms       = [platform],
-                                                          project         = project_name,
-                                                          game            = game,
-                                                          configuration   = configuration,
-                                                          start_revision  =  arguments.revision)
-            if cook_revision is None:
-                log_error("Unable to find Episode 01 cook. Please build it.", arguments.revision)
-                return False
+            if not use_freezed_cook:
+                cook_revision = get_latest_available_revision(settings.cis_cook_directory,
+                                                              platforms       = [platform],
+                                                              project         = project_name,
+                                                              game            = game,
+                                                              configuration   = configuration,
+                                                              start_revision  =  arguments.revision)
 
-            log_notification("Using Episode 01 cook from revision {0}", revision)
-            if not deploy(settings.cis_cook_directory,
-                          project  = project_name,
-                          game     = game,
-                          revision = cook_revision,
-                          platform = platform):
+                if cook_revision is None:
+                    log_error("Unable to find Episode 01 cook. Please build it.", arguments.revision)
+                    return False
+
+                log_notification("Using main cook from revision {0}", revision)
+                main_cook_directory = settings.cis_cook_directory
+
+            if not deploy(main_cook_directory,
+                          project       = project_name,
+                          game          = game,
+                          revision      = revision,
+                          configuration = configuration,
+                          platform      = platform):
                 log_error("Unable to deploy Episode 01 cook")
                 return False
 
         if not ue3_cook(game, map, languages, dlc, platform, configuration):
             return False
+
+        cook_destination = settings.cis_cook_directory if dlc is None else settings.cis_dlc_cook_directory
 
         if not ue3_publish_cook(cook_destination, project_name, game, platform, configuration, revision, dlc):
             return False
