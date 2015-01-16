@@ -24,7 +24,7 @@ def deploy(source_format, **args):
     log_notification("Deploying {0} locally", source)
 
     if not os.path.exists(source):
-        log_notification("{0} directory was not found, can't deploy", source)
+        log_error("{0} directory was not found, can't deploy", source)
         return False
 
     with PerforceTransaction("Binaries checkout") as transaction:
@@ -47,7 +47,7 @@ def deploy(source_format, **args):
     return True
 
 #---------------------------------------------------------------------------
-def get_latest_available_revision(version_directory_format, platforms, **kwargs):
+def get_latest_available_revision(version_directory_format, platforms, start_revision, **kwargs):
     platforms_revisions = {}
     all_revisions       = []
 
@@ -80,21 +80,30 @@ def get_latest_available_revision(version_directory_format, platforms, **kwargs)
             if not revision in platforms_revisions[platform]:
                 available_for_all_platforms = False
                 break
-        if available_for_all_platforms:
+        if available_for_all_platforms and revision <= start_revision:
             return revision
 
     return None
 #------------------------------------------------------------------------------
 class FilePublisher:
-    def __init__(self, destination, project, game, platform, configuration, dlc, language, revision):
-        self._project       = project
-        self._game          = game
-        self._platform      = platform
-        self._configuration = configuration
-        self._dlc           = dlc
-        self._language      = language
-        self._revision      = revision
-        self._destination   = self._format(destination)
+    def __init__(self,
+                 destination,
+                 project,
+                 game,
+                 platform,
+                 configuration,
+                 dlc,
+                 language,
+                 revision):
+        self._project           = project
+        self._game              = game
+        self._configuration     = configuration
+        self._dlc               = dlc
+        self._language          = language
+        self._revision          = revision
+        self._platform          = platform
+        self._destination       = self._format(destination, False)
+
 
     def delete_destination(self):
         def _onerror(func, path, exc_info):
@@ -105,6 +114,15 @@ class FilePublisher:
                 raise
         if os.path.exists(self._destination):
             shutil.rmtree(self._destination, onerror = _onerror)
+
+    def _format(self, str, is_source = True):
+        return str.format(project          = self._project,
+                          game             = self._game,
+                          platform         = self._platform,
+                          configuration    = self._configuration,
+                          dlc              = self._dlc,
+                          language         = self._language,
+                          revision         = self._revision)
 
     def add(self, source, include = ['*'], exclude = [], recursive = True):
         for i in range(0, len(include)):
@@ -130,11 +148,3 @@ class FilePublisher:
                 recursive_glob_copy(source, self._destination, include, exclude, copy_callback = _copy_callback)
             else:
                 glob_copy(source, self._destination, include, exclude, copy_callback = _copy_callback)
-    def _format(self, str):
-        return str.format(project          = self._project,
-                          game             = self._game,
-                          platform         = self._platform,
-                          configuration    = self._configuration,
-                          dlc              = self._dlc,
-                          language         = self._language,
-                          revision         = self._revision)

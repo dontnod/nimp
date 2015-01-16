@@ -44,7 +44,7 @@ def ue3_commandlet(game, name, args):
         log_error('Unable to find game executable at {0}', game_path)
         return False
 
-    cmdline = [ game_path, name, '-nopause', '-buildmachine', '-forcelogflush' ] + args
+    cmdline = [ game_path, name ] + args + ['-nopause', '-buildmachine', '-forcelogflush']
 
     return call_process(game_directory, cmdline)
 
@@ -54,7 +54,12 @@ def ue3_build_script(game):
 
 #---------------------------------------------------------------------------
 def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False):
-    commandlet_arguments =  [ '-multilanguagecook=' + '+'.join(languages), '-platform='+ platform ]
+    commandlet_arguments =  [ map, '-full']
+
+    if configuration in [ 'test', 'final' ]:
+        commandlet_arguments += [ '-cookforfinal' ]
+
+    commandlet_arguments += ['-multilanguagecook=' + '+'.join(languages), '-platform='+ platform ]
 
     if dlc is not None:
         commandlet_arguments += ["-dlcname={0}".format(dlc)]
@@ -62,8 +67,6 @@ def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = F
     if noexpansion:
         commandlet_arguments += [ '-noexpansion' ]
 
-    if configuration in [ 'test', 'shipping' ]:
-        commandlet_arguments += [ '-cookforfinal' ]
 
     return ue3_commandlet(game, 'cookpackages', commandlet_arguments)
 
@@ -105,12 +108,12 @@ def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
 #-------------------------------------------------------------------------------
 def _ue3_build_game(sln_file, platform, configuration, vs_version):
     dict_vcxproj = {
-        'win32' :   'Windows/ExampleGame Win32.vcxproj',
-        'win64' :   'Windows/ExampleGame Win64.vcxproj',
-        'ps3' :     'PS3/ExampleGame PS3.vcxproj',
-        'ps4' :     'ExampleGame PS4/ExampleGame PS4.vcxproj',
+        'win32'   : 'Windows/ExampleGame Win32.vcxproj',
+        'win64'   : 'Windows/ExampleGame Win64.vcxproj',
+        'ps3'     : 'PS3/ExampleGame PS3.vcxproj',
+        'orbis'   : 'ExampleGame PS4/ExampleGame PS4.vcxproj',
         'xbox360' : 'Xenon/ExampleGame Xbox360.vcxproj',
-        'xboxone' : 'Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
+        'dingo'   : 'Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
     }
 
     platform_project = dict_vcxproj[platform.lower()]

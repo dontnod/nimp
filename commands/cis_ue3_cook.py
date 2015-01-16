@@ -10,10 +10,10 @@ FARM_P4_USER     = "CIS-CodeBuilder"
 FARM_P4_PASSWORD = "CIS-CodeBuilder"
 
 #-------------------------------------------------------------------------------
-class CisUe3Ship(CisCommand):
+class CisUe3CookComman(CisCommand):
     abstract = 0
     def __init__(self):
-        CisCommand.__init__(self, 'cis-ue3-ship', 'Cooks and publish a final version.')
+        CisCommand.__init__(self, 'cis-ue3-cook', 'Cooks game and publishes result.')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
@@ -47,5 +47,33 @@ class CisUe3Ship(CisCommand):
     def _cis_run(self, context):
         settings  = context.settings
         arguments = context.arguments
+
+        game             = settings.game
+        project_name     = settings.project_name
+        languages        = settings.languages
+        platform         = arguments.platform
+        dlc              = arguments.dlc
+        map              = settings.cook_maps[(dlc or 'default').lower()]
+        configuration    = arguments.configuration
+        revision         = arguments.revision or get_latest_available_revision(settings.cis_version_directory,
+                                                                               platforms       = ['Win64', platform],
+                                                                               project         = project_name,
+                                                                               game            = game,
+                                                                               start_revision  =  arguments.revision)
+        cook_destination = settings.cis_cook_directory if dlc is None else settings.cis_dlc_cook_directory
+
+        if not deploy(settings.cis_version_directory,
+                      project  = project_name,
+                      game     = game,
+                      revision = revision,
+                      platform = 'Win64'):
+            log_error("Unable to deploy Win64 binaries")
+            return False
+
+        if not ue3_cook(game, map, languages, dlc, platform, configuration):
+            return False
+
+        if not ue3_publish_cook(cook_destination, project_name, game, platform, configuration, revision, dlc):
+            return False
 
         return True

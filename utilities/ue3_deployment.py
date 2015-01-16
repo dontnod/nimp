@@ -12,17 +12,8 @@ from utilities.build        import *
 from utilities.deployment   import *
 
 #---------------------------------------------------------------------------
-def get_deployment_platform(platform):
-    if platform.lower() == "xboxone":
-        return "Dingo"
-    elif platform.lower() == "ps4":
-        return "Orbis"
-
-    return platform
-
-#---------------------------------------------------------------------------
 def ue3_publish_binaries(destination_format, project, game, revision, platform, configuration = None):
-    publisher = FilePublisher(destination_format, project, game, platform, configuration, dlc = None, language = None, revision = revision)
+    publisher = FilePublisher(destination_format, project = None, game = None, platform = None, configuration = None, dlc = None, language = None, revision = revision)
     publisher.delete_destination()
 
     if (platform == 'Win32' or platform == 'Win64'):
@@ -60,13 +51,31 @@ def ue3_publish_version(destination_format, project, game, revision, platform):
         return False
 
     publisher = FilePublisher(destination_format, project, game, platform, configuration = None, dlc = None, language = None, revision = revision)
-    publisher.add("{game}\\Script\\", ['*.*'])
-    publisher.add("{game}\\ScriptFinalRelease\\", ['*.*'])
+
+    if platform.lower() == 'win64':
+        publisher.add("{game}\\Script\\", ['*.*'])
+        publisher.add("{game}\\ScriptFinalRelease\\", ['*.*'])
 
     return True
 
 #---------------------------------------------------------------------------
 def ue3_publish_cook(destination_format, project, game, platform, configuration, revision, dlc):
     publisher = FilePublisher(destination_format, project, game, platform, configuration = configuration, revision = revision, dlc = dlc, language = None)
+
+    cook_platform = platform
+
+    if platform.lower() == 'win64':
+        platform = 'PC'
+    if platform.lower() == 'win32':
+        platform = 'PCConsole'
+
+    suffix = 'Final' if configuration in ['test', 'final'] else ''
+
+    if dlc is None:
+        cook_directory = '{game}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
+    else:
+        cook_directory = '{game}\\DLC\\{platform}\\{dlc}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
+
+    publisher.add(cook_directory)
 
     return True

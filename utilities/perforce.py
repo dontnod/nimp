@@ -246,11 +246,10 @@ class PerforceTransaction:
 
 #-------------------------------------------------------------------------------
 def _p4_run_command(directory, command, input = None, log_errors = True):
-    log_verbose("Running {0} in directory {1} with input {2}", " ".join(command), os.path.join(os.getcwd(), directory), input)
     result, output, error = capture_process_output(directory, command, input)
     if( result != 0):
         if log_errors:
-            log_error("Error while running perforce command {0} : {1}", " ".join(command), error)
+            log_verbose("Error running {0} in directory {1} with input {2}", " ".join(command), os.path.join(os.getcwd(), directory), input)
         return None
     return output
 
