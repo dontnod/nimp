@@ -54,6 +54,11 @@ def ue3_build_script(game):
 
 #---------------------------------------------------------------------------
 def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False):
+    if platform.lower() == 'win64':
+        platform = 'PC'
+    elif platform.lower() == 'win32':
+        platform = 'PCConsole'
+
     commandlet_arguments =  [ map, '-full']
 
     if configuration in [ 'test', 'final' ]:
