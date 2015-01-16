@@ -55,11 +55,11 @@ class CisUe3CookComman(CisCommand):
         dlc              = arguments.dlc
         map              = settings.cook_maps[(dlc or 'default').lower()]
         configuration    = arguments.configuration
-        revision         = arguments.revision or get_latest_available_revision(settings.cis_version_directory,
-                                                                               platforms       = ['Win64', platform],
-                                                                               project         = project_name,
-                                                                               game            = game,
-                                                                               start_revision  =  arguments.revision)
+        revision         = get_latest_available_revision(settings.cis_version_directory,
+                                                         platforms       = ['Win64', platform],
+                                                         project         = project_name,
+                                                         game            = game,
+                                                         start_revision  =  arguments.revision)
         cook_destination = settings.cis_cook_directory if dlc is None else settings.cis_dlc_cook_directory
 
         if not deploy(settings.cis_version_directory,

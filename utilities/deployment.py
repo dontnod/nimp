@@ -80,7 +80,7 @@ def get_latest_available_revision(version_directory_format, platforms, start_rev
             if not revision in platforms_revisions[platform]:
                 available_for_all_platforms = False
                 break
-        if available_for_all_platforms and revision <= start_revision:
+        if available_for_all_platforms and (start_revision is None or revision <= start_revision):
             return revision
 
     return None
