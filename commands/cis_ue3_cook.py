@@ -91,7 +91,7 @@ class CisUe3CookComman(CisCommand):
         if dlc is not None:
             if not use_freezed_cook:
                 cook_revision = get_latest_available_revision(settings.cis_cook_directory,
-                                                              platforms       = [platform],
+                                                              platforms       = ['Win64'],
                                                               project         = project_name,
                                                               game            = game,
                                                               configuration   = configuration,
