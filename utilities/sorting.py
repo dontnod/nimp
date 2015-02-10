@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# Imports
-#-------------------------------------------------------------------------------
 import copy
 
 from utilities.logging import *
 
 #-------------------------------------------------------------------------------
-# topological_sort
-def  topological_sort(node_list):
+def topological_sort(node_list):
     all_nodes  = _get_nodes_dictionary(node_list)
     if all_nodes is None:
         return None
@@ -29,7 +25,6 @@ def  topological_sort(node_list):
     return _get_node_list(sorted_nodes_names, all_nodes)
 
 #-------------------------------------------------------------------------------
-# topological_sort_node
 def topological_sort_node(node, node_list):
     all_nodes  = _get_nodes_dictionary(node_list)
     if all_nodes is None:
@@ -48,7 +43,6 @@ def topological_sort_node(node, node_list):
     return _get_node_list(sorted_nodes_names, all_nodes)
 
 #-------------------------------------------------------------------------------
-# _get_node_dictionary
 def _get_nodes_dictionary(node_list):
     node_dictionary = {}
     for node_it in node_list:
@@ -63,7 +57,6 @@ def _get_nodes_dictionary(node_list):
     return node_dictionary
 
 #-------------------------------------------------------------------------------
-# _get_node_list(node_name_list, node_dictionary
 def _get_node_list(node_name_list, node_dictionary):
     result = []
     for node_name_it in node_name_list:
@@ -72,7 +65,6 @@ def _get_node_list(node_name_list, node_dictionary):
     return result
 
 #-------------------------------------------------------------------------------
-# _recursive_topological_sort
 def _recursive_topological_sort(node,
                                 all_nodes,
                                 nodes_to_sort,

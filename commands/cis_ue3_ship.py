@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-from commands.cis_command       import *
+from commands._cis_command      import *
 from utilities.ue3              import *
 from utilities.ue3_deployment   import *
 
@@ -18,7 +17,6 @@ class CisUe3Ship(CisCommand):
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
         CisCommand.configure_arguments(self, context, parser)
-        settings = context.settings
 
         parser.add_argument('-r',
                             '--revision',
@@ -49,3 +47,4 @@ class CisUe3Ship(CisCommand):
         arguments = context.arguments
 
         return True
+

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-# capitalize_name
 def capitalize_name(name):
     name_parts      = name.split("_")
     upper_case_name = ""

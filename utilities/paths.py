@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# imports
-#-------------------------------------------------------------------------------
 import os
 import os.path
 import shutil
@@ -10,7 +7,6 @@ import sys
 import fnmatch
 
 from utilities.logging  import *
-from config.system      import *
 
 #-------------------------------------------------------------------------------
 def check_exists(path):
@@ -111,9 +107,3 @@ def get_main_path():
         return os.path.abspath(sys.modules['__main__'].__file__)
     except:
         return sys.executable
-
-#-------------------------------------------------------------------------------
-def get_python_path():
-    os_module_path          = os.path.dirname(os.__file__)
-    python_executable_path  = os.path.normpath(os.path.join(os_module_path, "../python"))
-    return executable_name(python_executable_path)

@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# imports
-#-------------------------------------------------------------------------------
 import inspect
 import os
 
 from utilities.sorting import *
 
-#-------------------------------------------------------------------------------
-# get_local_module_dependencies
-# -> Recursively resolves the import dependencies of a module
 #-------------------------------------------------------------------------------
 def get_local_module_dependencies(base_directory, module, modules_found = []):
     if modules_found is None:
@@ -35,14 +29,12 @@ def get_local_module_dependencies(base_directory, module, modules_found = []):
     return modules_found
 
 #-------------------------------------------------------------------------------
-# get_instances
 def get_instances(module, type):
     result = instanciate_types_suppress_doubles(module, type)
     return result.values()
 
 
 #-------------------------------------------------------------------------------
-# get_dependency_sorted_instances
 def get_dependency_sorted_instances(module, type):
     result = instanciate_types_suppress_doubles(module, type)
     if result is None:
@@ -52,7 +44,6 @@ def get_dependency_sorted_instances(module, type):
     return result
 
 #-------------------------------------------------------------------------------
-# get_dependency_sorted_instances_named
 def get_dependency_sorted_instances_named(module, type, instances_names):
     result          = []
     all_instances   = get_instances(module, type)
@@ -83,7 +74,6 @@ def get_dependency_sorted_instances_named(module, type, instances_names):
         return result
 
 #-------------------------------------------------------------------------------
-# instanciate_types_suppress_doubles
 def instanciate_types_suppress_doubles(module, type):
     result = {}
     module_dict = module.__dict__

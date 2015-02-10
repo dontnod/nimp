@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# Imports
-#-------------------------------------------------------------------------------
 import winreg;
 import os
 import sys
 
 #-------------------------------------------------------------------------------
-# get_key_value
 def get_key_value(root, key_path, sub_key_name):
     splitted_key_path   = key_path.split("\\")
     current_key         = root

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
 from datetime import date
 
 import os
@@ -16,11 +15,17 @@ from utilities.perforce     import *
 from utilities.files        import *
 
 #-------------------------------------------------------------------------------
-def deploy(source_format, **args):
+def publish(context, publish_callback, destination_format, **kwargs):
+    destination = context.format(destination_format)
+    publisher   = _FilePublisher(destination, context)
+    return publish_callback(publisher)
+
+#-------------------------------------------------------------------------------
+def deploy(context, source_format_key, **kwargs):
     """ Copy the content of the given source directory, checkouting local files
         if necesseray
     """
-    source = source_format.format(**args)
+    source = context.format(source_format_key, **kwargs)
     log_notification("Deploying {0} locally", source)
 
     if not os.path.exists(source):
@@ -84,26 +89,37 @@ def get_latest_available_revision(version_directory_format, platforms, start_rev
             return revision
 
     return None
-#------------------------------------------------------------------------------
-class FilePublisher:
-    def __init__(self,
-                 destination,
-                 project,
-                 game,
-                 platform,
-                 configuration,
-                 dlc,
-                 language,
-                 revision):
-        self._project           = project
-        self._game              = game
-        self._configuration     = configuration
-        self._dlc               = dlc
-        self._language          = language
-        self._revision          = revision
-        self._platform          = platform
-        self._destination       = self._format(destination, False)
 
+#------------------------------------------------------------------------------
+def deploy_latest_revision(context, directory_format, start_revision):
+    latest_revision  = context.call(get_latest_available_revision,
+                                    directory_format,
+                                    platforms       = [context.platform],
+                                    start_revision  =  start_revision)
+
+    if latest_revision is None:
+        log_error("No available revision found.")
+        return None
+
+    log_notification("Deploying revision {0}.", latest_revision)
+
+    if not deploy(context, directory_format, revision = latest_revision):
+        log_error("Unable to deploy revision.")
+        return None
+
+    return latest_revision
+
+#------------------------------------------------------------------------------
+class _FilePublisher(object):
+    def __init__(self, destination, context):
+        self._destination = destination
+        self._context     = context
+
+    def __getattr__(self, name):
+        try:
+            return object.__getattr__(self, name)
+        except AttributeError:
+            return getattr(self._context, name)
 
     def delete_destination(self):
         def _onerror(func, path, exc_info):
@@ -116,13 +132,7 @@ class FilePublisher:
             shutil.rmtree(self._destination, onerror = _onerror)
 
     def _format(self, str, is_source = True):
-        return str.format(project          = self._project,
-                          game             = self._game,
-                          platform         = self._platform,
-                          configuration    = self._configuration,
-                          dlc              = self._dlc,
-                          language         = self._language,
-                          revision         = self._revision)
+        return str.format(**vars(self._context))
 
     def add(self, source, include = ['*'], exclude = [], recursive = True):
         for i in range(0, len(include)):

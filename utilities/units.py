@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-# Constants
-#-------------------------------------------------------------------------------
 UNIT_SIZE_KEY           = "UnitSizeKey"
 UNIT_ABBREVIATION_KEY   = "UnitAbbreviationKey"
 UNIT_NB_DECIMALS_KEY    = "UnitNbDecimals"
 UNIT_MAXIMUM_SIZE       = "UnitMaximumSize"
 
-#-------------------------------------------------------------------------------
-# Units
 #-------------------------------------------------------------------------------
 OCTET_PER_SECOND_UNITS  = [ { UNIT_SIZE_KEY         : 1,
                               UNIT_ABBREVIATION_KEY : "o/s",
@@ -52,19 +48,13 @@ OCTET_UNITS             = [ { UNIT_SIZE_KEY         : 1,
                               UNIT_MAXIMUM_SIZE     : 1000000000000} ]
 
 #-------------------------------------------------------------------------------
-# format_octet
-#-------------------------------------------------------------------------------
 def format_octet(value, width = 7, alignement = ">"):
     return format_unit(value, OCTET_UNITS, width, alignement)
 
 #-------------------------------------------------------------------------------
-# format_octet_per_second
-#-------------------------------------------------------------------------------
 def format_octet_per_second(value, width = 7, alignement = ">"):
     return format_unit(value, OCTET_PER_SECOND_UNITS, width, alignement)
 
-#-------------------------------------------------------------------------------
-# format_unit
 #-------------------------------------------------------------------------------
 def format_unit(value, units, width=7, alignement = ">"):
     value = float(value)

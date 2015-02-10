@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# imports
-#-------------------------------------------------------------------------------
 import hashlib;
 import os
 
 from utilities.logging import *
 
-#-------------------------------------------------------------------------------
-# get_files_hash
 #-------------------------------------------------------------------------------
 def get_files_hash(pathes, file_path_format = None):
     result = []
@@ -29,8 +24,6 @@ def get_files_hash(pathes, file_path_format = None):
                     result = result + [[ formatted_file_path, get_file_sha1(file_path) ]]
     return result
 
-#-------------------------------------------------------------------------------
-# get_file_sha1
 #-------------------------------------------------------------------------------
 def get_file_sha1(file_name):
     file = open(file_name, "rb")

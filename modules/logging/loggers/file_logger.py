@@ -1,26 +1,18 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# Imports
-#-------------------------------------------------------------------------------
 import datetime
 import os
 
 from modules.logging.logger         import *
 
 #-------------------------------------------------------------------------------
-# Constants
-#-------------------------------------------------------------------------------
 LOGS_PATH                       = "Logs"
 CHGR_PY_LOG_PATH                = "Chgr.py"
 CHGR_PY_LOG_FILE_NAME_TEMPLATE  = "chgr_py_{year}_{month}_{day}_{hour}_{minute}_{microsecond}.log"
 
 #-------------------------------------------------------------------------------
-# FileLogger
-#-------------------------------------------------------------------------------
 class FileLogger(Logger):
     #---------------------------------------------------------------------------
-    # __init__
     def __init__(self):
         Logger.__init__(self, "file")
         self._log_file = None
@@ -56,13 +48,11 @@ class FileLogger(Logger):
             self._log_file.write(formatted_message)
 
     #---------------------------------------------------------------------------
-    # print_progress_bar
     def _log_formatted_message(self, log_level, formatted_message):
         if self._log_file is not None:
             self._log_file.write(formatted_message)
             self._log_file.write("\n")
 
     #---------------------------------------------------------------------------
-    # _print_progress_bar
     def _print_progress_bar(self, progress_bar_string):
         pass

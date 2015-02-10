@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-from commands.cis_command       import *
+from commands._cis_command      import *
 from utilities.ue3              import *
 from utilities.ue3_deployment   import *
 
@@ -18,8 +17,6 @@ class CisUe3PublishVersion(CisCommand):
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
         CisCommand.configure_arguments(self, context, parser)
-        settings = context.settings
-
         parser.add_argument('-r',
                             '--revision',
                             help    = 'Current revision',
@@ -39,30 +36,17 @@ class CisUe3PublishVersion(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
-        settings  = context.settings
-        arguments = context.arguments
-
-        project  = settings.project_name
-        game     = settings.game
-        revision = arguments.revision
-        platform = arguments.platform
-
-        for configuration in arguments.configurations:
-            if not deploy(settings.cis_binaries_directory,
-                          project          = project,
-                          game             = game,
-                          revision         = revision,
-                          platform         = platform,
-                          configuration    = configuration):
-                log_error("Unable to compiled binaries for revision {0} and platform {1}, can't publish version.", revision, platform)
+        for configuration in context.configurations:
+            if not deploy(context, settings.cis_binaries_directory, configuration = configuration):
+                log_error("Unable to compiled binaries for revision {0} and platform {1}, can't publish version.", context.revision, context.platform)
                 return False
 
         if platform.lower() == 'win64':
-            if not ue3_build_script(game):
+            if not ue3_build_script(context.game):
                 log_error("Error while building script")
                 return False
 
-        if not ue3_publish_version(settings.cis_version_directory, project, game, revision, platform):
+        if not publish(context, ue3_publish_version, settings.cis_version_directory):
             return False
 
         return True

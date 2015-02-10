@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# Imports
-#-------------------------------------------------------------------------------
 import os
 import  sys
 
@@ -11,18 +8,13 @@ from modules.logging.formats.standard_progress_bar  import *
 from utilities.logging                              import *
 
 #-------------------------------------------------------------------------------
-# StandardFormat
-#-------------------------------------------------------------------------------
 class StandardFormat(Format):
-
     #---------------------------------------------------------------------------
-    # __init__
     def __init__(self):
         Format.__init__(self, "standard")
         self._progress_bar = None
 
     #---------------------------------------------------------------------------
-    # format_message
     def format_message(self, log_level, message_format, *args):
         if log_level == LOG_LEVEL_NOTIFICATION or log_level == LOG_LEVEL_VERBOSE:
             return message_format.format(*args) + "\n"
@@ -32,7 +24,6 @@ class StandardFormat(Format):
             return "[  ERROR  ] : " + message_format.format(*args) + "\n"
 
     #---------------------------------------------------------------------------
-    # start_progress
     def start_progress(self,
                        total,
                        position_formatter = None,
@@ -49,13 +40,11 @@ class StandardFormat(Format):
                                                  width                  = width)
 
     #---------------------------------------------------------------------------
-    # update_progress
     def update_progress(self, value, step_name = None):
         assert(self._progress_bar is not None)
         return self._progress_bar.update(value, step_name)
 
     #---------------------------------------------------------------------------
-    # end_progress
     def end_progress(self):
         assert(self._progress_bar is not None)
         self._progress_bar = None

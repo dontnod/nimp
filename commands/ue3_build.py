@@ -2,8 +2,8 @@
 
 #-------------------------------------------------------------------------------
 
-from commands.command       import *
-from utilities.ue3          import *
+from commands._command import *
+from utilities.ue3     import *
 
 #-------------------------------------------------------------------------------
 class Ue3BuildCommand(Command):
@@ -13,21 +13,19 @@ class Ue3BuildCommand(Command):
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
-        settings = context.settings
-
         parser.add_argument('-c',
                             '--configuration',
                             help    = 'configurations to build',
                             metavar = '<configuration>',
                             nargs   = '+',
-                            default = settings.default_ue3_configurations)
+                            default = context.default_ue3_configurations)
 
         parser.add_argument('-p',
                             '--platform',
                             help    = 'platforms to build',
                             metavar = '<platform>',
                             nargs   = '+',
-                            default = settings.default_ue3_platforms)
+                            default = context.default_ue3_platforms)
 
         parser.add_argument('--generate-version-file',
                             help    = 'Generates a code file containing build specific informations',
@@ -37,13 +35,4 @@ class Ue3BuildCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, context):
-        settings  = context.settings
-        arguments = context.arguments
-
-        platform                = arguments.platform
-        configuration           = arguments.configuration
-        generate_version_file   = arguments.generate_version_file
-        vs_version              = settings.vs_version
-        sln_file                = settings.solution_file
-
-        return ue3_build(sln_file, platform, configuration, vs_version, generate_version_file)
+        return context.call(ue3_build)

@@ -1,18 +1,10 @@
-__all__ = ["command",
+__all__ = ["_command",
            "bink",
-           "build_wwise_banks",
            "cis_ue3_build",
+           "cis_ue3_cook",
            "cis_ue3_publish_version",
            "cis_ue3_ship",
-           "cis_ue3_cook",
-           "msbuild",
-           "sha1",
+           "cis_wwise_build_banks",
            "ue3_build",
-           "ue3_cook",
-           "ue3_loose",
-           "ue3_publish",
-           "ue3_deploy",
-           "ue3_ship",
-           "publish_symbols",
-           "vsbuild"]
+           "ue3_cook"]
 

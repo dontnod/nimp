@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# imports
-#-------------------------------------------------------------------------------
 import time
 import argparse
 
@@ -18,11 +15,8 @@ from utilities.files            import *
 from utilities.logging          import *
 
 #-------------------------------------------------------------------------------
-# LoggingModule
-#-------------------------------------------------------------------------------
 class LoggingModule(Module):
     #---------------------------------------------------------------------------
-    # __init__
     def __init__(self):
         Module.__init__(self, "logging", ["configuration"])
         self._formats = {}
@@ -37,7 +31,6 @@ class LoggingModule(Module):
             self._loggers[logger_instance_it.name()] = logger_instance_it
 
     #---------------------------------------------------------------------------
-    # configure_arguments
     def configure_arguments(self, context, parser):
         log_group = parser.add_argument_group("Logging")
 
@@ -63,19 +56,16 @@ class LoggingModule(Module):
         return True
 
     #---------------------------------------------------------------------------
-    # load
     def load(self, context):
         global g_logger
 
-        arguments   = context.arguments
-
-        logger_name     = arguments.logger
-        format_name     = arguments.log_format
+        logger_name     = context.logger
+        format_name     = context.log_format
 
         logger          = self._loggers[logger_name]
         format          = self._formats[format_name]
 
-        logger.initialize(format, context, arguments.verbose)
+        logger.initialize(format, context, context.verbose)
 
         set_logger(logger)
 

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-# Imports
-#-------------------------------------------------------------------------------
 import  sys
 import  time
 from    datetime        import *
@@ -10,17 +8,12 @@ from    datetime        import *
 from    utilities.units    import *
 
 #-------------------------------------------------------------------------------
-# Constants
-#-------------------------------------------------------------------------------
 STREAM = sys.stdout
 
-#-------------------------------------------------------------------------------
-# StandardProgressBar
 #-------------------------------------------------------------------------------
 class StandardProgressBar():
 
     #---------------------------------------------------------------------------
-    # Fields
     _label              = ''
     _width              = 32
     _total              = None
@@ -31,7 +24,6 @@ class StandardProgressBar():
     _speed_formatter    = None
 
     #---------------------------------------------------------------------------
-    # __init__
     def __init__(self,
                  total,
                  template,
@@ -50,7 +42,6 @@ class StandardProgressBar():
         self._speed_formatter    = speed_formatter
 
     #---------------------------------------------------------------------------
-    # update
     def update(self, position, step_name):
         time_elapsed            = (datetime.now() - self._start).total_seconds()
 

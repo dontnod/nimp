@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-# Configuration
-#-------------------------------------------------------------------------------
 DEFAULT_BAR_TEMPLATE = "{label}[{filled_chars}{empty_chars}] {position}/{total} - {time_left} - {speed}"
 DEFAULT_BAR_WIDTH    = 15
 
-#-------------------------------------------------------------------------------
-# Constants
 #-------------------------------------------------------------------------------
 LOG_LEVEL_VERBOSE       = 1
 LOG_LEVEL_NOTIFICATION  = 2
@@ -15,18 +11,13 @@ LOG_LEVEL_WARNING       = 3
 LOG_LEVEL_ERROR         = 4
 
 #-------------------------------------------------------------------------------
-# Globals
-#-------------------------------------------------------------------------------
-g_logger = None # monkey patch spotted
+g_logger = None
 
-#-------------------------------------------------------------------------------
-# log_message
 #-------------------------------------------------------------------------------
 def set_logger(logger):
     global g_logger
     g_logger = logger
-#-------------------------------------------------------------------------------
-# log_message
+
 #-------------------------------------------------------------------------------
 def log_message(log_level, message_format, *args):
     if(g_logger is not None):
@@ -35,13 +26,9 @@ def log_message(log_level, message_format, *args):
         print(message_format.format(*args))
 
 #-------------------------------------------------------------------------------
-# log_verbose
-#-------------------------------------------------------------------------------
 def log_verbose(message_format, *args):
     log_message(LOG_LEVEL_VERBOSE, message_format, *args)
 
-#-------------------------------------------------------------------------------
-# log_inmessage_formation
 #-------------------------------------------------------------------------------
 def log_notification(message_format, *args):
     log_message(LOG_LEVEL_NOTIFICATION, message_format, *args)

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-# imports
-#-------------------------------------------------------------------------------
 import argparse
 import time
 
@@ -12,8 +10,6 @@ from    utilities.files         import *
 from    utilities.logging       import *
 from    utilities.paths         import *
 
-#-------------------------------------------------------------------------------
-# CMakeModule
 #-------------------------------------------------------------------------------
 class ConfigurationModule(Module):
     #---------------------------------------------------------------------------
@@ -54,8 +50,11 @@ def _load_arguments(context, parser):
                 return False
 
     (arguments, unknown_args) = parser.parse_known_args()
-    setattr(arguments, "unknown_args", unknown_args)
-    setattr(context, 'arguments', arguments)
+    setattr(context, "unknown_args", unknown_args)
+
+    for key, value in vars(arguments).items():
+        setattr(context, key, value)
+
     return True
 
 #---------------------------------------------------------------------------
@@ -70,9 +69,8 @@ def load_config_file(filename, context):
         return False
 
     for key, value in settings_content.items():
-        setattr(settings, key, value)
+        setattr(context, key, value)
 
-    setattr(context, 'settings', settings)
     return True
 
 #---------------------------------------------------------------------------

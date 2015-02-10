@@ -6,10 +6,8 @@
 import re
 import tempfile
 
-from commands.command                   import *
-from commands.vsbuild                   import *
+from commands._command                  import *
 
-from utilities.configuration            import *
 from utilities.files                    import *
 from utilities.hashing                  import *
 from utilities.paths                    import *

@@ -11,26 +11,24 @@ import shutil
 from utilities.build        import *
 from utilities.deployment   import *
 
-
 VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
 
-
 #---------------------------------------------------------------------------
-def ue3_build(sln_file, platform, configuration, vs_version, generate_version_file = False):
+def ue3_build(solution, platform, configuration, vs_version, generate_version_file = False):
     result          = True
     version_file_cl = None
 
     log_verbose("Building UBT")
-    if not _ue3_build_project(sln_file, "UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
+    if not _ue3_build_project(solution, "UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
         log_error("Error building UBT")
         return False
 
     with _ue3_generate_version_file():
         if platform.lower() == 'win64':
-            if not _ue3_build_editor_dlls(sln_file, configuration, vs_version):
+            if not _ue3_build_editor_dlls(solution, configuration, vs_version):
                 return False
 
-        if not _ue3_build_game(sln_file, platform, configuration, vs_version):
+        if not _ue3_build_game(solution, platform, configuration, vs_version):
             return False
 
     return True
@@ -137,3 +135,4 @@ def _ue3_generate_version_file():
         transaction.abort()
         write_file_content(VERSION_FILE_PATH, version_file_content)
         yield
+

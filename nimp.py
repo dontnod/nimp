@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-# imports
-#-------------------------------------------------------------------------------
 import sys
 sys.dont_write_bytecode = 1
 
@@ -15,9 +13,8 @@ import traceback
 from    modules.module          import *
 
 from    utilities.inspection    import *
+from    utilities.context       import *
 
-#-------------------------------------------------------------------------------
-# main
 #-------------------------------------------------------------------------------
 def main():
     result = 0
@@ -27,9 +24,6 @@ def main():
         if(module_instances is None):
             log_error("Unable to satisfy modules dependencies.")
             return 1
-
-        class Context(object):
-            pass
 
         context = Context()
         setattr(context, 'modules', module_instances)

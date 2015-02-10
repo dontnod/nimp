@@ -1,20 +1,10 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-import socket
-import random
-import string
-import time
-import contextlib
-import shutil
-
-from utilities.build        import *
-from utilities.deployment   import *
-
 #---------------------------------------------------------------------------
-def ue3_publish_binaries(destination_format, project, game, revision, platform, configuration = None):
-    publisher = FilePublisher(destination_format, project = None, game = None, platform = None, configuration = None, dlc = None, language = None, revision = revision)
+def ue3_publish_binaries(publisher):
     publisher.delete_destination()
+    platform      = publisher.platform
+    configuration = publisher.configuration
 
     if (platform == 'Win32' or platform == 'Win64'):
         if configuration == 'Release' or configuration is None:
@@ -28,10 +18,10 @@ def ue3_publish_binaries(destination_format, project, game, revision, platform, 
             publisher.add("Binaries\\Orbis\\OrbisTools_x64.dll")
             publisher.add("Binaries\\Dingo\\DingoTools_x64.dll")
 
-            publisher.add("Binaries\\Win64\\Microsoft.VC90.CRT",    ['*.*'])
-            publisher.add("Binaries\\{platform}",                   ['*.dll'], recursive = False )
-            publisher.add("Binaries\\",                             ['*.xml', '*.bat', '*.dll', '*.exe.config', '*.exe'], recursive = False)
-            publisher.add("Binaries\\Win64\\Editor\\Release",       ['*.*'], recursive = False)
+            publisher.add("Binaries\\Win64\\Microsoft.VC90.CRT", ['*.*'])
+            publisher.add("Binaries\\{platform}", ['*.dll'], recursive = False )
+            publisher.add("Binaries\\", ['*.xml', '*.bat', '*.dll', '*.exe.config', '*.exe'], recursive = False)
+            publisher.add("Binaries\\Win64\\Editor\\Release", ['*.*'], recursive = False)
             publisher.add("Binaries\\{platform}", ['{game}.*'], ['*.pdb', '*.map', '*.lib'], recursive = False)
 
         if configuration != 'Release':
@@ -46,30 +36,26 @@ def ue3_publish_binaries(destination_format, project, game, revision, platform, 
     return True
 
 #---------------------------------------------------------------------------
-def ue3_publish_version(destination_format, project, game, revision, platform):
-    if not ue3_publish_binaries(destination_format, project, game, revision, platform, None):
+def ue3_publish_version(publisher):
+    if not ue3_publish_binaries(publisher):
         return False
 
-    publisher = FilePublisher(destination_format, project, game, platform, configuration = None, dlc = None, language = None, revision = revision)
-
-    if platform.lower() == 'win64':
+    if publisher.platform.lower() == 'win64':
         publisher.add("{game}\\Script\\", ['*.*'])
         publisher.add("{game}\\ScriptFinalRelease\\", ['*.*'])
 
     return True
 
 #---------------------------------------------------------------------------
-def ue3_publish_cook(destination_format, project, game, platform, configuration, revision, dlc):
-    publisher = FilePublisher(destination_format, project, game, platform, configuration = configuration, revision = revision, dlc = dlc, language = None)
-
-    cook_platform = platform
+def ue3_publish_cook(publisher):
+    cook_platform = publisher.platform
 
     if platform.lower() == 'win64':
         platform = 'PC'
     if platform.lower() == 'win32':
         platform = 'PCConsole'
 
-    suffix = 'Final' if (configuration in ['test', 'final'] and dlc is None) else ''
+    suffix = 'Final' if (publisher.configuration in ['test', 'final'] and publisher.dlc is None) else ''
 
     if dlc is None:
         cook_directory = '{game}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
