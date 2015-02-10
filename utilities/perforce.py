@@ -246,7 +246,7 @@ def _p4_run_command(directory, command, input = None, log_errors = True):
     result, output, error = capture_process_output(directory, command, input)
     if( result != 0):
         if log_errors:
-            log_verbose("Error running {0} in directory {1} with input {2}", " ".join(command), os.path.join(os.getcwd(), directory), input)
+            log_verbose("Error running {0} in directory {1} with input {2} : {3}", " ".join(command), os.path.join(os.getcwd(), directory), input, error)
         return None
     return output
 
