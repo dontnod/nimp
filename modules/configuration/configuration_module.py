@@ -36,7 +36,7 @@ def _load_settings(context):
         log_error("Unable to find a .nimp.conf config file in current or parents directories.")
         return False;
 
-    load_config_file(".nimp.conf", context)
+    context.load_config_file(".nimp.conf")
 
     return True
 
@@ -56,38 +56,3 @@ def _load_arguments(context, parser):
         setattr(context, key, value)
 
     return True
-
-#---------------------------------------------------------------------------
-def load_config_file(filename, context):
-    class Settings:
-        pass
-
-    settings         = Settings()
-    settings_content = read_config_file(filename)
-
-    if(settings_content is None):
-        return False
-
-    for key, value in settings_content.items():
-        setattr(context, key, value)
-
-    return True
-
-#---------------------------------------------------------------------------
-def read_config_file(filename):
-    try:
-        conf = open(filename, "rb").read()
-    except Exception as exception:
-        log_error("Unable to open configuration file : {0}", exception)
-        return None
-    # Parse configuration file
-    try:
-        locals = {}
-        exec(compile(conf, filename, 'exec'), None, locals)
-        if "config" in locals:
-            return locals["config"]
-        log_error("Configuration file {0} has no 'config' section.", filename)
-    except Exception as e:
-        log_error("Unable to load configuration file {0}: {1}", filename, str(e))
-
-    return {}

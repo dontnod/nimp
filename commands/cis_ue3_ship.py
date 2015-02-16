@@ -37,14 +37,71 @@ class CisUe3Ship(CisCommand):
 
         parser.add_argument('--dlc',
                             help    = 'Dlc to cook',
-                            metavar = '<platform>',
+                            metavar = '<dlc>',
                             default = None)
         return True
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
+        if context.dlc is None:
+            context.dlc = context.project
+
+        if not deploy_latest_revision(context, context.cis_version_directory, context.revision, platform = 'Win64'):
+            log_error("Unable to deploy Win64 binaries, aborting")
+            return False
+
+        master_directory = context.format(context.cis_master_directory)
+
+        if os.path.exists(master_directory):
+            if context.dlc == context.project:
+                return _ship_game_patch(context)
+            else:
+                _ship_dlc_path(context)
+        else:
+            if context.dlc == context.project:
+                _ship_game_gold(context)
+            else:
+                _ship_dlc_gold(context)
+        # Checker s'il existe un dossier build/shipped/PLATFORM_Episode
+        # Si oui, on crée un patch:
+        #   S'il s'agit d'un DLC :
+        #       On copie le cook du master E1 en local
+        #   On copie le cook en local
+        #   On lance un cook incrémental
+        #   On met de cote les fichiers a garder
+        #   On delete et recopie le cook d'origine
+        #   On copie les fichiers a garder
+        # Sinon, on crée un DLC
+        #   S'il s'agit d'un DLC
+        #       On Copie le cook du master E1 en local
+        # On appelle CookerSync
         settings  = context.settings
         arguments = context.arguments
 
         return True
 
+    def _ship_game_patch(context):
+        patch_config_path = context.format(context.patch_config_path)
+
+        if not context.load_config_file(patch_config):
+            log_error("Unable to find patch configuration at {0}", patch_config_path)
+            return False
+
+        if not deploy(context, context.cis_master_directory):
+            return False
+
+        map = context.cook_maps[context.dlc]
+
+        if not ue3_cook(context.game,
+                        context.map,
+                        context.languages,
+                        None,
+                        context.platform,
+                        context.configuration,
+                        incremental = True):
+            return False
+        # créer dir. temporaire
+        # déployer les fichiers à garder
+        # déployer de nouveau le cook du master
+        # déployer les fichiers depuis le répertoire temporaire
+        # appeler cookersync

@@ -23,15 +23,21 @@ def ue3_build(solution, platform, configuration, vs_version, generate_version_fi
         log_error("Error building UBT")
         return False
 
-    with _ue3_generate_version_file():
+    def _build():
         if platform.lower() == 'win64':
-            if not _ue3_build_editor_dlls(solution, configuration, vs_version):
-                return False
+                if not _ue3_build_editor_dlls(solution, configuration, vs_version):
+                    return False
 
         if not _ue3_build_game(solution, platform, configuration, vs_version):
             return False
 
-    return True
+        return True
+
+    if generate_version_file:
+        with _ue3_generate_version_file():
+            return _build()
+    else:
+        return _build()
 
 #---------------------------------------------------------------------------
 def ue3_commandlet(game, name, args):
@@ -51,13 +57,16 @@ def ue3_build_script(game):
     return ue3_commandlet(game, 'make', ['-full', '-release']) and ue3_commandlet(game, 'make', [ '-full', '-final_release' ])
 
 #---------------------------------------------------------------------------
-def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False):
+def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False, incremental = False):
     if platform.lower() == 'win64':
         platform = 'PC'
     elif platform.lower() == 'win32':
         platform = 'PCConsole'
 
-    commandlet_arguments =  [ map, '-full']
+    commandlet_arguments =  [ map]
+
+    if not incremental:
+        commandlet_arguments += ['-full']
 
     if configuration in [ 'test', 'final' ]:
         commandlet_arguments += [ '-cookforfinal' ]

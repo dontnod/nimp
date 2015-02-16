@@ -15,17 +15,15 @@ class Ue3BuildCommand(Command):
     def configure_arguments(self, context, parser):
         parser.add_argument('-c',
                             '--configuration',
-                            help    = 'configurations to build',
+                            help    = 'configuration to build',
                             metavar = '<configuration>',
-                            nargs   = '+',
-                            default = context.default_ue3_configurations)
+                            default = 'release')
 
         parser.add_argument('-p',
                             '--platform',
-                            help    = 'platforms to build',
+                            help    = 'platform to build',
                             metavar = '<platform>',
-                            nargs   = '+',
-                            default = context.default_ue3_platforms)
+                            default = 'Win64')
 
         parser.add_argument('--generate-version-file',
                             help    = 'Generates a code file containing build specific informations',
@@ -35,4 +33,8 @@ class Ue3BuildCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, context):
-        return context.call(ue3_build)
+        return ue3_build(context.solution,
+                         context.platform,
+                         context.configuration,
+                         context.vs_version,
+                         context.generate_version_file)

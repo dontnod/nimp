@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from utilities.deployment import *
+
 #---------------------------------------------------------------------------
 def ue3_publish_binaries(publisher):
-    publisher.delete_destination()
     platform      = publisher.platform
     configuration = publisher.configuration
 
@@ -37,8 +38,9 @@ def ue3_publish_binaries(publisher):
 
 #---------------------------------------------------------------------------
 def ue3_publish_version(publisher):
-    if not ue3_publish_binaries(publisher):
-        return False
+    for configuration in publisher.configurations:
+        if not publish(publisher, ue3_publish_binaries, publisher.destination, configuration = configuration):
+            return False
 
     if publisher.platform.lower() == 'win64':
         publisher.add("{game}\\Script\\", ['*.*'])

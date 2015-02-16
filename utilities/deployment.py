@@ -17,15 +17,15 @@ from utilities.files        import *
 #-------------------------------------------------------------------------------
 def publish(context, publish_callback, destination_format, **kwargs):
     destination = context.format(destination_format)
-    publisher   = _FilePublisher(destination, context)
+    publisher   = _FilePublisher(destination, context, **kwargs)
     return publish_callback(publisher)
 
 #-------------------------------------------------------------------------------
-def deploy(context, source_format_key, **kwargs):
+def deploy(context, source_format, **kwargs):
     """ Copy the content of the given source directory, checkouting local files
         if necesseray
     """
-    source = context.format(source_format_key, **kwargs)
+    source = context.format(source_format, **kwargs)
     log_notification("Deploying {0} locally", source)
 
     if not os.path.exists(source):
@@ -111,15 +111,17 @@ def deploy_latest_revision(context, directory_format, start_revision):
 
 #------------------------------------------------------------------------------
 class _FilePublisher(object):
-    def __init__(self, destination, context):
-        self._destination = destination
-        self._context     = context
+    def __init__(self, destination, parent, **override_args):
+        self.destination = destination
+        self._parent     = parent
+        for key in override_args:
+            setattr(self, key, override_args[key])
 
     def __getattr__(self, name):
         try:
             return object.__getattr__(self, name)
         except AttributeError:
-            return getattr(self._context, name)
+            return getattr(self._parent, name)
 
     def delete_destination(self):
         def _onerror(func, path, exc_info):
@@ -128,11 +130,25 @@ class _FilePublisher(object):
                 func(path)
             else:
                 raise
-        if os.path.exists(self._destination):
-            shutil.rmtree(self._destination, onerror = _onerror)
+        if os.path.exists(self.destination):
+            shutil.rmtree(self.destination, onerror = _onerror)
 
     def _format(self, str, is_source = True):
-        return str.format(**vars(self._context))
+        format_args = {}
+        contextes = []
+        current_context = self
+
+        while hasattr(current_context, '_parent'):
+            contextes.append(current_context)
+            current_context = current_context._parent
+
+        contextes.append(current_context)
+        contextes.reverse()
+
+        for context in contextes:
+            format_args.update(**vars(context))
+
+        return str.format(**format_args)
 
     def add(self, source, include = ['*'], exclude = [], recursive = True):
         for i in range(0, len(include)):
@@ -142,7 +158,7 @@ class _FilePublisher(object):
 
         source = self._format(source)
         if os.path.isfile(source):
-            target              = os.path.join(self._destination, os.path.relpath(source, '.'))
+            target              = os.path.join(self.destination, os.path.relpath(source, '.'))
             target_directory    = os.path.dirname(target)
 
             if not os.path.exists(target_directory):
@@ -155,6 +171,6 @@ class _FilePublisher(object):
             def _copy_callback(source, destination):
                 os.chmod(destination, stat.S_IWUSR)
             if recursive:
-                recursive_glob_copy(source, self._destination, include, exclude, copy_callback = _copy_callback)
+                recursive_glob_copy(source, self.destination, include, exclude, copy_callback = _copy_callback)
             else:
-                glob_copy(source, self._destination, include, exclude, copy_callback = _copy_callback)
+                glob_copy(source, self.destination, include, exclude, copy_callback = _copy_callback)
