@@ -108,11 +108,14 @@ def _ship_game_patch(context):
                     incremental = True):
         return False
 
-    cook_directory  = ".\ExampleGame\Cooked%sFinal" % get_cook_platform_name(context.platform)
-    patched_files   = context.patched_files(context, cook_directory)
+    cook_directory  = get_cook_directory(context.game, context.project, context.dlc, context.platform, context.configuration)
+    patched_files   = list(context.patched_files(context, cook_directory))
 
     log_notification("Redeploying master cook ignoring patched files")
     if not deploy(context, context.cis_master_directory, ignore_files = patched_files):
+        return False
+
+    if not generate_toc(context, dlc = "Episode01" if context.dlc == context.project else context.dlc):
         return False
 
     if not publish(context, ue3_publish_patch, context.cis_ship_patch_directory):

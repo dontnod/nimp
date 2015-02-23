@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from utilities.logging import *
+
 #-------------------------------------------------------------------------------
 class Context:
     def __init__(self):

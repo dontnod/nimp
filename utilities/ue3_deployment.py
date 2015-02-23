@@ -56,15 +56,10 @@ def ue3_publish_version(publisher):
 
 #---------------------------------------------------------------------------
 def ue3_publish_patch(publisher):
-    if not publish(publisher, ue3_publish_binaries, publisher.destination, configuration = 'Test'):
-        return False
-
-    if not publish(publisher, ue3_publish_binaries, publisher.destination, configuration = 'Final'):
-        return False
-
-    if not publish(publisher, ue3_publish_cook, publisher.destination, configuration = "Final"):
-        return False
-
+    cook_directory  = get_cook_directory(publisher.game, publisher.project, publisher.dlc, publisher.platform, publisher.configuration)
+    patched_files   = list(publisher.patched_files(publisher, cook_directory))
+    for file in patched_files:
+        publisher.add(file)
     return True
 
 #---------------------------------------------------------------------------

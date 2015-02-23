@@ -48,15 +48,42 @@ def get_binaries_platform(platform):
     return platforms[platform]
 
 #-------------------------------------------------------------------------------
-def get_cook_directory(project, dlc, platform, configuration):
+def generate_toc(context, dlc):
+    cooker_sync_platform = context.platform
+    cooker_sync_platform = "PS4" if cooker_sync_platform.lower() == "orbis" else cooker_sync_platform
+    cooker_sync_platform = "XBoxOne" if cooker_sync_platform.lower() == "dingo" else cooker_sync_platform
+
+    for language in context.languages:
+        call_process(".", [ "Binaries\CookerSync.exe",
+                            context.game,
+                            "-p", cooker_sync_platform,
+                            "-x",  "Loc",
+                            "-r", language,
+                            "-nd",
+                            "-final",
+                            "-dlcname", dlc])
+
+    call_process(".", [ "Binaries\CookerSync.exe",
+                        context.game,
+                        "-p", cooker_sync_platform,
+                        "-x",  "ConsoleSyncProgrammer",
+                        "-r", "INT",
+                        "-nd",
+                        "-final",
+                        "-dlcname", dlc])
+    return True
+
+
+#-------------------------------------------------------------------------------
+def get_cook_directory(game, project, dlc, platform, configuration):
     cook_platform = get_cook_platform_name(platform)
 
     suffix = 'Final' if (configuration.lower() in ['test', 'final'] and dlc == project) else ''
 
     if dlc == project:
-        return '{game}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
+        return '{0}\\Cooked{1}{2}'.format(game, cook_platform, suffix)
     else:
-       return '{game}\\DLC\\{platform}\\{dlc}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
+       return '{0}\\DLC\\{platform}\\{dlc}\\Cooked{1}{2}'.format(game, cook_platform, suffix)
 
 #---------------------------------------------------------------------------
 def ue3_build(solution, platform, configuration, vs_version, generate_version_file = False):

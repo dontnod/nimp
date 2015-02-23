@@ -25,7 +25,11 @@ def deploy(context, source_format, ignore_files = [], **kwargs):
     """ Copy the content of the given source directory, checkouting local files
         if necesseray
     """
-    ignore_files = list(os.path.normpath(file) for file in ignore_files)
+    normalized_ignore_files = []
+
+    for ignored_file in ignore_files:
+        normalized_ignore_files.append(os.path.normpath(ignored_file).lower())
+
     source = context.format(source_format, **kwargs)
     log_notification("Deploying {0} locally", source)
 
@@ -40,7 +44,7 @@ def deploy(context, source_format, ignore_files = [], **kwargs):
                 local_directory = os.path.relpath(root, source)
                 local_file      = os.path.join('.', local_directory, file)
 
-                if os.path.normpath(local_file) in ignore_files:
+                if os.path.normpath(local_file).lower() in normalized_ignore_files:
                     log_verbose("Ignoring file {0}", local_file)
                     continue
 

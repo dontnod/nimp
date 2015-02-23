@@ -8,6 +8,7 @@ import string
 import tempfile;
 import time
 import fnmatch
+import glob
 
 from   utilities.logging    import *
 from   utilities.units      import *
@@ -148,10 +149,17 @@ def recursive_glob(directory, include = ['*'], exclude = []):
 
 #-------------------------------------------------------------------------------
 def recursive_glob_copy(source, destination, include = ['*'], exclude = [], copy_callback = None):
+    files_to_copy = []
+    if not os.path.isdir(source):
+        files_to_copy = glob.glob(source)
+
     for root, directories, files in os.walk(source):
         for file in files:
             source_file = os.path.join(root, file)
-            _copy_file_if_matching(source_file, destination, include, exclude, copy_callback)
+            files_to_copy.append(source_file)
+
+    for file in files_to_copy:
+        _copy_file_if_matching(file, destination, include, exclude, copy_callback)
 
 #-------------------------------------------------------------------------------
 def glob_copy(source, destination, include = ['*'], exclude = [], copy_callback = None):
