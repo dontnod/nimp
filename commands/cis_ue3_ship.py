@@ -30,12 +30,6 @@ class CisUe3Ship(CisCommand):
                             help    = 'platforms to publish',
                             metavar = '<platform>')
 
-        parser.add_argument('-c',
-                            '--configuration',
-                            help    = 'Configurations to publish',
-                            metavar = '<platform>',
-                            choices = ['test', 'final'])
-
         parser.add_argument('--dlc',
                             help    = 'Dlc to cook',
                             metavar = '<dlc>',
@@ -104,11 +98,11 @@ def _ship_game_patch(context):
                     context.languages,
                     None,
                     context.platform,
-                    context.configuration,
+                    'final',
                     incremental = True):
         return False
 
-    cook_directory  = get_cook_directory(context.game, context.project, context.dlc, context.platform, context.configuration)
+    cook_directory  = get_cook_directory(context.game, context.project, context.dlc, context.platform, 'final')
     patched_files   = list(context.patched_files(context, cook_directory))
 
     log_notification("Redeploying master cook ignoring patched files")

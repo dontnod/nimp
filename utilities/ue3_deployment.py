@@ -56,7 +56,7 @@ def ue3_publish_version(publisher):
 
 #---------------------------------------------------------------------------
 def ue3_publish_patch(publisher):
-    cook_directory  = get_cook_directory(publisher.game, publisher.project, publisher.dlc, publisher.platform, publisher.configuration)
+    cook_directory  = get_cook_directory(publisher.game, publisher.project, publisher.dlc, publisher.platform, 'final')
     patched_files   = list(publisher.patched_files(publisher, cook_directory))
     for file in patched_files:
         publisher.add(file)
