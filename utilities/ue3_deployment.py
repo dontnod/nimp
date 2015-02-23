@@ -32,9 +32,9 @@ def ue3_publish_binaries(publisher):
 
     if (platform != 'Win32' and platform != 'Win64'):
         if configuration is None:
-            publisher.add("Binaries\\{platform}\\", ['{game}*-*.*'], ['*.pdb', '*.map', '*.lib'])
+            publisher.add("Binaries\\{platform}\\", ['{game}*-*.*'], ['*.lib'])
         else:
-            publisher.add("Binaries\\{platform}\\", ['{game}-{platform}-{configuration}.*'], ['*.pdb', '*.map', '*.lib'])
+            publisher.add("Binaries\\{platform}\\", ['{game}-{platform}-{configuration}.*'], ['*.lib'])
 
     return True
 
@@ -64,7 +64,7 @@ def ue3_publish_patch(publisher):
 
 #---------------------------------------------------------------------------
 def ue3_publish_cook(publisher):
-    cook_directory = get_cook_directory(publisher.project, publisher.dlc, publisher.platform, publisher.configuration)
+    cook_directory = get_cook_directory(publisher.project, publisher.dlc, publisher.platform, 'final')
     publisher.add(cook_directory)
 
     return True
