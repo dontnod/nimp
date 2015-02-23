@@ -54,6 +54,7 @@ class CisUe3Ship(CisCommand):
         master_directory = context.format(context.cis_master_directory)
 
         if os.path.exists(master_directory):
+            log_notification("Found a master directory at {0} : I'm going to build a patch", master_directory)
             if context.dlc == context.project:
                 return _ship_game_patch(context)
             else:

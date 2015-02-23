@@ -26,7 +26,7 @@ def get_cook_platform_name(platform_name):
     platform_name = platform_name.lower()
 
     if not platform_name in platform_names:
-        return None
+        return platform_name
 
     return platform_names[platform_name]
 
@@ -43,7 +43,7 @@ def get_binaries_platform(platform):
     platform = platform.lower()
 
     if not platform in platforms:
-        return None
+        return platform
 
     return platforms[platform]
 
