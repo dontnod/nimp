@@ -37,6 +37,7 @@ class CisUe3BuildCommand(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
+        log_notification(" ****** Building game...")
         if not ue3_build(context.solution,
                          context.platform,
                          context.configuration,
@@ -44,7 +45,13 @@ class CisUe3BuildCommand(CisCommand):
                          True):
             return False
 
+        log_notification(" ****** Publishing Binaries...")
         if not publish(context, ue3_publish_binaries, context.cis_binaries_directory):
             return False
+
+        log_notification(" ****** Publishing symbols...")
+        if context.platform.lower() in ["win64", "win32", "dingo", "xbox360"]:
+            if not upload_microsoft_symbols(context, ["Binaries/{0}".format(context.platform)]):
+                return False
 
         return True

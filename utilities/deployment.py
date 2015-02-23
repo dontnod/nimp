@@ -120,6 +120,38 @@ def deploy_latest_revision(context, directory_format, start_revision, platforms)
     return latest_revision
 
 #------------------------------------------------------------------------------
+def upload_microsoft_symbols(context, paths):
+    symbol_files = []
+    for path in paths:
+        symbol_files += recursive_glob(path, ["*.pdb", "*.xdb"])
+
+    index_content = ""
+
+    for symbol_file in symbol_files:
+        index_content += os.path.abspath(symbol_file) + "\n"
+
+    if not write_file_content("symbols_index.txt", index_content):
+        log_error("w00t ! Unable to write symbols index file.")
+        return False
+
+    result = True
+    if not call_process(".",
+                        [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+                          "add",
+                          "/r", "/f",  "@symbols_index.txt",
+                          "/s", context.symbol_server,
+                          "/compress",
+                          "/o",
+                          "/t", "{0}_{1}_{2}".format(context.project, context.platform, context.configuration),
+                          "/v", context.revision ]):
+        result = False
+        log_error("w00t ! An error occured while uploading symbols.")
+
+    os.remove("symbols_index.txt")
+
+    return result
+
+#------------------------------------------------------------------------------
 class _FilePublisher(object):
     def __init__(self, destination, parent, **override_args):
         self.destination = destination
