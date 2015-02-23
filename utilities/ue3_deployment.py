@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from utilities.deployment import *
+from utilities.ue3        import *
+
 
 #---------------------------------------------------------------------------
 def ue3_publish_binaries(publisher):
-    platform      = publisher.platform
+    platform      = get_binaries_platform(publisher.platform)
     configuration = publisher.configuration
 
     if (platform == 'Win32' or platform == 'Win64'):
@@ -39,7 +41,11 @@ def ue3_publish_binaries(publisher):
 #---------------------------------------------------------------------------
 def ue3_publish_version(publisher):
     for configuration in publisher.configurations:
-        if not publish(publisher, ue3_publish_binaries, publisher.destination, configuration = configuration):
+        if not publish(publisher,
+                       ue3_publish_binaries,
+                       publisher.destination,
+                       platform      = get_binaries_platform(publisher.platform),
+                       configuration = configuration):
             return False
 
     if publisher.platform.lower() == 'win64':
@@ -49,21 +55,21 @@ def ue3_publish_version(publisher):
     return True
 
 #---------------------------------------------------------------------------
+def ue3_publish_patch(publisher):
+    if not publish(publisher, ue3_publish_binaries, publisher.destination, configuration = 'Test'):
+        return False
+
+    if not publish(publisher, ue3_publish_binaries, publisher.destination, configuration = 'Final'):
+        return False
+
+    if not publish(publisher, ue3_publish_cook, publisher.destination, configuration = "Final"):
+        return False
+
+    return True
+
+#---------------------------------------------------------------------------
 def ue3_publish_cook(publisher):
-    cook_platform = publisher.platform
-
-    if platform.lower() == 'win64':
-        platform = 'PC'
-    if platform.lower() == 'win32':
-        platform = 'PCConsole'
-
-    suffix = 'Final' if (publisher.configuration in ['test', 'final'] and publisher.dlc is None) else ''
-
-    if dlc is None:
-        cook_directory = '{game}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
-    else:
-        cook_directory = '{game}\\DLC\\{platform}\\{dlc}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
-
+    cook_directory = get_cook_directory(publisher.project, publisher.dlc, publisher.platform, publisher.configuration)
     publisher.add(cook_directory)
 
     return True

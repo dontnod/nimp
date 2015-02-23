@@ -2,6 +2,7 @@
 
 from commands._cis_command      import *
 from utilities.ue3              import *
+from utilities.deployment       import *
 from utilities.ue3_deployment   import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
@@ -46,9 +47,9 @@ class CisUe3Ship(CisCommand):
         if context.dlc is None:
             context.dlc = context.project
 
-        if not deploy_latest_revision(context, context.cis_version_directory, context.revision, platform = 'Win64'):
-            log_error("Unable to deploy Win64 binaries, aborting")
-            return False
+        #if not deploy_latest_revision(context, context.cis_version_directory, context.revision, ['Win64']):
+        #    log_error("Unable to deploy Win64 binaries, aborting")
+        #    return False
 
         master_directory = context.format(context.cis_master_directory)
 
@@ -80,28 +81,35 @@ class CisUe3Ship(CisCommand):
 
         return True
 
-    def _ship_game_patch(context):
-        patch_config_path = context.format(context.patch_config_path)
+def _ship_game_patch(context):
+    #if not deploy(context, context.cis_master_directory):
+    #    return False
 
-        if not context.load_config_file(patch_config):
-            log_error("Unable to find patch configuration at {0}", patch_config_path)
-            return False
+    patch_config_file = context.format(context.patch_config_path)
 
-        if not deploy(context, context.cis_master_directory):
-            return False
+    if not context.load_config_file(patch_config_file):
+        log_error("Unable to load path config file at {0}", patch_config_file)
+        return False
 
-        map = context.cook_maps[context.dlc]
+    map = context.cook_maps[context.dlc]
 
-        if not ue3_cook(context.game,
-                        context.map,
-                        context.languages,
-                        None,
-                        context.platform,
-                        context.configuration,
-                        incremental = True):
-            return False
-        # créer dir. temporaire
-        # déployer les fichiers à garder
-        # déployer de nouveau le cook du master
-        # déployer les fichiers depuis le répertoire temporaire
-        # appeler cookersync
+    if not ue3_cook(context.game,
+                    map,
+                    context.languages,
+                    None,
+                    context.platform,
+                    context.configuration,
+                    incremental = True):
+        return False
+
+    cook_directory  = ".\ExampleGame\Cooked%sFinal" % get_cook_platform_name(context.platform)
+    patched_files   = context.patched_files(context, cook_directory)
+
+    log_notification("Redeploying master cook ignoring patched files")
+    if not deploy(context, context.cis_master_directory, ignore_files = patched_files):
+        return False
+
+    if not publish(context, ue3_publish_patch, context.cis_ship_patch_directory):
+        return False
+
+    return True

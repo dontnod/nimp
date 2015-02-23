@@ -13,6 +13,51 @@ from utilities.deployment   import *
 
 VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
 
+#-------------------------------------------------------------------------------
+def get_cook_platform_name(platform_name):
+    platform_names = {
+        "ps4"       : "Orbis",
+        "xboxone"   : "Dingo",
+        "win64"     : "PC",
+        "win32"     : "PCConsole",
+        "xbox360"   : "Xbox360",
+        "ps3"       : "PS3" }
+
+    platform_name = platform_name.lower()
+
+    if not platform_name in platform_names:
+        return None
+
+    return platform_names[platform_name]
+
+#-------------------------------------------------------------------------------
+def get_binaries_platform(platform):
+    platforms = {
+        "ps4"       : "Orbis",
+        "xboxone"   : "Dingo",
+        "win64"     : "Win64",
+        "win32"     : "Win32",
+        "xbox360"   : "Xbox360",
+        "ps3"       : "PS3" }
+
+    platform = platform.lower()
+
+    if not platform in platforms:
+        return None
+
+    return platforms[platform]
+
+#-------------------------------------------------------------------------------
+def get_cook_directory(project, dlc, platform, configuration):
+    cook_platform = get_cook_platform_name(platform)
+
+    suffix = 'Final' if (configuration.lower() in ['test', 'final'] and dlc == project) else ''
+
+    if dlc == project:
+        return '{game}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
+    else:
+       return '{game}\\DLC\\{platform}\\{dlc}\\' + 'Cooked{0}{1}'.format(cook_platform, suffix)
+
 #---------------------------------------------------------------------------
 def ue3_build(solution, platform, configuration, vs_version, generate_version_file = False):
     result          = True

@@ -6,12 +6,12 @@ class Context:
         pass
 
     def format(self, str, **override_kwargs):
-        kwargs = vars(self)
+        kwargs = vars(self).copy()
         kwargs.update(override_kwargs)
         return str.format(**kwargs)
 
     def call(self, method, *args, **override_kwargs):
-        kwargs = vars(self)
+        kwargs = vars(self).copy()
         kwargs.update(override_kwargs)
         return method(*args, **kwargs)
 

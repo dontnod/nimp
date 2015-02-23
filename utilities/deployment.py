@@ -21,10 +21,11 @@ def publish(context, publish_callback, destination_format, **kwargs):
     return publish_callback(publisher)
 
 #-------------------------------------------------------------------------------
-def deploy(context, source_format, **kwargs):
+def deploy(context, source_format, ignore_files = [], **kwargs):
     """ Copy the content of the given source directory, checkouting local files
         if necesseray
     """
+    ignore_files = list(os.path.normpath(file) for file in ignore_files)
     source = context.format(source_format, **kwargs)
     log_notification("Deploying {0} locally", source)
 
@@ -32,12 +33,16 @@ def deploy(context, source_format, **kwargs):
         log_error("{0} directory was not found, can't deploy", source)
         return False
 
-    with PerforceTransaction("Binaries checkout") as transaction:
+    with PerforceTransaction("Binaries checkout", reconcile = False) as transaction:
         for root, directories, files in os.walk(source, topdown=False):
             for file in files:
                 source_file     = os.path.join(root, file)
                 local_directory = os.path.relpath(root, source)
                 local_file      = os.path.join('.', local_directory, file)
+
+                if os.path.normpath(local_file) in ignore_files:
+                    log_verbose("Ignoring file {0}", local_file)
+                    continue
 
                 log_verbose("{0} => {1}", source_file, local_file)
 
@@ -91,10 +96,10 @@ def get_latest_available_revision(version_directory_format, platforms, start_rev
     return None
 
 #------------------------------------------------------------------------------
-def deploy_latest_revision(context, directory_format, start_revision):
+def deploy_latest_revision(context, directory_format, start_revision, platforms):
     latest_revision  = context.call(get_latest_available_revision,
                                     directory_format,
-                                    platforms       = [context.platform],
+                                    platforms       = platforms,
                                     start_revision  =  start_revision)
 
     if latest_revision is None:
@@ -103,9 +108,10 @@ def deploy_latest_revision(context, directory_format, start_revision):
 
     log_notification("Deploying revision {0}.", latest_revision)
 
-    if not deploy(context, directory_format, revision = latest_revision):
-        log_error("Unable to deploy revision.")
-        return None
+    for platform in platforms:
+        if not deploy(context, directory_format, revision = latest_revision, platform = platform):
+            log_error("Unable to deploy revision for platform %s." % platform)
+            return None
 
     return latest_revision
 
@@ -146,7 +152,7 @@ class _FilePublisher(object):
         contextes.reverse()
 
         for context in contextes:
-            format_args.update(**vars(context))
+            format_args.update(**(vars(context).copy()))
 
         return str.format(**format_args)
 

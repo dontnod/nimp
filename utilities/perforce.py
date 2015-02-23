@@ -188,12 +188,13 @@ def p4_sync(cl_number = None):
 #-------------------------------------------------------------------------------
 class PerforceTransaction:
     #---------------------------------------------------------------------------
-    def __init__(self, change_list_description, *paths, submit_on_success = False):
+    def __init__(self, change_list_description, *paths, submit_on_success = False, reconcile = True):
         self._change_list_description   = change_list_description
         self._paths                     = list(paths)
         self._success                   = True
         self._cl_number                 = None
         self._submit_on_success         = submit_on_success
+        self._reconcile                 = reconcile
 
     #---------------------------------------------------------------------------
     def __enter__(self):
@@ -224,10 +225,11 @@ class PerforceTransaction:
         if value is not None:
             raise value
 
-        for path in self._paths:
-            if not p4_reconcile(self._cl_number, path):
-                self._success = False
-                break
+        if(self._reconcile):
+            for path in self._paths:
+                if not p4_reconcile(self._cl_number, path):
+                    self._success = False
+                    break
 
         if not self._success and self._cl_number is not None:
             log_verbose("P4 transaction failed, reverting and deleting CLs...")

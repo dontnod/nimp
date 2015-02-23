@@ -46,7 +46,7 @@ class CisUe3PublishVersion(CisCommand):
                 log_error("Error while building script")
                 return False
 
-        if not publish(context, ue3_publish_version, context.cis_version_directory):
+        if not publish(context, ue3_publish_version, context.cis_version_directory, platform = get_binaries_platform(context.platform)):
             return False
 
         return True
