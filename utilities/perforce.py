@@ -213,7 +213,7 @@ class PerforceTransaction:
     #---------------------------------------------------------------------------
     def add(self, path):
         self._paths.append(path)
-        if not p4_edit(self._cl_number, path):
+        if os.path.exists(path) and not p4_edit(self._cl_number, path):
             self._success = False
 
     #---------------------------------------------------------------------------
