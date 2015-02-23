@@ -47,9 +47,14 @@ class CisUe3Ship(CisCommand):
         if context.dlc is None:
             context.dlc = context.project
 
-        #if not deploy_latest_revision(context, context.cis_version_directory, context.revision, ['Win64']):
-        #    log_error("Unable to deploy Win64 binaries, aborting")
-        #    return False
+        if not deploy_latest_revision(context, context.cis_version_directory, context.revision, ['Win64']):
+            log_error("Unable to deploy Win64 binaries, aborting")
+            return False
+
+        if context.platform.lower() != "Win64":
+            if not deploy_latest_revision(context, context.cis_version_directory, context.revision, [context.platform]):
+                log_error("Unable to deploy {0} binaries, aborting", context.platform)
+                return False
 
         master_directory = context.format(context.cis_master_directory)
 
@@ -83,8 +88,8 @@ class CisUe3Ship(CisCommand):
         return True
 
 def _ship_game_patch(context):
-    #if not deploy(context, context.cis_master_directory):
-    #    return False
+    if not deploy(context, context.cis_master_directory):
+        return False
 
     patch_config_file = context.format(context.patch_config_path)
 
