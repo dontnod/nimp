@@ -75,11 +75,11 @@ def list_files(source, recursive):
     if os.path.exists(source):
         if os.path.isfile(source) and os.path.exists(source):
             yield source
-        elif os.path.isdir(source_path) and recursive:
+        elif os.path.isdir(source) and recursive:
             for root, directories, files in os.walk(source):
                 for file in files:
                     yield os.path.join(root, file)
-        elif os.path.isdir(source_path) and not recursive:
+        elif os.path.isdir(source) and not recursive:
             for child in os.listdir(source):
                 if os.path.isfile(child):
                     yield child
