@@ -5,10 +5,6 @@ from utilities.ue3              import *
 from utilities.deployment       import *
 from utilities.ue3_deployment   import *
 
-FARM_P4_PORT     = "192.168.1.2:1666"
-FARM_P4_USER     = "CIS-CodeBuilder"
-FARM_P4_PASSWORD = "CIS-CodeBuilder"
-
 #-------------------------------------------------------------------------------
 class CisUe3Ship(CisCommand):
     abstract = 0
@@ -38,9 +34,6 @@ class CisUe3Ship(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
-        if context.dlc is None:
-            context.dlc = context.project
-
         if not deploy_latest_revision(context, context.cis_version_directory, context.revision, ['Win64']):
             log_error("Unable to deploy Win64 binaries, aborting")
             return False
@@ -50,69 +43,7 @@ class CisUe3Ship(CisCommand):
                 log_error("Unable to deploy {0} binaries, aborting", context.platform)
                 return False
 
-        master_directory = context.format(context.cis_master_directory)
-
-        if os.path.exists(master_directory):
-            log_notification("Found a master directory at {0} : I'm going to build a patch", master_directory)
-            if context.dlc == context.project:
-                return _ship_game_patch(context)
-            else:
-                _ship_dlc_path(context)
-        else:
-            if context.dlc == context.project:
-                _ship_game_gold(context)
-            else:
-                _ship_dlc_gold(context)
-        # Checker s'il existe un dossier build/shipped/PLATFORM_Episode
-        # Si oui, on crée un patch:
-        #   S'il s'agit d'un DLC :
-        #       On copie le cook du master E1 en local
-        #   On copie le cook en local
-        #   On lance un cook incrémental
-        #   On met de cote les fichiers a garder
-        #   On delete et recopie le cook d'origine
-        #   On copie les fichiers a garder
-        # Sinon, on crée un DLC
-        #   S'il s'agit d'un DLC
-        #       On Copie le cook du master E1 en local
-        # On appelle CookerSync
-        settings  = context.settings
-        arguments = context.arguments
+        if not ue3_ship(context):
+            return False
 
         return True
-
-def _ship_game_patch(context):
-    if not deploy(context, context.cis_master_directory):
-        return False
-
-    patch_config_file = context.format(context.patch_config_path)
-
-    if not context.load_config_file(patch_config_file):
-        log_error("Unable to load path config file at {0}", patch_config_file)
-        return False
-
-    map = context.cook_maps[context.dlc]
-
-    if not ue3_cook(context.game,
-                    map,
-                    context.languages,
-                    None,
-                    context.platform,
-                    'final',
-                    incremental = True):
-        return False
-
-    cook_directory  = get_cook_directory(context.game, context.project, context.dlc, context.platform, 'final')
-    patched_files   = list(context.patched_files(context, cook_directory))
-
-    log_notification("Redeploying master cook ignoring patched files")
-    if not deploy(context, context.cis_master_directory, ignore_files = patched_files):
-        return False
-
-    if not generate_toc(context, dlc = "Episode01" if context.dlc == context.project else context.dlc):
-        return False
-
-    if not publish(context, ue3_publish_patch, context.cis_ship_patch_directory):
-        return False
-
-    return True

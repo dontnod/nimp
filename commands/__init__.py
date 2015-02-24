@@ -6,5 +6,6 @@ __all__ = ["_command",
            "cis_ue3_ship",
            "cis_wwise_build_banks",
            "ue3_build",
-           "ue3_cook"]
+           "ue3_cook",
+           "ue3_ship"]
 

@@ -14,7 +14,8 @@ class RawFormat(Format):
     #---------------------------------------------------------------------------
     def __init__(self):
         Format.__init__(self, "raw")
-        self._progress_bar = None
+        self._total = 0
+        self._step_name_formatter = None
 
     #---------------------------------------------------------------------------
     def format_message(self, log_level, message_format, *args):
@@ -28,27 +29,24 @@ class RawFormat(Format):
     #---------------------------------------------------------------------------
     def start_progress(self,
                        total,
-                       position_formatter = None,
-                       speed_formatter    = None,
-                       total_formatter    = None,
-                       template           = DEFAULT_BAR_TEMPLATE,
-                       width              = DEFAULT_BAR_WIDTH):
-        assert(self._progress_bar is None)
-        self._progress_bar = StandardProgressBar(total                  = total,
-                                                 position_formatter     = position_formatter,
-                                                 speed_formatter        = speed_formatter,
-                                                 total_formatter        = total_formatter,
-                                                 template               = template,
-                                                 width                  = width)
+                       position_formatter  = None,
+                       speed_formatter     = None,
+                       total_formatter     = None,
+                       step_name_formatter = None,
+                       template            = DEFAULT_BAR_TEMPLATE,
+                       width               = DEFAULT_BAR_WIDTH):
+        self._total                 = total
+        self._step_name_formatter   = step_name_formatter
+        pass
 
     #---------------------------------------------------------------------------
     def update_progress(self, value, step_name = None):
-        assert(self._progress_bar is not None)
-        return self._progress_bar.update(value, step_name)
+        formatter = self._step_name_formatter
+        step_name = step_name if formatter is None else formatter(step_name)
+        log_verbose("{0}/{1} : {2}", value, self._total, step_name)
 
     #---------------------------------------------------------------------------
     def end_progress(self):
-        assert(self._progress_bar is not None)
-        self._progress_bar = None
-        return "                                                                   \r"
-
+        self._total                 = 0
+        self._step_name_formatter   = None
+        return ""

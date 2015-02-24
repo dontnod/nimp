@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #-------------------------------------------------------------------------------
-DEFAULT_BAR_TEMPLATE = "{label}[{filled_chars}{empty_chars}] {position}/{total} - {time_left} - {speed}"
+DEFAULT_BAR_TEMPLATE = "{label}[{filled_chars}{empty_chars}] {position}/{total} - {time_left} - {step_name}"
 DEFAULT_BAR_WIDTH    = 15
 
 #-------------------------------------------------------------------------------
@@ -43,16 +43,18 @@ def log_error(message_format, *args):
 
 #-------------------------------------------------------------------------------
 def start_progress(total,
-                   position_formatter = None,
-                   speed_formatter    = None,
-                   total_formatter    = None,
-                   template           = DEFAULT_BAR_TEMPLATE,
-                   width              = DEFAULT_BAR_WIDTH):
+                   position_formatter  = None,
+                   speed_formatter     = None,
+                   total_formatter     = None,
+                   step_name_formatter = None,
+                   template            = DEFAULT_BAR_TEMPLATE,
+                   width               = DEFAULT_BAR_WIDTH):
     if(g_logger is not None):
         g_logger.start_progress(total               = total,
                                 position_formatter  = position_formatter,
                                 speed_formatter     = speed_formatter,
                                 total_formatter     = total_formatter,
+                                step_name_formatter = step_name_formatter,
                                 template            = template,
                                 width               = width)
 
@@ -66,3 +68,20 @@ def end_progress():
     if(g_logger is not None):
         g_logger.end_progress()
 
+#-------------------------------------------------------------------------------
+def log_progress(items,
+                 position_formatter  = None,
+                 speed_formatter     = None,
+                 total_formatter     = None,
+                 step_name_formatter = None):
+    start_progress(len(items),
+                   position_formatter  = position_formatter,
+                   speed_formatter     = speed_formatter,
+                   total_formatter     = total_formatter,
+                   step_name_formatter = step_name_formatter)
+    i = 0
+    for item in items:
+        i = i + 1
+        update_progress(i, item)
+        yield item
+    end_progress()

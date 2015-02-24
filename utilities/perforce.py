@@ -24,7 +24,7 @@ Description:\n\
 
 #-------------------------------------------------------------------------------
 def p4_add(cl_number, path, pattern = '*'):
-    files = get_matching_files(path, pattern)
+    files = list_files_matching(path, include = [pattern])
 
     if files is None:
         return False
@@ -72,7 +72,7 @@ def p4_delete_changelist(cl_number):
 
 #-------------------------------------------------------------------------------
 def p4_edit(cl_number, path, pattern = '*'):
-    files = get_matching_files(path, pattern)
+    files = list_files_matching(path, include = [pattern])
 
     if files is None:
         return False
@@ -188,13 +188,14 @@ def p4_sync(cl_number = None):
 #-------------------------------------------------------------------------------
 class PerforceTransaction:
     #---------------------------------------------------------------------------
-    def __init__(self, change_list_description, *paths, submit_on_success = False, reconcile = True):
+    def __init__(self, change_list_description, *paths, submit_on_success = False, reconcile = True, revert_unchanged = True):
         self._change_list_description   = change_list_description
         self._paths                     = list(paths)
         self._success                   = True
         self._cl_number                 = None
         self._submit_on_success         = submit_on_success
         self._reconcile                 = reconcile
+        self._revert_unchanged          = revert_unchanged
 
     #---------------------------------------------------------------------------
     def __enter__(self):
@@ -238,7 +239,7 @@ class PerforceTransaction:
         elif self._success and self._submit_on_success:
             log_verbose("P4 transaction succeed, committing result...")
             return p4_submit(self._cl_number)
-        elif self._success:
+        elif self._success and self._revert_unchanged:
             log_verbose("P4 transaction succeed, reverting unchanged files...")
             return p4_revert_unchanged(self._cl_number)
         return True

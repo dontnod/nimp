@@ -5,6 +5,7 @@ import os.path
 import shutil
 import sys
 import fnmatch
+import glob
 
 from utilities.logging  import *
 
@@ -67,43 +68,53 @@ def split_path(path):
     return splitted_path
 
 #-------------------------------------------------------------------------------
-def get_matching_files(path, pattern = '*'):
-    """ Returns an array containing only path if path is a file, or all files
-        matching pattern in path and his subdirectory if path is a directory.
+def list_files(source, recursive):
+    """ Extended list files method.
+        Source can either be a file, a directory or a glob expression.
     """
-    if os.path.isfile(path):
-        return [path]
-    elif os.path.isdir(path):
-        result = []
-        for root, directories, files in os.walk(path):
-            for file in files:
-                if fnmatch.fnmatch(file, pattern):
-                    result.append(os.path.join(root, file))
-        return result
+    if os.path.exists(source):
+        if os.path.isfile(source) and os.path.exists(source):
+            yield source
+        elif os.path.isdir(source_path) and recursive:
+            for root, directories, files in os.walk(source):
+                for file in files:
+                    yield os.path.join(root, file)
+        elif os.path.isdir(source_path) and not recursive:
+            for child in os.listdir(source):
+                if os.path.isfile(child):
+                    yield child
+        else:
+            assert(false)
     else:
-        log_error("Can't find file or directory {0}", path)
-        return None
+        for glob_source in glob.glob(source):
+            for file in list_files(glob_source, recursive):
+                yield file
 
 #-------------------------------------------------------------------------------
-def get_matching_subdirectories(path, pattern = '*'):
-    """ Returns an array containing only path if path is a file, or all files
-        matching pattern in path and his subdirectory if path is a directory.
+def filter_matching_files(paths, include = ['*'], exclude = []):
+    """ Filters files matching one of the include pattern and none of exclude
+        patterns.
+        The filename of each path will be extracted before matching.
     """
-
-    if os.path.isdir(path):
-        result = []
-        for root, directories, files in os.walk(path):
-            for directory in directories:
-                if fnmatch.fnmatch(directory, pattern):
-                    result.append(os.path.join(root, directory))
-        return result
-    else:
-        log_error("Can't find directory {0}", path)
-        return None
+    for path in paths:
+        match = False
+        for pattern in include:
+            if fnmatch.fnmatch(os.path.basename(path), pattern):
+                match = True
+                break
+        for pattern in exclude:
+            if fnmatch.fnmatch(os.path.basename(path), pattern):
+                match = False
+                break
+        if match:
+            yield path
 
 #-------------------------------------------------------------------------------
-def get_main_path():
-    try:
-        return os.path.abspath(sys.modules['__main__'].__file__)
-    except:
-        return sys.executable
+def list_files_matching(source, include = ['*'], exclude = [], recursive = True):
+    """ List files in source, returns files wich name matches all of include
+        patterns and none of exclude patterns. source can either be a file,
+        a directory or a glob expression.
+        The filename of each path will be extracted before matching.
+    """
+    all_files = list_files(source, recursive)
+    return filter_matching_files(all_files, include, exclude)

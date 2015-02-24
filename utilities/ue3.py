@@ -8,44 +8,11 @@ import time
 import contextlib
 import shutil
 
-from utilities.build        import *
-from utilities.deployment   import *
+from utilities.build            import *
+from utilities.deployment       import *
+from utilities.ue3_deployment   import *
 
 VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
-
-#-------------------------------------------------------------------------------
-def get_cook_platform_name(platform_name):
-    platform_names = {
-        "ps4"       : "Orbis",
-        "xboxone"   : "Dingo",
-        "win64"     : "PC",
-        "win32"     : "PCConsole",
-        "xbox360"   : "Xbox360",
-        "ps3"       : "PS3" }
-
-    platform_name = platform_name.lower()
-
-    if not platform_name in platform_names:
-        return platform_name
-
-    return platform_names[platform_name]
-
-#-------------------------------------------------------------------------------
-def get_binaries_platform(platform):
-    platforms = {
-        "ps4"       : "Orbis",
-        "xboxone"   : "Dingo",
-        "win64"     : "Win64",
-        "win32"     : "Win32",
-        "xbox360"   : "Xbox360",
-        "ps3"       : "PS3" }
-
-    platform = platform.lower()
-
-    if not platform in platforms:
-        return platform
-
-    return platforms[platform]
 
 #-------------------------------------------------------------------------------
 def generate_toc(context, dlc):
@@ -73,18 +40,6 @@ def generate_toc(context, dlc):
                         "-dlcname", dlc])
     return True
 
-
-#-------------------------------------------------------------------------------
-def get_cook_directory(game, project, dlc, platform, configuration):
-    cook_platform = get_cook_platform_name(platform)
-
-    suffix = 'Final' if (configuration.lower() in ['test', 'final'] and dlc == project) else ''
-
-    if dlc == project:
-        return '{0}\\Cooked{1}{2}'.format(game, cook_platform, suffix)
-    else:
-       return '{0}\\DLC\\{platform}\\{dlc}\\Cooked{1}{2}'.format(game, cook_platform, suffix)
-
 #---------------------------------------------------------------------------
 def ue3_build(solution, platform, configuration, vs_version, generate_version_file = False):
     result          = True
@@ -110,6 +65,65 @@ def ue3_build(solution, platform, configuration, vs_version, generate_version_fi
             return _build()
     else:
         return _build()
+
+#---------------------------------------------------------------------------
+def ue3_ship(context, destination = None):
+    if context.dlc is None:
+        context.dlc = context.project
+
+    master_directory = context.format(context.cis_master_directory)
+
+    if os.path.exists(master_directory):
+        log_notification("Found a master at {0} : I'm going to build a patch", master_directory)
+        if context.dlc == context.project:
+            return _ship_game_patch(context, destination)
+        else:
+            log_error("Sry, building a DLC patch is still not implemented")
+    else:
+        if context.dlc == context.project:
+            log_error("Sry, building a game master is still not implemented")
+        else:
+            log_error("Sry, building a dlc master is still not implemented")
+
+#---------------------------------------------------------------------------
+def _ship_game_patch(context, target_directory):
+    if not deploy(context, context.cis_master_directory):
+        return False
+
+    patch_config_file = context.format(context.patch_config_path)
+    if not context.load_config_file(patch_config_file):
+        log_error("Unable to load path config file at {0}", patch_config_file)
+        return False
+
+    map = context.cook_maps[context.dlc]
+
+    log_notification("Cooking on top of master...")
+    if not ue3_cook(context.game,
+                    map,
+                    context.languages,
+                    None,
+                    context.platform,
+                    'final',
+                    incremental = True):
+        return False
+
+    cook_directory  = get_cook_directory(context.game, context.project, context.dlc, context.platform, 'final')
+    patched_files   = list(context.patched_files(context, cook_directory))
+
+    log_notification("Redeploying master cook ignoring patched files...")
+    if not deploy(context, context.cis_master_directory, ignore_globs = patched_files):
+        return False
+
+    log_notification("Generating toc...")
+    if not generate_toc(context, dlc = "Episode01" if context.dlc == context.project else context.dlc):
+        return False
+
+    log_notification("Copying patched files to output directory...")
+    if not publish(context, ue3_publish_patch, target_directory or context.cis_ship_patch_directory):
+        return False
+
+    return True
+
 
 #---------------------------------------------------------------------------
 def ue3_commandlet(game, name, args):

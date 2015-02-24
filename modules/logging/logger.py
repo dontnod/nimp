@@ -34,12 +34,14 @@ class Logger:
                        position_formatter,
                        speed_formatter,
                        total_formatter,
+                       step_name_formatter,
                        template,
                        width):
         self._format.start_progress(total               = total,
                                     position_formatter  = position_formatter,
                                     speed_formatter     = speed_formatter,
                                     total_formatter     = total_formatter,
+                                    step_name_formatter = step_name_formatter,
                                     template            = template,
                                     width               = width)
 

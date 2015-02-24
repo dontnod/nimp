@@ -3,6 +3,8 @@
 #-------------------------------------------------------------------------------
 import  sys
 import  time
+import  shutil
+
 from    datetime        import *
 
 from    utilities.units    import *
@@ -14,14 +16,15 @@ STREAM = sys.stdout
 class StandardProgressBar():
 
     #---------------------------------------------------------------------------
-    _label              = ''
-    _width              = 32
-    _total              = None
-    _start              = 0
-    _template           = ""
-    _position_formatter = None
-    _total_formatter    = None
-    _speed_formatter    = None
+    _label               = ''
+    _width               = 32
+    _total               = None
+    _start               = 0
+    _template            = ""
+    _position_formatter  = None
+    _total_formatter     = None
+    _speed_formatter     = None
+    _step_name_formatter = None
 
     #---------------------------------------------------------------------------
     def __init__(self,
@@ -30,6 +33,7 @@ class StandardProgressBar():
                  position_formatter,
                  total_formatter,
                  speed_formatter,
+                 step_name_formatter,
                  label              = '',
                  width              = 30):
         self._label = label
@@ -37,9 +41,10 @@ class StandardProgressBar():
         self._total = total
         self._start = datetime.now()
         self._template = template
-        self._position_formatter = position_formatter
-        self._total_formatter    = total_formatter
-        self._speed_formatter    = speed_formatter
+        self._position_formatter  = position_formatter
+        self._total_formatter     = total_formatter
+        self._speed_formatter     = speed_formatter
+        self._step_name_formatter = step_name_formatter
 
     #---------------------------------------------------------------------------
     def update(self, position, step_name):
@@ -68,6 +73,7 @@ class StandardProgressBar():
         formatted_speed     = format_value(self._speed_formatter, average_speed)
         formatted_position  = format_value(self._position_formatter, position)
         formatted_total     = format_value(self._total_formatter, self._total)
+        formatted_step_name = format_value(self._step_name_formatter, step_name)
 
         x                       = int(self._width*position/self._total)
         empty_chars             = " " * int(self._width - x)
@@ -80,7 +86,9 @@ class StandardProgressBar():
                                                         total          = formatted_total,
                                                         time_left      = formatted_time_left,
                                                         speed          = formatted_speed,
-                                                        step_name      = step_name)
+                                                        step_name      = formatted_step_name)
         templated_progress_bar_size = len(templated_progress_bar)
-        templated_progress_bar      = templated_progress_bar + (79 - templated_progress_bar_size) * " " + "\r"
+
+        width, height = shutil.get_terminal_size((80, 20))
+        templated_progress_bar      = templated_progress_bar + (width - 1 - templated_progress_bar_size) * " " + "\r"
         return templated_progress_bar

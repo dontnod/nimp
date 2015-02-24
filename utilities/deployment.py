@@ -9,6 +9,7 @@ import tempfile;
 import shutil
 import stat
 import glob
+import fnmatch
 import re
 
 from utilities.perforce     import *
@@ -18,17 +19,20 @@ from utilities.files        import *
 def publish(context, publish_callback, destination_format, **kwargs):
     destination = context.format(destination_format)
     publisher   = _FilePublisher(destination, context, **kwargs)
-    return publish_callback(publisher)
+    if publish_callback(publisher):
+        publisher.execute()
+        return True
+    return False
 
 #-------------------------------------------------------------------------------
-def deploy(context, source_format, ignore_files = [], **kwargs):
+def deploy(context, source_format, ignore_globs = [], **kwargs):
     """ Copy the content of the given source directory, checkouting local files
         if necesseray
     """
-    normalized_ignore_files = []
-
-    for ignored_file in ignore_files:
-        normalized_ignore_files.append(os.path.normpath(ignored_file).lower())
+    ignore_globs = list(ignore_globs)
+    for i in range(0, len(ignore_globs)):
+        ignore_globs[i] = context.format(ignore_globs[i])
+        ignore_globs[i] = os.path.normpath(ignore_globs[i])
 
     source = context.format(source_format, **kwargs)
     log_notification("Deploying {0} locally", source)
@@ -37,27 +41,46 @@ def deploy(context, source_format, ignore_files = [], **kwargs):
         log_error("{0} directory was not found, can't deploy", source)
         return False
 
-    with PerforceTransaction("Binaries checkout", reconcile = False) as transaction:
-        for root, directories, files in os.walk(source, topdown=False):
-            for file in files:
-                source_file     = os.path.join(root, file)
-                local_directory = os.path.relpath(root, source)
-                local_file      = os.path.join('.', local_directory, file)
+    files_to_copy = []
+    for root, directories, files in os.walk(source, topdown=False):
+        for file in files:
+            source_file      = os.path.join(root, file)
+            target_directory = os.path.relpath(root, source)
+            target_file      = os.path.join('.', target_directory, file)
+            files_to_copy.append((source_file, target_directory, target_file))
 
-                if os.path.normpath(local_file).lower() in normalized_ignore_files:
-                    log_verbose("Ignoring file {0}", local_file)
-                    continue
+    def file_name_formatter(tuple):
+        return tuple[2]
 
-                log_verbose("{0} => {1}", source_file, local_file)
+    ignored_files = 0
+    with PerforceTransaction("Nimp Deployment", reconcile = False, revert_unchanged = False) as transaction:
+        progress = log_progress(files_to_copy, step_name_formatter = file_name_formatter)
+        for source_file, target_directory, target_file in progress:
+            ignored = False
+            normalized_path = os.path.normpath(target_file)
+            for ignore_glob in ignore_globs:
+                if fnmatch.fnmatch(normalized_path, ignore_glob):
+                    log_notification("Ignoring file {0}", target_file)
+                    ignored_files += 1
+                    ignored = True
+                    break
+            if ignored:
+                continue
 
-                if not os.path.exists(local_directory):
-                    mkdir(local_directory)
+            if not os.path.exists(target_directory):
+                mkdir(target_directory)
 
-                transaction.add(local_file)
+            transaction.add(target_file)
 
-                if os.path.exists(local_file):
-                    os.chmod(local_file, stat.S_IWRITE)
-                shutil.copy(source_file, local_file)
+            if os.path.exists(target_file):
+                os.chmod(target_file, stat.S_IWRITE)
+
+            shutil.copy(source_file, target_file)
+
+    log_notification("Copied {0}/{1} files ({2} files ignored)",
+                     len(files_to_copy) - ignored_files,
+                     len(files_to_copy),
+                     ignored_files)
     return True
 
 #---------------------------------------------------------------------------
@@ -158,6 +181,7 @@ class _FilePublisher(object):
         self._parent     = parent
         for key in override_args:
             setattr(self, key, override_args[key])
+        self._files_to_copy = []
 
     def __getattr__(self, name):
         try:
@@ -176,8 +200,8 @@ class _FilePublisher(object):
             shutil.rmtree(self.destination, onerror = _onerror)
 
     def _format(self, str, is_source = True):
-        format_args = {}
-        contextes = []
+        format_args     = {}
+        contextes       = []
         current_context = self
 
         while hasattr(current_context, '_parent'):
@@ -199,20 +223,20 @@ class _FilePublisher(object):
             exclude[i] = self._format(exclude[i])
 
         source = self._format(source)
-        if os.path.isfile(source):
-            target              = os.path.join(self.destination, os.path.relpath(source, '.'))
-            target_directory    = os.path.dirname(target)
+        for source_file in list_files_matching(source, include, exclude, recursive):
+            target_file = os.path.join(self.destination, source_file)
+            self._files_to_copy.append((source_file, target_file))
 
-            if not os.path.exists(target_directory):
+    def execute(self):
+        def file_formatter(file_tuple):
+            return file_tuple[1]
+
+        for source, target in log_progress(self._files_to_copy, step_name_formatter = file_formatter):
+            target_directory    = os.path.dirname(target)
+            log_verbose("{0} => {1}", source, target)
+
+            if not os.path.isdir(target_directory):
                 os.makedirs(target_directory)
 
-            log_verbose("{0} => {1}", source, target)
             shutil.copy(source, target)
-            os.chmod(target, stat.S_IWUSR)
-        else:
-            def _copy_callback(source, destination):
-                os.chmod(destination, stat.S_IWUSR)
-            if recursive:
-                recursive_glob_copy(source, self.destination, include, exclude, copy_callback = _copy_callback)
-            else:
-                glob_copy(source, self.destination, include, exclude, copy_callback = _copy_callback)
+

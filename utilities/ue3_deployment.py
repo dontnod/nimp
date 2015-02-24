@@ -3,6 +3,50 @@
 from utilities.deployment import *
 from utilities.ue3        import *
 
+#-------------------------------------------------------------------------------
+def get_cook_platform_name(platform_name):
+    platform_names = {
+        "ps4"       : "Orbis",
+        "xboxone"   : "Dingo",
+        "win64"     : "PC",
+        "win32"     : "PCConsole",
+        "xbox360"   : "Xbox360",
+        "ps3"       : "PS3" }
+
+    platform_name = platform_name.lower()
+
+    if not platform_name in platform_names:
+        return platform_name
+
+    return platform_names[platform_name]
+
+#-------------------------------------------------------------------------------
+def get_binaries_platform(platform):
+    platforms = {
+        "ps4"       : "Orbis",
+        "xboxone"   : "Dingo",
+        "win64"     : "Win64",
+        "win32"     : "Win32",
+        "xbox360"   : "Xbox360",
+        "ps3"       : "PS3" }
+
+    platform = platform.lower()
+
+    if not platform in platforms:
+        return platform
+
+    return platforms[platform]
+
+#-------------------------------------------------------------------------------
+def get_cook_directory(game, project, dlc, platform, configuration):
+    cook_platform = get_cook_platform_name(platform)
+
+    suffix = 'Final' if (configuration.lower() in ['test', 'final'] and dlc == project) else ''
+
+    if dlc == project:
+        return '{0}\\Cooked{1}{2}'.format(game, cook_platform, suffix)
+    else:
+       return '{0}\\DLC\\{platform}\\{dlc}\\Cooked{1}{2}'.format(game, cook_platform, suffix)
 
 #---------------------------------------------------------------------------
 def ue3_publish_binaries(publisher):
