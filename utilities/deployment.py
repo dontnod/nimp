@@ -233,10 +233,10 @@ class _FilePublisher(object):
 
         for source, target in log_progress(self._files_to_copy, step_name_formatter = file_formatter):
             target_directory    = os.path.dirname(target)
-            log_verbose("{0} => {1}", source, target)
 
             if not os.path.isdir(target_directory):
                 os.makedirs(target_directory)
 
             shutil.copy(source, target)
+        log_notification("Deployed {0} files", len(self._files_to_copy))
 
