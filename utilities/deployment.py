@@ -25,7 +25,7 @@ def publish(context, publish_callback, destination_format, **kwargs):
     return False
 
 #-------------------------------------------------------------------------------
-def deploy(context, source_format, ignore_globs = [], **kwargs):
+def deploy(context, source_format, ignore_globs = [], destination = ".", **kwargs):
     """ Copy the content of the given source directory, checkouting local files
         if necesseray
     """
@@ -46,7 +46,7 @@ def deploy(context, source_format, ignore_globs = [], **kwargs):
         for file in files:
             source_file      = os.path.join(root, file)
             target_directory = os.path.relpath(root, source)
-            target_file      = os.path.join('.', target_directory, file)
+            target_file      = os.path.join(destination, target_directory, file)
             files_to_copy.append((source_file, target_directory, target_file))
 
     def file_name_formatter(tuple):

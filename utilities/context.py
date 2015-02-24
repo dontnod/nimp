@@ -49,6 +49,7 @@ def _read_config_file(filename):
         log_error("Configuration file {0} has no 'config' section.", filename)
     except Exception as e:
         log_error("Unable to load configuration file {0}: {1}", filename, str(e))
+        return None
 
     return {}
 
