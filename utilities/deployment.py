@@ -146,7 +146,7 @@ def deploy_latest_revision(context, directory_format, start_revision, platforms)
 def upload_microsoft_symbols(context, paths):
     symbol_files = []
     for path in paths:
-        symbol_files += recursive_glob(path, ["*.pdb", "*.xdb"])
+        symbol_files += list_files_matching(path, ["*.pdb", "*.xdb"])
 
     index_content = ""
 
