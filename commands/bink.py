@@ -147,7 +147,7 @@ def shoot_matinee(context):
     regex_delete_files(screenshots_directory, ".*\.bmp")
 
     log_notification("Capturing matinee")
-    if not call_process(".", [ue3_executable, "WhatIf_ShootBink",  "-resx=1920",  "-resy=1080", "-dumpmovie",  "-benchmark",  "-NOTEXTURESTREAMING", "-MAXQUALITYMODE"]):
+    if call_process(".", [ue3_executable, "WhatIf_ShootBink",  "-resx=1920",  "-resy=1080", "-dumpmovie",  "-benchmark",  "-NOTEXTURESTREAMING", "-MAXQUALITYMODE"]) != 0:
 
         return False
     return True
@@ -167,7 +167,7 @@ def encode_avi(context):
     mkdir(output_directory)
 
     log_notification("Encoding .avi n {0}", output)
-    if not call_process(".", [ffmpeg_path, "-r", arguments.framerate, "-i",  input, "-vcodec", "huffyuv", output]):
+    if call_process(".", [ffmpeg_path, "-r", arguments.framerate, "-i",  input, "-vcodec", "huffyuv", output]) != 0:
         return False
 
     return True
@@ -186,7 +186,7 @@ def update_video(context):
     output  = output.replace("/", "\\")
 
     with PerforceTransaction("Updated {0} BIK movie".format(bink_name), output) as transaction:
-        if not call_process(".", [binkc_path, input, output, "/F{0}".format(arguments.framerate), "/O", "/#"]):
+        if call_process(".", [binkc_path, input, output, "/F{0}".format(arguments.framerate), "/O", "/#"]) != 0:
             transaction.abort()
             return False
 

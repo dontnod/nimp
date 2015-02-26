@@ -19,7 +19,7 @@ def build_wwise_banks(platform, wwise_banks_path, wwise_project, checkin = False
 
     result = True
     with PerforceTransaction(cl_name, wwise_banks_path, submit_on_success = checkin) as transaction:
-        if not call_process(".", wwise_command):
+        if call_process(".", wwise_command) == 1:
             result = False
             log_error("Error while running WwiseCli")
             transaction.abort()

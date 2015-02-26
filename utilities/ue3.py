@@ -137,7 +137,7 @@ def ue3_commandlet(game, name, args):
 
     cmdline = [ game_path, name ] + args + ['-nopause', '-buildmachine', '-forcelogflush']
 
-    return call_process(game_directory, cmdline)
+    return call_process(game_directory, cmdline) == 0
 
 #---------------------------------------------------------------------------
 def ue3_build_script(game):

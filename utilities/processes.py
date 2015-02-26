@@ -102,14 +102,8 @@ def call_process(directory, command, output_filter = default_output_filter):
     for thread in log_threads:
         thread.join()
 
-
-    if(process_return == 0):
-        result = True
-    else:
-        log_verbose("Program returned with code {0}", process_return)
-        result =  False
-
-    return result
+    log_verbose("Program returned with code {0}", process_return)
+    return process_return
 
 #-------------------------------------------------------------------------------
 def redirect_output(process):

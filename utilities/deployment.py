@@ -272,15 +272,15 @@ def upload_microsoft_symbols(context, paths):
         return False
 
     result = True
-    if not call_process(".",
-                        [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
-                          "add",
-                          "/r", "/f",  "@symbols_index.txt",
-                          "/s", context.symbol_server,
-                          "/compress",
-                          "/o",
-                          "/t", "{0}_{1}_{2}".format(context.project, context.platform, context.configuration),
-                          "/v", context.revision ]):
+    if call_process(".",
+                    [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+                      "add",
+                      "/r", "/f",  "@symbols_index.txt",
+                      "/s", context.symbol_server,
+                      "/compress",
+                      "/o",
+                      "/t", "{0}_{1}_{2}".format(context.project, context.platform, context.configuration),
+                      "/v", context.revision ]) != 0:
         result = False
         log_error("w00t ! An error occured while uploading symbols.")
 

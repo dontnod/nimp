@@ -78,7 +78,7 @@ def p4_edit(cl_number, path, pattern = '*'):
         return False
 
     for file in files:
-        if _p4_run_command(".", ["p4", "-z", "tag", "edit", "-c", cl_number, file]) is None:
+        if _p4_run_command(".", ["p4", "-z", "tag", "edit", "-c", cl_number, os.path.join(path, file)]) is None:
             return False
 
     return True

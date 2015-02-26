@@ -15,7 +15,7 @@ def vsbuild(solution, platform, configuration, project = None, vs_version = '12'
     if project is not None:
         command = command + [ '/project', project ]
     command = command + [ '/' + target, configuration + '|' + platform ]
-    return call_process(build_directory, command)
+    return call_process(build_directory, command) == 0
 
 #-------------------------------------------------------------------------------
 def _find_devenv_path(vs_version):
