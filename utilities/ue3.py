@@ -86,16 +86,18 @@ def ue3_ship(context, destination = None):
             log_error("Sry, building a dlc master is still not implemented")
 
 #---------------------------------------------------------------------------
-def _ship_game_patch(context, target_directory):
-    if not deploy(context, context.cis_master_directory):
-        return False
-
+def _ship_game_patch(context, destination):
     patch_config_file = context.format(context.patch_config_path)
     if not context.load_config_file(patch_config_file):
         log_error("Unable to load path config file at {0}", patch_config_file)
         return False
 
     map = context.cook_maps[context.dlc]
+
+    master_copier = CopyTransaction(context).relative(context.cis_master_directory)
+    master_copier.add(".")
+    if master_copier.do():
+        return False
 
     log_notification("Cooking on top of master...")
     if not ue3_cook(context.game,
@@ -107,11 +109,11 @@ def _ship_game_patch(context, target_directory):
                     incremental = True):
         return False
 
-    cook_directory  = get_cook_directory(context.game, context.project, context.dlc, context.platform, 'final')
-    patched_files   = list(context.patched_files(context, cook_directory))
 
     log_notification("Redeploying master cook ignoring patched files...")
-    if not deploy(context, context.cis_master_directory, ignore_globs = patched_files):
+    context.patch_files(master_copier.ignore_added_files())
+
+    if not master_copier.do():
         return False
 
     log_notification("Generating toc...")
@@ -119,10 +121,9 @@ def _ship_game_patch(context, target_directory):
         return False
 
     log_notification("Copying patched files to output directory...")
-    if not publish(context, ue3_publish_patch, target_directory or context.cis_ship_patch_directory):
-        return False
-
-    return True
+    copy = CopyTransaction(context, destination or context.cis_ship_patch_directory)
+    context.patch_files(copy)
+    return copy.do()
 
 
 #---------------------------------------------------------------------------

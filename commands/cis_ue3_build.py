@@ -46,7 +46,9 @@ class CisUe3BuildCommand(CisCommand):
             return False
 
         log_notification(" ****** Publishing Binaries...")
-        if not publish(context, ue3_publish_binaries, context.cis_binaries_directory):
+        copy = CopyTransaction(context, context.cis_binaries_directory)
+        ue3_publish_binaries(copy)
+        if not copy.do():
             return False
 
         log_notification(" ****** Publishing symbols...")

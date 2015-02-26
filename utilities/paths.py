@@ -70,7 +70,7 @@ def split_path(path):
 #-------------------------------------------------------------------------------
 def list_files(source, recursive):
     """ Extended list files method.
-        Source can either be a file, a directory or a glob expression.
+        Source can either be a file, a directory.
     """
     if os.path.exists(source):
         if os.path.isfile(source) and os.path.exists(source):
@@ -78,17 +78,18 @@ def list_files(source, recursive):
         elif os.path.isdir(source) and recursive:
             for root, directories, files in os.walk(source):
                 for file in files:
-                    yield os.path.join(root, file)
+                    yield os.path.relpath(os.path.join(root, file), source)
         elif os.path.isdir(source) and not recursive:
             for child in os.listdir(source):
                 if os.path.isfile(child):
                     yield child
-        else:
-            assert(false)
     else:
-        for glob_source in glob.glob(source):
-            for file in list_files(glob_source, recursive):
-                yield file
+        for path in glob.glob(source):
+            if os.path.isfile(path):
+                yield path
+            elif recursive:
+                for file in list_files(path, recursive):
+                    yield file
 
 #-------------------------------------------------------------------------------
 def filter_matching_files(paths, include = ['*'], exclude = []):

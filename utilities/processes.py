@@ -9,6 +9,7 @@ import time
 import tempfile
 
 from utilities.logging import *
+from utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
 def default_output_filter(line):
@@ -53,69 +54,54 @@ def capture_process_output(directory, command, input = None):
 
 #-------------------------------------------------------------------------------
 def call_process(directory, command, output_filter = default_output_filter):
-    stdout_file_name = tempfile.mktemp()
-    stderr_file_name = tempfile.mktemp()
-
-    stdout_file = open(stdout_file_name, "wb")
-    stderr_file = open(stderr_file_name, "wb")
-
     log_verbose("Running {0} in directory {1}", command, directory)
 
+    ods_logger = OutputDebugStringLogger()
+
     process = subprocess.Popen(command,
-                               stdin   = None,
-                               stdout  = stdout_file,
-                               stderr  = stderr_file,
-                               cwd     = directory)
-    process_ended = threading.Event()
-    process_ended.clear()
+                               stdin                = None,
+                               bufsize              = 0,
+                               stdout               = subprocess.PIPE,
+                               stderr               = subprocess.PIPE,
+                               cwd                  = directory)
 
-    def redirect_output():
-        stdout_read_file = open(stdout_file_name, "rb")
-        stderr_read_file = open(stderr_file_name, "rb")
-        current_error   = ""
-        current_output  = ""
-        while True:
-            output = stdout_read_file.readline()
-            error  = stderr_read_file.readline()
+    ods_logger.log_process_output(process.pid)
+    ods_logger.start()
 
-            error  = error.decode("cp437")
-            output = output.decode("cp437")
-            if(error != ""):
-                current_error = current_error + error
-                if "\n" in current_error:
-                    current_error = current_error.strip("\n\r")
-                    current_error = current_error.replace("{", "{{")
-                    current_error = current_error.replace("}", "}}")
-                    current_error = output_filter(current_error)
-                    if current_error is not None:
-                        log_error(current_error)
-                        current_error = ""
+    def log_output(log_function, pipe):
+        output_buffer = ""
+        while process.poll() == None:
+            try:
+                for  line in iter(pipe.readline, ''):
+                    line  = line.decode("cp850")
 
-            if(output != ""):
-                current_output = current_output + output
-                if "\n" in current_output:
-                    current_output = current_output.strip("\n\r")
-                    current_output = current_output.replace("{", "{{")
-                    current_output = current_output.replace("}", "}}")
-                    current_output = output_filter(current_output)
-                    if current_output is not None:
-                        log_verbose(current_output)
-            current_output = ""
+                    if line == '':
+                        break
 
-             # FIXME : If a process doesn't output a '\n' after terminating, this will hang
-            if output == "" and error == "" and process_ended.is_set():
+                    line  = line.replace("{", "{{").replace("}", "}}")
+                    line  = line.rstrip('\r\n')
+
+                    if line == '':
+                        continue
+
+                    line  = output_filter(line)
+                    log_function(line)
+            except ValueError:
                 return
 
-    redirect_output_thread = threading.Thread(target = redirect_output)
-    redirect_output_thread.start()
+    log_thread_args = [ (log_verbose, process.stdout), (log_error, process.stderr), (log_verbose, ods_logger.output) ]
+    log_threads     = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
+
+    for thread in log_threads:
+        thread.start()
 
     process_return = process.wait()
-    process_ended.set()
 
-    redirect_output_thread.join()
+    ods_logger.stop()
 
-    stdout_file.close()
-    stderr_file.close()
+    for thread in log_threads:
+        thread.join()
+
 
     if(process_return == 0):
         result = True

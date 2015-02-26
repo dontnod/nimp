@@ -36,17 +36,21 @@ class CisUe3PublishVersion(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
+        copy = CopyTransaction(context, ".", checkout = True)
         for configuration in context.configurations:
-            if not deploy(context, context.cis_binaries_directory, configuration = configuration):
-                log_error("Unable to compiled binaries for revision {0} and platform {1}, can't publish version.", context.revision, context.platform)
-                return False
+            copier.override(configuration = configuration).add(context.cis_binaries_directory)
+
+        if not copy.do():
+            return False
 
         if context.platform.lower() == 'win64':
             if not ue3_build_script(context.game):
                 log_error("Error while building script")
                 return False
 
-        if not publish(context, ue3_publish_version, context.cis_version_directory, platform = get_binaries_platform(context.platform)):
+        copy = CopyTransaction(context, context.cis_version_directory, platform = get_binaries_platform(context.platform))
+        ue3_publish_version(copy)
+        if not copy.do():
             return False
 
         return True

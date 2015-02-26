@@ -45,7 +45,9 @@ class CisUe3CookCommand(CisCommand):
             if not self._deploy_game_cook(context):
                 return False
 
-        if not deploy_latest_revision(context, context.cis_version_directory, context.revision):
+        copy = CopyTransaction(context)
+        copy.add(context.cis_version_directory)
+        if not copy.do():
             return False
 
         map = context.cook_maps[(context.dlc or 'default').lower()]

@@ -34,14 +34,16 @@ class CisUe3Ship(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
-        if not deploy_latest_revision(context, context.cis_version_directory, context.revision, ['Win64']):
-            log_error("Unable to deploy Win64 binaries, aborting")
+        copy = CopyTransaction(context, checkout = True)
+        if not copy.override(platform = 'Win64').add_latest_revision(context.cis_version_directory):
             return False
 
         if context.platform.lower() != "Win64":
-            if not deploy_latest_revision(context, context.cis_version_directory, context.revision, [context.platform]):
-                log_error("Unable to deploy {0} binaries, aborting", context.platform)
+            if not copy.add_latest_revision(context.cis_version_directory):
                 return False
+
+        if not copy.do():
+            return False
 
         if not ue3_ship(context):
             return False

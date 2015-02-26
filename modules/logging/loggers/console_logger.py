@@ -3,11 +3,15 @@
 import sys
 
 from modules.logging.logger     import *
+import codecs
 
 #-------------------------------------------------------------------------------
 class ConsoleLogger(Logger):
+
     def __init__(self):
         Logger.__init__(self, "console")
+        self._stdout = codecs.getwriter('cp437')(sys.stdout)
+        self._stderr = codecs.getwriter('cp437')(sys.stderr)
 
     #---------------------------------------------------------------------------
     def log_formatted_message(self, log_level, formatted_message):

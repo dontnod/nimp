@@ -11,136 +11,250 @@ import stat
 import glob
 import fnmatch
 import re
+import contextlib
 
 from utilities.perforce     import *
 from utilities.files        import *
 
-#-------------------------------------------------------------------------------
-def publish(context, publish_callback, destination_format, **kwargs):
-    destination = context.format(destination_format)
-    publisher   = _FilePublisher(destination, context, **kwargs)
-    if publish_callback(publisher):
-        publisher.execute()
-        return True
-    return False
+#---------------------------------------------------------------------------
+class _DecoratorBase(object):
+    def __init__(self, transaction):
+        object.__init__(transaction)
+        self.transaction = transaction
 
-#-------------------------------------------------------------------------------
-def deploy(context, source_format, ignore_globs = [], destination = ".", **kwargs):
-    """ Copy the content of the given source directory, checkouting local files
-        if necesseray
-    """
-    ignore_globs = list(ignore_globs)
-    for i in range(0, len(ignore_globs)):
-        ignore_globs[i] = context.format(ignore_globs[i])
-        ignore_globs[i] = os.path.normpath(ignore_globs[i])
+    def __getattr__(self, name):
+        if name == "relative":
+            return relative
+        elif name == "ignore":
+            return ignore
 
-    source = context.format(source_format, **kwargs)
-    log_notification("Deploying {0} locally", source)
+        return getattr(self.transaction, name)
 
-    if not os.path.exists(source):
-        log_error("{0} directory was not found, can't deploy", source)
-        return False
+    #------------------------------------------------------------------------------
+    def relative(self, path):
+        return _RelativeDecorator(self, path)
 
-    files_to_copy = []
-    for root, directories, files in os.walk(source, topdown=False):
-        for file in files:
-            source_file      = os.path.join(root, file)
-            target_directory = os.path.relpath(root, source)
-            target_file      = os.path.join(destination, target_directory, file)
-            files_to_copy.append((source_file, target_directory, target_file))
+    #------------------------------------------------------------------------------
+    def ignore_added_files(self):
+        return _IgnoreDecorator(self)
 
-    def file_name_formatter(tuple):
-        return tuple[2]
+#------------------------------------------------------------------------------
+class CopyTransaction(_DecoratorBase):
+    def __init__(self,
+                 parent,
+                 destination       = ".",
+                 checkout          = False,
+                 overwrite         = True,
+                 **override_args):
+        _DecoratorBase.__init__(self, self)
+        self.destination      = destination
+        self._parent          = parent
+        self._checkout        = checkout
+        self._overwrite       = overwrite
+        self._files_to_copy   = []
+        self._ignored_files   = []
 
-    ignored_files = 0
-    with PerforceTransaction("Nimp Deployment", reconcile = False, revert_unchanged = False) as transaction:
-        progress = log_progress(files_to_copy, step_name_formatter = file_name_formatter)
-        for source_file, target_directory, target_file in progress:
-            ignored = False
-            normalized_path = os.path.normpath(target_file)
-            for ignore_glob in ignore_globs:
-                if fnmatch.fnmatch(normalized_path, ignore_glob):
-                    log_notification("Ignoring file {0}", target_file)
-                    ignored_files += 1
-                    ignored = True
-                    break
-            if ignored:
+        for key in override_args:
+            setattr(self, key, override_args[key])
+
+    #---------------------------------------------------------------------------
+    def __getattr__(self, name):
+        try:
+            return object.__getattr__(self, name)
+        except AttributeError:
+            return getattr(self._parent, name)
+
+    #---------------------------------------------------------------------------
+    def override(**kwargs):
+        result = CopyTransaction(self, self.destination, **kwargs)
+        result._files_to_copy = self._files_to_copy
+        return result
+
+    #---------------------------------------------------------------------------
+    def delete_destination(self):
+        def _onerror(func, path, exc_info):
+            if not os.access(path, os.W_OK):
+                os.chmod(path, stat.S_IWUSR)
+                func(path)
+            else:
+                raise
+        if os.path.exists(self.destination):
+            shutil.rmtree(self.destination, onerror = _onerror)
+
+    #---------------------------------------------------------------------------
+    def add(self, *args, include = ['*'], exclude = [], relocate = None, capitalize = False, recursive = True):
+        files_to_add = self._enumerate_files(*args,
+                                             include    = include,
+                                             exclude    = exclude,
+                                             relocate   = relocate,
+                                             capitalize = capitalize,
+                                             recursive  = recursive)
+        self._files_to_copy.extend(files_to_add)
+
+    def ignore(self, *args, include = ['*'], exclude = [], relocate = None, capitalize = False, recursive = True):
+        for file in self._enumerate_files(*args,
+                                          include    = include,
+                                          exclude    = exclude,
+                                          relocate   = relocate,
+                                          capitalize = capitalize,
+                                          recursive  = recursive):
+            self._ignored_files.append(file[0])
+
+    def _enumerate_files(self, *args, include = ['*'], exclude = [], relocate = None, capitalize = False, recursive = True):
+        for source in args:
+            for i in range(0, len(include)):
+                include[i] = self._format(include[i])
+            for i in range(0, len(exclude)):
+                exclude[i] = self._format(exclude[i])
+
+            source = self._format(source)
+
+            for source_file in list_files_matching(source, include, exclude, recursive):
+                target_file = os.path.join(self.destination, source_file)
+
+                if os.path.isdir(source):
+                    source_file = os.path.join(source, source_file)
+
+                if relocate is not None:
+                    target_file = os.path.relpath(target_file, relocate[0])
+                    target_file = os.path.join(relocate[1], target_file)
+
+                if capitalize:
+                    target_file = target_file.upper()
+
+                yield (source_file, target_file)
+
+    #---------------------------------------------------------------------------
+    def add_latest_revision(self, source_format, start_revision):
+        latest_revision  = get_latest_available_revision(source_format, start_revision, **(var(self).copy()))
+
+        if latest_revision is None:
+            log_error("No available revision found.")
+            return None
+
+        log_notification("Found revision {0}.", latest_revision)
+        for platform in platforms:
+            child = self.override_context(revision = latest_revision, platform = platform)
+            child.add(destination)
+
+        return latest_revision
+
+    #---------------------------------------------------------------------------
+    def do(self):
+        if(self._checkout):
+            with PerforceTransaction("Automatic File Deployment", reconcile = False, revert_unchanged = False) as transaction:
+                for source, target in self._files_to_copy:
+                    transaction.add(target)
+                return self._copy_files()
+        else:
+            return self._copy_files()
+
+    #---------------------------------------------------------------------------
+    def _format(self, str, is_source = True):
+        format_args     = {}
+        contextes       = []
+        current_context = self
+
+        while hasattr(current_context, '_parent'):
+            contextes.append(current_context)
+            current_context = current_context._parent
+
+        contextes.append(current_context)
+        contextes.reverse()
+
+        for context in contextes:
+            format_args.update(**(vars(context).copy()))
+
+        return str.format(**format_args)
+
+    #---------------------------------------------------------------------------
+    def _copy_files(self):
+        def file_formatter(file_tuple):
+            return file_tuple[1]
+
+        self._ignored_files = [os.path.normpath(file) for file in self._ignored_files]
+        for source, target in log_progress(self._files_to_copy, step_name_formatter = file_formatter):
+            if os.path.normpath(source) in self._ignored_files:
+                log_notification("Ignoring file {0}.", target)
                 continue
 
-            if not os.path.exists(target_directory):
-                mkdir(target_directory)
+            target_directory    = os.path.dirname(target)
 
-            transaction.add(target_file)
+            if not os.path.isdir(target_directory):
+                os.makedirs(target_directory)
 
-            if os.path.exists(target_file):
-                os.chmod(target_file, stat.S_IWRITE)
+            if os.path.exists(target):
+                if not self._overwrite:
+                    log_notification("Ignoring existing file {0}.", target)
+                    continue
+                os.chmod(target, stat.S_IWRITE)
 
-            shutil.copy(source_file, target_file)
+            shutil.copy(source, target)
 
-    log_notification("Copied {0}/{1} files ({2} files ignored)",
-                     len(files_to_copy) - ignored_files,
-                     len(files_to_copy),
-                     ignored_files)
-    return True
+        log_notification("Copied {0} files", len(self._files_to_copy))
+        return True
+
+class _CheckoutDecorator(_DecoratorBase):
+    def __init__(self, transaction):
+        _DecoratorBase.__init__(self, transaction)
+        self._transaction = transaction
+
+    def add(self, *args, **kwargs):
+        self.transaction.ignore(*args, **kwargs)
+
+    def ignore(self, *args, **kwargs):
+        self.transaction.add(*args, **kwargs)
 
 #---------------------------------------------------------------------------
-def get_latest_available_revision(version_directory_format, platforms, start_revision, **kwargs):
-    platforms_revisions = {}
-    all_revisions       = []
+class _IgnoreDecorator(_DecoratorBase):
+    def __init__(self, transaction):
+        _DecoratorBase.__init__(self, transaction)
+        self._transaction = transaction
 
-    for platform in platforms:
-        platforms_revisions[platform] = []
+    def add(self, *args, **kwargs):
+        self.transaction.ignore(*args, **kwargs)
 
-        kwargs['revision'] = '*'
-        kwargs['platform'] = platform
-        version_directory_format = version_directory_format.replace('\\', '/')
-        version_directories_glob = version_directory_format.format(**kwargs)
+    def ignore(self, *args, **kwargs):
+        self.transaction.add(*args, **kwargs)
 
-        for version_directory in glob.glob(version_directories_glob):
-            kwargs['revision'] = '([0-9]*)'
-            version_directory  = version_directory.replace('\\', '/')
+#---------------------------------------------------------------------------
+class _RelativeDecorator(_DecoratorBase):
+    def __init__(self, transaction, relative_source):
+        _DecoratorBase.__init__(self, transaction)
+        self._relative_source   = relative_source
 
-            version_regex      = version_directory_format.format(**kwargs)
+    def add(self, *args, **kwargs):
+        relative_sources = [os.path.join(self._relative_source, source) for source in args]
+        self.transaction.add(*relative_sources, **kwargs)
 
-            version_match = re.match(version_regex, version_directory)
-            version_cl    = version_match.group(1)
+    def ignore(self, *args, **kwargs):
+        relative_sources = [os.path.join(self._relative_source, source) for source in args]
+        self.transaction.ignore(*relative_sources, **kwargs)
 
-            platforms_revisions[platform].append(version_cl)
-            all_revisions.append(version_cl)
-            pass
+#---------------------------------------------------------------------------
+def get_latest_available_revision(version_directory_format, start_revision, **kwargs):
+    revisions                   = []
+    kwargs['revision']          = '*'
+    version_directory_format    = version_directory_format.replace('\\', '/')
+    version_directories_glob    = version_directory_format.format(**kwargs)
 
-    all_revisions.sort(reverse=True)
+    for version_directory in glob.glob(version_directories_glob):
+        kwargs['revision'] = '([0-9]*)'
+        version_directory  = version_directory.replace('\\', '/')
+        version_regex      = version_directory_format.format(**kwargs)
 
-    for revision in all_revisions:
-        available_for_all_platforms = True
-        for platform in platforms:
-            if not revision in platforms_revisions[platform]:
-                available_for_all_platforms = False
-                break
-        if available_for_all_platforms and (start_revision is None or revision <= start_revision):
+        version_match = re.match(version_regex, version_directory)
+        version_cl    = version_match.group(1)
+
+        revisions.append(version_cl)
+
+    revisions.sort(reverse=True)
+
+    for revision in revisions:
+        if start_revision is None or revision <= start_revision:
             return revision
 
     return None
-
-#------------------------------------------------------------------------------
-def deploy_latest_revision(context, directory_format, start_revision, platforms):
-    latest_revision  = context.call(get_latest_available_revision,
-                                    directory_format,
-                                    platforms       = platforms,
-                                    start_revision  =  start_revision)
-
-    if latest_revision is None:
-        log_error("No available revision found.")
-        return None
-
-    log_notification("Deploying revision {0}.", latest_revision)
-
-    for platform in platforms:
-        if not deploy(context, directory_format, revision = latest_revision, platform = platform):
-            log_error("Unable to deploy revision for platform %s." % platform)
-            return None
-
-    return latest_revision
 
 #------------------------------------------------------------------------------
 def upload_microsoft_symbols(context, paths):
@@ -173,70 +287,3 @@ def upload_microsoft_symbols(context, paths):
     os.remove("symbols_index.txt")
 
     return result
-
-#------------------------------------------------------------------------------
-class _FilePublisher(object):
-    def __init__(self, destination, parent, **override_args):
-        self.destination = destination
-        self._parent     = parent
-        for key in override_args:
-            setattr(self, key, override_args[key])
-        self._files_to_copy = []
-
-    def __getattr__(self, name):
-        try:
-            return object.__getattr__(self, name)
-        except AttributeError:
-            return getattr(self._parent, name)
-
-    def delete_destination(self):
-        def _onerror(func, path, exc_info):
-            if not os.access(path, os.W_OK):
-                os.chmod(path, stat.S_IWUSR)
-                func(path)
-            else:
-                raise
-        if os.path.exists(self.destination):
-            shutil.rmtree(self.destination, onerror = _onerror)
-
-    def _format(self, str, is_source = True):
-        format_args     = {}
-        contextes       = []
-        current_context = self
-
-        while hasattr(current_context, '_parent'):
-            contextes.append(current_context)
-            current_context = current_context._parent
-
-        contextes.append(current_context)
-        contextes.reverse()
-
-        for context in contextes:
-            format_args.update(**(vars(context).copy()))
-
-        return str.format(**format_args)
-
-    def add(self, source, include = ['*'], exclude = [], recursive = True):
-        for i in range(0, len(include)):
-            include[i] = self._format(include[i])
-        for i in range(0, len(exclude)):
-            exclude[i] = self._format(exclude[i])
-
-        source = self._format(source)
-        for source_file in list_files_matching(source, include, exclude, recursive):
-            target_file = os.path.join(self.destination, source_file)
-            self._files_to_copy.append((source_file, target_file))
-
-    def execute(self):
-        def file_formatter(file_tuple):
-            return file_tuple[1]
-
-        for source, target in log_progress(self._files_to_copy, step_name_formatter = file_formatter):
-            target_directory    = os.path.dirname(target)
-
-            if not os.path.isdir(target_directory):
-                os.makedirs(target_directory)
-
-            shutil.copy(source, target)
-        log_notification("Deployed {0} files", len(self._files_to_copy))
-
