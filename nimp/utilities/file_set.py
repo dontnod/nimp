@@ -79,7 +79,7 @@ class _FileSet(object):
     def newer(self):
         def _add_newer(self, source, destination):
             if not os.path.exists(destination):
-                log_verbose("Adding new file {0}", source, time.gmtime(source_mtime), time.gmtime(destination_mtime))
+                log_verbose("Adding new file {0}", source)
                 self._forward(source, destination)
             else:
                 source_mtime      = os.path.getmtime(source)
