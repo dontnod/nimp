@@ -34,8 +34,8 @@ def wwise_banks_platform(platform):
         "xbox 360"      : "X360",
         "xbox360"       : "X360",
         "x360"          : "X360",
-        "dingo"         : "X360",
-        "xboxone"       : "X360",
+        "dingo"         : "XboxOne",
+        "xboxone"       : "XboxOne",
         "orbis"         : "PS4",
         "ps4"           : "ps4"}[platform.lower()]
 
