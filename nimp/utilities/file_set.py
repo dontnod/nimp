@@ -87,14 +87,17 @@ class _FileSet(object):
                 log_verbose("Adding new file {0}", source)
                 self._forward(source, destination)
             else:
-                source_mtime      = os.path.getmtime(source)
-                destination_mtime = os.path.getmtime(destination)
+                time_format           = "%d/%m/%y - %H:%M:%S"
+                source_mtime          = os.path.getmtime(source)
+                destination_mtime     = os.path.getmtime(destination)
+                source_mtime_str      = time.strftime(time_format, time.gmtime(source_mtime))
+                destination_mtime_str = time.strftime(time_format, time.gmtime(destination_mtime))
                 if source_mtime > destination_mtime:
-                    time_format = "%d/%m/%y - %H:%M:%S"
-                    source_mtime_str      = time.strftime(time_format, time.gmtime(source_mtime))
-                    destination_mtime_str = time.strftime(time_format, time.gmtime(destination_mtime))
                     log_verbose("Adding newer file {0} ({1} > {2})", source, source_mtime_str, destination_mtime_str)
                     self._forward(source, destination)
+                else:
+                    log_verbose("Ignoring older file {0} ({1} > {2})", source, source_mtime_str, destination_mtime_str)
+
 
         return self._insert(_add_newer)
 
