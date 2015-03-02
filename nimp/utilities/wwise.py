@@ -63,9 +63,6 @@ def build_wwise_banks(context):
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring\\x64\\Release\\bin\\WWiseCLI.exe")
     wwise_command    = [wwise_cli_path,  os.path.abspath(context.wwise_project), "-GenerateSoundBanks", "-Platform", wwise_cmd_line_platform(platform)]
 
-    log_notification("Updating local Wwise cache...")
-    _copy_wwise_cache(context, context.shared_cache_path, context.local_cache_path)
-
     result      = True
     with p4_transaction(cl_name, submit_on_success = context.checkin) as trans:
         log_notification("Checking out bank files...")
@@ -78,15 +75,5 @@ def build_wwise_banks(context):
         else:
             log_notification("Adding bank files to perforce...")
             add_to_p4(context, trans, wwise_banks_path)
-            log_notification("Updating shared Wwise cache...")
-            _copy_wwise_cache(context, context.local_cache_path, context.shared_cache_path)
 
     return result
-
-def _copy_wwise_cache(context, source, destination):
-    wwise_cache = copy_files(context).frm(source).newer().to(destination)
-    wwise_cache = wwise_cache.format(platform = wwise_cache_platform(context.platform))
-    log_notification("Listing cache files...")
-    wwise_cache = wwise_cache.recursive().add('*')
-    log_notification("Copying needed files...")
-    wwise_cache.process(copy_mkdest_dir)
