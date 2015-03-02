@@ -27,7 +27,12 @@ def copy_mkdest_dir(source, destination):
     target_dir = os.path.dirname(destination)
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
-    shutil.copy2(source, destination)
+    try:
+        shutil.copy2(source, destination)
+    except:
+        log_verbose("Error running shutil.copy2 {0} {1}, trying by deleting destination file first", source, destination)
+        os.remove(destination)
+        shutil.copy2(source, destination)
 
 class _FileSet(object):
     """ This class is used to enumerate and copy files with a 'fluent' syntax,
