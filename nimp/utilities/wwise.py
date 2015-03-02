@@ -84,7 +84,7 @@ def build_wwise_banks(context):
     return result
 
 def _copy_wwise_cache(context, source, destination):
-    wwise_cache = copy_files(context).frm(source).newer().to(destination).exclude("Wwise.dat")
+    wwise_cache = copy_files(context).exclude("Wwise.dat").frm(source).newer().to(destination)
     wwise_cache = wwise_cache.format(platform = wwise_cache_platform(context.platform))
     log_notification("Listing cache files...")
     wwise_cache = wwise_cache.recursive().add('*')

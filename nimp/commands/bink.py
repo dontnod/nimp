@@ -185,7 +185,7 @@ def update_video(context):
     input   = input.replace("/", "\\")
     output  = output.replace("/", "\\")
 
-    with PerforceTransaction("Updated {0} BIK movie".format(bink_name), output) as transaction:
+    with p4_transaction("Updated {0} BIK movie".format(bink_name), output) as transaction:
         if call_process(".", [binkc_path, input, output, "/F{0}".format(arguments.framerate), "/O", "/#"]) != 0:
             transaction.abort()
             return False

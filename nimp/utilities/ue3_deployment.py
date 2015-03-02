@@ -52,33 +52,32 @@ def get_cook_directory(game, project, dlc, platform, configuration):
 def ue3_publish_binaries(publisher):
     platform      = get_binaries_platform(publisher.platform)
     configuration = publisher.configuration
-
+    binaries      = publisher.frm("Binaries").to("Binaries").exclude("*.pdb", "*.map", "*.lib")
     if (platform == 'Win32' or platform == 'Win64'):
         if configuration == 'Release' or configuration is None:
-            publisher.add("Binaries\\{platform}\\{game}.exe")
-            publisher.add("Binaries\\{platform}\\{game}.exe.config")
-            publisher.add("Binaries\\{platform}\\{game}.config")
-            publisher.add("Binaries\\{platform}\\{game}.com")
-            publisher.add("Binaries\\Xbox360\\Interop.XDevkit.1.0.dll")
-            publisher.add("Binaries\\PS3\\PS3Tools_x64.dll")
-            publisher.add("Binaries\\Xbox360\\Xbox360Tools_x64.dll")
-            publisher.add("Binaries\\Orbis\\OrbisTools_x64.dll")
-            publisher.add("Binaries\\Dingo\\DingoTools_x64.dll")
-
-            publisher.add("Binaries\\Win64\\Microsoft.VC90.CRT", ['*.*'])
-            publisher.add("Binaries\\{platform}", ['*.dll'], recursive = False )
-            publisher.add("Binaries\\", ['*.xml', '*.bat', '*.dll', '*.exe.config', '*.exe'], recursive = False)
-            publisher.add("Binaries\\Win64\\Editor\\Release", ['*.*'], recursive = False)
-            publisher.add("Binaries\\{platform}", ['{game}.*'], ['*.pdb', '*.map', '*.lib'], recursive = False)
+            binaries.add("{platform}\\{game}.exe",
+                         "{platform}\\{game}.exe.config",
+                         "{platform}\\{game}.config",
+                         "{platform}\\{game}.com",
+                         "Xbox360\\Interop.XDevkit.1.0.dll",
+                         "PS3\\PS3Tools_x64.dll",
+                         "Xbox360\\Xbox360Tools_x64.dll",
+                         "Orbis\\OrbisTools_x64.dll",
+                         "Dingo\\DingoTools_x64.dll",
+                         "Win64\\Microsoft.VC90.CRT\\*.*",
+                         "{platform}\\*.dll'",
+                         '*.xml', '*.bat', '*.dll', '*.exe.config', '*.exe',
+                         "Win64\\Editor\\Release\\*.*",
+                         "{platform}\\{game}.*")
 
         if configuration != 'Release':
-            publisher.add("Binaries\\{platform}\\", ['{game}-{platform}-{configuration}.*'], ['*.pdb', '*.map', '*.lib'])
+            binaries.add("{platform}\\{game}-{platform}-{configuration}.*")
 
     if (platform != 'Win32' and platform != 'Win64'):
         if configuration is None:
-            publisher.add("Binaries\\{platform}\\", ['{game}*-*.*'], ['*.lib'])
+            binaries.add("{platform}\\{game}*-*.*")
         else:
-            publisher.add("Binaries\\{platform}\\", ['{game}-{platform}-{configuration}.*'], ['*.lib'])
+            binaries.add("{platform}\\{game}-{platform}-{configuration}.*")
 
     return True
 
@@ -93,8 +92,7 @@ def ue3_publish_version(publisher):
             return False
 
     if publisher.platform.lower() == 'win64':
-        publisher.add("{game}\\Script\\", ['*.*'])
-        publisher.add("{game}\\ScriptFinalRelease\\", ['*.*'])
+        publisher.add("{game}\\Script\\*.*", "{game}\\ScriptFinalRelease\\*.*")
 
     return True
 

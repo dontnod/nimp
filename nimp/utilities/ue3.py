@@ -227,7 +227,8 @@ def _ue3_generate_version_file():
     version_file_content   = version_file_format.format(random_character, machine_name)
     version_file_content   = time.strftime(version_file_content, time.gmtime())
 
-    with PerforceTransaction("Version File Checkout", VERSION_FILE_PATH) as transaction:
+    with p4_transaction("Version File Checkout", ) as transaction:
+        transaction.add(VERSION_FILE_PATH)
         transaction.abort()
         write_file_content(VERSION_FILE_PATH, version_file_content)
         yield
