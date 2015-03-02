@@ -196,7 +196,7 @@ class _PerforceTransaction:
             raise value
 
         if not self._success and self._cl_number is not None:
-            log_verbose("P4 transaction failed, reverting and deleting CLs...")
+            log_verbose("P4 transaction aborted, reverting and deleting CLs...")
             p4_revert_changelist(self._cl_number)
             p4_delete_changelist(self._cl_number)
         else:
@@ -204,10 +204,11 @@ class _PerforceTransaction:
                 for path in self._paths:
                     if not p4_reconcile(self._cl_number, path):
                         self._success = False
-                        break
+                        return False
             if self._success and self._revert_unchanged:
                 log_verbose("Reverting unchanged files...")
-                return p4_revert_unchanged(self._cl_number)
+                if not p4_revert_unchanged(self._cl_number):
+                    return False
             if self._success and self._submit_on_success:
                 log_verbose("Committing result...")
                 return p4_submit(self._cl_number)

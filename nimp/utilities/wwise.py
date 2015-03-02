@@ -64,7 +64,7 @@ def build_wwise_banks(context):
     wwise_command    = [wwise_cli_path,  os.path.abspath(context.wwise_project), "-GenerateSoundBanks", "-Platform", wwise_cmd_line_platform(platform)]
 
     result      = True
-    with p4_transaction(cl_name, submit_on_success = context.checkin) as trans:
+    with p4_transaction(cl_name, submit_on_success = context.checkin, reconcile = False) as trans:
         log_notification("Checking out bank files...")
         add_to_p4(context, trans, wwise_banks_path)
         if call_process(".", wwise_command) == 1:
