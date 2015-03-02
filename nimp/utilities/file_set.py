@@ -4,6 +4,7 @@ import os
 import os.path
 import fnmatch
 import shutil
+import time
 
 from nimp.utilities.logging import *
 from nimp.utilities.paths   import *
@@ -77,10 +78,19 @@ class _FileSet(object):
 
     def newer(self):
         def _add_newer(self, source, destination):
-            if os.path.exists(destination) and os.path.getmtime(source) <=  os.path.getmtime(destination):
-                log_verbose("Ignoring older file {0}", source)
-                return
-            self._forward(source, destination)
+            if not os.path.exists(destination):
+                log_verbose("Adding new file {0}", source, time.gmtime(source_mtime), time.gmtime(destination_mtime))
+                self._forward(source, destination)
+            else:
+                source_mtime      = os.path.getmtime(source)
+                destination_mtime = os.path.getmtime(destination)
+                if source_mtime > destination_mtime:
+                    time_format = "%d/%m/%y - %H:%M:%S"
+                    source_mtime_str      = time.strftime(time_format, time.gmtime(source_mtime))
+                    destination_mtime_str = time.strftime(time_format, time.gmtime(destination_mtime))
+                    log_verbose("Adding newer file {0} ({1} > {2})", source, source_mtime_str, destination_mtime_str)
+                    self._forward(source, destination)
+
         return self._insert(_add_newer)
 
     def recursive(self):
