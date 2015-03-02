@@ -15,9 +15,9 @@ def wwise_cache_platform(platform):
         "win64"         : "Windows",
         "windows"       : "Windows",
         "ps3"           : "Ps3",
-        "xbox 360"      : "Xbox360",
-        "xbox360"       : "Xbox360",
-        "x360"          : "Xbox360",
+        "xbox 360"      : "XBox360",
+        "xbox360"       : "XBox360",
+        "x360"          : "XBox360",
         "dingo"         : "XboxOne",
         "xboxone"       : "XboxOne",
         "orbis"         : "PS4",
@@ -50,8 +50,8 @@ def wwise_cmd_line_platform(platform):
         "xbox 360"      : "XBox360",
         "xbox360"       : "XBox360",
         "x360"          : "XBox360",
-        "dingo"         : "XBox360",
-        "xboxone"       : "XBox360",
+        "dingo"         : "XboxOne",
+        "xboxone"       : "XboxOne",
         "orbis"         : "PS4",
         "ps4"           : "ps4"}[platform.lower()]
 
