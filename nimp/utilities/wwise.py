@@ -74,7 +74,7 @@ def build_wwise_banks(context):
             result = False
             log_error("Error while running WwiseCli...")
             trans.abort()
-            return False
+            result = False
         else:
             log_notification("Adding bank files to perforce...")
             add_to_p4(context, trans, wwise_banks_path)
