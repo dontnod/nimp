@@ -12,30 +12,8 @@ from nimp.utilities.logging import *
 from nimp.utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
-def default_output_filter(line):
-   return line
-
-#-------------------------------------------------------------------------------
-error_pattern    = "^\[NIMP_ERROR\](.*)\[/NIMP_ERROR\]$"
-warning_pattern  = "^\[NIMP_WARNING\](.*)\[/NIMP_WARNING\]$"
-error_regexp     = re.compile(error_pattern)
-warning_regexp   = re.compile(warning_pattern)
-
-#-------------------------------------------------------------------------------
-def nimp_tag_output_filter(line):
-    match_error = error_regexp.search(line)
-    if match_error:
-        error_string = match_error.group(1)
-        log_error(error_string)
-    else:
-        match_warning = warning_regexp.search(line)
-        if match_warning:
-            warning_string = match_warning.group(1)
-            log_warning(warning_string)
-        else:
-            log_verbose(line)
-    return None
-
+def default_log_callback(line, default_log_function):
+    default_log_function(line)
 
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None):
@@ -53,7 +31,7 @@ def capture_process_output(directory, command, input = None):
     return process.wait(), output.decode("cp437"), error.decode("cp437")
 
 #-------------------------------------------------------------------------------
-def call_process(directory, command, output_filter = default_output_filter):
+def call_process(directory, command, log_callback = default_log_callback):
     log_verbose("Running {0} in directory {1}", command, directory)
 
     ods_logger = OutputDebugStringLogger()
@@ -84,8 +62,7 @@ def call_process(directory, command, output_filter = default_output_filter):
                     if line == '':
                         continue
 
-                    line  = output_filter(line)
-                    log_function(line)
+                    log_callback(line, log_function)
             except ValueError:
                 return
 

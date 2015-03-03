@@ -119,6 +119,9 @@ def p4_get_workspace():
 #-------------------------------------------------------------------------------
 def p4_is_file_versioned(file_path):
     result, output, error = capture_process_output(".", ["p4", "-z", "tag", "fstat", file_path])
+    # Il faut checker que le fichier a pas été ajouté puis delete
+    if re.search("\.\.\.\s*headAction\s*delete", output) is not None:
+        return False
     return not "no such file(s)" in error
 
 #-------------------------------------------------------------------------------
@@ -222,7 +225,7 @@ def _p4_run_command(directory, command, input = None, log_errors = True):
     result, output, error = capture_process_output(directory, command, input)
     if( result != 0 or error != ''):
         if log_errors:
-            log_error("Perforce error : {1}", input, error)
+            log_error("Perforce error : {1}", input, error.rstrip('\r\n'))
         return None
     return output
 

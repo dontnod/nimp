@@ -67,7 +67,7 @@ def build_wwise_banks(context):
     with p4_transaction(cl_name, submit_on_success = context.checkin) as trans:
         log_notification("Checking out bank files...")
         add_to_p4(context, trans, wwise_banks_path)
-        if call_process(".", wwise_command) == 1:
+        if call_process(".", wwise_command, log_callback = _wwise_log_callback) == 1:
             log_error("Error while running WwiseCli...")
             trans.abort()
             result = False
@@ -76,3 +76,9 @@ def build_wwise_banks(context):
             add_to_p4(context, trans, wwise_banks_path)
 
     return result
+
+def _wwise_log_callback(line, default_log_function):
+    if "Fatal Error" in line:
+        log_error(line)
+    else:
+        default_log_function(line)
