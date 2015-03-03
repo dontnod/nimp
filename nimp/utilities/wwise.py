@@ -59,7 +59,7 @@ def build_wwise_banks(context):
     platform         = context.platform
     wwise_banks_path = context.wwise_banks_path
     wwise_banks_path = os.path.join(wwise_banks_path, wwise_banks_platform(platform))
-    cl_name          = "[CIS] Updated {0} Wwise Banks".format(platform)
+    cl_name          = "[CIS] Updated {0} Wwise Banks from CL {1}".format(platform,  p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring\\x64\\Release\\bin\\WWiseCLI.exe")
     wwise_command    = [wwise_cli_path,  os.path.abspath(context.wwise_project), "-GenerateSoundBanks", "-Platform", wwise_cmd_line_platform(platform)]
 

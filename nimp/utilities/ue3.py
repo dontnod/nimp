@@ -211,8 +211,10 @@ def _ue3_build_game(sln_file, platform, configuration, vs_version):
         'win64'   : 'Windows/ExampleGame Win64.vcxproj',
         'ps3'     : 'PS3/ExampleGame PS3.vcxproj',
         'orbis'   : 'ExampleGame PS4/ExampleGame PS4.vcxproj',
+        'ps4'     : 'ExampleGame PS4/ExampleGame PS4.vcxproj',
         'xbox360' : 'Xenon/ExampleGame Xbox360.vcxproj',
         'dingo'   : 'Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
+        'xboxone' : 'Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
     }
 
     platform_project = dict_vcxproj[platform.lower()]
