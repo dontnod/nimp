@@ -23,14 +23,16 @@ Description:\n\
         {description}"
 
 #-------------------------------------------------------------------------------
-def p4_add(cl_number, path, file):
-    log_verbose("Adding {0} to perforce")
-    return _p4_run_command(".", ["p4", "-z", "tag", "add", "-c", cl_number, file])
+def p4_add(cl_number, path):
+    return _p4_run_command(".", ["p4", "-z", "tag", "add", "-c", cl_number, path])
 
 #-------------------------------------------------------------------------------
 def p4_clean_workspace():
-    log_notification("Reverting all opened files in workspace {0}", p4_get_workspace())
-    result = _p4_run_command(".", ["p4", "-z", "tag", "revert", "//..."]) is not None
+    result = True
+    # On ignore le retour de cette commande, parce qu'elle peut potentiellement
+    # foirer si des fichiers on été addés puis revert, et j'ai pas trouvé de
+    # solution simple pour y remédier avec cette daube de P4.
+    _p4_run_command(".", ["p4", "-z", "tag", "revert", "//..."]) is not None
 
     pending_changelists = p4_get_pending_changelists()
 
@@ -57,7 +59,6 @@ P4CLIENT={client}\n"
 
 #-------------------------------------------------------------------------------
 def p4_delete_changelist(cl_number):
-    log_verbose("Deleting Changelist {0}", cl_number)
     output = _p4_run_command(".", ["p4", "-z", "tag", "change", "-d", cl_number])
     return output is not None
 
@@ -122,7 +123,6 @@ def p4_is_file_versioned(file_path):
 
 #-------------------------------------------------------------------------------
 def p4_reconcile(cl_number, path):
-    log_verbose("Reconciling path {0}", path)
     if os.path.isdir(path):
         path = path + "/..."
 
@@ -132,17 +132,14 @@ def p4_reconcile(cl_number, path):
 
 #-------------------------------------------------------------------------------
 def p4_revert_changelist(cl_number):
-    log_verbose("Reverting changelist {0}", cl_number)
     return _p4_run_command(".", ["p4", "-z", "tag", "revert", "-c", cl_number, "//..."]) is not None
 
 #-------------------------------------------------------------------------------
 def p4_revert_unchanged(cl_number):
-    log_verbose("Reverting unchanged files in changelist {0}", cl_number)
     return _p4_run_command(".", ["p4", "-z", "tag", "revert", "-a", "-c", cl_number, "//..."]) is not None
 
 #-------------------------------------------------------------------------------
 def p4_submit(cl_number):
-    log_verbose("Submitting changelist {0}", cl_number)
     return _p4_run_command(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number]) is not None
 
 #-------------------------------------------------------------------------------
@@ -155,18 +152,17 @@ def p4_sync(cl_number = None):
     return _p4_run_command(".", p4_command) is not None
 
 #-------------------------------------------------------------------------------
-def p4_transaction(cl_description, submit_on_success = False, reconcile = True, revert_unchanged = True):
-    return _PerforceTransaction(cl_description, submit_on_success, reconcile, revert_unchanged)
+def p4_transaction(cl_description, submit_on_success = False, revert_unchanged = True):
+    return _PerforceTransaction(cl_description, submit_on_success, revert_unchanged)
 
 #-------------------------------------------------------------------------------
 class _PerforceTransaction:
     #---------------------------------------------------------------------------
-    def __init__(self, change_list_description, submit_on_success = False, reconcile = True, revert_unchanged = True):
+    def __init__(self, change_list_description, submit_on_success = False, revert_unchanged = True):
         self._change_list_description   = change_list_description
         self._success                   = True
         self._cl_number                 = None
         self._submit_on_success         = submit_on_success
-        self._reconcile                 = reconcile
         self._revert_unchanged          = revert_unchanged
         self._paths                     = []
 
@@ -182,9 +178,18 @@ class _PerforceTransaction:
 
     #---------------------------------------------------------------------------
     def add(self, path):
+        if path in self._paths:
+            return
+
         self._paths.append(path)
-        if os.path.exists(path) and not p4_edit(self._cl_number, path):
-            self._success = False
+        if p4_is_file_versioned(path):
+           if p4_edit(self._cl_number, path):
+              return
+        elif p4_add(self._cl_number, path):
+             return
+
+        log_error("An error occured while adding file to perforce transaction")
+        self._success = False
 
     #---------------------------------------------------------------------------
     def abort(self):
@@ -199,27 +204,25 @@ class _PerforceTransaction:
             log_verbose("P4 transaction aborted, reverting and deleting CLs...")
             p4_revert_changelist(self._cl_number)
             p4_delete_changelist(self._cl_number)
-        else:
-            if(self._reconcile):
-                for path in self._paths:
-                    if not p4_reconcile(self._cl_number, path):
-                        self._success = False
-                        return False
-            if self._success and self._revert_unchanged:
+        elif self._cl_number is not None:
+            if self._revert_unchanged:
                 log_verbose("Reverting unchanged files...")
                 if not p4_revert_unchanged(self._cl_number):
                     return False
-            if self._success and self._submit_on_success:
+            if self._submit_on_success:
                 log_verbose("Committing result...")
                 return p4_submit(self._cl_number)
+        else:
+            log_error("An error occured while entering perforce transaction, so not doing anything here.")
         return True
 
 #-------------------------------------------------------------------------------
 def _p4_run_command(directory, command, input = None, log_errors = True):
+    log_verbose("Perforce : {0}", " ".join(command))
     result, output, error = capture_process_output(directory, command, input)
-    if( result != 0):
+    if( result != 0 or error != ''):
         if log_errors:
-            log_verbose("Error running {0} in directory {1} with input {2} : {3}", " ".join(command), os.path.join(os.getcwd(), directory), input, error)
+            log_error("Perforce error : {1}", input, error)
         return None
     return output
 
