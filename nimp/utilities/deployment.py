@@ -12,8 +12,10 @@ import glob
 import fnmatch
 import re
 import contextlib
+import pathlib
 
 from nimp.utilities.perforce     import *
+from nimp.utilities.file_mapper  import *
 
 #---------------------------------------------------------------------------
 def get_latest_available_revision(version_directory_format, start_revision, **kwargs):
@@ -42,17 +44,11 @@ def get_latest_available_revision(version_directory_format, start_revision, **kw
 
 #------------------------------------------------------------------------------
 def upload_microsoft_symbols(context, paths):
-    symbol_files = []
-    for path in paths:
-        symbol_files += list_files_matching(path, ["*.pdb", "*.xdb"])
-
-    index_content = ""
-
-    for symbol_file in symbol_files:
-        index_content += os.path.abspath(symbol_file) + "\n"
+    write_symbol_index = map_sources(lambda file: symbols_index.write(file + "\n"))
 
     with open("symbols_index.txt", "w") as symbols_index:
-        symbols_index.write(index_content)
+        for path in paths:
+            write_symbol_index.frm(path)("**/*.pdb", "**/*.xdb")
 
     result = True
     if call_process(".",

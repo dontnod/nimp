@@ -11,7 +11,6 @@ class FileSetTests(unittest.TestCase):
     def __init__(self, methodName = 'runTest'):
         super(FileSetTests, self).__init__(methodName)
 
-
     def _file_mapper(self, **format_args):
         def _yield_mapper(src, destination, *args):
             yield src, destination
@@ -27,12 +26,12 @@ class FileSetTests(unittest.TestCase):
 
     def test_map_sources(self):
         """ Calling a file mapper with a simple file name should process it."""
-        files = map_sources().frm("mocks/file_mapper_tests")('qux.ext1')
+        files = map_sources(lambda src:src).frm("mocks/file_mapper_tests")('qux.ext1')
         self.assertListEqual(files, [os.path.normpath("mocks/file_mapper_tests/qux.ext1")])
 
     def test_call(self):
         """ Calling a file mapper with a simple file name should process it."""
-        files = self._file_mapper()('qux.ext1')
+        files = self._file_mapper(qux = 'qux.ext1')('{qux}')
         self._check_files(files, ('qux.ext1', 'qux.ext1'))
 
     def test_exclude(self):

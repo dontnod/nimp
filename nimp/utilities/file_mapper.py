@@ -7,36 +7,54 @@ import shutil
 import time
 import functools
 import itertools
+import pathlib
 
 from nimp.utilities.logging import *
 from nimp.utilities.paths   import *
 
+#-------------------------------------------------------------------------------
 def map_sources(handler, format_args = {}):
+    """ Use this to execute a single argument function on the sources of the mapped
+        files.
+    """
     def _source_mapper(source, *args):
         yield handler(source)
     return FileMapper(mapper = _source_mapper,  format_args = format_args)
 
-def copy_mkdest_dir(source, destination):
-    target_dir = os.path.dirname(destination)
-    if not os.path.exists(target_dir):
-        os.makedirs(target_dir)
-    try:
-        shutil.copy2(source, destination)
-    except:
-        log_verbose("Error running shutil.copy2 {0} {1}, trying by deleting destination file first", source, destination)
-        os.remove(destination)
-        shutil.copy2(source, destination)
+#-------------------------------------------------------------------------------
+def map_copy(handler, format_args = {}):
+    """ To execute 2-arity function of the mapped files.
+    """
+    def _copy_mapper(source, *args):
+        yield handler(source)
+    return FileMapper(mapper = _copy_mapper,  format_args = format_args)
+
+#-------------------------------------------------------------------------------
+def robocopy_mapper(source, destination):
+    """ 'Robust' copy mapper. """
+    log_verbose("{0} => {1}", source, destination)
+    if os.path.isdir(source) and not os.path.exists(destination):
+        os.makedirs(destination)
+    else:
+        dest_dir = os.path.dirname(destination)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+        try:
+            if os.path.exists(destination):
+                os.chmod( destination, stat.S_IWRITE )
+            shutil.copy(source, destination)
+        except:
+            log_verbose("Error running shutil.copy2 {0} {1}, trying by deleting destination file first", source, destination)
+            os.remove(destination)
+            shutil.copy(source, destination)
+    yield True
 
 def _default_mapper(*args):
     yield args
 
 class FileMapper(object):
-    """ This class is used to apply a suite of transformations/filtering/handlings
-        function on a list of file source / destination pairs. Basically it's
-        equivalent to a nested map() call, but the OOP syntax allows to use it in
-        config files without importing any package / module. It handles some string
-        interpolation using the _format_args attribute, wich usually is a vars(context).
-        See format and _format functions.
+    """ TODO : Eventuellement utiliser les PurePath, de python 3.4, qui simplifieraient
+        quelque trucs, nottament dans les globs.
     """
     #---------------------------------------------------------------------------
     def __init__(self, mapper = _default_mapper, format_args = {}, source_path = None, next = None):
@@ -61,7 +79,8 @@ class FileMapper(object):
         for glob_path in args:
             glob_path = self._format(glob_path)
             glob_path = os.path.join(self._source_path, glob_path)
-            for source in glob.glob(glob_path):
+            for source in pathlib.Path(".").glob(glob_path):
+                source = str(source)
                 # This is merely equivalent to os.path.relpath(source, self._source_path)
                 # excepted it will handle globs pattern in the base path.
                 source          = os.path.normpath(source)
