@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
-# Imports
-#-------------------------------------------------------------------------------
 import re
 import tempfile
 
 from nimp.commands._command                  import *
-
-from nimp.utilities.files                    import *
 from nimp.utilities.hashing                  import *
 from nimp.utilities.paths                    import *
 from nimp.utilities.perforce                 import *
@@ -131,7 +126,7 @@ def check_bink_config(context):
 
     if not os.path.exists(screenshots_directory):
         log_warning("Screenshots directory {0} doesn't exists, creating it", os.path.abspath(screenshots_directory))
-        mkdir(screenshots_directory)
+        os.makedirs(screenshots_directory)
 
     return True
 
@@ -164,7 +159,7 @@ def encode_avi(context):
     output_directory        = os.path.join(settings.binks_avi_directory, bink_name)
     output                  = os.path.join(output_directory, "{0}.Avi".format(bink_name))
 
-    mkdir(output_directory)
+    os.makedirs(output_directory)
 
     log_notification("Encoding .avi n {0}", output)
     if call_process(".", [ffmpeg_path, "-r", arguments.framerate, "-i",  input, "-vcodec", "huffyuv", output]) != 0:

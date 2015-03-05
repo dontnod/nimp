@@ -25,24 +25,6 @@ def topological_sort(node_list):
     return _get_node_list(sorted_nodes_names, all_nodes)
 
 #-------------------------------------------------------------------------------
-def topological_sort_node(node, node_list):
-    all_nodes  = _get_nodes_dictionary(node_list)
-    if all_nodes is None:
-        return None
-
-    nodes_to_sort = all_nodes.copy()
-    sorted_nodes_names = []
-
-    if not _recursive_topological_sort(node,
-                                       all_nodes,
-                                       nodes_to_sort,
-                                       [],
-                                       sorted_nodes_names):
-        return None
-
-    return _get_node_list(sorted_nodes_names, all_nodes)
-
-#-------------------------------------------------------------------------------
 def _get_nodes_dictionary(node_list):
     node_dictionary = {}
     for node_it in node_list:

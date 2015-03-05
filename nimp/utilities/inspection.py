@@ -33,7 +33,6 @@ def get_instances(module, type):
     result = instanciate_types_suppress_doubles(module, type)
     return result.values()
 
-
 #-------------------------------------------------------------------------------
 def get_dependency_sorted_instances(module, type):
     result = instanciate_types_suppress_doubles(module, type)
@@ -42,36 +41,6 @@ def get_dependency_sorted_instances(module, type):
 
     result = topological_sort(result.values())
     return result
-
-#-------------------------------------------------------------------------------
-def get_dependency_sorted_instances_named(module, type, instances_names):
-    result          = []
-    all_instances   = get_instances(module, type)
-
-    for instance_name_it in instances_names:
-        instance = None
-
-        for instance_it in all_instances:
-            if instance_it.name() == instance_name_it:
-                instance = instance_it
-                break
-
-        if instance is None:
-            log_error("Can't find an instance of {0} named {1} in {2}.",
-                      type,
-                      instance_name_it,
-                      module)
-            return None
-
-        sorted_dependencies = topological_sort_node(instance, all_instances)
-
-        if sorted_dependencies is None:
-            return None
-
-        for dependency_it in sorted_dependencies:
-            if not dependency_it in result:
-                result.append(dependency_it)
-        return result
 
 #-------------------------------------------------------------------------------
 def instanciate_types_suppress_doubles(module, type):

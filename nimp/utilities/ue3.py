@@ -194,7 +194,7 @@ def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
 
     try:
         if not os.path.exists(dll_target):
-            mkdir(dll_target)
+            os.makedirs(dll_target)
         shutil.copy(os.path.join(dll_source, 'DNEEdCSharp.dll'), dll_target)
         shutil.copy(os.path.join(dll_source, 'DNEEdCSharp.pdb'), dll_target)
         shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.dll'), dll_target)
@@ -232,6 +232,8 @@ def _ue3_generate_version_file():
     with p4_transaction("Version File Checkout", ) as transaction:
         transaction.add(VERSION_FILE_PATH)
         transaction.abort()
-        write_file_content(VERSION_FILE_PATH, version_file_content)
+        with open(VERSION_FILE_PATH, "w") as version_file:
+            version_file.write(version_file_content)
+
         yield
 

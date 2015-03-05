@@ -9,7 +9,6 @@ import threading
 import time
 import tempfile
 
-from nimp.utilities.files     import *
 from nimp.utilities.processes import *
 from nimp.utilities.paths     import *
 
@@ -55,7 +54,10 @@ P4CLIENT={client}\n"
                                           password = password,
                                           client   = client)
 
-    return write_file_content(".p4config", p4_config)
+    with open(".p4config", "w") as p4_config_file:
+        p4_config_file.write(p4_config)
+
+    return True
 
 #-------------------------------------------------------------------------------
 def p4_delete_changelist(cl_number):
@@ -187,12 +189,14 @@ class _PerforceTransaction:
         self._paths.append(path)
         if p4_is_file_versioned(path):
            if p4_edit(self._cl_number, path):
-              return
+              return True
         elif p4_add(self._cl_number, path):
-             return
+             return True
 
         log_error("An error occured while adding file to perforce transaction")
         self._success = False
+
+        return False
 
     #---------------------------------------------------------------------------
     def abort(self):

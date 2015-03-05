@@ -14,8 +14,6 @@ import re
 import contextlib
 
 from nimp.utilities.perforce     import *
-from nimp.utilities.files        import *
-
 
 #---------------------------------------------------------------------------
 def get_latest_available_revision(version_directory_format, start_revision, **kwargs):
@@ -53,9 +51,8 @@ def upload_microsoft_symbols(context, paths):
     for symbol_file in symbol_files:
         index_content += os.path.abspath(symbol_file) + "\n"
 
-    if not write_file_content("symbols_index.txt", index_content):
-        log_error("w00t ! Unable to write symbols index file.")
-        return False
+    with open("symbols_index.txt", "w") as symbols_index:
+        symbols_index.write(index_content)
 
     result = True
     if call_process(".",

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
 import os.path
 
 from    decimal import *
@@ -22,9 +21,9 @@ MAXIMUM_STEP_NAME_WIDTH = 57
 def extract(archive_file_name, destination_directory, archive_type = None, before_decompress_file_callback = None):
     log_verbose("Determinating type of archive {0}", archive_file_name)
     if(archive_type is None):
-        first_extension             = get_extension(archive_file_name)
-        file_name_without_extension = get_path_without_extension(archive_file_name)
-        second_extension            = get_extension(file_name_without_extension)
+        first_extension             =  os.path.splitext(archive_file_name)[1]
+        file_name_without_extension = os.path.splitext(archive_file_name)[0]
+        second_extension            = os.path.splitext(file_name_without_extension)[1]
         if(first_extension == ".zip"):
             archive_type = ZIP_FILE
             log_verbose("Archive must be a zip")

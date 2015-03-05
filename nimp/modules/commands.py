@@ -27,6 +27,9 @@ class CommandsModule(Module):
 
     #---------------------------------------------------------------------------
     def load(self, context):
+        if not hasattr(context, 'command_to_run'):
+            log_error("No command specified. Please try nimp -h to get a list of available commands")
+            return False
         command_to_run       = context.command_to_run
         return command_to_run.run(context)
 

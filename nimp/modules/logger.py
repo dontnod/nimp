@@ -1,29 +1,26 @@
+import sys
+import codecs
 
-#-------------------------------------------------------------------------------
+from nimp.utilities.logging import *
+
 class Logger:
     #---------------------------------------------------------------------------
-    def __init__(self, name):
-        self._name    = name
-        self._format  = None
-        self._verbose = False
-
-    #---------------------------------------------------------------------------
-    def name(self):
-        return self._name
-
-    #---------------------------------------------------------------------------
-    def initialize(self, format, context, verbose):
+    def __init__(self, format, verbose):
+        self._stdout = codecs.getwriter('cp437')(sys.stdout)
+        self._stderr = codecs.getwriter('cp437')(sys.stderr)
         self._format  = format
         self._verbose = verbose
 
     #---------------------------------------------------------------------------
-    def verbose(self):
-        return self._verbose
-
-    #---------------------------------------------------------------------------
     def log_message(self, log_level, message_format, *args):
         formatted_message = self._format.format_message(log_level, message_format, *args)
-        self.log_formatted_message(log_level, formatted_message)
+        if log_level != LOG_LEVEL_VERBOSE or self._verbose:
+            if log_level == LOG_LEVEL_ERROR or log_level == LOG_LEVEL_WARNING:
+                sys.stderr.write(formatted_message)
+                sys.stderr.flush()
+            else:
+                sys.stdout.write(formatted_message)
+                sys.stdout.flush()
 
     #---------------------------------------------------------------------------
     def start_progress(self,
@@ -46,19 +43,12 @@ class Logger:
     def update_progress(self, value, step_name = None):
         progress_string = self._format.update_progress(value, step_name)
         if progress_string is not None:
-            self._print_progress_bar(progress_string)
+            sys.stdout.write(progress_bar_string)
+            sys.stdout.flush()
 
     #---------------------------------------------------------------------------
     def end_progress(self):
         end_progress = self._format.end_progress()
-        self._print_progress_bar(end_progress)
-
-    #---------------------------------------------------------------------------
-    def log_formatted_message(self, log_level, formatted_message):
-        assert(False)
-
-    #---------------------------------------------------------------------------
-    def _print_progress_bar(self, progress_bar_string):
-        assert(False)
-
+        sys.stdout.write(end_progress)
+        sys.stdout.flush()
 

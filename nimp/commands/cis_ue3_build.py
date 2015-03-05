@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._cis_command      import *
-from nimp.utilities.ue3              import *
-from nimp.utilities.ue3_deployment   import *
+from nimp.commands._cis_command     import *
+from nimp.utilities.ue3             import *
+from nimp.utilities.file_mapper     import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
 FARM_P4_USER     = "CIS-CodeBuilder"
@@ -46,9 +46,9 @@ class CisUe3BuildCommand(CisCommand):
             return False
 
         log_notification(" ****** Publishing Binaries...")
-        copy = copy_files(context).to(context.cis_binaries_directory)
-        ue3_publish_binaries(copy)
-        if not copy.do():
+        binaries = copy_files(context).to(context.cis_binaries_directory)
+        ue3_publish_binaries(binaries)
+        if not binaries.process(copy_mkdest_dir):
             return False
 
         log_notification(" ****** Publishing symbols...")

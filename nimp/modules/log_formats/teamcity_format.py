@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
 from nimp.modules.log_formats.format    import *
 from nimp.utilities.logging             import *
 

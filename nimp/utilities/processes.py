@@ -7,12 +7,15 @@ import sys
 import threading
 import time
 import tempfile
+import platform
 
 from nimp.utilities.logging import *
-from nimp.utilities.windows_utilities import *
+
+if os.name is "windows":
+    from nimp.utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
-def default_log_callback(line, default_log_function):
+def _default_log_callback(line, default_log_function):
     default_log_function(line)
 
 #-------------------------------------------------------------------------------
@@ -31,10 +34,12 @@ def capture_process_output(directory, command, input = None):
     return process.wait(), output.decode("cp437"), error.decode("cp437")
 
 #-------------------------------------------------------------------------------
-def call_process(directory, command, log_callback = default_log_callback):
+def call_process(directory, command, log_callback = _default_log_callback):
     log_verbose("Running {0} in directory {1}", command, directory)
 
-    ods_logger = OutputDebugStringLogger()
+
+    if os.name is "windows":
+        ods_logger = OutputDebugStringLogger(process.pid)
 
     process = subprocess.Popen(command,
                                stdin                = None,
@@ -42,9 +47,9 @@ def call_process(directory, command, log_callback = default_log_callback):
                                stdout               = subprocess.PIPE,
                                stderr               = subprocess.PIPE,
                                cwd                  = directory)
-
-    ods_logger.log_process_output(process.pid)
-    ods_logger.start()
+    if os.name is "Windows":
+        ods_logger.attach(process.pid)
+        ods_logger.start()
 
     def log_output(log_function, pipe):
         output_buffer = ""
@@ -66,7 +71,11 @@ def call_process(directory, command, log_callback = default_log_callback):
             except ValueError:
                 return
 
-    log_thread_args = [ (log_verbose, process.stdout), (log_error, process.stderr), (log_verbose, ods_logger.output) ]
+    log_thread_args = [ (log_verbose, process.stdout), (log_error, process.stderr) ]
+
+    if os.name is "Windows":
+        log_thread_args += [(log_verbose, ods_logger.output)]
+
     log_threads     = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
 
     for thread in log_threads:
@@ -74,26 +83,11 @@ def call_process(directory, command, log_callback = default_log_callback):
 
     process_return = process.wait()
 
-    ods_logger.stop()
+    if os.name == "Windows":
+        ods_logger.stop()
 
     for thread in log_threads:
         thread.join()
 
     log_verbose("Program returned with code {0}", process_return)
     return process_return
-
-#-------------------------------------------------------------------------------
-def redirect_output(process):
-    output = process.stdout.read()
-    error  = process.stderr.read()
-
-    if(error != ""):
-        error = error[:-1]
-        log_error(error)
-
-    if(output != ""):
-        output = output[:-1]
-        log_verbose(output)
-
-    return error != "" or output != ""
-

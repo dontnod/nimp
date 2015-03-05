@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
 import argparse
 import time
 
 from    nimp.modules.module          import *
 
-from    nimp.utilities.files         import *
 from    nimp.utilities.logging       import *
 from    nimp.utilities.paths         import *
 

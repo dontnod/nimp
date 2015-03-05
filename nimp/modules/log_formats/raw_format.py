@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#-------------------------------------------------------------------------------
 import os
 import  sys
 
@@ -10,7 +9,6 @@ from nimp.utilities.logging                          import *
 
 #-------------------------------------------------------------------------------
 class RawFormat(Format):
-
     #---------------------------------------------------------------------------
     def __init__(self):
         Format.__init__(self, "raw")
@@ -21,7 +19,6 @@ class RawFormat(Format):
     def format_message(self, log_level, message_format, *args):
         formatted_message = message_format.format(*args) + "\n"
         current_directory = os.getcwd()
-        formatted_message = formatted_message.replace("../../../../..", current_directory)
         if (log_level == LOG_LEVEL_NOTIFICATION or log_level == LOG_LEVEL_VERBOSE) or log_level == LOG_LEVEL_WARNING or log_level == LOG_LEVEL_ERROR:
             return formatted_message
         return None
