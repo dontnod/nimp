@@ -49,50 +49,45 @@ def get_cook_directory(game, project, dlc, platform, configuration):
        return '{0}\\DLC\\{platform}\\{dlc}\\Cooked{1}{2}'.format(game, cook_platform, suffix)
 
 #---------------------------------------------------------------------------
-def map_ue3_binaries(publish):
+def ue3_map_binaries(publish):
     platform            = get_binaries_platform(publish.platform)
     configuration       = publish.configuration
     publish_binaries    = publish.frm("Binaries").to("Binaries").exclude("*.pdb", "*.map", "*.lib")
     if (platform == 'Win32' or platform == 'Win64'):
         if configuration == 'Release' or configuration is None:
-            publish_binaries("{platform}\\{game}.exe",
-                             "{platform}\\{game}.exe.config",
-                             "{platform}\\{game}.config",
-                             "{platform}\\{game}.com",
-                             "Xbox360\\Interop.XDevkit.1.0.dll",
-                             "PS3\\PS3Tools_x64.dll",
-                             "Xbox360\\Xbox360Tools_x64.dll",
-                             "Orbis\\OrbisTools_x64.dll",
-                             "Dingo\\DingoTools_x64.dll",
-                             "Win64\\Microsoft.VC90.CRT\\*.*",
-                             "{platform}\\*.dll'",
-                             '*.xml', '*.bat', '*.dll', '*.exe.config', '*.exe',
-                             "Win64\\Editor\\Release\\*.*",
-                             "{platform}\\{game}.*")
+            yield publish_binaries("{platform}\\{game}.exe",
+                                   "{platform}\\{game}.exe.config",
+                                   "{platform}\\{game}.config",
+                                   "{platform}\\{game}.com",
+                                   "Xbox360\\Interop.XDevkit.1.0.dll",
+                                   "PS3\\PS3Tools_x64.dll",
+                                   "Xbox360\\Xbox360Tools_x64.dll",
+                                   "Orbis\\OrbisTools_x64.dll",
+                                   "Dingo\\DingoTools_x64.dll",
+                                   "Win64\\Microsoft.VC90.CRT\\*.*",
+                                   "{platform}\\*.dll'",
+                                   '*.xml', '*.bat', '*.dll', '*.exe.config', '*.exe',
+                                   "Win64\\Editor\\Release\\*.*",
+                                   "{platform}\\{game}.*")
 
         if configuration != 'Release':
-            publish_binaries("{platform}\\{game}-{platform}-{configuration}.*")
+            yield publish_binaries("{platform}\\{game}-{platform}-{configuration}.*")
 
     if (platform != 'Win32' and platform != 'Win64'):
         if configuration is None:
-            publish_binaries("{platform}\\{game}*-*.*")
+            yield publish_binaries("{platform}\\{game}*-*.*")
         else:
-            publish_binaries("{platform}\\{game}-{platform}-{configuration}.*")
+            yield publish_binaries("{platform}\\{game}-{platform}-{configuration}.*")
 
-    return True
 
 #---------------------------------------------------------------------------
-def ue3_publish_version(publisher):
-    for configuration in publisher.configurations:
-        if not publish(publisher,
-                       ue3_publish_binaries,
-                       publisher.destination,
-                       platform      = get_binaries_platform(publisher.platform),
-                       configuration = configuration):
-            return False
+def ue3_map_version(publish):
+    for configuration in publish.configurations:
+        for result in ue3_map_binaries(publish.override(configuration = configuration)):
+            yield result
 
-    if publisher.platform.lower() == 'win64':
-        publisher.add("{game}\\Script\\*.*", "{game}\\ScriptFinalRelease\\*.*")
+    if publish.platform.lower() == 'win64':
+        yield publish("{game}\\Script\\*.*", "{game}\\ScriptFinalRelease\\*.*")
 
     return True
 

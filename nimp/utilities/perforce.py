@@ -157,18 +157,23 @@ def p4_sync(cl_number = None):
     return _p4_run_command(".", p4_command) is not None
 
 #-------------------------------------------------------------------------------
-def p4_transaction(cl_description, submit_on_success = False, revert_unchanged = True):
-    return _PerforceTransaction(cl_description, submit_on_success, revert_unchanged)
+def p4_transaction(cl_description, submit_on_success = False, revert_unchanged = True, add_not_versioned_files = True):
+    return _PerforceTransaction(cl_description, submit_on_success, revert_unchanged, add_not_versioned_files)
 
 #-------------------------------------------------------------------------------
 class _PerforceTransaction:
     #---------------------------------------------------------------------------
-    def __init__(self, change_list_description, submit_on_success = False, revert_unchanged = True):
+    def __init__(self,
+                 change_list_description,
+                 submit_on_success          = False,
+                 revert_unchanged           = True,
+                 add_not_versioned_files    = True):
         self._change_list_description   = change_list_description
         self._success                   = True
         self._cl_number                 = None
         self._submit_on_success         = submit_on_success
         self._revert_unchanged          = revert_unchanged
+        self._add_not_versioned_files   = add_not_versioned_files
         self._paths                     = []
 
     #---------------------------------------------------------------------------
@@ -190,6 +195,8 @@ class _PerforceTransaction:
         if p4_is_file_versioned(path):
            if p4_edit(self._cl_number, path):
               return True
+        elif not self._add_not_versioned_files:
+            return True
         elif p4_add(self._cl_number, path):
              return True
 

@@ -47,7 +47,8 @@ class CisUe3BuildCommand(CisCommand):
 
         log_notification(" ****** Publishing Binaries...")
         publish = FileMapper(robocopy_mapper, vars(context)).to(context.cis_binaries_directory)
-        map_ue3_binaries(publish)
+        if not chain_all(ue3_map_binaries(publish)):
+            return False
 
         log_notification(" ****** Publishing symbols...")
         if context.platform.lower() in ["win64", "win32", "dingo", "xbox360"]:

@@ -6,8 +6,10 @@ import fnmatch
 import shutil
 import time
 import functools
+import glob2
 import itertools
 import pathlib
+import stat
 
 from nimp.utilities.logging import *
 from nimp.utilities.paths   import *
@@ -35,19 +37,32 @@ def robocopy_mapper(source, destination):
     log_verbose("{0} => {1}", source, destination)
     if os.path.isdir(source) and not os.path.exists(destination):
         os.makedirs(destination)
-    else:
+    elif os.path.isfile(source):
         dest_dir = os.path.dirname(destination)
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
         try:
             if os.path.exists(destination):
-                os.chmod( destination, stat.S_IWRITE )
+                os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
             shutil.copy(source, destination)
         except:
             log_verbose("Error running shutil.copy2 {0} {1}, trying by deleting destination file first", source, destination)
             os.remove(destination)
             shutil.copy(source, destination)
     yield True
+
+#-------------------------------------------------------------------------------
+def chain_all(iterables):
+    return all(itertools.chain.from_iterable(iterables))
+
+#-------------------------------------------------------------------------------
+def checkout_and_copy(transaction):
+    def _checkout_and_copy_mapper(source, destination):
+        if os.path.isfile(destination) and not transaction.add(destination):
+            yield False
+        for result in robocopy_mapper(source, destination):
+            yield result
+    return _checkout_and_copy_mapper
 
 def _default_mapper(*args):
     yield args
@@ -67,19 +82,18 @@ class FileMapper(object):
 
         self._mapper        = mapper
         self._format_args   = format_args
-        self._source_path   = os.path.normpath(source_path)
+        self._source_path   = source_path
         self._next          = next
 
     #---------------------------------------------------------------------------
     def __call__(self, *args):
         if len(args) == 0:
-            args = ('.')
-        result          = []
+            args = ('',)
         source_path_len = len(split_path(self._source_path))
         for glob_path in args:
             glob_path = self._format(glob_path)
             glob_path = os.path.join(self._source_path, glob_path)
-            for source in pathlib.Path(".").glob(glob_path):
+            for source in glob2.glob(glob_path):
                 source = str(source)
                 # This is merely equivalent to os.path.relpath(source, self._source_path)
                 # excepted it will handle globs pattern in the base path.
@@ -92,8 +106,8 @@ class FileMapper(object):
                     mapped_files = itertools.chain.from_iterable(itertools.starmap(node._mapper, mapped_files))
                     assert(mapped_files is not None)
                     node         = node._next
-                result.extend(mapped_files)
-        return result
+                for result in mapped_files:
+                    yield result
 
     #---------------------------------------------------------------------------
     def override(self, **format_args):
@@ -138,6 +152,7 @@ class FileMapper(object):
                 processed_files.add(source)
                 yield (source,) + args
         return FileMapper(mapper = _once_mapper, source_path = self._source_path, next = self)
+
     #---------------------------------------------------------------------------
     def newer(self):
         """ Ignore files when source is newer than destination.
