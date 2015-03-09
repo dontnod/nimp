@@ -52,7 +52,10 @@ class CisUe3PublishVersion(CisCommand):
                 if not all(config_binaries):
                     return False
                 if not context.keep_temp_binaries:
-                    shutil.rmtree(context.format(context.cis_binaries_directory, configuration = configuration))
+                    try:
+                        shutil.rmtree(context.format(context.cis_binaries_directory, configuration = configuration))
+                    except Exception as ex:
+                        log_error("Error while cleaning binaries : {0}", ex)
 
             if context.is_win64:
                 log_notification("Building script...")
