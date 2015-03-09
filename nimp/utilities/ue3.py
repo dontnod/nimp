@@ -17,13 +17,13 @@ VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
 #-------------------------------------------------------------------------------
 def load_ue3_context(context):
     if hasattr(context, "platform"):
-        build_platforms = {"ps4"       : "Orbis",
-                           "Xboxone"   : "Dingo",
+        build_platforms = {"PS4"       : "Orbis",
+                           "XboxOne"   : "Dingo",
                            "Win64"     : "Win64",
                            "Win32"     : "Win32",
                            "XBox360"   : "Xbox360",
                            "PS3"       : "PS3" }
-        cook_platforms = { "ps4"       : "Orbis",
+        cook_platforms = { "PS4"       : "Orbis",
                            "XboxOne"   : "Dingo",
                            "Win64"     : "PC",
                            "Win32"     : "PCConsole",
