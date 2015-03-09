@@ -55,11 +55,13 @@ def ue3_build(solution, platform, configuration, vs_version, generate_version_fi
                 if not _ue3_build_editor_dlls(solution, configuration, vs_version):
                     return False
 
+        overrided_solution      = solution
+        overrided_vs_version    = vs_version
         if platform.lower() == "xbox360":
-            vs_version = "10"
-            solution   = "whatif_vs2010.sln"
+            overrided_vs_version = "10"
+            overrided_solution   = "whatif_vs2010.sln"
 
-        if not _ue3_build_game(solution, platform, configuration, vs_version):
+        if not _ue3_build_game(overrided_solution, platform, configuration, overrided_vs_version):
             return False
 
         return True
