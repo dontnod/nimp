@@ -45,7 +45,7 @@ def load_ue3_context(context):
         if dlc == context.project:
             context.ue3_cook_directory = '{0}\\Cooked{1}{2}'.format(context.game, context.ue3_cook_platform, suffix)
         else:
-           context.ue3_cook_directory = '{0}\\DLC\\{platform}\\{dlc}\\Cooked{1}{2}'.format(context.game, context.ue3_cook_platform, suffix)
+           context.ue3_cook_directory = '{0}\\DLC\\{1}\\{2}\\Cooked{1}{3}'.format(context.game, context.ue3_cook_platform, context.dlc, suffix)
 
 #-------------------------------------------------------------------------------
 def generate_toc(context, dlc):
@@ -124,20 +124,20 @@ def ue3_ship(context, destination = None):
 
 #---------------------------------------------------------------------------
 def _ship_dlc(context, destination):
-    master_config_file = context.format(context.master_config_path)
-    if not context.load_config_file(master_config_file):
-        log_error("Unable to load config file at {0}", master_config_file)
+    dlc_config_file = context.format(context.dlc_config_path)
+    if not context.load_config_file(dlc_config_file):
+        log_error("Unable to load config file at {0}", dlc_config_file)
         return False
 
-    map = context.cook_maps[context.dlc]
+    map = context.cook_maps[context.dlc.lower()]
 
-    deploy_master = robocopy(context).files().recursive().frm(context.cis_master_directory)
+    deploy_master = robocopy(context).override(dlc = context.project).files().recursive().frm(context.cis_master_directory)
     log_notification("***** Deploying master...")
     if not all(deploy_master()):
         return False
 
     log_notification("***** Deploying master patch...")
-    deploy_master_patch = robocopy(context).files().recursive().frm(context.cis_ship_patch_directory)
+    deploy_master_patch = robocopy(context).override(dlc = context.project).files().recursive().frm(context.cis_ship_patch_directory)
     if not all(deploy_master_patch()):
         return False
 
@@ -166,7 +166,7 @@ def _ship_game_patch(context, destination):
         log_error("Unable to load path config file at {0}", patch_config_file)
         return False
 
-    map = context.cook_maps[context.dlc]
+    map = context.cook_maps[context.dlc.lower()]
 
     deploy_master = robocopy(context).files().recursive().frm(context.cis_master_directory)
     log_notification("***** Deploying master...")
