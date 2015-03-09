@@ -36,7 +36,7 @@ class Context:
     def standardize_names(self):
         if hasattr(self, "platform"):
             std_platforms = {"ps4"       : "PS4",
-                             "orbis"     : "orbis",
+                             "orbis"     : "PS4",
                              "xboxone"   : "XboxOne",
                              "dingo"     : "XboxOne",
                              "win32"     : "Win32",
