@@ -34,18 +34,14 @@ class CisUe3Ship(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
-        copy = CopyTransaction(context, checkout = True)
-        if not copy.override(platform = 'Win64').add_latest_revision(context.cis_version_directory):
-            return False
 
-        if context.platform.lower() != "Win64":
-            if not copy.add_latest_revision(context.cis_version_directory):
+        platforms = ["Win64"]
+
+        if not context.is_win64:
+            platforms += [context.platform]
+
+        with deploy_latest_revision(context, context.cis_version_directory, context.revision, platforms):
+            if not ue3_ship(context):
                 return False
-
-        if not copy.do():
-            return False
-
-        if not ue3_ship(context):
-            return False
 
         return True

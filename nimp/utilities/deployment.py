@@ -18,16 +18,18 @@ from nimp.utilities.perforce     import *
 from nimp.utilities.file_mapper  import *
 
 #---------------------------------------------------------------------------
-def get_latest_available_revision(version_directory_format, start_revision, **kwargs):
+def get_latest_available_revision(context, version_directory_format, start_revision, **override_args):
     revisions                   = []
-    kwargs['revision']          = '*'
+    format_args                 = vars(context).copy()
+    format_args.update(override_args)
+    format_args['revision']     = '*'
     version_directory_format    = version_directory_format.replace('\\', '/')
-    version_directories_glob    = version_directory_format.format(**kwargs)
+    version_directories_glob    = version_directory_format.format(**format_args)
 
     for version_directory in glob.glob(version_directories_glob):
-        kwargs['revision'] = '([0-9]*)'
-        version_directory  = version_directory.replace('\\', '/')
-        version_regex      = version_directory_format.format(**kwargs)
+        format_args['revision'] = '([0-9]*)'
+        version_directory       = version_directory.replace('\\', '/')
+        version_regex           = version_directory_format.format(**format_args)
 
         version_match = re.match(version_regex, version_directory)
         version_cl    = version_match.group(1)
@@ -41,6 +43,68 @@ def get_latest_available_revision(version_directory_format, start_revision, **kw
             return revision
 
     return None
+
+#-------------------------------------------------------------------------------
+def _robocopy_mapper(source, destination):
+    """ 'Robust' copy mapper. """
+    log_verbose("{0} => {1}", source, destination)
+    if os.path.isdir(source) and not os.path.exists(destination):
+        os.makedirs(destination)
+    elif os.path.isfile(source):
+        dest_dir = os.path.dirname(destination)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+        try:
+            if os.path.exists(destination):
+                os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+            shutil.copy(source, destination)
+        except:
+            log_verbose("Error running shutil.copy2 {0} {1}, trying by deleting destination file first", source, destination)
+            os.remove(destination)
+            shutil.copy(source, destination)
+    yield True
+
+#-------------------------------------------------------------------------------
+def robocopy(context):
+    return FileMapper(_robocopy_mapper, vars(context))
+
+#-------------------------------------------------------------------------------
+def checkout(context, transaction):
+    def _checkout_mapper(source, *args):
+        if os.path.isfile(source) and not transaction.add(source):
+            yield False
+
+    return FileMapper(_checkout_mapper, vars(context))
+
+#-------------------------------------------------------------------------------
+def checkout_and_copy(context, transaction):
+    def _checkout_and_copy_mapper(source, destination):
+        if os.path.isfile(destination) and not transaction.add(destination):
+            yield False
+        for result in _robocopy_mapper(source, destination):
+            yield result
+
+    return FileMapper(_checkout_and_copy_mapper, vars(context))
+
+#----------------------------------------------------------------------------
+@contextlib.contextmanager
+def deploy_latest_revision(context, version_directory_format, revision, platforms):
+    for platform in platforms:
+        revision = get_latest_available_revision(context, version_directory_format, revision, platform = platform)
+        if revision is None:
+            raise Exception("Unable to find a suitable revision for platform %s" % platform)
+
+    with p4_transaction("Automatic Checkout",
+                        revert_unchanged = False,
+                        add_not_versioned_files = False) as transaction:
+        transaction.abort()
+        for platform in platforms:
+            deploy_binaries = checkout_and_copy(context, transaction).files().recursive().override(revision  = revision)
+            deploy_binaries = deploy_binaries.override(platform = platform)
+            deploy_binaries = deploy_binaries.frm(context.cis_version_directory)
+            if not all(deploy_binaries()):
+                raise Exception("Error while deploying %s binaries" % platform)
+        yield
 
 #------------------------------------------------------------------------------
 def upload_microsoft_symbols(context, paths):

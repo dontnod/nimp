@@ -15,15 +15,44 @@ from nimp.utilities.ue3_deployment   import *
 VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
 
 #-------------------------------------------------------------------------------
-def generate_toc(context, dlc):
-    cooker_sync_platform = context.platform
-    cooker_sync_platform = "PS4" if cooker_sync_platform.lower() == "orbis" else cooker_sync_platform
-    cooker_sync_platform = "XBoxOne" if cooker_sync_platform.lower() == "dingo" else cooker_sync_platform
+def load_ue3_context(context):
+    if hasattr(context, "platform"):
+        build_platforms = {"ps4"       : "Orbis",
+                           "Xboxone"   : "Dingo",
+                           "Win64"     : "Win64",
+                           "Win32"     : "Win32",
+                           "XBox360"   : "Xbox360",
+                           "PS3"       : "PS3" }
+        cook_platforms = { "ps4"       : "Orbis",
+                           "XboxOne"   : "Dingo",
+                           "Win64"     : "PC",
+                           "Win32"     : "PCConsole",
+                           "XBox360"   : "Xbox360",
+                           "PS3"       : "PS3" }
 
+
+        context.ue3_cook_platform  = cook_platforms[context.platform]
+        context.ue3_build_platform = build_platforms[context.platform]
+
+        if  hasattr(context, 'dlc'):
+            if context.dlc is None:
+                context.dlc = context.project
+
+        configuration = context.configuration.lower() if hasattr(context, 'configuration') else 'final'
+        dlc           = context.dlc if hasattr(context, 'dlc') else context.project
+        suffix        = 'Final' if configuration in ['test', 'final'] else ''
+
+        if dlc == context.project:
+            context.ue3_cook_directory = '{0}\\Cooked{1}{2}'.format(context.game, context.ue3_cook_platform, suffix)
+        else:
+           context.ue3_cook_directory = '{0}\\DLC\\{platform}\\{dlc}\\Cooked{1}{2}'.format(context.game, context.ue3_cook_platform, suffix)
+
+#-------------------------------------------------------------------------------
+def generate_toc(context, dlc):
     for language in context.languages:
         call_process(".", [ "Binaries\CookerSync.exe",
                             context.game,
-                            "-p", cooker_sync_platform,
+                            "-p", context.ue3_cook_platform,
                             "-x",  "Loc",
                             "-r", language,
                             "-nd",
@@ -32,7 +61,7 @@ def generate_toc(context, dlc):
 
     call_process(".", [ "Binaries\CookerSync.exe",
                         context.game,
-                        "-p", cooker_sync_platform,
+                        "-p", context.ue3_cook_platform,
                         "-x",  "ConsoleSyncProgrammer",
                         "-r", "INT",
                         "-nd",
@@ -41,7 +70,11 @@ def generate_toc(context, dlc):
     return True
 
 #---------------------------------------------------------------------------
-def ue3_build(solution, platform, configuration, vs_version, generate_version_file = False):
+def ue3_build(context):
+    load_ue3_context(context)
+    solution        = context.solution
+    configuration   = context.configuration
+    vs_version      = context.vs_version
     result          = True
     version_file_cl = None
 
@@ -51,22 +84,22 @@ def ue3_build(solution, platform, configuration, vs_version, generate_version_fi
         return False
 
     def _build():
-        if platform.lower() == 'win64':
-                if not _ue3_build_editor_dlls(solution, configuration, vs_version):
-                    return False
+        if context.is_win64:
+            if not _ue3_build_editor_dlls(solution, configuration, vs_version):
+                return False
 
         overrided_solution      = solution
         overrided_vs_version    = vs_version
-        if platform.lower() == "xbox360":
+        if context.is_x360:
             overrided_vs_version = "10"
             overrided_solution   = "whatif_vs2010.sln"
 
-        if not _ue3_build_game(overrided_solution, platform, configuration, overrided_vs_version):
+        if not _ue3_build_game(overrided_solution, context.ue3_build_platform, configuration, overrided_vs_version):
             return False
 
         return True
 
-    if generate_version_file:
+    if context.generate_version_file:
         with _ue3_generate_version_file():
             return _build()
     else:
@@ -74,15 +107,13 @@ def ue3_build(solution, platform, configuration, vs_version, generate_version_fi
 
 #---------------------------------------------------------------------------
 def ue3_ship(context, destination = None):
-    if context.dlc is None:
-        context.dlc = context.project
-
+    load_ue3_context(context)
     master_directory = context.format(context.cis_master_directory)
 
     if os.path.exists(master_directory):
         log_notification("Found a master at {0} : I'm going to build a patch", master_directory)
         if context.dlc == context.project:
-            return _ship_game_patch(context, destination)
+            return _ship_game_patch(context, destination or context.cis_ship_patch_directory)
         else:
             log_error("Sry, building a DLC patch is still not implemented")
     else:
@@ -100,36 +131,37 @@ def _ship_game_patch(context, destination):
 
     map = context.cook_maps[context.dlc]
 
-    master_copier = CopyTransaction(context).relative(context.cis_master_directory)
-    master_copier.add(".")
-    if master_copier.do():
+    deploy_master = robocopy(context).files().recursive().frm(context.cis_master_directory)
+    log_notification("***** Deploying master...")
+    if not all(deploy_master()):
         return False
 
-    log_notification("Cooking on top of master...")
+    log_notification("***** Cooking on top of master...")
     if not ue3_cook(context.game,
                     map,
                     context.languages,
                     None,
-                    context.platform,
+                    context.ue3_cook_platform,
                     'final',
                     incremental = True):
         return False
 
 
-    log_notification("Redeploying master cook ignoring patched files...")
-    context.patch_files(master_copier.ignore_added_files())
+    log_notification("***** Redeploying master cook ignoring patched files...")
+    patch_files   = list_sources(vars(context)).frm(context.cis_master_directory)
+    patch_files   = ue3_map_patch(patch_files)
+    deploy_master = robocopy(context).exclude(*patch_files).files().recursive().frm(context.cis_master_directory)
 
-    if not master_copier.do():
+    if not all(deploy_master()):
         return False
 
-    log_notification("Generating toc...")
+    log_notification("***** Generating toc...")
     if not generate_toc(context, dlc = "Episode01" if context.dlc == context.project else context.dlc):
         return False
 
-    log_notification("Copying patched files to output directory...")
-    copy = CopyTransaction(context, destination or context.cis_ship_patch_directory)
-    context.patch_files(copy)
-    return copy.do()
+    log_notification("***** Copying patched files to output directory...")
+    publish_patch = robocopy(context).to(destination)
+    return all(ue3_map_patch(publish_patch))
 
 
 #---------------------------------------------------------------------------
@@ -151,11 +183,6 @@ def ue3_build_script(game):
 
 #---------------------------------------------------------------------------
 def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False, incremental = False):
-    if platform.lower() == 'win64':
-        platform = 'PC'
-    elif platform.lower() == 'win32':
-        platform = 'PCConsole'
-
     commandlet_arguments =  [ map]
 
     if not incremental:

@@ -31,8 +31,4 @@ class Ue3BuildCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, context):
-        return ue3_build(context.solution,
-                         context.platform,
-                         context.configuration,
-                         context.vs_version,
-                         context.generate_version_file)
+        return ue3_build(context)

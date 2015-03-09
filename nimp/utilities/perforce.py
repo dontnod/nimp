@@ -189,7 +189,7 @@ class _PerforceTransaction:
     #---------------------------------------------------------------------------
     def add(self, path):
         if path in self._paths:
-            return
+            return True
 
         self._paths.append(path)
         if p4_is_file_versioned(path):

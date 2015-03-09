@@ -53,4 +53,5 @@ def _load_arguments(context, parser):
     for key, value in vars(arguments).items():
         setattr(context, key, value)
 
+    context.standardize_names()
     return True

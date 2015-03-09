@@ -15,6 +15,15 @@ from nimp.utilities.logging import *
 from nimp.utilities.paths   import *
 
 #-------------------------------------------------------------------------------
+def list_sources(format_args = {}):
+    """ Use this simply list mapped sources files
+    """
+    def _yield_source_mapper(source, *args):
+        yield source
+    return FileMapper(mapper = _yield_source_mapper,  format_args = format_args)
+
+
+#-------------------------------------------------------------------------------
 def map_sources(handler, format_args = {}):
     """ Use this to execute a single argument function on the sources of the mapped
         files.
@@ -32,38 +41,14 @@ def map_copy(handler, format_args = {}):
     return FileMapper(mapper = _copy_mapper,  format_args = format_args)
 
 #-------------------------------------------------------------------------------
-def robocopy_mapper(source, destination):
-    """ 'Robust' copy mapper. """
-    log_verbose("{0} => {1}", source, destination)
-    if os.path.isdir(source) and not os.path.exists(destination):
-        os.makedirs(destination)
-    elif os.path.isfile(source):
-        dest_dir = os.path.dirname(destination)
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
-        try:
-            if os.path.exists(destination):
-                os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-            shutil.copy(source, destination)
-        except:
-            log_verbose("Error running shutil.copy2 {0} {1}, trying by deleting destination file first", source, destination)
-            os.remove(destination)
-            shutil.copy(source, destination)
-    yield True
-
-#-------------------------------------------------------------------------------
 def chain_all(iterables):
     return all(itertools.chain.from_iterable(iterables))
 
 #-------------------------------------------------------------------------------
-def checkout_and_copy(transaction):
-    def _checkout_and_copy_mapper(source, destination):
-        if os.path.isfile(destination) and not transaction.add(destination):
-            yield False
-        for result in robocopy_mapper(source, destination):
-            yield result
-    return _checkout_and_copy_mapper
+def chain(iterables):
+    return itertools.chain.from_iterable(iterables)
 
+#-------------------------------------------------------------------------------
 def _default_mapper(*args):
     yield args
 
@@ -122,6 +107,7 @@ class FileMapper(object):
         def _exclude_mapper(source, *args):
             for pattern in patterns:
                 if fnmatch.fnmatch(source, pattern):
+                    log_verbose("Excluding file {0}", source)
                     raise StopIteration()
             yield (source,) + args
         return FileMapper(mapper = _exclude_mapper, source_path = self._source_path, next = self)

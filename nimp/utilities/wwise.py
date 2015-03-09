@@ -1,68 +1,38 @@
 # -*- coding: utf-8 -*-
 
 import os.path
+import shutil
 
 from nimp.utilities.perforce    import *
 from nimp.utilities.processes   import *
 from nimp.utilities.file_mapper import *
-import shutil
 
 #---------------------------------------------------------------------------
-def wwise_cache_platform(platform):
-    """ Returns the name used for this platform in the Wwise cache directory.
-    """
-    return {
-        "pc"            : "Windows",
-        "pcconsole"     : "Windows",
-        "win32"         : "Windows",
-        "win64"         : "Windows",
-        "windows"       : "Windows",
-        "ps3"           : "Ps3",
-        "xbox 360"      : "XBox360",
-        "xbox360"       : "XBox360",
-        "x360"          : "XBox360",
-        "dingo"         : "XboxOne",
-        "xboxone"       : "XboxOne",
-        "orbis"         : "PS4",
-        "ps4"           : "ps4"}[platform.lower()]
+def load_wwise_context(context):
+    if hasattr(context, "platform"):
+        cache_platforms = { "PS4"       : "PS4",
+                            "XboxOne"   : "XboxOne",
+                            "Win64"     : "Windows",
+                            "Win32"     : "Windows",
+                            "XBox360"   : "XBox360",
+                            "PS3"       : "PS3" }
 
-#---------------------------------------------------------------------------
-def wwise_banks_platform(platform):
-    """ Returns the name used for this platform in commited *.bnk directories.
-    """
-    return {
-        "pc"            : "PC",
-        "pcconsole"     : "PC",
-        "win32"         : "PC",
-        "win64"         : "PC",
-        "windows"       : "PC",
-        "ps3"           : "Ps3",
-        "xbox 360"      : "X360",
-        "xbox360"       : "X360",
-        "x360"          : "X360",
-        "dingo"         : "XboxOne",
-        "xboxone"       : "XboxOne",
-        "orbis"         : "PS4",
-        "ps4"           : "ps4"}[platform.lower()]
+        banks_platforms = { "Win32"         : "PC",
+                            "Win64"         : "PC",
+                            "XBox360"       : "X360",
+                            "XboxOne"       : "XboxOne",
+                            "PS4"           : "PS4" }
 
-#---------------------------------------------------------------------------
-def wwise_cmd_line_platform(platform):
-    """ Returns the name used for this platform when dealing with Wwise command line.
-    """
-    return {
-        "pc"            : "Windows",
-        "pcconsole"     : "Windows",
-        "win32"         : "Windows",
-        "win64"         : "Windows",
-        "windows"       : "Windows",
-        "ps3"           : "Ps3",
-        "xbox 360"      : "XBox360",
-        "xbox360"       : "XBox360",
-        "x360"          : "XBox360",
-        "dingo"         : "XboxOne",
-        "xboxone"       : "XboxOne",
-        "orbis"         : "PS4",
-        "ps4"           : "ps4"}[platform.lower()]
+        cmd_platforms = { "Win32"         : "Windows",
+                          "Win64"         : "Windows",
+                          "PS3"           : "Ps3",
+                          "XBox360"       : "XBox360",
+                          "XboxOne"       : "XboxOne",
+                          "PS4"           : "PS4"}
+
+        context.wwise_cache_platform  = cache_platforms[context.platform]
+        context.wwise_banks_platform  = banks_platforms[context.platform]
+        context.wwise_cmd_platform    = cmd_platforms[context.platform]
 
 #---------------------------------------------------------------------------
 def build_wwise_banks(context):
@@ -73,16 +43,17 @@ def build_wwise_banks(context):
                               eventually  submit (*.bnk files directory).
         wwise_project       : Relative path of the Wwise project to build.
         checkin             : True to commit built banks, False otherwise."""
+    load_wwise_context(context)
     platform         = context.platform
     wwise_banks_path = context.wwise_banks_path
-    wwise_banks_path = os.path.join(wwise_banks_path, wwise_banks_platform(platform))
+    wwise_banks_path = os.path.join(wwise_banks_path, context.wwise_banks_platform)
     cl_name          = "[CIS] Updated {0} Wwise Banks from CL {1}".format(platform,  p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring\\x64\\Release\\bin\\WWiseCLI.exe")
     wwise_command    = [wwise_cli_path,
                         os.path.abspath(context.wwise_project),
                         "-GenerateSoundBanks",
                         "-Platform",
-                        wwise_cmd_line_platform(platform)]
+                        context.wwise_cmd_platform]
 
     result      = True
     with p4_transaction(cl_name, submit_on_success = context.checkin) as trans:

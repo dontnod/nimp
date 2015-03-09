@@ -43,26 +43,26 @@ class CisUe3PublishVersion(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
-        binaries_platform = get_binaries_platform(context.platform)
-        with p4_transaction("Binaries Checkout", add_not_versioned_files = False) as trans:
-            deploy = FileMapper(checkout_and_copy(trans), vars(context)).recursive()
+        load_ue3_context(context)
+        with p4_transaction("Binaries Checkout", revert_unchanged = False, add_not_versioned_files = False) as trans:
+            deploy = checkout_and_copy(context, trans).recursive()
             for configuration in context.configurations:
                 log_notification("Deploying {0} binaries...", configuration)
                 config_binaries = deploy.override(configuration = configuration).frm(context.cis_binaries_directory)()
                 if not all(config_binaries):
                     return False
                 if not context.keep_temp_binaries:
-                    shutil.rmtree(context.format(context.cis_binaries_directory))
+                    shutil.rmtree(context.format(context.cis_binaries_directory, configuration = configuration))
 
-        if context.platform.lower() == 'win64':
-            log_notification("Building script...")
-            if not ue3_build_script(context.game):
-                log_error("Error while building script")
+            if context.is_win64:
+                log_notification("Building script...")
+                if not ue3_build_script(context.game):
+                    log_error("Error while building script")
+                    return False
+
+            publish = robocopy(context).to(context.cis_version_directory)
+            log_notification("Publishing version {0}...", configuration)
+            if not chain_all(ue3_map_version(publish)):
                 return False
-
-        publish = FileMapper(robocopy_mapper, vars(context)).to(context.cis_version_directory)
-        log_notification("Publishing version {0}...", configuration)
-        if not chain_all(ue3_map_version(publish)):
-            return False
 
         return True

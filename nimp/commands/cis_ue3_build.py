@@ -2,7 +2,7 @@
 
 from nimp.commands._cis_command     import *
 from nimp.utilities.ue3             import *
-from nimp.utilities.file_mapper     import *
+from nimp.utilities.deployment      import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
 FARM_P4_USER     = "CIS-CodeBuilder"
@@ -38,21 +38,28 @@ class CisUe3BuildCommand(CisCommand):
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
         log_notification(" ****** Building game...")
-        if not ue3_build(context.solution,
-                         context.platform,
-                         context.configuration,
-                         context.vs_version,
-                         True):
-            return False
+        load_ue3_context(context)
+        context.generate_version_file = True
 
-        log_notification(" ****** Publishing Binaries...")
-        publish = FileMapper(robocopy_mapper, vars(context)).to(context.cis_binaries_directory)
-        if not chain_all(ue3_map_binaries(publish)):
-            return False
-
-        log_notification(" ****** Publishing symbols...")
-        if context.platform.lower() in ["win64", "win32", "dingo", "xbox360"]:
-            if not upload_microsoft_symbols(context, ["Binaries/{0}".format(context.platform)]):
+        with p4_transaction("Binaries checkout",
+                            revert_unchanged = False,
+                            add_not_versioned_files = False) as transaction:
+            transaction.abort()
+            checkout_binaries = checkout(context, transaction)
+            if not chain_all(ue3_map_binaries(checkout_binaries)):
                 return False
+
+            if not ue3_build(context):
+                return False
+
+            log_notification(" ****** Publishing Binaries...")
+            publish = robocopy(context).to(context.cis_binaries_directory)
+            if not chain_all(ue3_map_binaries(publish)):
+                return False
+
+            log_notification(" ****** Publishing symbols...")
+            if context.is_microsoft_platform:
+                if not upload_microsoft_symbols(context, ["Binaries/{0}".format(context.platform)]):
+                    return False
 
         return True
