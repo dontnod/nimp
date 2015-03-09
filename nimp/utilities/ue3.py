@@ -120,7 +120,44 @@ def ue3_ship(context, destination = None):
         if context.dlc == context.project:
             log_error("Sry, building a game master is still not implemented")
         else:
-            log_error("Sry, building a dlc master is still not implemented")
+            _ship_dlc(context, destination or context.cis_ship_directory)
+
+#---------------------------------------------------------------------------
+def _ship_dlc(context, destination):
+    master_config_file = context.format(context.master_config_path)
+    if not context.load_config_file(master_config_file):
+        log_error("Unable to load config file at {0}", master_config_file)
+        return False
+
+    map = context.cook_maps[context.dlc]
+
+    deploy_master = robocopy(context).files().recursive().frm(context.cis_master_directory)
+    log_notification("***** Deploying master...")
+    if not all(deploy_master()):
+        return False
+
+    log_notification("***** Deploying master patch...")
+    deploy_master_patch = robocopy(context).files().recursive().frm(context.cis_ship_patch_directory)
+    if not all(deploy_master_patch()):
+        return False
+
+    log_notification("***** Cooking...")
+    if not ue3_cook(context.game,
+                    map,
+                    context.languages,
+                    context.dlc,
+                    context.ue3_cook_platform,
+                    'final',
+                    incremental = True):
+        return False
+
+    log_notification("***** Generating toc...")
+    if not generate_toc(context, context.dlc):
+        return False
+
+    log_notification("***** Copying DLC to output directory...")
+    publish_dlc = robocopy(context).to(destination)
+    return all(ue3_map_dlc(publish_dlc))
 
 #---------------------------------------------------------------------------
 def _ship_game_patch(context, destination):

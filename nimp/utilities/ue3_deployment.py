@@ -44,7 +44,7 @@ def ue3_map_version(publish):
         for result in ue3_map_binaries(publish.override(configuration = configuration)):
             yield result
 
-    if publish.is_win64():
+    if publish.is_win64:
         yield publish("{game}\\Script\\*.*", "{game}\\ScriptFinalRelease\\*.*")
 
     return True
@@ -52,4 +52,8 @@ def ue3_map_version(publish):
 #---------------------------------------------------------------------------
 def ue3_map_patch(patch):
     return chain(patch.patch_files(patch))
+
+#---------------------------------------------------------------------------
+def ue3_map_dlc(patch):
+    return chain(patch.dlc_files(patch))
 
