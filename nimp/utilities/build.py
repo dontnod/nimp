@@ -3,7 +3,7 @@
 from nimp.utilities.processes import *
 
 #---------------------------------------------------------------------------
-def vsbuild(solution, platform, configuration, project = None, vs_version = '12', target = 'build'):
+def vsbuild(solution, platform, configuration, project = None, vs_version = '12', target = 'Build'):
     build_directory = '.'
 
     devenv_path = _find_devenv_path(vs_version)
@@ -12,9 +12,10 @@ def vsbuild(solution, platform, configuration, project = None, vs_version = '12'
         return False
 
     command = [devenv_path, solution]
+    command = command + [ '/' + target,  configuration + '|' + platform ]
     if project is not None:
         command = command + [ '/project', project ]
-    command = command + [ '/' + target, configuration + '|' + platform ]
+
     return call_process(build_directory, command) == 0
 
 #-------------------------------------------------------------------------------

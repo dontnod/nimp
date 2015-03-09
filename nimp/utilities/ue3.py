@@ -46,7 +46,7 @@ def ue3_build(solution, platform, configuration, vs_version, generate_version_fi
     version_file_cl = None
 
     log_verbose("Building UBT")
-    if not _ue3_build_project(solution, "UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
+    if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
         log_error("Error building UBT")
         return False
 
@@ -54,6 +54,10 @@ def ue3_build(solution, platform, configuration, vs_version, generate_version_fi
         if platform.lower() == 'win64':
                 if not _ue3_build_editor_dlls(solution, configuration, vs_version):
                     return False
+
+        if platform.lower() == "xbox360":
+            vs_version = "10"
+            solution   = "whatif_vs2010.sln"
 
         if not _ue3_build_game(solution, platform, configuration, vs_version):
             return False
@@ -170,9 +174,8 @@ def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = F
     return ue3_commandlet(game, 'cookpackages', commandlet_arguments)
 
 #---------------------------------------------------------------------------
-def _ue3_build_project(sln_file, project, configuration, vs_version, target = 'rebuild'):
+def _ue3_build_project(sln_file, project, configuration, vs_version, target = 'Rebuild'):
     base_dir = 'Development/Src'
-    project  = os.path.join(base_dir, project)
     sln_file = os.path.join(base_dir, sln_file)
 
     return vsbuild(sln_file, 'Mixed platforms', configuration, project, vs_version, target)
@@ -183,10 +186,10 @@ def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
 
     editor_config = 'Debug' if configuration.lower() == "debug" else 'Release'
 
-    if not _ue3_build_project(sln_file, 'UnrealEdCSharp/UnrealEdCSharp.csproj', editor_config, vs_version):
+    if not _ue3_build_project(sln_file, 'Development/Src/UnrealEdCSharp/UnrealEdCSharp.csproj', editor_config, vs_version):
         return False
 
-    if not _ue3_build_project(sln_file, 'DNEEdCSharp/DNEEdCSharp.csproj', editor_config, vs_version):
+    if not _ue3_build_project(sln_file, 'Development/Src/DNEEdCSharp/DNEEdCSharp.csproj', editor_config, vs_version):
         return False
 
     dll_target = os.path.join('Binaries/Win64/Editor', editor_config)
@@ -207,18 +210,18 @@ def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
 #-------------------------------------------------------------------------------
 def _ue3_build_game(sln_file, platform, configuration, vs_version):
     dict_vcxproj = {
-        'win32'   : 'Windows/ExampleGame Win32.vcxproj',
-        'win64'   : 'Windows/ExampleGame Win64.vcxproj',
-        'ps3'     : 'PS3/ExampleGame PS3.vcxproj',
-        'orbis'   : 'ExampleGame PS4/ExampleGame PS4.vcxproj',
-        'ps4'     : 'ExampleGame PS4/ExampleGame PS4.vcxproj',
-        'xbox360' : 'Xenon/ExampleGame Xbox360.vcxproj',
-        'dingo'   : 'Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
-        'xboxone' : 'Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
+        'win32'   : 'Development/Src/Windows/ExampleGame Win32.vcxproj',
+        'win64'   : 'Development/Src/Windows/ExampleGame Win64.vcxproj',
+        'ps3'     : 'Development/Src/PS3/ExampleGame PS3.vcxproj',
+        'orbis'   : 'Development/Src/ExampleGame PS4/ExampleGame PS4.vcxproj',
+        'ps4'     : 'Development/Src/ExampleGame PS4/ExampleGame PS4.vcxproj',
+        'xbox360' : 'ExampleGame Xbox360', # Xbox360 Uses VS 2010
+        'dingo'   : 'Development/Src/Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
+        'xboxone' : 'Development/Src/Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
     }
 
     platform_project = dict_vcxproj[platform.lower()]
-    return _ue3_build_project(sln_file, platform_project, configuration, vs_version, 'build')
+    return _ue3_build_project(sln_file, platform_project, configuration, vs_version, 'Build')
 
 #---------------------------------------------------------------------------
 @contextlib.contextmanager

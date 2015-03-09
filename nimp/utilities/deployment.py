@@ -48,7 +48,8 @@ def upload_microsoft_symbols(context, paths):
 
     with open("symbols_index.txt", "w") as symbols_index:
         for path in paths:
-            write_symbol_index.frm(path)("**/*.pdb", "**/*.xdb")
+            if not all(write_symbol_index.frm(path)("**/*.pdb", "**/*.xdb")):
+                return False
 
     result = True
     if call_process(".",

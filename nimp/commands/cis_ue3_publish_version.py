@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import shutil
+
 from nimp.commands._cis_command      import *
 from nimp.utilities.ue3              import *
 from nimp.utilities.ue3_deployment   import *
@@ -32,6 +34,11 @@ class CisUe3PublishVersion(CisCommand):
                             help    = 'Configurations to deploy',
                             metavar = '<platform>',
                             nargs = '+')
+
+        parser.add_argument('--keep-temp-binaries',
+                            help    = 'Don\'t delete temporary binaries directory',
+                            action  = "store_true",
+                            default = False)
         return True
 
     #---------------------------------------------------------------------------
@@ -41,8 +48,11 @@ class CisUe3PublishVersion(CisCommand):
             deploy = FileMapper(checkout_and_copy(trans), vars(context)).recursive()
             for configuration in context.configurations:
                 log_notification("Deploying {0} binaries...", configuration)
-                if not all(deploy.override(configuration = configuration).frm(context.cis_binaries_directory)()):
+                config_binaries = deploy.override(configuration = configuration).frm(context.cis_binaries_directory)()
+                if not all(config_binaries):
                     return False
+                if not context.keep_temp_binaries:
+                    shutil.rmtree(context.format(context.cis_binaries_directory))
 
         if context.platform.lower() == 'win64':
             log_notification("Building script...")
