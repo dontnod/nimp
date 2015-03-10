@@ -43,7 +43,7 @@ def load_ue3_context(context):
         suffix        = 'Final' if configuration in ['test', 'final'] else ''
 
         if dlc == context.project:
-            context.ue3_cook_directory = '{0}\\Cooked{1}{2}'.format(context.game, context.ue3_cook_platform, suffix)
+            context.ue3_cook_directory = 'Cooked{0}{1}'.format(context.ue3_cook_platform, suffix)
         else:
            context.ue3_cook_directory = '{0}\\DLC\\{1}\\{2}\\Cooked{1}{3}'.format(context.game, context.ue3_cook_platform, context.dlc, suffix)
 

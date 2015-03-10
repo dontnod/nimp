@@ -178,6 +178,14 @@ class FileMapper(object):
         return FileMapper(mapper = _to_mapper, source_path = self._source_path, next = self)
 
     #---------------------------------------------------------------------------
+    def upper(self):
+        """ Yields all destination files uppercase
+        """
+        def _upper_mapper(source, destination, *args):
+            yield (source, destination.upper()) + args
+        return FileMapper(mapper = _upper_mapper, source_path = self._source_path, next = self)
+
+    #---------------------------------------------------------------------------
     def _format(self, str):
         """ Formats given string using format arguments defined on all the
             nodes of the list.

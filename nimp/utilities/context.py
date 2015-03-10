@@ -58,6 +58,7 @@ class Context:
             self.is_xone  = self.platform == "XboxOne"
 
             self.is_microsoft_platform  = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
+            self.is_sony_platform       = self.is_ps3 or self.is_ps4
 
 #---------------------------------------------------------------------------
 def _read_config_file(filename):
