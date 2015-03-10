@@ -40,7 +40,7 @@ class CisUe3Ship(CisCommand):
             platforms += [context.platform]
 
         with deploy_latest_revision(context, context.cis_version_directory, context.revision, platforms):
-        if not ue3_ship(context):
-            return False
+            if not ue3_ship(context):
+                return False
 
         return True
