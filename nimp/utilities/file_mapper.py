@@ -10,6 +10,7 @@ import glob2
 import itertools
 import pathlib
 import stat
+import re
 
 from nimp.utilities.logging import *
 from nimp.utilities.paths   import *
@@ -165,6 +166,15 @@ class FileMapper(object):
                     for child_source, child_destination in _recursive_mapper(child_source, child_dest):
                         yield (child_source, child_destination) + args
         return FileMapper(mapper = _recursive_mapper, source_path = self._source_path, next = self)
+
+    #---------------------------------------------------------------------------
+    def replace(self, pattern, repl, flags = 0):
+        """ Performs a re.sub on destination
+        """
+        def _replace_mapper(source, destination, *args):
+            destination = re.sub(pattern, repl, destination, flags = flags)
+            yield (source, destination) + args
+        return FileMapper(mapper = _replace_mapper, source_path = self._source_path, next = self)
 
     #---------------------------------------------------------------------------
     def to(self, to_destination):
