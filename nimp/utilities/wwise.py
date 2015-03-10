@@ -21,6 +21,7 @@ def load_wwise_context(context):
                             "Win64"         : "PC",
                             "XBox360"       : "X360",
                             "XboxOne"       : "XboxOne",
+                            "PS3"           : "XboxOne",
                             "PS4"           : "PS4" }
 
         cmd_platforms = { "Win32"         : "Windows",

@@ -45,6 +45,7 @@ class Context:
                              "pc"        : "Win64",
                              "windows"   : "Win64",
                              "xbox360"   : "XBox360",
+                             "x360"      : "XBox360",
                              "ps3"       : "PS3" }
 
             self.platform = std_platforms[self.platform.lower()]
