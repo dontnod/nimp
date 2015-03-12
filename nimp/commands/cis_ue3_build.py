@@ -46,7 +46,7 @@ class CisUe3BuildCommand(CisCommand):
                             add_not_versioned_files = False) as transaction:
             transaction.abort()
             checkout_binaries = checkout(context, transaction)
-            if not chain_all(ue3_map_binaries(checkout_binaries)):
+            if not all(checkout_binaries.load_set("Binaries")):
                 return False
 
             if not ue3_build(context):
@@ -54,7 +54,7 @@ class CisUe3BuildCommand(CisCommand):
 
             log_notification(" ****** Publishing Binaries...")
             publish = robocopy(context).to(context.cis_binaries_directory)
-            if not chain_all(ue3_map_binaries(publish)):
+            if not all(publish.load_set("Binaries")):
                 return False
 
             log_notification(" ****** Publishing symbols...")

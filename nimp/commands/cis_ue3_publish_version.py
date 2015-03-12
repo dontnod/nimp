@@ -4,7 +4,6 @@ import shutil
 
 from nimp.commands._cis_command      import *
 from nimp.utilities.ue3              import *
-from nimp.utilities.ue3_deployment   import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
 FARM_P4_USER     = "CIS-CodeBuilder"
@@ -65,7 +64,7 @@ class CisUe3PublishVersion(CisCommand):
 
             publish = robocopy(context).to(context.cis_version_directory)
             log_notification("Publishing version {0}...", configuration)
-            if not chain_all(ue3_map_version(publish)):
+            if not all(publish.load_set("Version")):
                 return False
 
         return True

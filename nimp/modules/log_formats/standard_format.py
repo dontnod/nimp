@@ -24,7 +24,7 @@ class StandardFormat(Format):
             result = "[ WARNING ] : " + message_format.format(*args)
         else:
             result = "[  ERROR  ] : " + message_format.format(*args)
-        return result + ( (len(result) % width) - 1) * " "  + "\n"
+        return result + "\n"
 
     #---------------------------------------------------------------------------
     def start_progress(self,

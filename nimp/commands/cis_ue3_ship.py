@@ -3,7 +3,6 @@
 from nimp.commands._cis_command      import *
 from nimp.utilities.ue3              import *
 from nimp.utilities.deployment       import *
-from nimp.utilities.ue3_deployment   import *
 
 #-------------------------------------------------------------------------------
 class CisUe3Ship(CisCommand):

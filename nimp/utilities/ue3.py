@@ -10,7 +10,6 @@ import shutil
 
 from nimp.utilities.build            import *
 from nimp.utilities.deployment       import *
-from nimp.utilities.ue3_deployment   import *
 
 VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
 
@@ -124,11 +123,6 @@ def ue3_ship(context, destination = None):
 
 #---------------------------------------------------------------------------
 def _ship_dlc(context, destination):
-    dlc_config_file = context.format(context.dlc_config_path)
-    if not context.load_config_file(dlc_config_file):
-        log_error("Unable to load config file at {0}", dlc_config_file)
-        return False
-
     map = context.cook_maps[context.dlc.lower()]
 
     deploy_master = robocopy(context).override(dlc = context.project).files().recursive().frm(context.cis_master_directory)
@@ -157,15 +151,10 @@ def _ship_dlc(context, destination):
 
     log_notification("***** Copying DLC to output directory...")
     publish_dlc = robocopy(context).to(destination)
-    return all(ue3_map_dlc(publish_dlc))
+    return all(publish_dlc.load_set("DLC"))
 
 #---------------------------------------------------------------------------
 def _ship_game_patch(context, destination):
-    patch_config_file = context.format(context.patch_config_path)
-    if not context.load_config_file(patch_config_file):
-        log_error("Unable to load path config file at {0}", patch_config_file)
-        return False
-
     map = context.cook_maps[context.dlc.lower()]
 
     deploy_master = robocopy(context).files().recursive().frm(context.cis_master_directory)
@@ -185,8 +174,7 @@ def _ship_game_patch(context, destination):
 
 
     log_notification("***** Redeploying master cook ignoring patched files...")
-    patch_files   = list_sources(vars(context)).frm(context.cis_master_directory)
-    patch_files   = ue3_map_patch(patch_files)
+    patch_files   = list_sources(vars(context)).frm(context.cis_master_directory).load_set("Patch")
     deploy_master = robocopy(context).exclude(*patch_files).files().recursive().frm(context.cis_master_directory)
 
     if not all(deploy_master()):
@@ -197,8 +185,8 @@ def _ship_game_patch(context, destination):
         return False
 
     log_notification("***** Copying patched files to output directory...")
-    publish_patch = robocopy(context).to(destination)
-    return all(ue3_map_patch(publish_patch))
+    publish_patch = robocopy(context).to(destination).load_set("Patch")
+    return all(publish_patch)
 
 
 #---------------------------------------------------------------------------

@@ -7,26 +7,26 @@ from nimp.utilities.file_mapper import *
 #-------------------------------------------------------------------------------
 class MapCommand(Command):
     def __init__(self):
-        Command.__init__(self, 'map', 'Do stuff on a list of file (ex. cooker sync)')
+        Command.__init__(self, 'file-set', 'Do stuff on a list of file (previously known as cookersync)')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, context, parser):
         parser.add_argument('--arg',
-                            help    = 'Arguments to set.',
+                            help    = 'Set a format argument, that will be used in string interpolation.',
                             nargs=2,
                             action='append')
 
-        parser.add_argument('map_file',
-                            help    = 'Map file to load',
-                            metavar = '<MAP_FILE>')
+        parser.add_argument('set_name',
+                            help    = 'Set name to load',
+                            metavar = '<SET_FILE>')
 
         parser.add_argument('action',
-                            help    = 'Action to execute on mapped files',
+                            help    = 'Action to execute on listed files',
                             metavar = '<ACTION>',
                             choices = ['robocopy', 'checkout', 'generate-toc', 'list'])
 
         parser.add_argument('--to',
-                            help    = 'Destination (use with robocopy action)',
+                            help    = 'Destination, if relevant',
                             metavar = '<DIR>',
                             default = None)
 
@@ -40,8 +40,8 @@ class MapCommand(Command):
     def run(self, context):
         for key_value in context.arg:
             setattr(context, key_value[0], key_value[1])
-            context.standardize_names()
-
+        context.standardize_names()
+        load_ue3_context(context)
         map_files = None
         if context.action == 'robocopy':
             map_files = robocopy(context)
@@ -61,4 +61,4 @@ class MapCommand(Command):
         if context.to is not None:
             map_files = map_files.to(context.to)
 
-        return all(map_files.do_file(context.map_file))
+        return all(map_files.load_set(context.set_name))
