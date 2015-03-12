@@ -97,7 +97,7 @@ class FileMapper(object):
     #---------------------------------------------------------------------------
     def load_set(self, set_name):
         file_name = self._format(set_name)
-        if not os.path.exists(file_name):
+        if not os.path.exists(file_name) or not os.path.isfile(file_name):
             file_name   = os.path.join(self.file_sets_directory, set_name + ".txt")
             file_name   = self._format(file_name)
         locals      = {}
