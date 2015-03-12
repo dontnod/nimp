@@ -125,8 +125,8 @@ def ue3_ship(context, destination = None):
 def _ship_dlc(context, destination):
     map = context.cook_maps[context.dlc.lower()]
 
-    deploy_master = robocopy(context).override(dlc = context.project).files().recursive().frm(context.cis_master_directory)
-    log_notification("***** Deploying master...")
+    deploy_master = robocopy(context).override(dlc = context.project).files().recursive().frm(context.cis_cooks_directory)
+    log_notification("***** Deploying episode01 cook...")
     if not all(deploy_master()):
         return False
 
@@ -172,6 +172,9 @@ def _ship_game_patch(context, destination):
                     incremental = True):
         return False
 
+    publish_cook = robocopy(context).to(context.cis_cooks_directory)("{game}/{ue3_cook_directory}/*")
+    if not all(publish_cook):
+        return False
 
     log_notification("***** Redeploying master cook ignoring patched files...")
     patch_files   = list_sources(vars(context)).frm(context.cis_master_directory).load_set("Patch")
