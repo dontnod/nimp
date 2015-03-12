@@ -23,7 +23,6 @@ def list_sources(format_args = {}):
         yield source
     return FileMapper(mapper = _yield_source_mapper,  format_args = format_args)
 
-
 #-------------------------------------------------------------------------------
 def map_sources(handler, format_args = {}):
     """ Use this to execute a single argument function on the sources of the mapped
@@ -94,6 +93,26 @@ class FileMapper(object):
                     node         = node._next
                 for result in mapped_files:
                     yield result
+
+    #---------------------------------------------------------------------------
+    def do_file(self, file_name):
+        file_name   = self._format(file_name)
+        locals      = {}
+        try:
+            conf = open(file_name, "rb").read()
+        except Exception as exception:
+            log_error("Unable to open file : {0}", exception)
+            return None
+        try:
+            exec(compile(conf, file_name, 'exec'), None, locals)
+            if not "map" in locals:
+                log_error("Configuration file {0} has no function called 'map'.", file_name)
+                return None
+        except Exception as e:
+            log_error("Unable to load file {0}: {1}", file_name, str(e))
+            return None
+
+        return chain(locals['map'](self))
 
     #---------------------------------------------------------------------------
     def override(self, **format_args):
