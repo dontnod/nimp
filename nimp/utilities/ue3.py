@@ -119,7 +119,7 @@ def ue3_ship(context, destination = None):
         if context.dlc == context.project:
             log_error("Sry, building a game master is still not implemented")
         else:
-            _ship_dlc(context, destination or context.cis_ship_directory)
+            return _ship_dlc(context, destination or context.cis_ship_directory)
 
 #---------------------------------------------------------------------------
 def _ship_dlc(context, destination):
