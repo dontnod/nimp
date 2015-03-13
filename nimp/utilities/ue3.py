@@ -130,19 +130,13 @@ def _ship_dlc(context, destination):
     if not all(deploy_master()):
         return False
 
-    log_notification("***** Deploying master patch...")
-    deploy_master_patch = robocopy(context).override(dlc = context.project).files().recursive().frm(context.cis_ship_patch_directory)
-    if not all(deploy_master_patch()):
-        return False
-
     log_notification("***** Cooking...")
     if not ue3_cook(context.game,
                     map,
                     context.languages,
                     context.dlc,
                     context.ue3_cook_platform,
-                    'final',
-                    incremental = True):
+                    'final'):
         return False
 
     log_notification("***** Generating toc...")
@@ -201,7 +195,7 @@ def ue3_commandlet(game, name, args):
         log_error('Unable to find game executable at {0}', game_path)
         return False
 
-    cmdline = [ game_path, name ] + args + ['-nopause', '-buildmachine', '-forcelogflush']
+    cmdline = [ game_path, name ] + args + ['-nopause', '-buildmachine', '-forcelogflush', '-unattended']
 
     return call_process(game_directory, cmdline) == 0
 
@@ -265,19 +259,17 @@ def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
     return True
 
 #-------------------------------------------------------------------------------
-def _ue3_build_game(sln_file, platform, configuration, vs_version):
+def _ue3_build_game(sln_file, ue3_build_platform, configuration, vs_version):
     dict_vcxproj = {
         'win32'   : 'Development/Src/Windows/ExampleGame Win32.vcxproj',
         'win64'   : 'Development/Src/Windows/ExampleGame Win64.vcxproj',
         'ps3'     : 'Development/Src/PS3/ExampleGame PS3.vcxproj',
         'orbis'   : 'Development/Src/ExampleGame PS4/ExampleGame PS4.vcxproj',
-        'ps4'     : 'Development/Src/ExampleGame PS4/ExampleGame PS4.vcxproj',
         'xbox360' : 'ExampleGame Xbox360', # Xbox360 Uses VS 2010
         'dingo'   : 'Development/Src/Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
-        'xboxone' : 'Development/Src/Dingo/ExampleGame Dingo/ExampleGame Dingo.vcxproj',
     }
 
-    platform_project = dict_vcxproj[platform.lower()]
+    platform_project = dict_vcxproj[ue3_build_platform.lower()]
     return _ue3_build_project(sln_file, platform_project, configuration, vs_version, 'Build')
 
 #---------------------------------------------------------------------------
@@ -289,11 +281,11 @@ def _ue3_generate_version_file():
     version_file_content   = version_file_format.format(random_character, machine_name)
     version_file_content   = time.strftime(version_file_content, time.gmtime())
 
-    with p4_transaction("Version File Checkout", ) as transaction:
+    with p4_transaction("Version File Checkout",
+                        submit_on_success = False,
+                        revert_unchanged = False) as transaction:
         transaction.add(VERSION_FILE_PATH)
-        transaction.abort()
         with open(VERSION_FILE_PATH, "w") as version_file:
             version_file.write(version_file_content)
 
         yield
-

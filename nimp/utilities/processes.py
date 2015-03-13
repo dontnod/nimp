@@ -37,7 +37,6 @@ def capture_process_output(directory, command, input = None):
 def call_process(directory, command, log_callback = _default_log_callback):
     log_verbose("Running {0} in directory {1}", command, directory)
 
-
     if os.name is "windows":
         ods_logger = OutputDebugStringLogger(process.pid)
 
@@ -55,7 +54,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
         output_buffer = ""
         while process.poll() == None:
             try:
-                for  line in iter(pipe.readline, ''):
+                for line in iter(pipe.readline, ''):
                     line  = line.decode("cp850")
 
                     if line == '':
@@ -63,9 +62,6 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
                     line  = line.replace("{", "{{").replace("}", "}}")
                     line  = line.rstrip('\r\n')
-
-                    if line == '':
-                        continue
 
                     log_callback(line, log_function)
             except ValueError:

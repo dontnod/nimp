@@ -42,9 +42,9 @@ class CisUe3BuildCommand(CisCommand):
         context.generate_version_file = True
 
         with p4_transaction("Binaries checkout",
+                            submit_on_success = False,
                             revert_unchanged = False,
                             add_not_versioned_files = False) as transaction:
-            transaction.abort()
             checkout_binaries = checkout(context, transaction)
             if not all(checkout_binaries.load_set("Binaries")):
                 return False
