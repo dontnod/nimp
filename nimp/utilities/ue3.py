@@ -99,13 +99,10 @@ def _ship_dlc(context, destination):
                     'final'):
         return False
 
-    log_notification("***** Generating toc...")
-    if not generate_toc(context, context.dlc):
-        return False
-
     log_notification("***** Copying DLC to output directory...")
     dlc_files = context.map_files()
     dlc_files.to(destination).load_set("DLC")
+
     return all_map(robocopy, dlc_files())
 
 #---------------------------------------------------------------------------
@@ -128,12 +125,6 @@ def _ship_game_patch(context, destination):
                     incremental = True):
         return False
 
-    if hasattr(context.revision, 'revision'):
-        cook_files = context.map_files()
-        cook_files.to(context.cis_cooks_directory).load_set("Cook")
-        if not all_map(robocopy, cook_files()):
-            return False
-
     log_notification("***** Redeploying master cook ignoring patched files...")
     patch_files = context.map_files()
     patch_files.src(context.cis_master_directory).load_set("Patch")
@@ -141,6 +132,12 @@ def _ship_game_patch(context, destination):
     master_files_source.exclude(*files_to_exclude)
     if not all_map(robocopy, master_files()):
         return False
+
+    if hasattr(context, 'revision'):
+        cook_files = context.map_files()
+        cook_files.to(context.cis_cooks_directory).load_set("Cook")
+        if not all_map(robocopy, cook_files()):
+            return False
 
     log_notification("***** Generating toc...")
     if not generate_toc(context, dlc = "Episode01" if context.dlc == context.project else context.dlc):
