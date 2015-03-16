@@ -63,6 +63,7 @@ def deploy_latest_revision(context, version_directory_format, revision, platform
                         add_not_versioned_files = False) as transaction:
         if not all_map(checkout_and_copy(transaction), files_to_deploy()):
             raise Exception("Error while deploying %s binaries" % platform)
+        yield
 
 #------------------------------------------------------------------------------
 def upload_microsoft_symbols(context, paths):

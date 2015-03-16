@@ -39,6 +39,13 @@ class CisUe3Ship(CisCommand):
             platforms += [context.platform]
 
         with deploy_latest_revision(context, context.cis_version_directory, context.revision, platforms):
+            if context.dlc != context.project:
+                master_files = context.map_files()
+                master_files.override(dlc = context.project).src(context.cis_cooks_directory).recursive().files()
+                log_notification("***** Deploying episode01 cook...")
+                if not all_map(robocopy, master_files()):
+                    return False
+
             if not ue3_ship(context):
                 return False
 
