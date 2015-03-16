@@ -116,9 +116,10 @@ def _ship_dlc(context, destination):
 def _ship_game_patch(context, destination):
     map = context.cook_maps[context.dlc.lower()]
 
-    deploy_master = robocopy(context).files().recursive().frm(context.cis_master_directory)
+    master_files = context.map_files()
+    master_files_source = master_files.src(context.cis_master_directory).recursive().files()
     log_notification("***** Deploying master...")
-    if not all(deploy_master()):
+    if not all_map(robocopy, master_files()):
         return False
 
     log_notification("***** Cooking on top of master...")
@@ -131,15 +132,18 @@ def _ship_game_patch(context, destination):
                     incremental = True):
         return False
 
-    publish_cook = robocopy(context).to(context.cis_cooks_directory)("{game}/{ue3_cook_directory}/*")
-    if not all(publish_cook):
-        return False
+    if hasattr(context.revision):
+        cook_files = context.map_files()
+        cook_files.to(context.cis_cooks_directory).load_set("Cook")
+        if not all_map(robocopy, cook_files()):
+            return False
 
     log_notification("***** Redeploying master cook ignoring patched files...")
-    patch_files   = list_sources(vars(context)).frm(context.cis_master_directory).load_set("Patch")
-    deploy_master = robocopy(context).exclude(*patch_files).files().recursive().frm(context.cis_master_directory)
-
-    if not all(deploy_master()):
+    patch_files = context.map_files()
+    patch_files.src(context.cis_master_directory).load_set("Patch")
+    files_to_exclude = [src for src, *args in patch_files()]
+    master_files_source.exclude(*files_to_exclude)
+    if not all_map(robocopy, master_files()):
         return False
 
     log_notification("***** Generating toc...")
@@ -147,8 +151,9 @@ def _ship_game_patch(context, destination):
         return False
 
     log_notification("***** Copying patched files to output directory...")
-    publish_patch = robocopy(context).to(destination).load_set("Patch")
-    return all(publish_patch)
+    patch_files = context.map_files()
+    patch_files.to(destination).load_set("Patch")
+    return all_map(robocopy, patch_files())
 
 
 #---------------------------------------------------------------------------

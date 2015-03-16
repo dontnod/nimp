@@ -32,9 +32,10 @@ def get_latest_available_revision(context, version_directory_format, start_revis
         version_regex           = version_directory_format.format(**format_args)
 
         version_match = re.match(version_regex, version_directory)
-        version_cl    = version_match.group(1)
 
-        revisions.append(version_cl)
+        if version_match is not None:
+            version_cl    = version_match.group(1)
+            revisions.append(version_cl)
 
     revisions.sort(reverse=True)
 
@@ -52,17 +53,16 @@ def deploy_latest_revision(context, version_directory_format, revision, platform
         if revision is None:
             raise Exception("Unable to find a suitable revision for platform %s" % platform)
 
+    files_to_deploy = context.map_files()
+    for platform in platforms:
+        files_to_deploy.override(revision = revision, platform = platform).src(context.cis_version_directory).recursive().files()
+
     with p4_transaction("Automatic Checkout",
-                        revert_unchanged = False,
+                        revert_unchanged        = False,
+                        submit_on_success       = False,
                         add_not_versioned_files = False) as transaction:
-        transaction.abort()
-        for platform in platforms:
-            deploy_binaries = checkout_and_copy(context, transaction).files().recursive().override(revision  = revision)
-            deploy_binaries = deploy_binaries.override(platform = platform)
-            deploy_binaries = deploy_binaries.frm(context.cis_version_directory)
-            if not all(deploy_binaries()):
-                raise Exception("Error while deploying %s binaries" % platform)
-        yield
+        if not all_map(checkout_and_copy(transaction), files_to_deploy()):
+            raise Exception("Error while deploying %s binaries" % platform)
 
 #------------------------------------------------------------------------------
 def upload_microsoft_symbols(context, paths):
