@@ -50,10 +50,10 @@ class CisUe3PublishVersion(CisCommand):
                             add_not_versioned_files = False) as trans:
             files_to_deploy = context.map_files()
             for configuration in context.configurations:
-                deploy.override(configuration = configuration).src(context.cis_binaries_directory).glob("**")
+                files_to_deploy.override(configuration = configuration).src(context.cis_binaries_directory).glob("**")
 
             log_notification("Deploying binaries...")
-            if not all_map(checkout_an_copy, files_to_deploy):
+            if not all_map(checkout_and_copy(trans), files_to_deploy()):
                 return False
 
             if not context.keep_temp_binaries:
@@ -72,7 +72,7 @@ class CisUe3PublishVersion(CisCommand):
             files_to_publish = context.map_files().to(context.cis_version_directory)
             log_notification("Publishing version {0}...", configuration)
             files_to_publish.load_set("Version")
-            if not all_map(robocopy, files_to_publish):
+            if not all_map(robocopy, files_to_publish()):
                 return False
 
         return True
