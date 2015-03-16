@@ -16,6 +16,7 @@ import pathlib
 
 from nimp.utilities.perforce     import *
 from nimp.utilities.file_mapper  import *
+from nimp.utilities.hashing      import *
 
 #---------------------------------------------------------------------------
 def get_latest_available_revision(context, version_directory_format, start_revision, **override_args):
@@ -128,3 +129,17 @@ def checkout_and_copy(transaction):
             return False
         return True
     return _checkout_and_copy_mapper
+
+#-----------------------------------------------------------------------------
+def generate_toc(file):
+    def _generate_toc_mapper(src, *args):
+        file, ext              = os.path.splitext(src)
+        uncompressed_size_file = '{0}.uncompressed_size'.format(file)
+        uncompressed_size      = 0
+        if os.path.isfile(uncompressed_size):
+            with open(uncompressed_size_file, 'r') as uncompressed_size_file:
+                uncompressed_size = uncompressed_size_file.read()
+        size  = os.path.getsize(src)
+        md5 = get_file_md5(src)
+        file.write('{0} {1} {2} {3}', size, uncompressed_size, src, md5)
+    return _generate_toc_mapper

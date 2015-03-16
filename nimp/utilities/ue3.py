@@ -128,7 +128,7 @@ def _ship_game_patch(context, destination):
                     incremental = True):
         return False
 
-    if hasattr(context.revision):
+    if hasattr(context.revision, 'revision'):
         cook_files = context.map_files()
         cook_files.to(context.cis_cooks_directory).load_set("Cook")
         if not all_map(robocopy, cook_files()):
@@ -150,7 +150,6 @@ def _ship_game_patch(context, destination):
     patch_files = context.map_files()
     patch_files.to(destination).load_set("Patch")
     return all_map(robocopy, patch_files())
-
 
 #---------------------------------------------------------------------------
 def ue3_commandlet(game, name, args):

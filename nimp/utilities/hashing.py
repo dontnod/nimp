@@ -7,8 +7,15 @@ from nimp.utilities.logging import *
 
 #-------------------------------------------------------------------------------
 def get_file_sha1(file_name):
+    return get_file_hash(hashlib.sha1())
+
+#-------------------------------------------------------------------------------
+def get_file_md5(file_name):
+    return get_file_hash(hashlib.md5())
+
+#-------------------------------------------------------------------------------
+def get_file_hash(hasher, file_name):
     file = open(file_name, "rb")
-    hasher = hashlib.sha1()
     while True:
         read_bytes = file.read(1024)
         if len(read_bytes) == 0:
