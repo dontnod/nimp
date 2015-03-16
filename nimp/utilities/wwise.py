@@ -6,6 +6,7 @@ import shutil
 from nimp.utilities.perforce    import *
 from nimp.utilities.processes   import *
 from nimp.utilities.file_mapper import *
+from nimp.utilities.deployment  import *
 
 #---------------------------------------------------------------------------
 def build_wwise_banks(context):
@@ -16,7 +17,6 @@ def build_wwise_banks(context):
                               eventually  submit (*.bnk files directory).
         wwise_project       : Relative path of the Wwise project to build.
         checkin             : True to commit built banks, False otherwise."""
-    load_wwise_context(context)
     platform         = context.platform
     wwise_banks_path = context.wwise_banks_path
     wwise_banks_path = os.path.join(wwise_banks_path, context.wwise_banks_platform)
@@ -30,8 +30,9 @@ def build_wwise_banks(context):
 
     with p4_transaction(cl_name, submit_on_success = context.checkin) as trans:
         log_notification("Checking out banks...")
-        checkout_banks = map_sources(trans.add, vars(context)).once().files().recursive().frm(wwise_banks_path)
-        if not all(checkout_banks()):
+        banks_files = context.map_files()
+        banks_files.src(wwise_banks_path).recursive().files()
+        if not all_map(checkout(trans), banks_files()):
             log_error("Errors occured while checking out banks, aborting...")
             return False
         if call_process(".", wwise_command, log_callback = _wwise_log_callback) == 1:
@@ -40,7 +41,7 @@ def build_wwise_banks(context):
             return False
 
         log_notification("Adding created banks to perforce...")
-        return all(checkout_banks())
+        return all_map(checkout(trans), banks_files())
 
 #---------------------------------------------------------------------------
 def _wwise_log_callback(line, default_log_function):

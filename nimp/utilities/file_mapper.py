@@ -166,7 +166,7 @@ class FileMapper(object):
         """ Recurvively list all children of processed source if it is a
             directory.
         """
-        def _recursive_mapper(source, destination, *args):
+        def _recursive_mapper(source, destination = '', *args):
             yield (source, destination) + args
             if os.path.isdir(source):
                 for file in os.listdir(source):
