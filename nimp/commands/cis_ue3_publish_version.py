@@ -4,6 +4,8 @@ import shutil
 
 from nimp.commands._cis_command      import *
 from nimp.utilities.ue3              import *
+from nimp.utilities.file_mapper      import *
+from nimp.utilities.deployment       import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
 FARM_P4_USER     = "CIS-CodeBuilder"
@@ -42,15 +44,20 @@ class CisUe3PublishVersion(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, context):
-        load_ue3_context(context)
-        with p4_transaction("Binaries Checkout", revert_unchanged = False, add_not_versioned_files = False) as trans:
-            deploy = checkout_and_copy(context, trans).recursive()
+        with p4_transaction("Binaries Checkout",
+                            submit_on_success = False,
+                            revert_unchanged = False,
+                            add_not_versioned_files = False) as trans:
+            files_to_deploy = context.map_files()
             for configuration in context.configurations:
-                log_notification("Deploying {0} binaries...", configuration)
-                config_binaries = deploy.override(configuration = configuration).frm(context.cis_binaries_directory)()
-                if not all(config_binaries):
-                    return False
-                if not context.keep_temp_binaries:
+                deploy.override(configuration = configuration).src(context.cis_binaries_directory).glob("**")
+
+            log_notification("Deploying binaries...")
+            if not all_map(checkout_an_copy, files_to_deploy):
+                return False
+
+            if not context.keep_temp_binaries:
+                for configuration in context.configurations:
                     try:
                         shutil.rmtree(context.format(context.cis_binaries_directory, configuration = configuration))
                     except Exception as ex:
@@ -62,9 +69,10 @@ class CisUe3PublishVersion(CisCommand):
                     log_error("Error while building script")
                     return False
 
-            publish = robocopy(context).to(context.cis_version_directory)
+            files_to_publish = context.map_files().to(context.cis_version_directory)
             log_notification("Publishing version {0}...", configuration)
-            if not all(publish.load_set("Version")):
+            files_to_publish.load_set("Version")
+            if not all_map(robocopy, files_to_publish):
                 return False
 
         return True

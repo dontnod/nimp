@@ -14,39 +14,6 @@ from nimp.utilities.deployment       import *
 VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
 
 #-------------------------------------------------------------------------------
-def load_ue3_context(context):
-    if hasattr(context, "platform"):
-        build_platforms = {"PS4"       : "Orbis",
-                           "XboxOne"   : "Dingo",
-                           "Win64"     : "Win64",
-                           "Win32"     : "Win32",
-                           "XBox360"   : "Xbox360",
-                           "PS3"       : "PS3" }
-        cook_platforms = { "PS4"       : "Orbis",
-                           "XboxOne"   : "Dingo",
-                           "Win64"     : "PC",
-                           "Win32"     : "PCConsole",
-                           "XBox360"   : "Xbox360",
-                           "PS3"       : "PS3" }
-
-
-        context.ue3_cook_platform  = cook_platforms[context.platform]
-        context.ue3_build_platform = build_platforms[context.platform]
-
-        if  hasattr(context, 'dlc'):
-            if context.dlc is None:
-                context.dlc = context.project
-
-        configuration = context.configuration.lower() if hasattr(context, 'configuration') else 'final'
-        dlc           = context.dlc if hasattr(context, 'dlc') else context.project
-        suffix        = 'Final' if configuration in ['test', 'final'] else ''
-
-        if dlc == context.project:
-            context.ue3_cook_directory = 'Cooked{0}{1}'.format(context.ue3_cook_platform, suffix)
-        else:
-           context.ue3_cook_directory = '{0}\\DLC\\{1}\\{2}\\Cooked{1}{3}'.format(context.game, context.ue3_cook_platform, context.dlc, suffix)
-
-#-------------------------------------------------------------------------------
 def generate_toc(context, dlc):
     for language in context.languages:
         call_process(".", [ "Binaries\CookerSync.exe",
@@ -70,7 +37,6 @@ def generate_toc(context, dlc):
 
 #---------------------------------------------------------------------------
 def ue3_build(context):
-    load_ue3_context(context)
     solution        = context.solution
     configuration   = context.configuration
     vs_version      = context.vs_version
@@ -106,7 +72,6 @@ def ue3_build(context):
 
 #---------------------------------------------------------------------------
 def ue3_ship(context, destination = None):
-    load_ue3_context(context)
     master_directory = context.format(context.cis_master_directory)
 
     if os.path.exists(master_directory):

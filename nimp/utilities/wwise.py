@@ -8,25 +8,6 @@ from nimp.utilities.processes   import *
 from nimp.utilities.file_mapper import *
 
 #---------------------------------------------------------------------------
-def load_wwise_context(context):
-    if hasattr(context, "platform"):
-        banks_platforms = { "Win32"         : "PC",
-                            "Win64"         : "PC",
-                            "XBox360"       : "X360",
-                            "XboxOne"       : "XboxOne",
-                            "PS3"           : "PS3",
-                            "PS4"           : "PS4" }
-
-        cmd_platforms = { "Win32"         : "Windows",
-                          "Win64"         : "Windows",
-                          "XBox360"       : "XBox360",
-                          "XboxOne"       : "XboxOne",
-                          "PS3"           : "PS3",
-                          "PS4"           : "PS4"}
-        context.wwise_banks_platform  = banks_platforms[context.platform]
-        context.wwise_cmd_platform    = cmd_platforms[context.platform]
-
-#---------------------------------------------------------------------------
 def build_wwise_banks(context):
     """ Builds and optionnaly submits banks. Following attributes should be
         defined on context :

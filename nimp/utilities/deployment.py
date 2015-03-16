@@ -44,48 +44,6 @@ def get_latest_available_revision(context, version_directory_format, start_revis
 
     return None
 
-#-------------------------------------------------------------------------------
-def _robocopy_mapper(source, destination):
-    """ 'Robust' copy mapper. """
-    log_verbose("{0} => {1}", source, destination)
-    if os.path.isdir(source) and not os.path.exists(destination):
-        os.makedirs(destination)
-    elif os.path.isfile(source):
-        dest_dir = os.path.dirname(destination)
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
-        try:
-            if os.path.exists(destination):
-                os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-            shutil.copy(source, destination)
-        except:
-            log_verbose("Error running shutil.copy2 {0} {1}, trying by deleting destination file first", source, destination)
-            os.remove(destination)
-            shutil.copy(source, destination)
-    yield True
-
-#-------------------------------------------------------------------------------
-def robocopy(context):
-    return FileMapper(_robocopy_mapper, vars(context))
-
-#-------------------------------------------------------------------------------
-def checkout(context, transaction):
-    def _checkout_mapper(source, *args):
-        if os.path.isfile(source) and not transaction.add(source):
-            yield False
-
-    return FileMapper(_checkout_mapper, vars(context))
-
-#-------------------------------------------------------------------------------
-def checkout_and_copy(context, transaction):
-    def _checkout_and_copy_mapper(source, destination):
-        if os.path.isfile(destination) and not transaction.add(destination):
-            yield False
-        for result in _robocopy_mapper(source, destination):
-            yield result
-
-    return FileMapper(_checkout_and_copy_mapper, vars(context))
-
 #----------------------------------------------------------------------------
 @contextlib.contextmanager
 def deploy_latest_revision(context, version_directory_format, revision, platforms):
@@ -108,12 +66,14 @@ def deploy_latest_revision(context, version_directory_format, revision, platform
 
 #------------------------------------------------------------------------------
 def upload_microsoft_symbols(context, paths):
-    write_symbol_index = map_sources(lambda file: symbols_index.write(file + "\n"))
+    symbols = context.map_files()
+
+    for path in paths:
+        symbols.src(path).glob("**/*.pdb", "**/*.xdb")
 
     with open("symbols_index.txt", "w") as symbols_index:
-        for path in paths:
-            if not all(write_symbol_index.frm(path)("**/*.pdb", "**/*.xdb")):
-                return False
+        for src, dest in symbols():
+            symbols_index.write(src + "\n")
 
     result = True
     if call_process(".",
@@ -131,3 +91,39 @@ def upload_microsoft_symbols(context, paths):
     os.remove("symbols_index.txt")
 
     return result
+
+#-------------------------------------------------------------------------------
+def robocopy(source, destination, *args):
+    """ 'Robust' copy. """
+    log_verbose("{0} => {1}", source, destination)
+    if os.path.isdir(source) and not os.path.exists(destination):
+        os.makedirs(destination)
+    elif os.path.isfile(source):
+        dest_dir = os.path.dirname(destination)
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
+        try:
+            if os.path.exists(destination):
+                os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+            shutil.copy(source, destination)
+        except:
+            return False
+    return True
+
+#-------------------------------------------------------------------------------
+def checkout(transaction):
+    def _checkout_mapper(source, *args):
+        if os.path.isfile(source) and not transaction.add(source):
+            return False
+        return True
+    return _checkout_mapper
+
+#-------------------------------------------------------------------------------
+def checkout_and_copy(transaction):
+    def _checkout_and_copy_mapper(source, destination, *args):
+        if os.path.isfile(destination) and not transaction.add(destination):
+            return False
+        if not robocopy(source, destination):
+            return False
+        return True
+    return _checkout_and_copy_mapper

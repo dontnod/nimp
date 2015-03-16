@@ -1,21 +1,29 @@
 # -*- coding: utf-8 -*-
 
-from nimp.utilities.logging import *
+from nimp.utilities.logging     import *
+from nimp.utilities.file_mapper import *
 
 #-------------------------------------------------------------------------------
 class Context:
+    #---------------------------------------------------------------------------
     def __init__(self):
         pass
 
+    #---------------------------------------------------------------------------
     def format(self, str, **override_kwargs):
         kwargs = vars(self).copy()
         kwargs.update(override_kwargs)
         return str.format(**kwargs)
 
+    #---------------------------------------------------------------------------
     def call(self, method, *args, **override_kwargs):
         kwargs = vars(self).copy()
         kwargs.update(override_kwargs)
         return method(*args, **kwargs)
+
+    #---------------------------------------------------------------------------
+    def map_files(self):
+        return FileMapper(format_args = vars(self))
 
     #---------------------------------------------------------------------------
     def load_config_file(self, filename):
@@ -59,6 +67,51 @@ class Context:
 
             self.is_microsoft_platform  = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
             self.is_sony_platform       = self.is_ps3 or self.is_ps4
+
+            build_platforms = {"PS4"       : "Orbis",
+                               "XboxOne"   : "Dingo",
+                               "Win64"     : "Win64",
+
+                               "Win32"     : "Win32",
+                               "XBox360"   : "Xbox360",
+                               "PS3"       : "PS3" }
+
+            cook_platforms = { "PS4"       : "Orbis",
+                               "XboxOne"   : "Dingo",
+                               "Win64"     : "PC",
+                               "Win32"     : "PCConsole",
+                               "XBox360"   : "Xbox360",
+                               "PS3"       : "PS3" }
+
+
+            self.ue3_cook_platform  = cook_platforms[self.platform]
+            self.ue3_build_platform = build_platforms[self.platform]
+
+            if  hasattr(self, 'dlc'):
+                if self.dlc is None:
+                    self.dlc = self.project
+
+            configuration = self.configuration.lower() if hasattr(self, 'configuration') else 'final'
+            dlc           = self.dlc if hasattr(self, 'dlc') else self.project
+            suffix        = 'Final' if configuration in ['test', 'final'] else ''
+
+            self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, suffix)
+
+            banks_platforms = { "Win32"         : "PC",
+                                "Win64"         : "PC",
+                                "XBox360"       : "X360",
+                                "XboxOne"       : "XboxOne",
+                                "PS3"           : "PS3",
+                                "PS4"           : "PS4" }
+
+            cmd_platforms = { "Win32"         : "Windows",
+                              "Win64"         : "Windows",
+                              "XBox360"       : "XBox360",
+                              "XboxOne"       : "XboxOne",
+                              "PS3"           : "PS3",
+                              "PS4"           : "PS4"}
+            self.wwise_banks_platform  = banks_platforms[self.platform]
+            self.wwise_cmd_platform    = cmd_platforms[self.platform]
 
 #---------------------------------------------------------------------------
 def _read_config_file(filename):

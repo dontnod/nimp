@@ -30,7 +30,7 @@ class MapCommand(Command):
                             metavar = '<DIR>',
                             default = None)
 
-        parser.add_argument('--frm',
+        parser.add_argument('--src',
                             help    = 'Source directory',
                             metavar = '<DIR>')
 
@@ -41,24 +41,26 @@ class MapCommand(Command):
         for key_value in context.arg:
             setattr(context, key_value[0], key_value[1])
         context.standardize_names()
-        load_ue3_context(context)
-        map_files = None
+
+        files       = FileMapper(format_args = vars(context))
+        files_chain = files
+        if context.src is not None:
+            files_chain = files_chain.src(context.src)
+
+        if context.to is not None:
+            files_chain = files_chain.to(context.to)
+
+        files_chain.load_set(context.set_name)
+
         if context.action == 'robocopy':
-            map_files = robocopy(context)
+            map(robocopy(context), files)
         elif context.action == 'checkout':
-            map_files = checkout(context)
+            with p4_transaction('Checkout') as trans:
+                map(trans.add, files)
         elif context.action == 'list':
-            def _list_mapper(source, destination, *args):
+            for source, destination in files():
                 log_notification("{0} => {1}", source, destination)
-                yield True
-            map_files = FileMapper(_list_mapper, format_args = vars(context))
         elif context.action == 'generate-toc':
             log_error("Not implemented yet")
 
-        if context.frm is not None:
-            map_files = map_files.frm(context.frm)
-
-        if context.to is not None:
-            map_files = map_files.to(context.to)
-
-        return all(map_files.load_set(context.set_name))
+        return True
