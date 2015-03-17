@@ -113,6 +113,13 @@ def robocopy(source, destination, *args):
     return True
 
 #-------------------------------------------------------------------------------
+def force_delete(file):
+    """ 'Robust' delete. """
+    if os.path.exists(file):
+        os.chmod(file, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+    os.remove(file)
+
+#-------------------------------------------------------------------------------
 def checkout(transaction):
     def _checkout_mapper(source, *args):
         if os.path.isfile(source) and not transaction.add(source):

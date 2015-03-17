@@ -60,6 +60,11 @@ P4CLIENT={client}\n"
     return True
 
 #-------------------------------------------------------------------------------
+def p4_delete(cl_number, path):
+    output = _p4_run_command(".", ["p4", "-z", "tag", "delete", "-c", cl_number, path])
+    return output is not None
+
+#-------------------------------------------------------------------------------
 def p4_delete_changelist(cl_number):
     output = _p4_run_command(".", ["p4", "-z", "tag", "change", "-d", cl_number])
     return output is not None
@@ -204,6 +209,10 @@ class _PerforceTransaction:
         self._success = False
 
         return False
+
+    #---------------------------------------------------------------------------
+    def delete(self, path):
+        return p4_delete(self._cl_number, path)
 
     #---------------------------------------------------------------------------
     def abort(self):

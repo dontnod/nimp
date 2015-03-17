@@ -182,24 +182,41 @@ def ue3_build_script(game):
 
 #---------------------------------------------------------------------------
 def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False, incremental = False):
-    commandlet_arguments =  [ map]
+    result = True
+    with p4_transaction('Dlcs ExampleGame.ini renaming',
+                        submit_on_success        = False,
+                        add_not_versioned_files  = True,
+                        revert_unchanged         = False) as trans:
+        trans.abort()
+        if dlc is not None and platform != "PCConsole":
+            source_ini_path = "{game}/Content/Packages/DLC/{dlc}/{game}.ini".format(game = game, dlc = dlc)
+            dst_ini_path    = "{game}/Content/Packages/DLC/{dlc}/{game}-{platform}.ini".format(game = game, dlc = dlc, platform = platform)
+            robocopy(source_ini_path, dst_ini_path)
+            trans.add(dst_ini_path)
+            trans.delete(source_ini_path)
 
-    if not incremental:
-        commandlet_arguments += ['-full']
+        commandlet_arguments =  [ map]
 
-    if configuration in [ 'test', 'final' ]:
-        commandlet_arguments += [ '-cookforfinal' ]
+        if not incremental:
+            commandlet_arguments += ['-full']
 
-    commandlet_arguments += ['-multilanguagecook=' + '+'.join(languages), '-platform='+ platform ]
+        if configuration in [ 'test', 'final' ]:
+            commandlet_arguments += [ '-cookforfinal' ]
 
-    if dlc is not None:
-        commandlet_arguments += ["-dlcname={0}".format(dlc)]
+        commandlet_arguments += ['-multilanguagecook=' + '+'.join(languages), '-platform='+ platform ]
 
-    if noexpansion:
-        commandlet_arguments += [ '-noexpansion' ]
+        if dlc is not None:
+            commandlet_arguments += ["-dlcname={0}".format(dlc)]
 
+        if noexpansion:
+            commandlet_arguments += [ '-noexpansion' ]
 
-    return ue3_commandlet(game, 'cookpackages', commandlet_arguments)
+        result = ue3_commandlet(game, 'cookpackages', commandlet_arguments)
+
+    if dlc is not None and platform != "PCConsole" :
+        force_delete(dst_ini_path)
+
+    return result
 
 #---------------------------------------------------------------------------
 def _ue3_build_project(sln_file, project, configuration, vs_version, target = 'Rebuild'):
