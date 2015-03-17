@@ -142,6 +142,9 @@ def _ship_game_patch(context, destination):
     if not generate_toc(context, dlc = "Episode01" if context.dlc == context.project else context.dlc):
         return False
 
+    if context.is_ps3:
+        _generate_ps3_binaries(context)
+
     log_notification("***** Copying patched files to output directory...")
     patch_files = context.map_files()
     patch_files.to(destination).load_set("Patch")
@@ -162,6 +165,19 @@ def _fix_pc_ini(context, destination):
         ini_content = base_game_ini.read()
     with open(base_game_ini_path, "w") as base_game_ini:
         base_game_ini.write(ini_content.replace("Example", "LifeIsStrange"))
+
+#---------------------------------------------------------------------------
+def _generate_ps3_binaries(context):
+    for config in ["Shipping", "Test"]:
+        if 0 != call_process(".", ["unfself",
+                                    context.format("Binaries\\PS3\\{game}-PS3-%s.elf" % config),
+                                    context.format("Binaries\\PS3\\{game}-PS3-%s.elf.un" % config)]):
+            return False
+
+        if 0 != call_process(".", ["make_fself_npdrm",
+                                    context.format("Binaries\\PS3\\{game}-PS3-%s.elf.un" % config),
+                                    context.format("Binaries\\PS3\\EBOOT-%s.BIN" % config) ]):
+            return False
 
 #---------------------------------------------------------------------------
 def ue3_commandlet(game, name, args):
