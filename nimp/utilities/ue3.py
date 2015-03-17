@@ -149,10 +149,12 @@ def _ship_game_patch(context, destination):
         return False
 
     if context.is_win32:
-        _fix_pc_inis(context, destination)
+        _fix_pc_ini(context, destination)
+
+    return True
 
 #---------------------------------------------------------------------------
-def _fix_pc_inis(context, destination):
+def _fix_pc_ini(context, destination):
     destination = context.format(destination)
     base_game_ini_path = os.path.join(destination, "Engine/Config/BaseGame.ini")
     os.chmod(base_game_ini_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
