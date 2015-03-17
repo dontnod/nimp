@@ -15,8 +15,7 @@ class Ue3CookCommand(Command):
         parser.add_argument('-c',
                             '--configuration',
                             help    = 'configurations to cook',
-                            metavar = '<configuration>',
-                            nargs   = '+')
+                            metavar = '<configuration>')
 
         parser.add_argument('-p',
                             '--platform',
@@ -46,8 +45,8 @@ class Ue3CookCommand(Command):
         return ue3_cook(context.game,
                         map,
                         context.languages,
-                        dlc,
-                        context.platform,
+                        None if context.project == context.dlc else context.dlc,
+                        context.ue3_cook_platform,
                         context.configuration,
                         context.noexpansion,
                         context.incremental)

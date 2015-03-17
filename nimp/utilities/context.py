@@ -91,7 +91,7 @@ class Context:
                 if self.dlc is None:
                     self.dlc = self.project
 
-            configuration = self.configuration.lower() if hasattr(self, 'configuration') else 'final'
+            configuration = self.configuration.lower() if hasattr(self, 'configuration') and self.configuration is not None else 'final'
             dlc           = self.dlc if hasattr(self, 'dlc') else self.project
             suffix        = 'Final' if configuration in ['test', 'final'] else ''
 

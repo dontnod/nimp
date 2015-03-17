@@ -7,6 +7,7 @@ import string
 import time
 import contextlib
 import shutil
+import os
 
 from nimp.utilities.build            import *
 from nimp.utilities.deployment       import *
@@ -146,7 +147,20 @@ def _ship_game_patch(context, destination):
     log_notification("***** Copying patched files to output directory...")
     patch_files = context.map_files()
     patch_files.to(destination).load_set("Patch")
-    return all_map(robocopy, patch_files())
+    if not all_map(robocopy, patch_files()):
+        return False
+
+    if context.is_win32:
+        _fix_pc_inis(destination)
+
+#---------------------------------------------------------------------------
+def _fix_pc_inis(destination):
+    base_game_ini_path = os.path.join(destination, "Engine/Config/BaseGame.ini")
+    os.chmod(base_game_ini_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+    with open(base_game_ini_path, "r") as base_game_ini:
+        ini_content = base_game_ini.read()
+    with open(base_game_ini_path, "w") as base_game_ini:
+        base_game_ini.write(ini_content.replace("Example", "LifeIsStrange"))
 
 #---------------------------------------------------------------------------
 def ue3_commandlet(game, name, args):

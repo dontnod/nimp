@@ -11,7 +11,7 @@ import platform
 
 from nimp.utilities.logging import *
 
-if os.name is "windows":
+if os.name is "nt":
     from nimp.utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
@@ -37,8 +37,8 @@ def capture_process_output(directory, command, input = None):
 def call_process(directory, command, log_callback = _default_log_callback):
     log_verbose("Running {0} in directory {1}", command, directory)
 
-    if os.name is "windows":
-        ods_logger = OutputDebugStringLogger(process.pid)
+    if os.name is "nt":
+        ods_logger = OutputDebugStringLogger()
 
     process = subprocess.Popen(command,
                                stdin                = None,
@@ -46,7 +46,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
                                stdout               = subprocess.PIPE,
                                stderr               = subprocess.PIPE,
                                cwd                  = directory)
-    if os.name is "Windows":
+    if os.name is "nt":
         ods_logger.attach(process.pid)
         ods_logger.start()
 
@@ -69,7 +69,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
     log_thread_args = [ (log_verbose, process.stdout), (log_error, process.stderr) ]
 
-    if os.name is "Windows":
+    if os.name is "nt":
         log_thread_args += [(log_verbose, ods_logger.output)]
 
     log_threads     = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
@@ -79,7 +79,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
     process_return = process.wait()
 
-    if os.name == "Windows":
+    if os.name == "nt":
         ods_logger.stop()
 
     for thread in log_threads:

@@ -107,7 +107,7 @@ def robocopy(source, destination, *args):
         try:
             if os.path.exists(destination):
                 os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-            shutil.copy(source, destination)
+            shutil.copy2(source, destination)
         except:
             return False
     return True
