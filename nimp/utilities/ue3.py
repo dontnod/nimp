@@ -12,8 +12,6 @@ import os
 from nimp.utilities.build            import *
 from nimp.utilities.deployment       import *
 
-VERSION_FILE_PATH = "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h"
-
 #-------------------------------------------------------------------------------
 def generate_toc(context, dlc):
     for language in context.languages:
@@ -151,10 +149,11 @@ def _ship_game_patch(context, destination):
         return False
 
     if context.is_win32:
-        _fix_pc_inis(destination)
+        _fix_pc_inis(context, destination)
 
 #---------------------------------------------------------------------------
-def _fix_pc_inis(destination):
+def _fix_pc_inis(context, destination):
+    destination = context.format(destination)
     base_game_ini_path = os.path.join(destination, "Engine/Config/BaseGame.ini")
     os.chmod(base_game_ini_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
     with open(base_game_ini_path, "r") as base_game_ini:
@@ -251,17 +250,29 @@ def _ue3_build_game(sln_file, ue3_build_platform, configuration, vs_version):
 #---------------------------------------------------------------------------
 @contextlib.contextmanager
 def _ue3_generate_version_file():
-    version_file_format    = "#define SEE_ONLINE_SUITE_BUILD_ID \"{0}@%Y-%m-%dT%H:%M:%S.000Z@{1}-v4\"\n#define DNE_FORCE_USE_ONLINE_SUITE 1";
+    with p4_transaction("Version File Checkout",
+                    submit_on_success = False,
+                    revert_unchanged = False) as transaction:
+        _write_version_file(transaction,
+                            "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h",
+                            "#define SEE_ONLINE_SUITE_BUILD_ID \"{random_character}@%Y-%m-%dT%H:%M:%S.000Z@{machine_name}-v4\"\n#define DNE_FORCE_USE_ONLINE_SUITE 1")
+        _write_version_file(transaction,
+                            "Development\Src\ExampleGame\Src\AdriftVersion.cpp",
+                            "#include \"ExampleGame.h\"\n" +
+                            "#include <AdriftVersion.h>\n" +
+                            "FString fVersion = \"[%Y-%m-%d_%H_%M_CL{cl}]\";\n")
+        yield
+
+#---------------------------------------------------------------------------
+def _write_version_file(transaction, version_file_path, version_file_format):
+    transaction.add(version_file_path)
     machine_name           = socket.gethostname()
     random_character       = random.choice(string.ascii_lowercase)
-    version_file_content   = version_file_format.format(random_character, machine_name)
+    cl                     = p4_get_last_synced_changelist()
+    version_file_content   = version_file_format.format(random_character = random_character,
+                                                        machine_name     = machine_name,
+                                                        cl               = cl)
     version_file_content   = time.strftime(version_file_content, time.gmtime())
 
-    with p4_transaction("Version File Checkout",
-                        submit_on_success = False,
-                        revert_unchanged = False) as transaction:
-        transaction.add(VERSION_FILE_PATH)
-        with open(VERSION_FILE_PATH, "w") as version_file:
-            version_file.write(version_file_content)
-
-        yield
+    with open(version_file_path, "w") as version_file:
+        version_file.write(version_file_content)
