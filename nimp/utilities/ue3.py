@@ -188,7 +188,7 @@ def ue3_commandlet(game, name, args):
         log_error('Unable to find game executable at {0}', game_path)
         return False
 
-    cmdline = [ game_path, name ] + args + ['-nopause', '-buildmachine', '-forcelogflush', '-unattended']
+    cmdline = [ game_path, name ] + args + ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
 
     return call_process(game_directory, cmdline) == 0
 
