@@ -23,6 +23,7 @@ class Ue3ShipCommand(Command):
                             help    = 'Dlc to ship',
                             metavar = '<dlc>',
                             default = None)
+
         return True
 
     #---------------------------------------------------------------------------

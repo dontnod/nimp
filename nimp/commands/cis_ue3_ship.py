@@ -3,6 +3,7 @@
 from nimp.commands._cis_command      import *
 from nimp.utilities.ue3              import *
 from nimp.utilities.deployment       import *
+from nimp.utilities.packaging        import *
 
 #-------------------------------------------------------------------------------
 class CisUe3Ship(CisCommand):
@@ -49,4 +50,4 @@ class CisUe3Ship(CisCommand):
             if not ue3_ship(context):
                 return False
 
-        return True
+        return make_packages(context, context.cis_ship_directory, context.cis_pkgs_directory)

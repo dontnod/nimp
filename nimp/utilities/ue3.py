@@ -76,7 +76,7 @@ def ue3_ship(context, destination = None):
     if os.path.exists(master_directory):
         log_notification("Found a master at {0} : I'm going to build a patch", master_directory)
         if context.dlc == context.project:
-            return _ship_game_patch(context, destination or context.cis_ship_patch_directory)
+            return _ship_game_patch(context, destination or context.cis_ship_directory)
         else:
             log_error("Sry, building a DLC patch is still not implemented")
     else:
@@ -152,6 +152,9 @@ def _ship_game_patch(context, destination):
         return False
 
     if context.is_win32:
+        _fix_pc_ini(context, destination)
+
+    if context.is_ps3 and context.generate_pkgs:
         _fix_pc_ini(context, destination)
 
     return True
