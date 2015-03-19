@@ -28,4 +28,4 @@ class MakePkg(Command):
 
     #---------------------------------------------------------------------------
     def run(self, context):
-        return make_packages(context)
+        return make_packages(context, context.source, context.destination)
