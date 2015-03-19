@@ -154,9 +154,6 @@ def _ship_game_patch(context, destination):
     if context.is_win32:
         _fix_pc_ini(context, destination)
 
-    if context.is_ps3 and context.generate_pkgs:
-        _fix_pc_ini(context, destination)
-
     return True
 
 #---------------------------------------------------------------------------
