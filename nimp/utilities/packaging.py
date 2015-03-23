@@ -20,3 +20,4 @@ from nimp.utilities.ps3      import *
 def make_packages(context, source, destination):
     if context.is_ps3:
         return ps3_generate_pkgs(context, source, destination)
+    return True
