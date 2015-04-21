@@ -25,6 +25,10 @@ class Context:
     def map_files(self):
         return FileMapper(format_args = vars(self))
 
+    def check_keys(self, *args):
+        error_format = "{key} should be defined, either in settings or in command line arguments. Check those."
+        return check_keys(vars(self), error_format, *args)
+
     #---------------------------------------------------------------------------
     def load_config_file(self, filename):
         class Settings:
@@ -112,6 +116,15 @@ class Context:
                               "PS4"           : "PS4"}
             self.wwise_banks_platform  = banks_platforms[self.platform]
             self.wwise_cmd_platform    = cmd_platforms[self.platform]
+
+#---------------------------------------------------------------------------
+def check_keys(dict, error_format, *args):
+    result = True
+    for key in args:
+        if not key in dict:
+            log_error(error_format, key = key)
+            result = False
+    return result
 
 #---------------------------------------------------------------------------
 def _read_config_file(filename):
