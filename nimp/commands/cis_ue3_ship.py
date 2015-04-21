@@ -49,9 +49,9 @@ class CisUe3Ship(CisCommand):
 
             if not ue3_ship(context):
                 return False
-            if not generate_pkg_config(context, context.loose_files_directory):
+            if not generate_pkg_config(context):
                 return False
-            if not make_packages(context, context.loose_files_directory, context.packages_directory):
+            if not make_packages(context):
                 return False
 
         return True
