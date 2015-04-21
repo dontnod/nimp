@@ -23,8 +23,8 @@ def ps3_generate_pkgs(context, source, destination):
 
     for package in packages_config:
         pkg_destination = context.format(destination, pkg_dest = package['pkg_dest'])
-        pkg_source      = os.path.join(source, package['source'])
-        pkg_conf_file   = os.path.join(source, package['conf'])
+        pkg_source      = context.format(os.path.join(source, package['source']))
+        pkg_conf_file   = context.format(os.path.join(source, package['conf']))
         if not os.path.exists(pkg_destination):
             os.makedirs(pkg_destination)
         if 0 != call_process(pkg_destination, ["make_package_npdrm", pkg_conf_file, pkg_source]):
