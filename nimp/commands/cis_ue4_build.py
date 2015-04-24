@@ -18,7 +18,7 @@ class CisUe4BuildCommand(CisCommand):
                             'Build UE4 executable and publishes it to a shared directory')
 
     #---------------------------------------------------------------------------
-    def cis_configure_arguments(self, context, parser):
+    def cis_configure_arguments(self, env, parser):
         parser.add_argument('-r',
                             '--revision',
                             help    = 'Current revision',
@@ -37,31 +37,31 @@ class CisUe4BuildCommand(CisCommand):
         return True
 
     #---------------------------------------------------------------------------
-    def _cis_run(self, context):
+    def _cis_run(self, env):
         log_notification(" ****** Building game...")
-        context.generate_version_file = True
+        env.generate_version_file = True
 
         with p4_transaction("Binaries checkout",
                             submit_on_success = False,
                             revert_unchanged = False,
                             add_not_versioned_files = False) as transaction:
-            files_to_checkout = context.map_files()
+            files_to_checkout = env.map_files()
             files_to_checkout.load_set("Binaries")
             if not all_map(checkout(transaction), files_to_checkout()):
                 return False
 
-            if not ue4_build(context):
+            if not ue4_build(env):
                 return False
 
             log_notification(" ****** Publishing Binaries...")
-            files_to_publish = context.map_files()
-            files_to_publish.to(context.cis_binaries_directory).load_set("Binaries")
+            files_to_publish = env.map_files()
+            files_to_publish.to(env.cis_binaries_directory).load_set("Binaries")
             if not all_map(robocopy, files_to_publish()):
                 return False
 
             log_notification(" ****** Publishing symbols...")
-            if context.is_microsoft_platform:
-                if not upload_microsoft_symbols(context, ["Binaries/{0}".format(context.platform)]):
+            if env.is_microsoft_platform:
+                if not upload_microsoft_symbols(env, ["Binaries/{0}".format(env.platform)]):
                     return False
 
         return True

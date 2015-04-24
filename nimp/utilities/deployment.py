@@ -19,9 +19,9 @@ from nimp.utilities.file_mapper  import *
 from nimp.utilities.hashing      import *
 
 #---------------------------------------------------------------------------
-def get_latest_available_revision(context, version_directory_format, start_revision, **override_args):
+def get_latest_available_revision(env, version_directory_format, start_revision, **override_args):
     revisions                   = []
-    format_args                 = vars(context).copy()
+    format_args                 = vars(env).copy()
     format_args.update(override_args)
     format_args['revision']     = '*'
     version_directory_format    = version_directory_format.replace('\\', '/')
@@ -48,15 +48,15 @@ def get_latest_available_revision(context, version_directory_format, start_revis
 
 #----------------------------------------------------------------------------
 @contextlib.contextmanager
-def deploy_latest_revision(context, version_directory_format, revision, platforms):
+def deploy_latest_revision(env, version_directory_format, revision, platforms):
     for platform in platforms:
-        revision = get_latest_available_revision(context, version_directory_format, revision, platform = platform)
+        revision = get_latest_available_revision(env, version_directory_format, revision, platform = platform)
         if revision is None:
             raise Exception("Unable to find a suitable revision for platform %s" % platform)
 
-    files_to_deploy = context.map_files()
+    files_to_deploy = env.map_files()
     for platform in platforms:
-        files_to_deploy.override(revision = revision, platform = platform).src(context.cis_version_directory).recursive().files()
+        files_to_deploy.override(revision = revision, platform = platform).src(env.cis_version_directory).recursive().files()
 
     with p4_transaction("Automatic Checkout",
                         revert_unchanged        = False,
@@ -67,8 +67,8 @@ def deploy_latest_revision(context, version_directory_format, revision, platform
         yield
 
 #------------------------------------------------------------------------------
-def upload_microsoft_symbols(context, paths):
-    symbols = context.map_files()
+def upload_microsoft_symbols(env, paths):
+    symbols = env.map_files()
 
     for path in paths:
         symbols.src(path).glob("**/*.pdb", "**/*.xdb")
@@ -82,11 +82,11 @@ def upload_microsoft_symbols(context, paths):
                     [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
                       "add",
                       "/r", "/f",  "@symbols_index.txt",
-                      "/s", context.symbol_server,
+                      "/s", env.symbol_server,
                       "/compress",
                       "/o",
-                      "/t", "{0}_{1}_{2}".format(context.project, context.platform, context.configuration),
-                      "/v", context.revision ]) != 0:
+                      "/t", "{0}_{1}_{2}".format(env.project, env.platform, env.configuration),
+                      "/v", env.revision ]) != 0:
         result = False
         log_error("w00t ! An error occured while uploading symbols.")
 

@@ -9,7 +9,7 @@ class Ue3ShipCommand(Command):
         Command.__init__(self, 'ue3-ship', 'Generate shippable loose files in target directory')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('destination',
                             help    = 'Destination Directory',
                             metavar = '<DIR>')
@@ -27,5 +27,5 @@ class Ue3ShipCommand(Command):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
-        return ue3_ship(context, context.destination)
+    def run(self, env):
+        return ue3_ship(env, env.destination)

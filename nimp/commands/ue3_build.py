@@ -10,7 +10,7 @@ class Ue3BuildCommand(Command):
         Command.__init__(self, 'ue3-build', 'Build UE3 executable')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('-c',
                             '--configuration',
                             help    = 'configuration to build',
@@ -30,5 +30,5 @@ class Ue3BuildCommand(Command):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
-        return ue3_build(context)
+    def run(self, env):
+        return ue3_build(env)

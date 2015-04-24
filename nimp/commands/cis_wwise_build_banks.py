@@ -10,7 +10,7 @@ class BuildWwiseBanksCommand(CisCommand):
         CisCommand.__init__(self, 'cis-wwise-build-banks', 'Builds Wwise Banks')
 
     #---------------------------------------------------------------------------
-    def cis_configure_arguments(self, context, parser):
+    def cis_configure_arguments(self, env, parser):
         parser.add_argument('platform',
                             help    = 'Platform to build',
                             metavar = '<PLATFORM>')
@@ -22,5 +22,5 @@ class BuildWwiseBanksCommand(CisCommand):
         return True
 
     #---------------------------------------------------------------------------
-    def _cis_run(self, context):
-        return build_wwise_banks(context)
+    def _cis_run(self, env):
+        return build_wwise_banks(env)

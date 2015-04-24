@@ -11,7 +11,7 @@ import time
 from nimp import modules
 from nimp.modules.module       import *
 from nimp.utilities.inspection import *
-from nimp.utilities.context    import *
+from nimp.utilities.environment    import *
 
 #-------------------------------------------------------------------------------
 def main():
@@ -23,11 +23,11 @@ def main():
             log_error("Unable to satisfy modules dependencies.")
             return 1
 
-        context = Context()
-        setattr(context, 'modules', module_instances)
+        env = Environment()
+        setattr(env, 'modules', module_instances)
 
         for module_it in module_instances:
-            if not module_it.load(context):
+            if not module_it.load(env):
                 result = -1
                 break
 

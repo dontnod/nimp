@@ -11,7 +11,7 @@ class Ue3CookCommand(Command):
 
     #---------------------------------------------------------------------------
     # configure_arguments
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('-c',
                             '--configuration',
                             help    = 'configurations to cook',
@@ -39,14 +39,14 @@ class Ue3CookCommand(Command):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
-        dlc = context.dlc if context.dlc is not None else context.project
-        map = context.cook_maps[dlc.lower()]
-        return ue3_cook(context.game,
+    def run(self, env):
+        dlc = env.dlc if env.dlc is not None else env.project
+        map = env.cook_maps[dlc.lower()]
+        return ue3_cook(env.game,
                         map,
-                        context.languages,
-                        None if context.project == context.dlc else context.dlc,
-                        context.ue3_cook_platform,
-                        context.configuration,
-                        context.noexpansion,
-                        context.incremental)
+                        env.languages,
+                        None if env.project == env.dlc else env.dlc,
+                        env.ue3_cook_platform,
+                        env.configuration,
+                        env.noexpansion,
+                        env.incremental)

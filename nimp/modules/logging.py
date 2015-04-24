@@ -23,7 +23,7 @@ class LoggingModule(Module):
             self._formats[format_instance_it.name()] = format_instance_it
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         log_group = parser.add_argument_group("Logging")
 
         log_group.add_argument('--log-format',
@@ -42,10 +42,10 @@ class LoggingModule(Module):
         return True
 
     #---------------------------------------------------------------------------
-    def load(self, context):
+    def load(self, env):
         global g_logger
-        format_name     = context.log_format
+        format_name     = env.log_format
         format          = self._formats[format_name]
-        logger          = Logger(format, context.verbose)
+        logger          = Logger(format, env.verbose)
         set_logger(logger)
         return True

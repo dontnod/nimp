@@ -13,11 +13,11 @@ from nimp.utilities.build import *
 from nimp.utilities.deployment import *
 
 #---------------------------------------------------------------------------
-def ue4_build(context):
-    vcxproj = 'Engine/Intermediate/ProjectFiles/' + context.game + '.vcxproj'
+def ue4_build(env):
+    vcxproj = 'Engine/Intermediate/ProjectFiles/' + env.game + '.vcxproj'
 
-    return _ue4_build_project(context.solution, vcxproj, context.ue4_build_platform,
-                              context.configuration, context.vs_version, 'Build')
+    return _ue4_build_project(env.solution, vcxproj, env.ue4_build_platform,
+                              env.configuration, env.vs_version, 'Build')
 
 #---------------------------------------------------------------------------
 def _ue4_build_project(sln_file, project, build_platform, configuration, vs_version, target = 'Rebuild'):

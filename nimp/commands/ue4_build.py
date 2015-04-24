@@ -10,7 +10,7 @@ class Ue4BuildCommand(Command):
         Command.__init__(self, 'ue4-build', 'Build UE4 executable')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('-c',
                             '--configuration',
                             help    = 'configuration to build',
@@ -30,5 +30,5 @@ class Ue4BuildCommand(Command):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
-        return ue4_build(context)
+    def run(self, env):
+        return ue4_build(env)

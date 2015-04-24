@@ -17,7 +17,7 @@ class CisCommand(Command):
         Command.__init__(self, name, description)
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('p4_client',
                             metavar = '<CLIENT_NAME>',
                             type    = str)
@@ -27,25 +27,25 @@ class CisCommand(Command):
                             action  = "store_true",
                             default = False)
 
-        return self.cis_configure_arguments(context, parser)
+        return self.cis_configure_arguments(env, parser)
 
     #---------------------------------------------------------------------------
-    def cis_configure_arguments(self, context, parser):
+    def cis_configure_arguments(self, env, parser):
         return False
 
     #---------------------------------------------------------------------------
-    def run(self, context):
-        if not p4_create_config_file(FARM_P4_PORT, FARM_P4_USER, FARM_P4_PASSWORD, context.p4_client):
+    def run(self, env):
+        if not p4_create_config_file(FARM_P4_PORT, FARM_P4_USER, FARM_P4_PASSWORD, env.p4_client):
             return False
 
         if not p4_clean_workspace():
             return False
 
-        result = self._cis_run(context)
+        result = self._cis_run(env)
 
         p4_clean_workspace()
 
         return result
 
-    def _cis_run(self, context):
+    def _cis_run(self, env):
         return False

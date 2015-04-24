@@ -13,11 +13,11 @@ from nimp.utilities.build            import *
 from nimp.utilities.deployment       import *
 
 #-------------------------------------------------------------------------------
-def generate_toc(context, dlc):
-    for language in context.languages:
+def generate_toc(env, dlc):
+    for language in env.languages:
         call_process(".", [ "Binaries\CookerSync.exe",
-                            context.game,
-                            "-p", context.ue3_cook_platform,
+                            env.game,
+                            "-p", env.ue3_cook_platform,
                             "-x",  "Loc",
                             "-r", language,
                             "-nd",
@@ -25,8 +25,8 @@ def generate_toc(context, dlc):
                             "-dlcname", dlc])
 
     call_process(".", [ "Binaries\CookerSync.exe",
-                        context.game,
-                        "-p", context.ue3_cook_platform,
+                        env.game,
+                        "-p", env.ue3_cook_platform,
                         "-x",  "ConsoleSyncProgrammer",
                         "-r", "INT",
                         "-nd",
@@ -35,10 +35,10 @@ def generate_toc(context, dlc):
     return True
 
 #---------------------------------------------------------------------------
-def ue3_build(context):
-    solution        = context.solution
-    configuration   = context.configuration
-    vs_version      = context.vs_version
+def ue3_build(env):
+    solution        = env.solution
+    configuration   = env.configuration
+    vs_version      = env.vs_version
     result          = True
     version_file_cl = None
 
@@ -48,117 +48,117 @@ def ue3_build(context):
         return False
 
     def _build():
-        if context.is_win64:
+        if env.is_win64:
             if not _ue3_build_editor_dlls(solution, configuration, vs_version):
                 return False
 
         overrided_solution      = solution
         overrided_vs_version    = vs_version
-        if context.is_x360:
+        if env.is_x360:
             overrided_vs_version = "10"
             overrided_solution   = "whatif_vs2010.sln"
 
-        if not _ue3_build_game(overrided_solution, context.ue3_build_platform, configuration, overrided_vs_version):
+        if not _ue3_build_game(overrided_solution, env.ue3_build_platform, configuration, overrided_vs_version):
             return False
 
         return True
 
-    if context.generate_version_file:
+    if env.generate_version_file:
         with _ue3_generate_version_file():
             return _build()
     else:
         return _build()
 
 #---------------------------------------------------------------------------
-def ue3_ship(context, destination = None):
-    master_directory = context.format(context.cis_master_directory)
+def ue3_ship(env, destination = None):
+    master_directory = env.format(env.cis_master_directory)
 
     if os.path.exists(master_directory):
         log_notification("Found a master at {0} : I'm going to build a patch", master_directory)
-        if context.dlc == context.project:
-            return _ship_game_patch(context, destination or context.cis_ship_directory)
+        if env.dlc == env.project:
+            return _ship_game_patch(env, destination or env.cis_ship_directory)
         else:
             log_error("Sry, building a DLC patch is still not implemented")
     else:
-        if context.dlc == context.project:
+        if env.dlc == env.project:
             log_error("Sry, building a game master is still not implemented")
         else:
-            return _ship_dlc(context, destination or context.cis_ship_directory)
+            return _ship_dlc(env, destination or env.cis_ship_directory)
 
 #---------------------------------------------------------------------------
-def _ship_dlc(context, destination):
-    map = context.cook_maps[context.dlc.lower()]
+def _ship_dlc(env, destination):
+    map = env.cook_maps[env.dlc.lower()]
 
     log_notification("***** Cooking...")
-    if not ue3_cook(context.game,
+    if not ue3_cook(env.game,
                     map,
-                    context.languages,
-                    context.dlc,
-                    context.ue3_cook_platform,
+                    env.languages,
+                    env.dlc,
+                    env.ue3_cook_platform,
                     'final'):
         return False
 
     log_notification("***** Copying DLC to output directory...")
-    dlc_files = context.map_files()
+    dlc_files = env.map_files()
     dlc_files.to(destination).load_set("DLC")
 
     return all_map(robocopy, dlc_files())
 
 #---------------------------------------------------------------------------
-def _ship_game_patch(context, destination):
-    map = context.cook_maps[context.dlc.lower()]
+def _ship_game_patch(env, destination):
+    map = env.cook_maps[env.dlc.lower()]
 
-    master_files = context.map_files()
-    master_files_source = master_files.src(context.cis_master_directory).recursive().files()
+    master_files = env.map_files()
+    master_files_source = master_files.src(env.cis_master_directory).recursive().files()
     log_notification("***** Deploying master...")
     if not all_map(robocopy, master_files()):
         return False
 
     log_notification("***** Cooking on top of master...")
-    if not ue3_cook(context.game,
+    if not ue3_cook(env.game,
                     map,
-                    context.languages,
+                    env.languages,
                     None,
-                    context.ue3_cook_platform,
+                    env.ue3_cook_platform,
                     'final',
                     incremental = True):
         return False
 
     log_notification("***** Redeploying master cook ignoring patched files...")
-    patch_files = context.map_files()
-    patch_files.src(context.cis_master_directory).load_set("Patch")
+    patch_files = env.map_files()
+    patch_files.src(env.cis_master_directory).load_set("Patch")
     files_to_exclude = [src for src, *args in patch_files()]
     master_files_source.exclude(*files_to_exclude)
     if not all_map(robocopy, master_files()):
         return False
 
-    if hasattr(context, 'revision'):
-        cook_files = context.map_files()
-        cook_files.to(context.cis_cooks_directory).load_set("Cook")
+    if hasattr(env, 'revision'):
+        cook_files = env.map_files()
+        cook_files.to(env.cis_cooks_directory).load_set("Cook")
         if not all_map(robocopy, cook_files()):
             return False
 
     log_notification("***** Generating toc...")
-    if not generate_toc(context, dlc = "Episode01" if context.dlc == context.project else context.dlc):
+    if not generate_toc(env, dlc = "Episode01" if env.dlc == env.project else env.dlc):
         return False
 
-    if context.is_ps3:
-        _generate_ps3_binaries(context)
+    if env.is_ps3:
+        _generate_ps3_binaries(env)
 
     log_notification("***** Copying patched files to output directory...")
-    patch_files = context.map_files()
+    patch_files = env.map_files()
     patch_files.to(destination).load_set("Patch")
     if not all_map(robocopy, patch_files()):
         return False
 
-    if context.is_win32:
-        _fix_pc_ini(context, destination)
+    if env.is_win32:
+        _fix_pc_ini(env, destination)
 
     return True
 
 #---------------------------------------------------------------------------
-def _fix_pc_ini(context, destination):
-    destination = context.format(destination)
+def _fix_pc_ini(env, destination):
+    destination = env.format(destination)
     base_game_ini_path = os.path.join(destination, "Engine/Config/BaseGame.ini")
     os.chmod(base_game_ini_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
     with open(base_game_ini_path, "r") as base_game_ini:
@@ -167,16 +167,16 @@ def _fix_pc_ini(context, destination):
         base_game_ini.write(ini_content.replace("Example", "LifeIsStrange"))
 
 #---------------------------------------------------------------------------
-def _generate_ps3_binaries(context):
+def _generate_ps3_binaries(env):
     for config in ["Shipping", "Test"]:
         if 0 != call_process(".", ["unfself",
-                                    context.format("Binaries\\PS3\\{game}-PS3-%s.elf" % config),
-                                    context.format("Binaries\\PS3\\{game}-PS3-%s.elf.un" % config)]):
+                                    env.format("Binaries\\PS3\\{game}-PS3-%s.elf" % config),
+                                    env.format("Binaries\\PS3\\{game}-PS3-%s.elf.un" % config)]):
             return False
 
         if 0 != call_process(".", ["make_fself_npdrm",
-                                    context.format("Binaries\\PS3\\{game}-PS3-%s.elf.un" % config),
-                                    context.format("Binaries\\PS3\\EBOOT-%s.BIN" % config) ]):
+                                    env.format("Binaries\\PS3\\{game}-PS3-%s.elf.un" % config),
+                                    env.format("Binaries\\PS3\\EBOOT-%s.BIN" % config) ]):
             return False
 
 #---------------------------------------------------------------------------

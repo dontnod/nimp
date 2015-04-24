@@ -12,8 +12,8 @@ class CisUe4Ship(CisCommand):
         CisCommand.__init__(self, 'cis-ue4-ship', 'Cooks and publish a final version.')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
-        CisCommand.configure_arguments(self, context, parser)
+    def configure_arguments(self, env, parser):
+        CisCommand.configure_arguments(self, env, parser)
 
         parser.add_argument('-r',
                             '--revision',
@@ -33,5 +33,5 @@ class CisUe4Ship(CisCommand):
         return True
 
     #---------------------------------------------------------------------------
-    def _cis_run(self, context):
-        return ue4_ship(context, context.destination)
+    def _cis_run(self, env):
+        return ue4_ship(env, env.destination)

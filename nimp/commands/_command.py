@@ -27,23 +27,23 @@ class Command:
         return self._dependencies
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
+    def run(self, env):
         assert(False)
 
     #---------------------------------------------------------------------------
-    def check(self, context):
+    def check(self, env):
         return True
 
     #---------------------------------------------------------------------------
-    def _run_sub_command(self, context, command, arguments = []):
-        new_context     = copy.copy(context)
+    def _run_sub_command(self, env, command, arguments = []):
+        new_context     = copy.copy(env)
         parser          = argparse.ArgumentParser()
 
-        command.configure_arguments(context, parser)
+        command.configure_arguments(env, parser)
 
         (parsed_arguments, unknown_args)   = parser.parse_known_args(arguments)
 

@@ -18,8 +18,8 @@ class CisUe3PublishVersion(CisCommand):
         CisCommand.__init__(self, 'cis-ue3-publish-version', 'Gets built binaries and publishes an internal version.')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
-        CisCommand.configure_arguments(self, context, parser)
+    def configure_arguments(self, env, parser):
+        CisCommand.configure_arguments(self, env, parser)
         parser.add_argument('-r',
                             '--revision',
                             help    = 'Current revision',
@@ -43,33 +43,33 @@ class CisUe3PublishVersion(CisCommand):
         return True
 
     #---------------------------------------------------------------------------
-    def _cis_run(self, context):
+    def _cis_run(self, env):
         with p4_transaction("Binaries Checkout",
                             submit_on_success = False,
                             revert_unchanged = False,
                             add_not_versioned_files = False) as trans:
-            files_to_deploy = context.map_files()
-            for configuration in context.configurations:
-                files_to_deploy.override(configuration = configuration).src(context.cis_binaries_directory).glob("**")
+            files_to_deploy = env.map_files()
+            for configuration in env.configurations:
+                files_to_deploy.override(configuration = configuration).src(env.cis_binaries_directory).glob("**")
 
             log_notification("Deploying binaries...")
             if not all_map(checkout_and_copy(trans), files_to_deploy()):
                 return False
 
-            if not context.keep_temp_binaries:
-                for configuration in context.configurations:
+            if not env.keep_temp_binaries:
+                for configuration in env.configurations:
                     try:
-                        shutil.rmtree(context.format(context.cis_binaries_directory, configuration = configuration))
+                        shutil.rmtree(env.format(env.cis_binaries_directory, configuration = configuration))
                     except Exception as ex:
                         log_error("Error while cleaning binaries : {0}", ex)
 
-            if context.is_win64:
+            if env.is_win64:
                 log_notification("Building script...")
-                if not ue3_build_script(context.game):
+                if not ue3_build_script(env.game):
                     log_error("Error while building script")
                     return False
 
-            files_to_publish = context.map_files().to(context.cis_version_directory)
+            files_to_publish = env.map_files().to(env.cis_version_directory)
             log_notification("Publishing version {0}...", configuration)
             files_to_publish.load_set("Version")
             if not all_map(robocopy, files_to_publish()):

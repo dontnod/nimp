@@ -13,18 +13,18 @@ from nimp.utilities.deployment   import *
 
 
 #-------------------------------------------------------------------------------
-def ps3_generate_pkgs(context, source, destination):
-    packages_config = context.packages_config
+def ps3_generate_pkgs(env, source, destination):
+    packages_config = env.packages_config
 
     if hasattr(packages_config, "__call__"):
-        packages_config = packages_config(context)
+        packages_config = packages_config(env)
     else:
-        packages_config = packages_config[context.dlc]
+        packages_config = packages_config[env.dlc]
 
     for package in packages_config:
-        pkg_destination = context.format(destination, pkg_dest = package['pkg_dest'])
-        pkg_source      = context.format(os.path.join(source, package['source']))
-        pkg_conf_file   = context.format(os.path.join(source, package['conf']))
+        pkg_destination = env.format(destination, pkg_dest = package['pkg_dest'])
+        pkg_source      = env.format(os.path.join(source, package['source']))
+        pkg_conf_file   = env.format(os.path.join(source, package['conf']))
         if not os.path.exists(pkg_destination):
             os.makedirs(pkg_destination)
         if 0 != call_process(pkg_destination, ["make_package_npdrm", pkg_conf_file, pkg_source]):

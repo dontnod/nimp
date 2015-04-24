@@ -9,28 +9,28 @@ from nimp.utilities.file_mapper import *
 from nimp.utilities.deployment  import *
 
 #---------------------------------------------------------------------------
-def build_wwise_banks(context):
+def build_wwise_banks(env):
     """ Builds and optionnaly submits banks. Following attributes should be
-        defined on context :
+        defined on env :
         platform            : The platform to build banks for.
         wwise_banks_path    : Relative path to the directory to checkout and
                               eventually  submit (*.bnk files directory).
         wwise_project       : Relative path of the Wwise project to build.
         checkin             : True to commit built banks, False otherwise."""
-    platform         = context.platform
-    wwise_banks_path = context.wwise_banks_path
-    wwise_banks_path = os.path.join(wwise_banks_path, context.wwise_banks_platform)
+    platform         = env.platform
+    wwise_banks_path = env.wwise_banks_path
+    wwise_banks_path = os.path.join(wwise_banks_path, env.wwise_banks_platform)
     cl_name          = "[CIS] Updated {0} Wwise Banks from CL {1}".format(platform,  p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring\\x64\\Release\\bin\\WWiseCLI.exe")
     wwise_command    = [wwise_cli_path,
-                        os.path.abspath(context.wwise_project),
+                        os.path.abspath(env.wwise_project),
                         "-GenerateSoundBanks",
                         "-Platform",
-                        context.wwise_cmd_platform]
+                        env.wwise_cmd_platform]
 
-    with p4_transaction(cl_name, submit_on_success = context.checkin) as trans:
+    with p4_transaction(cl_name, submit_on_success = env.checkin) as trans:
         log_notification("Checking out banks...")
-        banks_files = context.map_files()
+        banks_files = env.map_files()
         banks_files.src(wwise_banks_path).recursive().files()
         if not all_map(checkout(trans), banks_files()):
             log_error("Errors occured while checking out banks, aborting...")

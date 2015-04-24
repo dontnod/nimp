@@ -1,5 +1,4 @@
 __all__ = ["_command",
-           "bink",
            "cis_ue3_build",
            "cis_ue3_publish_version",
            "cis_ue3_ship",

@@ -11,7 +11,7 @@ class Ue4CookCommand(Command):
 
     #---------------------------------------------------------------------------
     # configure_arguments
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('-c',
                             '--configuration',
                             help    = 'configurations to cook',
@@ -39,5 +39,5 @@ class Ue4CookCommand(Command):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
-        return ue4_cook(context)
+    def run(self, env):
+        return ue4_cook(env)

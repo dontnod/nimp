@@ -12,8 +12,8 @@ class CisUe3Ship(CisCommand):
         CisCommand.__init__(self, 'cis-ue3-ship', 'Cooks and publish a final version.')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
-        CisCommand.configure_arguments(self, context, parser)
+    def configure_arguments(self, env, parser):
+        CisCommand.configure_arguments(self, env, parser)
 
         parser.add_argument('-r',
                             '--revision',
@@ -33,25 +33,25 @@ class CisUe3Ship(CisCommand):
         return True
 
     #---------------------------------------------------------------------------
-    def _cis_run(self, context):
+    def _cis_run(self, env):
         platforms = ["Win64"]
 
-        if not context.is_win64:
-            platforms += [context.platform]
+        if not env.is_win64:
+            platforms += [env.platform]
 
-        with deploy_latest_revision(context, context.cis_version_directory, context.revision, platforms):
-            if context.dlc != context.project:
-                master_files = context.map_files()
-                master_files.override(dlc = context.project).src(context.cis_cooks_directory).recursive().files()
+        with deploy_latest_revision(env, env.cis_version_directory, env.revision, platforms):
+            if env.dlc != env.project:
+                master_files = env.map_files()
+                master_files.override(dlc = env.project).src(env.cis_cooks_directory).recursive().files()
                 log_notification("***** Deploying episode01 cook...")
                 if not all_map(robocopy, master_files()):
                     return False
 
-            if not ue3_ship(context):
+            if not ue3_ship(env):
                 return False
-            if not generate_pkg_config(context):
+            if not generate_pkg_config(env):
                 return False
-            if not make_packages(context):
+            if not make_packages(env):
                 return False
 
         return True

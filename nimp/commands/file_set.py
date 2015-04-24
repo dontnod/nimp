@@ -10,7 +10,7 @@ class MapCommand(Command):
         Command.__init__(self, 'file-set', 'Do stuff on a list of file (previously known as cookersync)')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('--arg',
                             help    = 'Set a format argument, that will be used in string interpolation.',
                             nargs=2,
@@ -37,30 +37,30 @@ class MapCommand(Command):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
-        for key_value in context.arg:
-            setattr(context, key_value[0], key_value[1])
-        context.standardize_names()
+    def run(self, env):
+        for key_value in env.arg:
+            setattr(env, key_value[0], key_value[1])
+        env.standardize_names()
 
-        files       = FileMapper(format_args = vars(context))
+        files       = FileMapper(format_args = vars(env))
         files_chain = files
-        if context.src is not None:
-            files_chain = files_chain.src(context.src)
+        if env.src is not None:
+            files_chain = files_chain.src(env.src)
 
-        if context.to is not None:
-            files_chain = files_chain.to(context.to)
+        if env.to is not None:
+            files_chain = files_chain.to(env.to)
 
-        files_chain.load_set(context.set_name)
+        files_chain.load_set(env.set_name)
 
-        if context.action == 'robocopy':
-            map(robocopy(context), files)
-        elif context.action == 'checkout':
+        if env.action == 'robocopy':
+            map(robocopy(env), files)
+        elif env.action == 'checkout':
             with p4_transaction('Checkout') as trans:
                 map(trans.add, files)
-        elif context.action == 'list':
+        elif env.action == 'list':
             for source, destination in files():
                 log_notification("{0} => {1}", source, destination)
-        elif context.action == 'generate-toc':
+        elif env.action == 'generate-toc':
             log_error("Not implemented yet")
 
         return True

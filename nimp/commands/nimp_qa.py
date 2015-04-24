@@ -13,9 +13,9 @@ class NimpQaCommand(Command):
         Command.__init__(self, 'nimp-qa', 'Runs pylint on nimp and runs his unit tests')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
+    def run(self, env):
         return unittest.main(module = nimp.tests.utilities.file_mapper_tests, argv = ["."])

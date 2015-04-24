@@ -9,7 +9,7 @@ class PackageCommand(Command):
         Command.__init__(self, 'package', 'Packages game')
 
     #---------------------------------------------------------------------------
-    def configure_arguments(self, context, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('loose_files_directory',
                             help    = 'Loose files directory.',
                             metavar = '<DIR>')
@@ -41,11 +41,11 @@ class PackageCommand(Command):
         return True
 
     #---------------------------------------------------------------------------
-    def run(self, context):
-        if not context.package_only:
-            if not generate_pkg_config(context, context.loose_files_directory):
+    def run(self, env):
+        if not env.package_only:
+            if not generate_pkg_config(env, env.loose_files_directory):
                 return False
-        if not context.config_only:
-            if not make_packages(context, context.loose_files_directory, context.packages_directory):
+        if not env.config_only:
+            if not make_packages(env, env.loose_files_directory, env.packages_directory):
                 return False
         return True

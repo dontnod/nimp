@@ -10,24 +10,24 @@ import shutil
 import os
 import os.path
 
-from nimp.utilities.context      import *
+from nimp.utilities.environment      import *
 from nimp.utilities.build        import *
 from nimp.utilities.deployment   import *
 
-def generate_gp4(context, dest_dir):
-    packages_config = context.packages_config
+def generate_gp4(env, dest_dir):
+    packages_config = env.packages_config
 
     if hasattr(packages_config, "__call__"):
-        packages_config = packages_config(context)
+        packages_config = packages_config(env)
     else:
-        packages_config = packages_config[context.dlc]
+        packages_config = packages_config[env.dlc]
 
     for package in packages_config:
-        mandatory_keys_error_format = "{{key}} should be defined in gp4 settings for {dlc}".format(dlc = context.dlc)
+        mandatory_keys_error_format = "{{key}} should be defined in gp4 settings for {dlc}".format(dlc = env.dlc)
         if not check_keys(package, mandatory_keys_error_format, 'gp4_file', 'volume_type', 'content_id', 'passcode'):
             return False
 
-        gp4_file = context.format(os.path.join(dest_dir, package['gp4_file']), **package)
+        gp4_file = env.format(os.path.join(dest_dir, package['gp4_file']), **package)
 
         if os.path.exists(gp4_file):
             os.remove(gp4_file)
@@ -87,8 +87,8 @@ def generate_gp4(context, dest_dir):
                 if call_process('.', add_chunk_command) != 0:
                     return False
 
-        pkg_files = context.map_files().override(**package).src(dest_dir)
-        pkg_files.load_set(context.packages_config_file)
+        pkg_files = env.map_files().override(**package).src(dest_dir)
+        pkg_files.load_set(env.packages_config_file)
 
         for source, destination in pkg_files():
             log_notification("{0}   {1}", source, destination)
@@ -99,21 +99,21 @@ def generate_gp4(context, dest_dir):
     return True
 
 #-------------------------------------------------------------------------------
-def ps4_generate_pkgs(context, loose_files_dir, dest_dir):
-    packages_config = context.packages_config
+def ps4_generate_pkgs(env, loose_files_dir, dest_dir):
+    packages_config = env.packages_config
 
     if hasattr(packages_config, "__call__"):
-        packages_config = packages_config(context)
+        packages_config = packages_config(env)
     else:
-        packages_config = packages_config[context.dlc]
+        packages_config = packages_config[env.dlc]
 
     for package in packages_config:
-        mandatory_keys_error_format = "{{key}} should be defined in gp4 settings for {dlc}".format(dlc = context.dlc)
+        mandatory_keys_error_format = "{{key}} should be defined in gp4 settings for {dlc}".format(dlc = env.dlc)
         if not check_keys(package, mandatory_keys_error_format, 'gp4_file', 'pkg_dest'):
             return False
 
-        gp4_file    = context.format(os.path.join(loose_files_dir, package['gp4_file']), **package)
-        pkg_file    = context.format(os.path.join(dest_dir, package['pkg_dest']), **package)
+        gp4_file    = env.format(os.path.join(loose_files_dir, package['gp4_file']), **package)
+        pkg_file    = env.format(os.path.join(dest_dir, package['pkg_dest']), **package)
         dest_dir    = os.path.dirname(pkg_file)
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
