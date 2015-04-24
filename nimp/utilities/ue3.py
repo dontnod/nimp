@@ -36,9 +36,9 @@ def generate_toc(env, dlc):
 
 #---------------------------------------------------------------------------
 def ue3_build(env):
+    vs_version      = '11'
     solution        = env.solution
     configuration   = env.configuration
-    vs_version      = env.vs_version
     result          = True
     version_file_cl = None
 
@@ -47,27 +47,22 @@ def ue3_build(env):
         log_error("Error building UBT")
         return False
 
-    def _build():
+    def _build(solution, vs_version):
         if env.is_win64:
             if not _ue3_build_editor_dlls(solution, configuration, vs_version):
                 return False
 
-        overrided_solution      = solution
-        overrided_vs_version    = vs_version
         if env.is_x360:
-            overrided_vs_version = "10"
-            overrided_solution   = "whatif_vs2010.sln"
+            vs_version = "10"
+            solution   = "whatif_vs2010.sln"
 
-        if not _ue3_build_game(overrided_solution, env.ue3_build_platform, configuration, overrided_vs_version):
-            return False
-
-        return True
+        return _ue3_build_game(solution, env.ue3_build_platform, configuration, vs_version)
 
     if env.generate_version_file:
         with _ue3_generate_version_file():
-            return _build()
+            return _build(solution, vs_version)
     else:
-        return _build()
+        return _build(solution, vs_version)
 
 #---------------------------------------------------------------------------
 def ue3_ship(env, destination = None):
