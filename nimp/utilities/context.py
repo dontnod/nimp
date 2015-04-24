@@ -72,24 +72,34 @@ class Context:
             self.is_microsoft_platform  = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
             self.is_sony_platform       = self.is_ps3 or self.is_ps4
 
-            build_platforms = {"PS4"       : "Orbis",
-                               "XboxOne"   : "Dingo",
-                               "Win64"     : "Win64",
+            ue3_build_platforms = { "PS4"       : "Orbis",
+                                    "XboxOne"   : "Dingo",
+                                    "Win64"     : "Win64",
 
-                               "Win32"     : "Win32",
-                               "XBox360"   : "Xbox360",
-                               "PS3"       : "PS3" }
+                                    "Win32"     : "Win32",
+                                    "XBox360"   : "Xbox360",
+                                    "PS3"       : "PS3" }
 
-            cook_platforms = { "PS4"       : "Orbis",
-                               "XboxOne"   : "Dingo",
-                               "Win64"     : "PC",
-                               "Win32"     : "PCConsole",
-                               "XBox360"   : "Xbox360",
-                               "PS3"       : "PS3" }
+            ue3_cook_platforms = { "PS4"       : "Orbis",
+                                   "XboxOne"   : "Dingo",
+                                   "Win64"     : "PC",
+                                   "Win32"     : "PCConsole",
+                                   "XBox360"   : "Xbox360",
+                                   "PS3"       : "PS3" }
 
+            self.ue3_build_platform = ue3_build_platforms[self.platform]
+            self.ue3_cook_platform  = ue3_cook_platforms[self.platform]
 
-            self.ue3_cook_platform  = cook_platforms[self.platform]
-            self.ue3_build_platform = build_platforms[self.platform]
+            ue4_build_platforms = { "PS4"       : "PS4",
+                                    "Win64"     : "Win64",
+                                    "Win32"     : "Win32" }
+
+            ue4_cook_platforms = { "PS4"       : "PS4",
+                                   "Win64"     : "Win64",
+                                   "Win32"     : "Win32" }
+
+            self.ue4_build_platform = ue4_build_platforms[self.platform]
+            self.ue4_cook_platform  = ue4_cook_platforms[self.platform]
 
             if  hasattr(self, 'dlc'):
                 if self.dlc is None:
