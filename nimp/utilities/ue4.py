@@ -22,4 +22,3 @@ def ue4_build(env):
 #---------------------------------------------------------------------------
 def _ue4_build_project(sln_file, project, build_platform, configuration, vs_version, target = 'Rebuild'):
     return vsbuild(sln_file, build_platform, configuration, project, vs_version, target)
-
