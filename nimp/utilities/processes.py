@@ -42,7 +42,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
     # If we’re running under MSYS, leading slashes in command line arguments
     # will be treated as a path, so we need to escape them
-    if os.environ['MSYSTEM'] == 'MSYS':
+    if os.environ.get('MSYSTEM') == 'MSYS':
         command = [re.sub('^/', '//', x) for x in command]
 
     process = subprocess.Popen(command,
