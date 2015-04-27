@@ -15,7 +15,7 @@ class Ue4BuildCommand(Command):
                             '--configuration',
                             help    = 'configuration to build',
                             metavar = '<configuration>',
-                            default = 'release')
+                            default = 'Development')
 
         parser.add_argument('-p',
                             '--platform',
