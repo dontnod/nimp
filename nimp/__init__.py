@@ -1,5 +1,8 @@
-__all__ = ["commands",
-           "modules",
-           "tests",
-           "utilities"]
+__all__ = [
+    "nimp_cli",
+    "commands",
+    "modules",
+    "tests",
+    "utilities",
+]
 
