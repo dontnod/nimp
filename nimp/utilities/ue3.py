@@ -15,7 +15,7 @@ from nimp.utilities.deployment       import *
 #-------------------------------------------------------------------------------
 def generate_toc(env, dlc):
     for language in env.languages:
-        call_process(".", [ "Binaries\CookerSync.exe",
+        call_process(".", [ "Binaries/CookerSync.exe",
                             env.game,
                             "-p", env.ue3_cook_platform,
                             "-x",  "Loc",
@@ -24,7 +24,7 @@ def generate_toc(env, dlc):
                             "-final",
                             "-dlcname", dlc])
 
-    call_process(".", [ "Binaries\CookerSync.exe",
+    call_process(".", [ "Binaries/CookerSync.exe",
                         env.game,
                         "-p", env.ue3_cook_platform,
                         "-x",  "ConsoleSyncProgrammer",
@@ -165,13 +165,13 @@ def _fix_pc_ini(env, destination):
 def _generate_ps3_binaries(env):
     for config in ["Shipping", "Test"]:
         if 0 != call_process(".", ["unfself",
-                                    env.format("Binaries\\PS3\\{game}-PS3-%s.elf" % config),
-                                    env.format("Binaries\\PS3\\{game}-PS3-%s.elf.un" % config)]):
+                                    env.format("Binaries/PS3/{game}-PS3-%s.elf" % config),
+                                    env.format("Binaries/PS3/{game}-PS3-%s.elf.un" % config)]):
             return False
 
         if 0 != call_process(".", ["make_fself_npdrm",
-                                    env.format("Binaries\\PS3\\{game}-PS3-%s.elf.un" % config),
-                                    env.format("Binaries\\PS3\\EBOOT-%s.BIN" % config) ]):
+                                    env.format("Binaries/PS3/{game}-PS3-%s.elf.un" % config),
+                                    env.format("Binaries/PS3/EBOOT-%s.BIN" % config) ]):
             return False
 
 #---------------------------------------------------------------------------
@@ -267,13 +267,14 @@ def _ue3_generate_version_file():
                     submit_on_success = False,
                     revert_unchanged = False) as transaction:
         _write_version_file(transaction,
-                            "Development\\Src\\Engine\\DNE\\DNEOnlineSuiteBuildId.h",
-                            "#define SEE_ONLINE_SUITE_BUILD_ID \"{random_character}@%Y-%m-%dT%H:%M:%S.000Z@{machine_name}-v4\"\n#define DNE_FORCE_USE_ONLINE_SUITE 1")
+                            'Development/Src/Engine/DNE/DNEOnlineSuiteBuildId.h',
+                            '#define SEE_ONLINE_SUITE_BUILD_ID "{random_character}@%Y-%m-%dT%H:%M:%S.000Z@{machine_name}-v4"\n' +
+                            '#define DNE_FORCE_USE_ONLINE_SUITE 1\n')
         _write_version_file(transaction,
-                            "Development\Src\ExampleGame\Src\AdriftVersion.cpp",
-                            "#include \"ExampleGame.h\"\n" +
-                            "#include <AdriftVersion.h>\n" +
-                            "FString fVersion = \"[%Y-%m-%d_%H_%M_CL{cl}]\";\n")
+                            'Development\Src\ExampleGame\Src\AdriftVersion.cpp',
+                            '#include "ExampleGame.h"\n' +
+                            '#include <AdriftVersion.h>\n' +
+                            'FString fVersion = "[%Y-%m-%d_%H_%M_CL{cl}]";\n')
         yield
 
 #---------------------------------------------------------------------------

@@ -75,7 +75,7 @@ def p4_edit(cl_number, file):
 
 #-------------------------------------------------------------------------------
 def p4_get_changelist_description(cl_number):
-    return _p4_parse_command_output(".", ["p4", "-z", "tag", "describe", cl_number], "\.\.\. desc (.*)")
+    return _p4_parse_command_output(".", ["p4", "-z", "tag", "describe", cl_number], r"\.\.\. desc (.*)")
 
 #-------------------------------------------------------------------------------
 def p4_get_last_synced_changelist():
@@ -84,7 +84,7 @@ def p4_get_last_synced_changelist():
     if workspace is None:
         return None
 
-    cl_number = _p4_parse_command_output(".", ["p4", "-z", "tag", "changes", "-s", "submitted", "-m1", "@{0}".format(workspace)], "\.\.\. change ([0-9]*)")
+    cl_number = _p4_parse_command_output(".", ["p4", "-z", "tag", "changes", "-s", "submitted", "-m1", "@{0}".format(workspace)], r"\.\.\. change ([0-9]*)")
 
     if(cl_number is None):
         return None
@@ -109,25 +109,25 @@ def p4_get_or_create_changelist(description):
                                                               workspace     = p4_get_workspace(),
                                                               description   = description)
 
-    return _p4_parse_command_output(".", ["p4", "-z", "tag","change", "-i"], "Change ([0-9]*) created\.", change_list_form)
+    return _p4_parse_command_output(".", ["p4", "-z", "tag","change", "-i"], r"Change ([0-9]*) created\.", change_list_form)
 
 #-------------------------------------------------------------------------------
 def p4_get_pending_changelists():
-    return _p4_parse_command_output_list(".", ["p4", "-z", "tag", "changes", "-c", p4_get_workspace(), "-s", "pending"], "\.\.\. change ([0-9]*)")
+    return _p4_parse_command_output_list(".", ["p4", "-z", "tag", "changes", "-c", p4_get_workspace(), "-s", "pending"], r"\.\.\. change ([0-9]*)")
 
 #-------------------------------------------------------------------------------
 def p4_get_user():
-    return _p4_parse_command_output(".", ["p4", "-z", "tag", "user", "-o"], "^\.\.\. User (.*)$")
+    return _p4_parse_command_output(".", ["p4", "-z", "tag", "user", "-o"], r"^\.\.\. User (.*)$")
 
 #-------------------------------------------------------------------------------
 def p4_get_workspace():
-    return _p4_parse_command_output(".", ["p4", "-z", "tag", "info"], "^\.\.\. clientName (.*)$")
+    return _p4_parse_command_output(".", ["p4", "-z", "tag", "info"], r"^\.\.\. clientName (.*)$")
 
 #-------------------------------------------------------------------------------
 def p4_is_file_versioned(file_path):
     result, output, error = capture_process_output(".", ["p4", "-z", "tag", "fstat", file_path])
     # Il faut checker que le fichier a pas été ajouté puis delete
-    if re.search("\.\.\.\s*headAction\s*delete", output) is not None:
+    if re.search(r"\.\.\.\s*headAction\s*delete", output) is not None:
         return False
     return not "no such file(s)" in error
 
@@ -260,7 +260,7 @@ def _p4_parse_command_output(directory, command, pattern, input = None, log_erro
 
     if(match is None):
         if log_errors:
-            log_error("Error while parsing p4 command \'{0}\' output (got {1})", " ".join(command), output)
+            log_error('Error while parsing p4 command "{0}" output (got {1})', " ".join(command), output)
         return None
 
     result = match.group(1)
