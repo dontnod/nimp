@@ -48,6 +48,7 @@ class CisUe4BuildCommand(CisCommand):
             files_to_checkout = env.map_files()
             files_to_checkout.load_set("Binaries")
             if not all_map(checkout(transaction), files_to_checkout()):
+                log_error("Error while checkouting binaries")
                 return False
 
             if not ue4_build(env):

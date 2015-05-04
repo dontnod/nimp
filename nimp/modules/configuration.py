@@ -29,8 +29,6 @@ class ConfigurationModule(Module):
 def _load_settings(env):
     conf_dirs = []
     while os.path.abspath(os.sep) != os.getcwd():
-        if os.path.isdir(".nimp"):
-            conf_dirs = [os.path.abspath(".nimp")] + conf_dirs
         if os.path.exists(".nimp.conf"):
             break
         os.chdir("..")
@@ -40,11 +38,8 @@ def _load_settings(env):
         return False
 
     if not env.load_config_file(".nimp.conf"):
+        log_error("Error loading .nimp.conf.")
         return False
-
-    for conf_dir in conf_dirs:
-        if not _load_config_dir(conf_dir):
-            return False
 
     return True
 

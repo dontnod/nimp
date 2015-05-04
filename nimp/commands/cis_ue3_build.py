@@ -34,11 +34,16 @@ class CisUe3BuildCommand(CisCommand):
                             help    = 'configuration to build',
                             metavar = '<configuration>')
 
+
+        parser.add_argument('--publish-only',
+                            help    = "Don't build game, publish binaries and symbols only.",
+                            action  = "store_true",
+                            default = False)
+
         return True
 
     #---------------------------------------------------------------------------
     def _cis_run(self, env):
-        log_notification(" ****** Building game...")
         env.generate_version_file = True
 
         with p4_transaction("Binaries checkout",
@@ -50,9 +55,10 @@ class CisUe3BuildCommand(CisCommand):
             if not all_map(checkout(transaction), files_to_checkout()):
                 return False
 
-            if not ue3_build(env):
-                return False
-
+            if not env.publish_only:
+                log_notification(" ****** Building game...")
+                if not ue3_build(env):
+                    return False
             log_notification(" ****** Publishing Binaries...")
             files_to_publish = env.map_files()
             files_to_publish.to(env.cis_binaries_directory).load_set("Binaries")

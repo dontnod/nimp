@@ -72,14 +72,14 @@ class Environment:
             self.is_microsoft_platform  = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
             self.is_sony_platform       = self.is_ps3 or self.is_ps4
 
-            ue3_build_platforms = {"PS4"       : "Orbis",
+            ue3_build_platforms = {"PS4"       : "ORBIS",
                                    "XboxOne"   : "Dingo",
                                    "Win64"     : "Win64",
                                    "Win32"     : "Win32",
                                    "XBox360"   : "Xbox360",
                                    "PS3"       : "PS3" }
 
-            ue3_cook_platforms = { "PS4"       : "Orbis",
+            ue3_cook_platforms = { "PS4"       : "ORBIS",
                                    "XboxOne"   : "Dingo",
                                    "Win64"     : "PC",
                                    "Win32"     : "PCConsole",
@@ -98,7 +98,7 @@ class Environment:
                                    "XBox360"   : "Xbox360",
                                    "PS3"       : "PS3" }
 
-            ue4_cook_platforms = { "PS4"       : "Orbis",
+            ue4_cook_platforms = { "PS4"       : "ORBIS",
                                    "XboxOne"   : "XboxOne",
                                    "Win64"     : "PC",
                                    "Win32"     : "PCConsole",

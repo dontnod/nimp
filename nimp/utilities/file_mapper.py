@@ -78,7 +78,13 @@ class FileMapper(object):
     def load_set(self, set_name):
         file_name = self._format(set_name)
         if not os.path.exists(file_name) or not os.path.isfile(file_name):
-            file_name   = os.path.join(self.file_sets_directory, set_name + ".txt")
+            # TODO : Always hardcode this directory to avoid bloating .nimp.conf. The file_sets_directory conf variable is
+            # still used in LIS repository
+            if hasattr(self, "file_sets_directory"):
+                file_sets_directory = self.file_sets_directory
+            else:
+                file_sets_directory = ".nimp/file_sets"
+            file_name   = os.path.join(file_sets_directory, set_name + ".txt")
             file_name   = self._format(file_name)
         locals      = {}
         try:
@@ -217,4 +223,7 @@ class FileMapper(object):
     def __getattr__(self, name):
         """ Usefull to simply retrieve format arguments, in config files for example.
         """
-        return self._format_args[name]
+        try:
+            return self._format_args[name]
+        except KeyError:
+            raise AttributeError(name)
