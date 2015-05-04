@@ -84,7 +84,7 @@ def p4_get_last_synced_changelist():
     if workspace is None:
         return None
 
-    cl_number = _p4_parse_command_output(".", ["p4", "-z", "tag", "changes", "-s", "submitted", "-m1", "@{0}".format(workspace)], r"\.\.\. change ([0-9]*)")
+    cl_number = _p4_parse_command_output(".", ["p4", "-z", "tag", "changes", "-s", "submitted", "-m1", "@{0}".format(workspace)], r"\.\.\. change (\d+)")
 
     if(cl_number is None):
         return None
@@ -109,11 +109,11 @@ def p4_get_or_create_changelist(description):
                                                               workspace     = p4_get_workspace(),
                                                               description   = description)
 
-    return _p4_parse_command_output(".", ["p4", "-z", "tag","change", "-i"], r"Change ([0-9]*) created\.", change_list_form)
+    return _p4_parse_command_output(".", ["p4", "-z", "tag","change", "-i"], r"Change (\d+) created\.", change_list_form)
 
 #-------------------------------------------------------------------------------
 def p4_get_pending_changelists():
-    return _p4_parse_command_output_list(".", ["p4", "-z", "tag", "changes", "-c", p4_get_workspace(), "-s", "pending"], r"\.\.\. change ([0-9]*)")
+    return _p4_parse_command_output_list(".", ["p4", "-z", "tag", "changes", "-c", p4_get_workspace(), "-s", "pending"], r"\.\.\. change (\d+)")
 
 #-------------------------------------------------------------------------------
 def p4_get_user():

@@ -28,7 +28,7 @@ def get_latest_available_revision(env, version_directory_format, start_revision,
     version_directories_glob    = version_directory_format.format(**format_args)
 
     for version_directory in glob.glob(version_directories_glob):
-        format_args['revision'] = '([0-9]*)'
+        format_args['revision'] = '(\d+)'
         version_directory       = version_directory.replace('\\', '/')
         version_regex           = version_directory_format.format(**format_args)
 
