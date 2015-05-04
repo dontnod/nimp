@@ -241,11 +241,11 @@ class _PerforceTransaction:
 
 #-------------------------------------------------------------------------------
 def _p4_run_command(directory, command, input = None, log_errors = True):
-    log_verbose("Perforce : {0}", " ".join(command))
+    log_verbose("Perforce: {0} [in {1}]", " ".join(command), directory)
     result, output, error = capture_process_output(directory, command, input)
-    if( result != 0 or error != ''):
+    if result != 0 or error != '':
         if log_errors:
-            log_error("Perforce error : {1}", input, error.rstrip('\r\n'))
+            log_error("Perforce error: {1}", input, error.rstrip('\r\n'))
         return None
     return output
 
