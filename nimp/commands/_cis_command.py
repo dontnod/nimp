@@ -22,6 +22,11 @@ class CisCommand(Command):
                             metavar = '<CLIENT_NAME>',
                             type    = str)
 
+        parser.add_argument('--local',
+                            help    = "Don't touch workspace or P4 settings.",
+                            action  = "store_true",
+                            default = False)
+
         parser.add_argument('--hard-clean',
                             help    = 'Remove all unversionned files',
                             action  = "store_true",
@@ -35,15 +40,17 @@ class CisCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        if not p4_create_config_file(FARM_P4_PORT, FARM_P4_USER, FARM_P4_PASSWORD, env.p4_client):
-            return False
+        if not env.local:
+            if not p4_create_config_file(FARM_P4_PORT, FARM_P4_USER, FARM_P4_PASSWORD, env.p4_client):
+                return False
 
-        if not p4_clean_workspace():
-            return False
+            if not p4_clean_workspace():
+                return False
 
         result = self._cis_run(env)
 
-        p4_clean_workspace()
+        if not env.local:
+            p4_clean_workspace()
 
         return result
 
