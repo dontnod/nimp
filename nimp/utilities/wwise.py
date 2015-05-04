@@ -18,15 +18,20 @@ def build_wwise_banks(env):
         wwise_project       : Relative path of the Wwise project to build.
         checkin             : True to commit built banks, False otherwise."""
     platform         = env.platform
-    wwise_banks_path = env.wwise_banks_path
-    wwise_banks_path = os.path.join(wwise_banks_path, env.wwise_banks_platform)
+    wwise_project    = env.wwise_project
+    wwise_banks_path = os.path.join(env.wwise_banks_path, env.wwise_banks_platform)
     cl_name          = "[CIS] Updated {0} Wwise Banks from CL {1}".format(platform, p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring/x64/Release/bin/WWiseCLI.exe")
-    wwise_command    = [wwise_cli_path,
-                        os.path.abspath(env.wwise_project),
-                        "-GenerateSoundBanks",
-                        "-Platform",
-                        env.wwise_cmd_platform]
+
+    # WwiseCLI doesn’t handle Unix path separators properly
+    if os.environ.get('MSYSTEM') == 'MSYS':
+        wwise_project = wwise_project.replace('/', '\\')
+
+    wwise_command = [wwise_cli_path,
+                     wwise_project,
+                     "-GenerateSoundBanks",
+                     "-Platform",
+                     env.wwise_cmd_platform]
 
     with p4_transaction(cl_name, submit_on_success = env.checkin) as trans:
         log_notification("Checking out banks...")
