@@ -25,8 +25,7 @@ def ps3_generate_pkgs(env, source, destination):
         pkg_destination = env.format(destination, pkg_dest = package['pkg_dest'])
         pkg_source      = env.format(os.path.join(source, package['source']))
         pkg_conf_file   = env.format(os.path.join(source, package['conf']))
-        if not os.path.exists(pkg_destination):
-            os.makedirs(pkg_destination)
+        safe_makedirs(pkg_destination)
         if 0 != call_process(pkg_destination, ["make_package_npdrm", pkg_conf_file, pkg_source]):
             log_error("Error running make_package_npdrm")
             return False

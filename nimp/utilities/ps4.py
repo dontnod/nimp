@@ -112,11 +112,10 @@ def ps4_generate_pkgs(env, loose_files_dir, dest_dir):
         if not check_keys(package, mandatory_keys_error_format, 'gp4_file', 'pkg_dest'):
             return False
 
-        gp4_file    = env.format(os.path.join(loose_files_dir, package['gp4_file']), **package)
-        pkg_file    = env.format(os.path.join(dest_dir, package['pkg_dest']), **package)
-        dest_dir    = os.path.dirname(pkg_file)
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
+        gp4_file = env.format(os.path.join(loose_files_dir, package['gp4_file']), **package)
+        pkg_file = env.format(os.path.join(dest_dir, package['pkg_dest']), **package)
+        dest_dir = os.path.dirname(pkg_file)
+        safe_makedirs(dest_dir)
 
         if call_process(dest_dir, ["orbis-pub-cmd.exe", "img_create", gp4_file, pkg_file]) != 0:
             return False

@@ -235,8 +235,7 @@ def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
     dll_source = os.path.join('Binaries/Editor', editor_config)
 
     try:
-        if not os.path.exists(dll_target):
-            os.makedirs(dll_target)
+        safe_makedirs(dll_target)
         shutil.copy(os.path.join(dll_source, 'DNEEdCSharp.dll'), dll_target)
         shutil.copy(os.path.join(dll_source, 'DNEEdCSharp.pdb'), dll_target)
         shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.dll'), dll_target)

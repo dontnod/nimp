@@ -98,12 +98,11 @@ def upload_microsoft_symbols(env, paths):
 def robocopy(source, destination, *args):
     """ 'Robust' copy. """
     log_verbose("{0} => {1}", source, destination)
-    if os.path.isdir(source) and not os.path.exists(destination):
-        os.makedirs(destination)
+    if os.path.isdir(source):
+        safe_makedirs(destination)
     elif os.path.isfile(source):
         dest_dir = os.path.dirname(destination)
-        if not os.path.exists(dest_dir):
-            os.makedirs(dest_dir)
+        safe_makedirs(dest_dir)
         try:
             if os.path.exists(destination):
                 os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
