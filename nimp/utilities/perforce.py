@@ -129,7 +129,7 @@ def p4_is_file_versioned(file_path):
     # Il faut checker que le fichier a pas été ajouté puis delete
     if re.search(r"\.\.\.\s*headAction\s*delete", output) is not None:
         return False
-    return not "no such file(s)" in error
+    return not "no such file(s)" in error and not "file(s) not in client" in error
 
 #-------------------------------------------------------------------------------
 def p4_reconcile(cl_number, path):
