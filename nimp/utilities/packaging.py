@@ -21,6 +21,9 @@ from nimp.utilities.ps4 import *
 
 #---------------------------------------------------------------------------
 def generate_pkg_config(env, loose_files_dir = None):
+    if(env.is_win32):
+        return True
+
     if not _load_package_config(env):
         return False
 
@@ -32,6 +35,9 @@ def generate_pkg_config(env, loose_files_dir = None):
 
 #---------------------------------------------------------------------------
 def make_packages(env, source = None, destination = None):
+    if(env.is_win32):
+        return True
+
     source = source or env.cis_ship_directory
     destination = destination or env.cis_pkgs_directory
 
