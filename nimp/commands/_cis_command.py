@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._command      import *
-from nimp.utilities.perforce     import *
+from nimp.commands._command import *
+from nimp.utilities.perforce import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
 FARM_P4_USER     = "CIS-CodeBuilder"

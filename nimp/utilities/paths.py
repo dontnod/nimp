@@ -7,7 +7,7 @@ import sys
 import fnmatch
 import glob
 
-from nimp.utilities.logging  import *
+from nimp.utilities.logging import *
 
 #-------------------------------------------------------------------------------
 def split_path(path):

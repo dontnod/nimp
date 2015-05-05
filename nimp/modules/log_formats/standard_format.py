@@ -4,9 +4,9 @@ import os
 import sys
 import shutil
 
-from nimp.modules.log_formats.format                 import *
-from nimp.modules.log_formats.standard_progress_bar  import *
-from nimp.utilities.logging                          import *
+from nimp.modules.log_formats.format import *
+from nimp.modules.log_formats.standard_progress_bar import *
+from nimp.utilities.logging import *
 
 #-------------------------------------------------------------------------------
 class StandardFormat(Format):
@@ -36,13 +36,13 @@ class StandardFormat(Format):
                        template            = DEFAULT_BAR_TEMPLATE,
                        width               = DEFAULT_BAR_WIDTH):
         assert(self._progress_bar is None)
-        self._progress_bar = StandardProgressBar(total                  = total,
-                                                 position_formatter     = position_formatter,
-                                                 speed_formatter        = speed_formatter,
-                                                 total_formatter        = total_formatter,
-                                                 step_name_formatter    = step_name_formatter,
-                                                 template               = template,
-                                                 width                  = width)
+        self._progress_bar = StandardProgressBar(total               = total,
+                                                 position_formatter  = position_formatter,
+                                                 speed_formatter     = speed_formatter,
+                                                 total_formatter     = total_formatter,
+                                                 step_name_formatter = step_name_formatter,
+                                                 template            = template,
+                                                 width               = width)
 
     #---------------------------------------------------------------------------
     def update_progress(self, value, step_name = None):

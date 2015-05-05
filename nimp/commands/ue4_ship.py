@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from nimp.commands._command import *
-from nimp.utilities.ue4     import *
+from nimp.utilities.ue4 import *
 
 #-------------------------------------------------------------------------------
 class Ue3ShipCommand(Command):

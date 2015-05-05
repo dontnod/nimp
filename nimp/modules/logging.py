@@ -5,11 +5,11 @@ import argparse
 
 import nimp.modules.log_formats
 
-from nimp.modules.logger                import *
-from nimp.modules.log_formats.format    import *
-from nimp.modules.module                import *
-from nimp.utilities.inspection          import *
-from nimp.utilities.logging             import *
+from nimp.modules.logger             import *
+from nimp.modules.log_formats.format import *
+from nimp.modules.module             import *
+from nimp.utilities.inspection       import *
+from nimp.utilities.logging          import *
 
 #-------------------------------------------------------------------------------
 class LoggingModule(Module):
@@ -44,8 +44,9 @@ class LoggingModule(Module):
     #---------------------------------------------------------------------------
     def load(self, env):
         global g_logger
-        format_name     = env.log_format
-        format          = self._formats[format_name]
-        logger          = Logger(format, env.verbose)
+        format_name = env.log_format
+        format = self._formats[format_name]
+        logger = Logger(format, env.verbose)
         set_logger(logger)
         return True
+

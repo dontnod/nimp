@@ -18,9 +18,9 @@ def get_local_module_dependencies(base_directory, module, modules_found = []):
         else:
             dependency = inspect.getmodule(attribute_value)
         if dependent_module is not None and hasattr(dependent_module, "__file__"):
-            module_path     = dependency.__file__
-            relative_path   = os.path.relpath(module_path, base_directory)
-            relative_path   = os.path.normpath(relative_path)
+            module_path   = dependency.__file__
+            relative_path = os.path.relpath(module_path, base_directory)
+            relative_path = os.path.normpath(relative_path)
             if(     relative_path[0] != '.'
                 and relative_path[1] != '.'
                 and relative_path not in modules_found):
@@ -47,18 +47,18 @@ def instanciate_types_suppress_doubles(module, type):
     result = {}
     module_dict = module.__dict__
     if "__all__" in module_dict:
-        module_name         = module_dict["__name__"]
-        sub_modules_names   = module_dict["__all__"]
+        module_name = module_dict["__name__"]
+        sub_modules_names = module_dict["__all__"]
         for sub_module_name_it in sub_modules_names:
             sub_module_complete_name = module_name + "." + sub_module_name_it
-            sub_module_it            = __import__(sub_module_complete_name, fromlist = ["*"])
-            sub_instances            = instanciate_types_suppress_doubles(sub_module_it, type)
+            sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
+            sub_instances = instanciate_types_suppress_doubles(sub_module_it, type)
             for (klass, instance) in sub_instances.items():
                 result[klass] = instance
 
 
     module_attributes = dir(module)
-    for attribute_name in  module_attributes:
+    for attribute_name in module_attributes:
         attribute_value = getattr(module, attribute_name)
         if attribute_value != type and inspect.isclass(attribute_value) and (not hasattr(attribute_value, 'abstract') or not getattr(attribute_value, 'abstract')) and issubclass(attribute_value, type):
             result[attribute_value.__name__] = attribute_value()

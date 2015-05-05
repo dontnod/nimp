@@ -9,8 +9,8 @@ import contextlib
 import shutil
 import os
 
-from nimp.utilities.build            import *
-from nimp.utilities.deployment       import *
+from nimp.utilities.build import *
+from nimp.utilities.deployment import *
 
 #-------------------------------------------------------------------------------
 def generate_toc(env, dlc):
@@ -18,7 +18,7 @@ def generate_toc(env, dlc):
         call_process(".", [ "Binaries/CookerSync.exe",
                             env.game,
                             "-p", env.ue3_cook_platform,
-                            "-x",  "Loc",
+                            "-x", "Loc",
                             "-r", language,
                             "-nd",
                             "-final",
@@ -27,7 +27,7 @@ def generate_toc(env, dlc):
     call_process(".", [ "Binaries/CookerSync.exe",
                         env.game,
                         "-p", env.ue3_cook_platform,
-                        "-x",  "ConsoleSyncProgrammer",
+                        "-x", "ConsoleSyncProgrammer",
                         "-r", "INT",
                         "-nd",
                         "-final",
@@ -54,7 +54,7 @@ def ue3_build(env):
 
         if env.is_x360:
             vs_version = "10"
-            solution   = "whatif_vs2010.sln"
+            solution = "whatif_vs2010.sln"
 
         return _ue3_build_game(solution, env.ue3_build_platform, configuration, vs_version)
 
@@ -193,7 +193,7 @@ def ue3_build_script(game):
 
 #---------------------------------------------------------------------------
 def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False, incremental = False):
-    commandlet_arguments =  [ map]
+    commandlet_arguments = [ map ]
 
     if not incremental:
         commandlet_arguments += ['-full']
@@ -279,13 +279,13 @@ def _ue3_generate_version_file():
 #---------------------------------------------------------------------------
 def _write_version_file(transaction, version_file_path, version_file_format):
     transaction.add(version_file_path)
-    machine_name           = socket.gethostname()
-    random_character       = random.choice(string.ascii_lowercase)
-    cl                     = p4_get_last_synced_changelist()
-    version_file_content   = version_file_format.format(random_character = random_character,
-                                                        machine_name     = machine_name,
-                                                        cl               = cl)
-    version_file_content   = time.strftime(version_file_content, time.gmtime())
+    machine_name = socket.gethostname()
+    random_character = random.choice(string.ascii_lowercase)
+    cl = p4_get_last_synced_changelist()
+    version_file_content = version_file_format.format(random_character = random_character,
+                                                      machine_name = machine_name,
+                                                      cl = cl)
+    version_file_content = time.strftime(version_file_content, time.gmtime())
 
     with open(version_file_path, "w") as version_file:
         version_file.write(version_file_content)

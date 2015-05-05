@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._cis_command      import *
-from nimp.utilities.ue4              import *
-from nimp.utilities.deployment       import *
-from nimp.utilities.packaging        import *
+from nimp.commands._cis_command import *
+from nimp.utilities.ue4         import *
+from nimp.utilities.deployment  import *
+from nimp.utilities.packaging   import *
 
 #-------------------------------------------------------------------------------
 class CisUe4Ship(CisCommand):

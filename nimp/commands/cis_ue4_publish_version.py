@@ -2,10 +2,10 @@
 
 import shutil
 
-from nimp.commands._cis_command      import *
-from nimp.utilities.ue4              import *
-from nimp.utilities.file_mapper      import *
-from nimp.utilities.deployment       import *
+from nimp.commands._cis_command import *
+from nimp.utilities.ue4         import *
+from nimp.utilities.file_mapper import *
+from nimp.utilities.deployment  import *
 
 #-------------------------------------------------------------------------------
 class CisUe4PublishVersion(CisCommand):

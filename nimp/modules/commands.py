@@ -30,6 +30,6 @@ class CommandsModule(Module):
         if not hasattr(env, 'command_to_run'):
             log_error("No command specified. Please try nimp -h to get a list of available commands")
             return False
-        command_to_run       = env.command_to_run
+        command_to_run = env.command_to_run
         return command_to_run.run(env)
 

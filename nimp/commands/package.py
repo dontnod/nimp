@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._command     import *
-from nimp.utilities.packaging   import *
+from nimp.commands._command import *
+from nimp.utilities.packaging import *
 
 #-------------------------------------------------------------------------------
 class PackageCommand(Command):

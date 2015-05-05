@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from nimp.modules.log_formats.format    import *
-from nimp.utilities.logging             import *
+from nimp.modules.log_formats.format import *
+from nimp.utilities.logging import *
 
 #-------------------------------------------------------------------------------
 class TeamcityFormat(Format):

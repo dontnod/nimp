@@ -3,9 +3,9 @@
 import os
 import  sys
 
-from nimp.modules.log_formats.format                 import *
-from nimp.modules.log_formats.standard_progress_bar  import *
-from nimp.utilities.logging                          import *
+from nimp.modules.log_formats.format import *
+from nimp.modules.log_formats.standard_progress_bar import *
+from nimp.utilities.logging import *
 
 #-------------------------------------------------------------------------------
 class RawFormat(Format):
@@ -32,8 +32,8 @@ class RawFormat(Format):
                        step_name_formatter = None,
                        template            = DEFAULT_BAR_TEMPLATE,
                        width               = DEFAULT_BAR_WIDTH):
-        self._total                 = total
-        self._step_name_formatter   = step_name_formatter
+        self._total = total
+        self._step_name_formatter = step_name_formatter
         pass
 
     #---------------------------------------------------------------------------
@@ -44,6 +44,6 @@ class RawFormat(Format):
 
     #---------------------------------------------------------------------------
     def end_progress(self):
-        self._total                 = 0
-        self._step_name_formatter   = None
+        self._total = 0
+        self._step_name_formatter = None
         return ""

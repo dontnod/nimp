@@ -13,7 +13,7 @@ import stat
 import re
 
 from nimp.utilities.logging import *
-from nimp.utilities.paths   import *
+from nimp.utilities.paths import *
 
 #-------------------------------------------------------------------------------
 def all_map(mapper, file_set):
@@ -33,9 +33,9 @@ class FileMapper(object):
     #---------------------------------------------------------------------------
     def __init__(self, mapper = _default_mapper, format_args = {}):
         super(FileMapper, self).__init__()
-        self._mapper        = mapper
-        self._next          = []
-        self._format_args   = format_args
+        self._mapper = mapper
+        self._next = []
+        self._format_args = format_args
 
     #---------------------------------------------------------------------------
     def __call__(self, *args):
@@ -57,14 +57,14 @@ class FileMapper(object):
                 glob_path = self._format(glob_path)
                 glob_path = os.path.join(src, glob_path)
                 for glob_source in glob2.glob(glob_path):
-                    glob_source     = str(glob_source)
+                    glob_source = str(glob_source)
                     # This is merely equivalent to os.path.relpath(source, self._source_path)
                     # excepted it will handle globs pattern in the base path.
-                    glob_source     = os.path.normpath(glob_source)
-                    destination     = split_path(glob_source)[source_path_len:]
-                    destination     = '/'.join(destination)
-                    destination     = os.path.join(dst, destination)
-                    destination     = os.path.normpath(destination)
+                    glob_source = os.path.normpath(glob_source)
+                    destination = split_path(glob_source)[source_path_len:]
+                    destination = '/'.join(destination)
+                    destination = os.path.join(dst, destination)
+                    destination = os.path.normpath(destination)
                     yield (glob_source, destination) + args
         return self.append(_glob_mapper)
 
@@ -84,9 +84,9 @@ class FileMapper(object):
                 file_sets_directory = self.file_sets_directory
             else:
                 file_sets_directory = ".nimp/file_sets"
-            file_name   = os.path.join(file_sets_directory, set_name + ".txt")
-            file_name   = self._format(file_name)
-        locals      = {}
+            file_name = os.path.join(file_sets_directory, set_name + ".txt")
+            file_name = self._format(file_name)
+        locals = {}
         try:
             conf = open(file_name, "rb").read()
         except Exception as exception:
@@ -176,8 +176,8 @@ class FileMapper(object):
             yield (source, destination) + args
             if os.path.isdir(source):
                 for file in os.listdir(source):
-                    child_source = os.path.normpath(os.path.join(source,  file))
-                    child_dest   = os.path.normpath(os.path.join(destination, file))
+                    child_source = os.path.normpath(os.path.join(source, file))
+                    child_dest = os.path.normpath(os.path.join(destination, file))
                     for child_source, child_destination in _recursive_mapper(child_source, child_dest):
                         yield (child_source, child_destination) + args
         return self.append(_recursive_mapper)
@@ -187,7 +187,7 @@ class FileMapper(object):
         """ Performs a re.sub on destination
         """
         pattern = self._format(pattern)
-        repl    = self._format(repl)
+        repl = self._format(repl)
         def _replace_mapper(source, destination, *args):
             destination = re.sub(pattern, repl, destination, flags = flags)
             yield (source, destination) + args

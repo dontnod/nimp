@@ -3,10 +3,10 @@
 import argparse
 import time
 
-from    nimp.modules.module          import *
+from nimp.modules.module import *
 
-from    nimp.utilities.logging       import *
-from    nimp.utilities.paths         import *
+from nimp.utilities.logging import *
+from nimp.utilities.paths import *
 
 #-------------------------------------------------------------------------------
 class ConfigurationModule(Module):
@@ -22,7 +22,7 @@ class ConfigurationModule(Module):
 
     #---------------------------------------------------------------------------
     def load(self, env):
-        parser      = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter)
+        parser = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter)
         return _load_settings(env) and _load_arguments(env, parser)
 
 #---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ def _load_config_dir(env, conf_dir):
             return False
 
 def _load_arguments(env, parser):
-    modules     = env.modules
+    modules = env.modules
 
     for module in modules:
         if hasattr(module, "configure_arguments"):
@@ -67,3 +67,4 @@ def _load_arguments(env, parser):
 
     env.standardize_names()
     return True
+

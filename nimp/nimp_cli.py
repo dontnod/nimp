@@ -9,9 +9,9 @@ import inspect
 import time
 
 from nimp import modules
-from nimp.modules.module       import *
+from nimp.modules.module import *
 from nimp.utilities.inspection import *
-from nimp.utilities.environment    import *
+from nimp.utilities.environment import *
 
 #-------------------------------------------------------------------------------
 def main():

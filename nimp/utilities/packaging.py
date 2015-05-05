@@ -15,9 +15,9 @@ import re
 import contextlib
 import pathlib
 
-from nimp.utilities.processes  import *
-from nimp.utilities.ps3        import *
-from nimp.utilities.ps4        import *
+from nimp.utilities.processes import *
+from nimp.utilities.ps3 import *
+from nimp.utilities.ps4 import *
 
 #---------------------------------------------------------------------------
 def generate_pkg_config(env, loose_files_dir = None):
@@ -32,8 +32,8 @@ def generate_pkg_config(env, loose_files_dir = None):
 
 #---------------------------------------------------------------------------
 def make_packages(env, source = None, destination = None):
-    source      = source or env.cis_ship_directory
-    destination = destination or  env.cis_pkgs_directory
+    source = source or env.cis_ship_directory
+    destination = destination or env.cis_pkgs_directory
 
     if not _load_package_config(env):
         return False

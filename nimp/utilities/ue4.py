@@ -15,7 +15,7 @@ from nimp.utilities.deployment import *
 #---------------------------------------------------------------------------
 def ue4_build(env):
     vs_version = '12'
-    vcxproj    = 'Engine/Intermediate/ProjectFiles/' + env.game + '.vcxproj'
+    vcxproj = 'Engine/Intermediate/ProjectFiles/' + env.game + '.vcxproj'
 
     if _ue4_generate_project() != 0:
         log_error("Error generating UE4 project files")

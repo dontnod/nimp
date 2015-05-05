@@ -2,12 +2,12 @@
 
 import os.path
 
-from    decimal import *
-import  tarfile
-import  zipfile
+from decimal import *
+import tarfile
+import zipfile
 
-from nimp.utilities.logging  import *
-from nimp.utilities.paths    import *
+from nimp.utilities.logging import *
+from nimp.utilities.paths import *
 
 #-------------------------------------------------------------------------------
 TAR_FILE = 1
@@ -21,9 +21,9 @@ MAXIMUM_STEP_NAME_WIDTH = 57
 def extract(archive_file_name, destination_directory, archive_type = None, before_decompress_file_callback = None):
     log_verbose("Determinating type of archive {0}", archive_file_name)
     if(archive_type is None):
-        first_extension             =  os.path.splitext(archive_file_name)[1]
+        first_extension =  os.path.splitext(archive_file_name)[1]
         file_name_without_extension = os.path.splitext(archive_file_name)[0]
-        second_extension            = os.path.splitext(file_name_without_extension)[1]
+        second_extension = os.path.splitext(file_name_without_extension)[1]
         if(first_extension == ".zip"):
             archive_type = ZIP_FILE
             log_verbose("Archive must be a zip")
@@ -49,8 +49,8 @@ def extract(archive_file_name, destination_directory, archive_type = None, befor
 def _decompress_tar(file_name, destination_directory, before_decompress_file_callback = None):
     log_verbose("Decompressing {0} in {1}", file_name, destination_directory)
     try:
-        tar_file    = tarfile.open(file_name)
-        file_names  = tar_file.getnames()
+        tar_file = tarfile.open(file_name)
+        file_names = tar_file.getnames()
         current_file = 0
 
         start_progress(len(file_names),
@@ -78,8 +78,8 @@ def _decompress_tar(file_name, destination_directory, before_decompress_file_cal
 def _decompress_zip(file_name, destination_directory, before_decompress_file_callback = None):
     log_verbose("Decompressing {0} in {1}", file_name, destination_directory)
     try:
-        zip_file    = zipfile.ZipFile(file_name, "r")
-        file_names  = zip_file.namelist()
+        zip_file = zipfile.ZipFile(file_name, "r")
+        file_names = zip_file.namelist()
         current_file = 0
 
         start_progress(len(file_names),
@@ -103,7 +103,7 @@ def _decompress_zip(file_name, destination_directory, before_decompress_file_cal
 
 #-------------------------------------------------------------------------------
 def _extract_file(archive, destination_directory, file_name, file_index, before_decompress_file_callback = None):
-    step_name      = file_name
+    step_name = file_name
     step_name_size = len(step_name)
 
     if step_name_size > MAXIMUM_STEP_NAME_WIDTH:

@@ -5,10 +5,10 @@ DEFAULT_BAR_TEMPLATE = "{label}[{filled_chars}{empty_chars}] {position}/{total} 
 DEFAULT_BAR_WIDTH    = 15
 
 #-------------------------------------------------------------------------------
-LOG_LEVEL_VERBOSE       = 1
-LOG_LEVEL_NOTIFICATION  = 2
-LOG_LEVEL_WARNING       = 3
-LOG_LEVEL_ERROR         = 4
+LOG_LEVEL_VERBOSE      = 1
+LOG_LEVEL_NOTIFICATION = 2
+LOG_LEVEL_WARNING      = 3
+LOG_LEVEL_ERROR        = 4
 
 #-------------------------------------------------------------------------------
 g_logger = None

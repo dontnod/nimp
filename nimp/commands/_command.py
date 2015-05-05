@@ -10,9 +10,9 @@ class Command:
                  name,
                  help,
                  dependencies = []):
-        self._name          = name
-        self._help          = help
-        self._dependencies  = dependencies
+        self._name = name
+        self._help = help
+        self._dependencies = dependencies
 
     #---------------------------------------------------------------------------
     def name(self):
@@ -40,12 +40,12 @@ class Command:
 
     #---------------------------------------------------------------------------
     def _run_sub_command(self, env, command, arguments = []):
-        new_context     = copy.copy(env)
-        parser          = argparse.ArgumentParser()
+        new_context = copy.copy(env)
+        parser = argparse.ArgumentParser()
 
         command.configure_arguments(env, parser)
 
-        (parsed_arguments, unknown_args)   = parser.parse_known_args(arguments)
+        (parsed_arguments, unknown_args) = parser.parse_known_args(arguments)
 
         setattr(new_context, 'arguments', parsed_arguments)
         setattr(parsed_arguments, "unknown_args", unknown_args)

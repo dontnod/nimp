@@ -8,7 +8,7 @@ class Logger:
     def __init__(self, format, verbose):
         self._stdout = codecs.getwriter('cp437')(sys.stdout)
         self._stderr = codecs.getwriter('cp437')(sys.stderr)
-        self._format  = format
+        self._format = format
         self._verbose = verbose
 
     #---------------------------------------------------------------------------

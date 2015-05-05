@@ -42,7 +42,7 @@ class MapCommand(Command):
             setattr(env, key_value[0], key_value[1])
         env.standardize_names()
 
-        files       = FileMapper(format_args = vars(env))
+        files = FileMapper(format_args = vars(env))
         files_chain = files
         if env.src is not None:
             files_chain = files_chain.src(env.src)

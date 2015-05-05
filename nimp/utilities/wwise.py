@@ -3,10 +3,10 @@
 import os.path
 import shutil
 
-from nimp.utilities.perforce    import *
-from nimp.utilities.processes   import *
+from nimp.utilities.perforce import *
+from nimp.utilities.processes import *
 from nimp.utilities.file_mapper import *
-from nimp.utilities.deployment  import *
+from nimp.utilities.deployment import *
 
 #---------------------------------------------------------------------------
 def build_wwise_banks(env):
@@ -14,7 +14,7 @@ def build_wwise_banks(env):
         defined on env :
         platform            : The platform to build banks for.
         wwise_banks_path    : Relative path to the directory to checkout and
-                              eventually  submit (*.bnk files directory).
+                              eventually submit (*.bnk files directory).
         wwise_project       : Relative path of the Wwise project to build.
         checkin             : True to commit built banks, False otherwise."""
     platform         = env.platform

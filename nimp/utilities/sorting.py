@@ -6,12 +6,12 @@ from nimp.utilities.logging import *
 
 #-------------------------------------------------------------------------------
 def topological_sort(node_list):
-    all_nodes  = _get_nodes_dictionary(node_list)
+    all_nodes = _get_nodes_dictionary(node_list)
     if all_nodes is None:
         return None
 
-    nodes_to_sort       = all_nodes.copy()
-    sorted_nodes_names  = []
+    nodes_to_sort = all_nodes.copy()
+    sorted_nodes_names = []
 
     while len(nodes_to_sort) > 0:
         (node_name, node) = nodes_to_sort.popitem()

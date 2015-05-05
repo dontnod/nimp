@@ -72,13 +72,13 @@ def call_process(directory, command, log_callback = _default_log_callback):
         while process.poll() == None:
             try:
                 for line in iter(pipe.readline, ''):
-                    line  = line.decode("cp850")
+                    line = line.decode("cp850")
 
                     if line == '':
                         break
 
-                    line  = line.replace("{", "{{").replace("}", "}}")
-                    line  = line.rstrip('\r\n')
+                    line = line.replace("{", "{{").replace("}", "}}")
+                    line = line.rstrip('\r\n')
 
                     log_callback(line, log_function)
             except ValueError:
@@ -89,7 +89,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
     if os.name is "nt":
         log_thread_args += [(log_verbose, ods_logger.output)]
 
-    log_threads     = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
+    log_threads = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
 
     for thread in log_threads:
         thread.start()

@@ -10,7 +10,7 @@ import time
 import tempfile
 
 from nimp.utilities.processes import *
-from nimp.utilities.paths     import *
+from nimp.utilities.paths import *
 
 
 CREATE_CHANGELIST_FORM_TEMPLATE = "\
@@ -105,9 +105,9 @@ def p4_get_or_create_changelist(description):
             return cl_number
 
     user = p4_get_user()
-    change_list_form = CREATE_CHANGELIST_FORM_TEMPLATE.format(user          = user,
-                                                              workspace     = p4_get_workspace(),
-                                                              description   = description)
+    change_list_form = CREATE_CHANGELIST_FORM_TEMPLATE.format(user        = user,
+                                                              workspace   = p4_get_workspace(),
+                                                              description = description)
 
     return _p4_parse_command_output(".", ["p4", "-z", "tag","change", "-i"], r"Change (\d+) created\.", change_list_form)
 
@@ -173,13 +173,13 @@ class _PerforceTransaction:
                  submit_on_success          = False,
                  revert_unchanged           = True,
                  add_not_versioned_files    = True):
-        self._change_list_description   = change_list_description
-        self._success                   = True
-        self._cl_number                 = None
-        self._submit_on_success         = submit_on_success
-        self._revert_unchanged          = revert_unchanged
-        self._add_not_versioned_files   = add_not_versioned_files
-        self._paths                     = []
+        self._change_list_description = change_list_description
+        self._success                 = True
+        self._cl_number               = None
+        self._submit_on_success       = submit_on_success
+        self._revert_unchanged        = revert_unchanged
+        self._add_not_versioned_files = add_not_versioned_files
+        self._paths                   = []
 
     #---------------------------------------------------------------------------
     def __enter__(self):

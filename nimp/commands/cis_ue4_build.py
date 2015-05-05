@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._cis_command     import *
-from nimp.utilities.ue4             import *
-from nimp.utilities.deployment      import *
-from nimp.utilities.file_mapper     import *
+from nimp.commands._cis_command import *
+from nimp.utilities.ue4         import *
+from nimp.utilities.deployment  import *
+from nimp.utilities.file_mapper import *
 
 FARM_P4_PORT     = "192.168.1.2:1666"
 FARM_P4_USER     = "CIS-CodeBuilder"

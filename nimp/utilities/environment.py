@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from nimp.utilities.logging     import *
+from nimp.utilities.logging import *
 from nimp.utilities.file_mapper import *
 
 #-------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ class Environment:
         class Settings:
             pass
 
-        settings         = Settings()
+        settings = Settings()
         settings_content = _read_config_file(filename)
 
         if(settings_content is None):
@@ -47,18 +47,18 @@ class Environment:
 
     def standardize_names(self):
         if hasattr(self, "platform"):
-            std_platforms = {"ps4"       : "PS4",
-                             "orbis"     : "PS4",
-                             "xboxone"   : "XboxOne",
-                             "dingo"     : "XboxOne",
-                             "win32"     : "Win32",
-                             "pcconsole" : "Win32",
-                             "win64"     : "Win64",
-                             "pc"        : "Win64",
-                             "windows"   : "Win64",
-                             "xbox360"   : "XBox360",
-                             "x360"      : "XBox360",
-                             "ps3"       : "PS3" }
+            std_platforms = { "ps4"       : "PS4",
+                              "orbis"     : "PS4",
+                              "xboxone"   : "XboxOne",
+                              "dingo"     : "XboxOne",
+                              "win32"     : "Win32",
+                              "pcconsole" : "Win32",
+                              "win64"     : "Win64",
+                              "pc"        : "Win64",
+                              "windows"   : "Win64",
+                              "xbox360"   : "XBox360",
+                              "x360"      : "XBox360",
+                              "ps3"       : "PS3" }
 
             self.platform = std_platforms[self.platform.lower()]
 
@@ -69,47 +69,45 @@ class Environment:
             self.is_x360  = self.platform == "XBox360"
             self.is_xone  = self.platform == "XboxOne"
 
-            self.is_microsoft_platform  = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
-            self.is_sony_platform       = self.is_ps3 or self.is_ps4
+            self.is_microsoft_platform = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
+            self.is_sony_platform      = self.is_ps3 or self.is_ps4
 
-            ue3_build_platforms = {"PS4"       : "ORBIS",
-                                   "XboxOne"   : "Dingo",
-                                   "Win64"     : "Win64",
-                                   "Win32"     : "Win32",
-                                   "XBox360"   : "Xbox360",
-                                   "PS3"       : "PS3" }
+            ue3_build_platforms = { "PS4"     : "ORBIS",
+                                    "XboxOne" : "Dingo",
+                                    "Win64"   : "Win64",
+                                    "Win32"   : "Win32",
+                                    "XBox360" : "Xbox360",
+                                    "PS3"     : "PS3" }
 
-            ue3_cook_platforms = { "PS4"       : "ORBIS",
-                                   "XboxOne"   : "Dingo",
-                                   "Win64"     : "PC",
-                                   "Win32"     : "PCConsole",
-                                   "XBox360"   : "Xbox360",
-                                   "PS3"       : "PS3" }
+            ue3_cook_platforms = { "PS4"     : "ORBIS",
+                                   "XboxOne" : "Dingo",
+                                   "Win64"   : "PC",
+                                   "Win32"   : "PCConsole",
+                                   "XBox360" : "Xbox360",
+                                   "PS3"     : "PS3" }
 
-
-            self.ue3_cook_platform  = ue3_cook_platforms[self.platform]
+            self.ue3_cook_platform = ue3_cook_platforms[self.platform]
             self.ue3_build_platform = ue3_build_platforms[self.platform]
 
 
-            ue4_build_platforms = {"PS4"       : "PS4",
-                                   "XboxOne"   : "XboxOne",
-                                   "Win64"     : "Win64",
-                                   "Win32"     : "Win32",
-                                   "XBox360"   : "Xbox360",
-                                   "PS3"       : "PS3" }
+            ue4_build_platforms = { "PS4"     : "PS4",
+                                    "XboxOne" : "XboxOne",
+                                    "Win64"   : "Win64",
+                                    "Win32"   : "Win32",
+                                    "XBox360" : "Xbox360",
+                                    "PS3"     : "PS3" }
 
-            ue4_cook_platforms = { "PS4"       : "ORBIS",
-                                   "XboxOne"   : "XboxOne",
-                                   "Win64"     : "PC",
-                                   "Win32"     : "PCConsole",
-                                   "XBox360"   : "Xbox360",
-                                   "PS3"       : "PS3" }
+            ue4_cook_platforms = { "PS4"     : "ORBIS",
+                                   "XboxOne" : "XboxOne",
+                                   "Win64"   : "PC",
+                                   "Win32"   : "PCConsole",
+                                   "XBox360" : "Xbox360",
+                                   "PS3"     : "PS3" }
 
-
-            self.ue4_cook_platform  = ue4_cook_platforms[self.platform]
+            self.ue4_cook_platform = ue4_cook_platforms[self.platform]
             self.ue4_build_platform = ue4_build_platforms[self.platform]
 
-            if  hasattr(self, 'dlc'):
+            if hasattr(self, 'dlc'):
                 if self.dlc is None:
                     self.dlc = self.project
 
@@ -119,21 +117,22 @@ class Environment:
 
             self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, suffix)
 
-            banks_platforms = { "Win32"         : "PC",
-                                "Win64"         : "PC",
-                                "XBox360"       : "X360",
-                                "XboxOne"       : "XboxOne",
-                                "PS3"           : "PS3",
-                                "PS4"           : "PS4" }
+            banks_platforms = { "Win32"   : "PC",
+                                "Win64"   : "PC",
+                                "XBox360" : "X360",
+                                "XboxOne" : "XboxOne",
+                                "PS3"     : "PS3",
+                                "PS4"     : "PS4" }
 
-            cmd_platforms = { "Win32"         : "Windows",
-                              "Win64"         : "Windows",
-                              "XBox360"       : "XBox360",
-                              "XboxOne"       : "XboxOne",
-                              "PS3"           : "PS3",
-                              "PS4"           : "PS4"}
-            self.wwise_banks_platform  = banks_platforms[self.platform]
-            self.wwise_cmd_platform    = cmd_platforms[self.platform]
+            cmd_platforms = { "Win32"   : "Windows",
+                              "Win64"   : "Windows",
+                              "XBox360" : "XBox360",
+                              "XboxOne" : "XboxOne",
+                              "PS3"     : "PS3",
+                              "PS4"     : "PS4" }
+
+            self.wwise_banks_platform = banks_platforms[self.platform]
+            self.wwise_cmd_platform = cmd_platforms[self.platform]
 
 #---------------------------------------------------------------------------
 def check_keys(dict, error_format, *args):

@@ -10,9 +10,9 @@ import shutil
 import os
 import os.path
 
-from nimp.utilities.environment      import *
-from nimp.utilities.build        import *
-from nimp.utilities.deployment   import *
+from nimp.utilities.environment import *
+from nimp.utilities.build import *
+from nimp.utilities.deployment import *
 
 def generate_gp4(env, dest_dir):
     packages_config = env.packages_config
@@ -93,7 +93,7 @@ def generate_gp4(env, dest_dir):
         for source, destination in pkg_files():
             log_notification("{0}   {1}", source, destination)
             destination = destination.replace('\\', '/')
-            if call_process('.', ['orbis-pub-cmd.exe',  'gp4_file_add', source, destination, gp4_file]) != 0:
+            if call_process('.', ['orbis-pub-cmd.exe', 'gp4_file_add', source, destination, gp4_file]) != 0:
                 return False
 
     return True

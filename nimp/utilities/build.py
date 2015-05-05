@@ -12,7 +12,7 @@ def vsbuild(solution, platform, configuration, project = None, vs_version = '12'
         return False
 
     command = [devenv_path, solution]
-    command = command + [ '/' + target,  configuration + '|' + platform ]
+    command = command + [ '/' + target, configuration + '|' + platform ]
     if project is not None:
         command = command + [ '/project', project ]
 
@@ -20,10 +20,11 @@ def vsbuild(solution, platform, configuration, project = None, vs_version = '12'
 
 #-------------------------------------------------------------------------------
 def _find_devenv_path(vs_version):
-    devenv_path     = None
-    vstools_path    = os.getenv('VS' + vs_version + '0COMNTOOLS')
+    devenv_path = None
+    vstools_path = os.getenv('VS' + vs_version + '0COMNTOOLS')
     if vstools_path is not None:
         devenv_path = os.path.join(vstools_path, '../../Common7/IDE/devenv.com')
         if os.path.exists(devenv_path):
             log_verbose('Found Visual Studio at {0}', devenv_path)
     return devenv_path
+
