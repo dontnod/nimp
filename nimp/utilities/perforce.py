@@ -28,11 +28,7 @@ def p4_add(cl_number, path):
 #-------------------------------------------------------------------------------
 def p4_clean_workspace():
     result = True
-    # On ignore le retour de cette commande, parce qu'elle peut potentiellement
-    # foirer si des fichiers on été addés puis revert, et j'ai pas trouvé de
-    # solution simple pour y remédier avec cette daube de P4.
-    _p4_run_command(".", ["p4", "-z", "tag", "revert", "//..."]) is not None
-
+    _p4_run_command(".", ["p4", "-z", "tag", "revert", "//..."])
     pending_changelists = p4_get_pending_changelists()
 
     for cl_number in pending_changelists:
