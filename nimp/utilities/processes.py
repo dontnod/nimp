@@ -52,12 +52,13 @@ def capture_process_output(directory, command, input = None):
 
 #-------------------------------------------------------------------------------
 def call_process(directory, command, log_callback = _default_log_callback):
+    command = _sanitize_command(command)
     log_verbose("Running {0} in directory {1}", command, directory)
 
     if os.name is "nt":
         ods_logger = OutputDebugStringLogger()
 
-    process = subprocess.Popen(_sanitize_command(command),
+    process = subprocess.Popen(command,
                                cwd     = directory,
                                stdout  = subprocess.PIPE,
                                stderr  = subprocess.PIPE,

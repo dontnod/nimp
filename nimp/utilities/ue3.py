@@ -177,8 +177,7 @@ def _generate_ps3_binaries(env):
 #---------------------------------------------------------------------------
 def ue3_commandlet(game, name, args):
     game_directory = os.path.join('Binaries', 'Win64')
-    game_path = os.path.join(game_directory, game + '.exe')
-    game_path = os.path.abspath(game_path)
+    game_path = os.path.join(game + '.exe')
     if not os.path.exists(game_path):
         log_error('Unable to find game executable at {0}', game_path)
         return False

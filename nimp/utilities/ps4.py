@@ -99,7 +99,7 @@ def generate_gp4(env, dest_dir):
     return True
 
 #-------------------------------------------------------------------------------
-def ps4_generate_pkgs(env, loose_files_dir, dest_dir):
+def ps4_generate_pkgs(env, loose_files_dir, destination):
     packages_config = env.packages_config
 
     if hasattr(packages_config, "__call__"):
@@ -113,7 +113,7 @@ def ps4_generate_pkgs(env, loose_files_dir, dest_dir):
             return False
 
         gp4_file = env.format(os.path.join(loose_files_dir, package['gp4_file']), **package)
-        pkg_file = env.format(os.path.join(dest_dir, package['pkg_dest']), **package)
+        pkg_file = env.format(os.path.join(destination, package['pkg_dest']), **package)
         dest_dir = os.path.dirname(pkg_file)
         safe_makedirs(dest_dir)
 
