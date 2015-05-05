@@ -24,13 +24,7 @@ def _sanitize_command(command):
     # will be treated as a path, so we need to escape them, except if the given
     # argument is indeed a file
     if os.environ.get('MSYSTEM') == 'MSYS':
-        sanitized_command = []
-        for x in command:
-            if os.path.isfile(x):
-                sanitized_command += [x]
-            else:
-                sanitized_command += [re.sub('^/', '//', x)]
-        return sanitized_command
+        return [re.sub('^/', '//', x) for x in command]
 
     return command
 
