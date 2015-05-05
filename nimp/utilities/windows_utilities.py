@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 
+ODS_ENABLED = True
+
 import os
-import winreg;
 import sys
-import win32event
 import threading
 import struct
 import mmap
+
+try:
+    import win32event
+    import winreg;
+except:
+    ODS_ENABLED = False
 
 #-------------------------------------------------------------------------------
 class OutputDebugStringLogger(threading.Thread):

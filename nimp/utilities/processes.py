@@ -10,9 +10,7 @@ import tempfile
 import platform
 
 from nimp.utilities.logging import *
-
-if os.name is "nt":
-    from nimp.utilities.windows_utilities import *
+from nimp.utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
 def _default_log_callback(line, default_log_function):
@@ -49,7 +47,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
     command = _sanitize_command(command)
     log_verbose("Running {0} in directory {1}", command, directory)
 
-    if os.name is "nt":
+    if ODS_ENABLED:
         ods_logger = OutputDebugStringLogger()
 
     process = subprocess.Popen(command,
@@ -58,7 +56,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
                                stderr  = subprocess.PIPE,
                                stdin   = None,
                                bufsize = 0)
-    if os.name is "nt":
+    if ODS_ENABLED:
         ods_logger.attach(process.pid)
         ods_logger.start()
 
@@ -81,7 +79,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
     log_thread_args = [ (log_verbose, process.stdout), (log_error, process.stderr) ]
 
-    if os.name is "nt":
+    if ODS_ENABLED:
         log_thread_args += [(log_verbose, ods_logger.output)]
 
     log_threads = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
@@ -91,7 +89,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
     process_return = process.wait()
 
-    if os.name == "nt":
+    if ODS_ENABLED:
         ods_logger.stop()
 
     for thread in log_threads:
