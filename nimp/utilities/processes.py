@@ -20,10 +20,6 @@ def _default_log_callback(line, default_log_function):
 
 #-------------------------------------------------------------------------------
 def _sanitize_command(command):
-    # Perforce paths should be immune
-    if command[0].lower() in ['p4', 'p4.exe']:
-        return command
-
     # If we’re running under MSYS, leading slashes in command line arguments
     # will be treated as a path, so we need to escape them, except if the given
     # argument is indeed a file
