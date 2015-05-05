@@ -23,9 +23,16 @@ def build_wwise_banks(env):
     cl_name          = "[CIS] Updated {0} Wwise Banks from CL {1}".format(platform, p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring/x64/Release/bin/WWiseCLI.exe")
 
-    # WwiseCLI doesn’t handle Unix path separators properly
+    # WWiseCLI doesn’t handle Unix path separators properly
     if os.environ.get('MSYSTEM') == 'MSYS':
         wwise_project = wwise_project.replace('/', '\\')
+
+    # One of the WWise tools doesn’t like duplicate environment variables;
+    # we remove any uppercase version we find. The loop is O(n²) but we
+    # don’t have that many entries so it’s all right.
+    env_vars = [x.upper() for x in os.environ.keys()]
+    for dupe in set([x for x in env_vars if env_vars.count(x) > 1])]:
+        del os.environ[dupe]
 
     wwise_command = [wwise_cli_path,
                      wwise_project,
