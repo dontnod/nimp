@@ -19,7 +19,7 @@ def _default_log_callback(line, default_log_function):
 #-------------------------------------------------------------------------------
 def _wrap_command(command):
     # Use nimp-run to catch OutputDebugString messages
-    command = ['nimp-run'] + command
+    return ['nimp-run'] + command
 
 #-------------------------------------------------------------------------------
 def _sanitize_command(command):
