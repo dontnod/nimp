@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <unistd.h>
 
-int main(int argc, char *argv[])
+int main(int argc, char *argv[], char *envp[])
 {
     if (argc < 2)
     {
@@ -34,6 +34,10 @@ int main(int argc, char *argv[])
     getcwd(cwd, MAX_PATH);
 
     printf("nimp-run: executing %s [in %s]\n", argv[1], arglist.c_str(), cwd);
+
+    printf("nimp-run: environment:\n");
+    for (char * const *env = envp; *env != nullptr; env++)
+        printf("%s\n", *env);
 
     PROCESS_INFORMATION pi = { 0 };
     STARTUPINFO si = { 0 };
