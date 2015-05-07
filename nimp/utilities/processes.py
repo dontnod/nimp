@@ -17,10 +17,12 @@ def _default_log_callback(line, default_log_function):
     default_log_function(line)
 
 #-------------------------------------------------------------------------------
-def _sanitize_command(command):
+def _wrap_command(command):
     # Use nimp-run to catch OutputDebugString messages
     command = ['nimp-run'] + command
 
+#-------------------------------------------------------------------------------
+def _sanitize_command(command):
     # If we’re running under MSYS, leading slashes in command line arguments
     # will be treated as a path, so we need to escape them, except if the given
     # argument is indeed a file
@@ -49,6 +51,7 @@ def capture_process_output(directory, command, input = None):
 
 #-------------------------------------------------------------------------------
 def call_process(directory, command, log_callback = _default_log_callback):
+    command = _wrap_command(command)
     command = _sanitize_command(command)
     log_verbose("Running {0} in directory {1}", command, directory)
 
