@@ -58,8 +58,7 @@ def generate_gp4(env, dest_dir):
                 create_gp4_command += ["--patch_type", package['patch_type'] ]
 
         if volume_type == 'pkg_ps4_ac_data' or volume_type == 'pkg_ps4_ac_nodata':
-            if not check_keys(package, mandatory_keys_error_format, 'entitlement_key'):
-                return False
+            if 'entitlement_key' in package:
                 create_gp4_command += ["--entitlement_key", package['entitlement_key'] ]
 
         create_gp4_command += [gp4_file]
@@ -115,6 +114,7 @@ def ps4_generate_pkgs(env, loose_files_dir, destination):
         gp4_file = env.format(os.path.join(loose_files_dir, package['gp4_file']), **package)
         pkg_file = env.format(os.path.join(destination, package['pkg_dest']), **package)
         dest_dir = os.path.dirname(pkg_file)
+        print(dest_dir)
         safe_makedirs(dest_dir)
 
         if call_process(dest_dir, ["orbis-pub-cmd.exe", "img_create", gp4_file, pkg_file]) != 0:
