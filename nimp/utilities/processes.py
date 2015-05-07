@@ -18,6 +18,9 @@ def _default_log_callback(line, default_log_function):
 
 #-------------------------------------------------------------------------------
 def _sanitize_command(command):
+    # Use nimp-run to catch OutputDebugString messages
+    command = ['nimp-run'] + command
+
     # If we’re running under MSYS, leading slashes in command line arguments
     # will be treated as a path, so we need to escape them, except if the given
     # argument is indeed a file
@@ -28,8 +31,9 @@ def _sanitize_command(command):
 
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None):
+    command = _sanitize_command(command)
 
-    process = subprocess.Popen(_sanitize_command(command),
+    process = subprocess.Popen(command,
                                cwd    = directory,
                                stdout = subprocess.PIPE,
                                stderr = subprocess.PIPE,
@@ -47,18 +51,12 @@ def call_process(directory, command, log_callback = _default_log_callback):
     command = _sanitize_command(command)
     log_verbose("Running {0} in directory {1}", command, directory)
 
-    if ODS_ENABLED:
-        ods_logger = OutputDebugStringLogger()
-
     process = subprocess.Popen(command,
                                cwd     = directory,
                                stdout  = subprocess.PIPE,
                                stderr  = subprocess.PIPE,
                                stdin   = None,
                                bufsize = 0)
-    if ODS_ENABLED:
-        ods_logger.attach(process.pid)
-        ods_logger.start()
 
     def log_output(log_function, pipe):
         output_buffer = ""
@@ -79,18 +77,12 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
     log_thread_args = [ (log_verbose, process.stdout), (log_error, process.stderr) ]
 
-    if ODS_ENABLED:
-        log_thread_args += [(log_verbose, ods_logger.output)]
-
     log_threads = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
 
     for thread in log_threads:
         thread.start()
 
     process_return = process.wait()
-
-    if ODS_ENABLED:
-        ods_logger.stop()
 
     for thread in log_threads:
         thread.join()
