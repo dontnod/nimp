@@ -11,7 +11,7 @@ int main(int argc, char *argv[], char *envp[])
 {
     if (argc < 2)
     {
-        printf("nimp-run: too few arguments.\n");
+        fprintf(stderr, "nimp-run: too few arguments.\n");
         return EXIT_FAILURE;
     }
 
@@ -33,11 +33,12 @@ int main(int argc, char *argv[], char *envp[])
     char cwd[MAX_PATH] = { 0 };
     getcwd(cwd, MAX_PATH);
 
-    printf("nimp-run: executing %s [in %s]\n", argv[1], arglist.c_str(), cwd);
+    fprintf(stderr, "nimp-run: executing %s [in %s]\n",
+            argv[1], arglist.c_str(), cwd);
 
-    printf("nimp-run: environment:\n");
+    fprintf(stderr, "nimp-run: environment:\n");
     for (char * const *env = envp; *env != nullptr; env++)
-        printf("%s\n", *env);
+        fprintf(stderr, "%s\n", *env);
 
     PROCESS_INFORMATION pi = { 0 };
     STARTUPINFO si = { 0 };
@@ -45,7 +46,8 @@ int main(int argc, char *argv[], char *envp[])
                        FALSE, DEBUG_ONLY_THIS_PROCESS,
                        nullptr, nullptr, &si, &pi))
     {
-        printf("nimp-run: cannot CreateProcess(%s): 0x%l08x\n", argv[1], GetLastError());
+        fprintf(stderr, "nimp-run: cannot CreateProcess(%s): 0x%l08x\n",
+                argv[1], GetLastError());
         return EXIT_FAILURE;
     }
 
@@ -60,7 +62,8 @@ int main(int argc, char *argv[], char *envp[])
 
         if (!WaitForDebugEvent(&de, INFINITE))
         {
-            printf("nimp-run: cannot WaitForDebugEvent(): 0x%l08x\n", GetLastError());
+            fprintf(stderr, "nimp-run: cannot WaitForDebugEvent(): 0x%l08x\n",
+                    GetLastError());
             return EXIT_FAILURE;
         }
 
@@ -92,7 +95,7 @@ int main(int argc, char *argv[], char *envp[])
     DWORD exit_code;
     GetExitCodeProcess(pi.hProcess, &exit_code);
 
-    printf("nimp-run: process exited with status %d (0x%08x)\n",
+    fprintf(stderr, "nimp-run: process exited with status %d (0x%08x)\n",
            (int)exit_code, (int)exit_code);
 
     CloseHandle(pi.hProcess);
