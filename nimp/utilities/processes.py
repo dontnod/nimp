@@ -32,6 +32,7 @@ def _sanitize_command(command):
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None):
     command = _sanitize_command(command)
+    log_verbose("Running {0} in directory {1}", command, directory)
 
     process = subprocess.Popen(command,
                                cwd    = directory,
