@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
     PROCESS_INFORMATION pi = { 0 };
     STARTUPINFO si = { 0 };
-    if (!CreateProcess(argv[1], &arglist[0], nullptr, nullptr,
+    if (!CreateProcess(nullptr, &arglist[0], nullptr, nullptr,
                        FALSE, DEBUG_ONLY_THIS_PROCESS,
                        nullptr, nullptr, &si, &pi))
     {
