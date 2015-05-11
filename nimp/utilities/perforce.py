@@ -40,8 +40,7 @@ def p4_clean_workspace():
 #-------------------------------------------------------------------------------
 def p4_create_config_file(port, user, password, client):
     log_notification("Creating .p4config file")
-    p4_config_template =
-"""
+    p4_config_template = """
 P4USER={user}
 P4PORT={port}
 P4PASSWD={password}
