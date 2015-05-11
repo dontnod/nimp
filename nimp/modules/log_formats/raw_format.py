@@ -40,7 +40,7 @@ class RawFormat(Format):
     def update_progress(self, value, step_name = None):
         formatter = self._step_name_formatter
         step_name = step_name if formatter is None else formatter(step_name)
-        log_verbose("{0}/{1} : {2}", value, self._total, step_name)
+        log_verbose("[nimp] {0}/{1}: {2}", value, self._total, step_name)
 
     #---------------------------------------------------------------------------
     def end_progress(self):

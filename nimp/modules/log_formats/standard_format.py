@@ -21,9 +21,9 @@ class StandardFormat(Format):
         if log_level == LOG_LEVEL_NOTIFICATION or log_level == LOG_LEVEL_VERBOSE:
             result = message_format.format(*args)
         elif log_level == LOG_LEVEL_WARNING:
-            result = "[ WARNING ] : " + message_format.format(*args)
+            result = "[ WARNING ] " + message_format.format(*args)
         else:
-            result = "[  ERROR  ] : " + message_format.format(*args)
+            result = "[  ERROR  ] " + message_format.format(*args)
         return result + "\n"
 
     #---------------------------------------------------------------------------

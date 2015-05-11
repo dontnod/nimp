@@ -20,7 +20,7 @@ def main():
         module_instances = get_dependency_sorted_instances(modules, Module)
 
         if(module_instances is None):
-            log_error("Unable to satisfy modules dependencies.")
+            log_error("[nimp] Unable to satisfy modules dependencies.")
             return 1
 
         env = Environment()
@@ -32,7 +32,7 @@ def main():
                 break
 
     except KeyboardInterrupt:
-        log_notification("Interrompu. Zy av, t'es un ouf toi")
+        log_notification("[nimp] Interrompu. Zy av, t'es un ouf toi")
         return 1
     except SystemExit:
         return 1

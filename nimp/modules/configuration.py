@@ -34,11 +34,11 @@ def _load_settings(env):
         os.chdir("..")
 
     if not os.path.isfile(".nimp.conf"):
-        log_error("Unable to find a .nimp.conf config file in current or parents directories.")
+        log_error("[nimp] Unable to find a .nimp.conf config file in current or parents directories.")
         return False
 
     if not env.load_config_file(".nimp.conf"):
-        log_error("Error loading .nimp.conf.")
+        log_error("[nimp] Error loading .nimp.conf.")
         return False
 
     return True

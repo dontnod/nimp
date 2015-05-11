@@ -43,7 +43,7 @@ class CisUe3Ship(CisCommand):
             if env.dlc != env.project:
                 master_files = env.map_files()
                 master_files.override(dlc = env.project).src(env.cis_cooks_directory).recursive().files()
-                log_notification("***** Deploying episode01 cook...")
+                log_notification("[nimp] Deploying episode01 cook…")
                 if not all_map(robocopy, master_files()):
                     return False
 

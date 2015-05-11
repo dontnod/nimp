@@ -38,7 +38,7 @@ class CisUe4BuildCommand(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, env):
-        log_notification(" ****** Building game...")
+        log_notification("[nimp] Building game…")
         env.generate_version_file = True
 
         with p4_transaction("Binaries checkout",
@@ -48,19 +48,19 @@ class CisUe4BuildCommand(CisCommand):
             files_to_checkout = env.map_files()
             files_to_checkout.load_set("Binaries")
             if not all_map(checkout(transaction), files_to_checkout()):
-                log_error("Error while checkouting binaries")
+                log_error("[nimp] Error while checkouting binaries")
                 return False
 
             if not ue4_build(env):
                 return False
 
-            log_notification(" ****** Publishing Binaries...")
+            log_notification("[nimp] Publishing Binaries…")
             files_to_publish = env.map_files()
             files_to_publish.to(env.cis_binaries_directory).load_set("Binaries")
             if not all_map(robocopy, files_to_publish()):
                 return False
 
-            log_notification(" ****** Publishing symbols...")
+            log_notification("[nimp] Publishing symbols…")
             if env.is_microsoft_platform:
                 if not upload_microsoft_symbols(env, ["Binaries/{0}".format(env.platform)]):
                     return False

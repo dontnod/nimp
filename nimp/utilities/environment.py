@@ -139,7 +139,7 @@ def check_keys(dict, error_format, *args):
     result = True
     for key in args:
         if not key in dict:
-            log_error(error_format, key = key)
+            log_error("[nimp] " + error_format, key = key)
             result = False
     return result
 
@@ -148,7 +148,7 @@ def _read_config_file(filename):
     try:
         conf = open(filename, "rb").read()
     except Exception as exception:
-        log_error("Unable to open configuration file : {0}", exception)
+        log_error("[nimp] Unable to open configuration file : {0}", exception)
         return None
     # Parse configuration file
     try:
@@ -156,9 +156,9 @@ def _read_config_file(filename):
         exec(compile(conf, filename, 'exec'), None, locals)
         if "config" in locals:
             return locals["config"]
-        log_error("Configuration file {0} has no 'config' section.", filename)
+        log_error("[nimp] Configuration file {0} has no 'config' section.", filename)
     except Exception as e:
-        log_error("Unable to load configuration file {0}: {1}", filename, str(e))
+        log_error("[nimp] Unable to load configuration file {0}: {1}", filename, str(e))
         return None
 
     return {}
