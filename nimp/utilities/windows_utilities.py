@@ -150,6 +150,7 @@ class OutputDebugStringLogger(threading.Thread):
 
                 data = ctypes.string_at(self._buffer.value + pid_length, data_length)
                 self._pipe_in.write(data[:data.index(0)])
+                self._pipe_in.flush()
 
             elif result == windll.WAIT_OBJECT_1:
                 break
