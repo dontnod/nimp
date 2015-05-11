@@ -40,11 +40,13 @@ def p4_clean_workspace():
 #-------------------------------------------------------------------------------
 def p4_create_config_file(port, user, password, client):
     log_notification("Creating .p4config file")
-    p4_config_template = "\
-P4USER={user}\n\
-P4PORT={port}\n\
-P4PASSWD={password}\n\
-P4CLIENT={client}\n"
+    p4_config_template =
+"""
+P4USER={user}
+P4PORT={port}
+P4PASSWD={password}
+P4CLIENT={client}
+"""
     p4_config = p4_config_template.format(port     = port,
                                           user     = user,
                                           password = password,
@@ -201,7 +203,7 @@ class _PerforceTransaction:
         elif p4_add(self._cl_number, path):
              return True
 
-        log_error("An error occured while adding file to perforce transaction")
+        log_error("An error occurred while adding file to Perforce transaction")
         self._success = False
 
         return False
@@ -220,7 +222,7 @@ class _PerforceTransaction:
             raise value
 
         if not self._success and self._cl_number is not None:
-            log_verbose("P4 transaction aborted, reverting and deleting CLs...")
+            log_verbose("Perforce transaction aborted, reverting and deleting CLs...")
             p4_revert_changelist(self._cl_number)
             p4_delete_changelist(self._cl_number)
         elif self._cl_number is not None:
@@ -232,7 +234,7 @@ class _PerforceTransaction:
                 log_verbose("Committing result...")
                 return p4_submit(self._cl_number)
         else:
-            log_error("An error occured while entering perforce transaction, so not doing anything here.")
+            log_error("An error occurred while entering Perforce transaction, so not doing anything here.")
         return True
 
 #-------------------------------------------------------------------------------

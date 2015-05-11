@@ -15,12 +15,12 @@ def build_wwise_banks(env):
         platform            : The platform to build banks for.
         wwise_banks_path    : Relative path to the directory to checkout and
                               eventually submit (*.bnk files directory).
-        wwise_project       : Relative path of the Wwise project to build.
+        wwise_project       : Relative path of the WWise project to build.
         checkin             : True to commit built banks, False otherwise."""
     platform         = env.platform
     wwise_project    = env.wwise_project
     wwise_banks_path = os.path.join(env.wwise_banks_path, env.wwise_banks_platform)
-    cl_name          = "[CIS] Updated {0} Wwise Banks from CL {1}".format(platform, p4_get_last_synced_changelist())
+    cl_name          = "[CIS] Updated {0} WWise Banks from CL {1}".format(platform, p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring/x64/Release/bin/WWiseCLI.exe")
 
     # WWiseCLI doesn’t handle Unix path separators properly
@@ -45,19 +45,19 @@ def build_wwise_banks(env):
         banks_files = env.map_files()
         banks_files.src(wwise_banks_path).recursive().files()
         if not all_map(checkout(trans), banks_files()):
-            log_error("Errors occured while checking out banks, aborting...")
+            log_error("Errors occurred while checking out banks, aborting...")
             return False
         if call_process(".", wwise_command, log_callback = _wwise_log_callback) == 1:
-            log_error("Error while running WwiseCli...")
+            log_error("Error while running WWiseCLI...")
             trans.abort()
             return False
 
-        log_notification("Adding created banks to perforce...")
+        log_notification("Adding created banks to Perforce...")
         return all_map(checkout(trans), banks_files())
 
 #---------------------------------------------------------------------------
 def _wwise_log_callback(line, default_log_function):
-    """ WwiseCli output callback to log as error specific output. """
+    """ WWiseCLI output callback to log as error specific output. """
     if "Fatal Error" in line:
         log_error(line)
     else:

@@ -88,7 +88,7 @@ def upload_microsoft_symbols(env, paths):
                       "/t", "{0}_{1}_{2}".format(env.project, env.platform, env.configuration),
                       "/v", env.revision ]) != 0:
         result = False
-        log_error("w00t ! An error occured while uploading symbols.")
+        log_error("Oops! An error occurred while uploading symbols.")
 
     os.remove("symbols_index.txt")
 

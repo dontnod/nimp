@@ -29,7 +29,7 @@ def _sanitize_command(command):
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None):
     command = _sanitize_command(command)
-    log_verbose("Running {0} in directory {1}", command, directory)
+    log_verbose("Running “{0}” in “{1}”", " ".join(command), directory)
 
     process = subprocess.Popen(command,
                                cwd    = directory,
@@ -47,7 +47,7 @@ def capture_process_output(directory, command, input = None):
 #-------------------------------------------------------------------------------
 def call_process(directory, command, log_callback = _default_log_callback):
     command = _sanitize_command(command)
-    log_verbose("Running {0} in directory {1}", command, directory)
+    log_verbose("Running “{0}” in “{1}”", " ".join(command), directory)
 
     ods_logger = OutputDebugStringLogger()
 
