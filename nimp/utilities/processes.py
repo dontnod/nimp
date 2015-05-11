@@ -17,11 +17,6 @@ def _default_log_callback(line, default_log_function):
     default_log_function(line)
 
 #-------------------------------------------------------------------------------
-def _wrap_command(command):
-    # Use nimp-run to catch OutputDebugString messages
-    return ['nimp-run'] + command
-
-#-------------------------------------------------------------------------------
 def _sanitize_command(command):
     # If we’re running under MSYS, leading slashes in command line arguments
     # will be treated as a path, so we need to escape them, except if the given
@@ -51,9 +46,10 @@ def capture_process_output(directory, command, input = None):
 
 #-------------------------------------------------------------------------------
 def call_process(directory, command, log_callback = _default_log_callback):
-    command = _wrap_command(command)
     command = _sanitize_command(command)
     log_verbose("Running {0} in directory {1}", command, directory)
+
+    ods_logger = OutputDebugStringLogger()
 
     process = subprocess.Popen(command,
                                cwd     = directory,
@@ -61,6 +57,8 @@ def call_process(directory, command, log_callback = _default_log_callback):
                                stderr  = subprocess.PIPE,
                                stdin   = None,
                                bufsize = 0)
+    ods_logger.attach(process.pid)
+    ods_logger.start()
 
     def log_output(log_function, pipe):
         output_buffer = ""
@@ -81,12 +79,16 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
     log_thread_args = [ (log_verbose, process.stdout), (log_error, process.stderr) ]
 
+    log_thread_args += [(log_verbose, ods_logger.output)]
+
     log_threads = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
 
     for thread in log_threads:
         thread.start()
 
     process_return = process.wait()
+
+    ods_logger.stop()
 
     for thread in log_threads:
         thread.join()

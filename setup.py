@@ -31,10 +31,6 @@ setup_info = dict(
     entry_points = {
         'console_scripts' : [ 'nimp = nimp.nimp_cli:main' ],
     },
-
-    data_files = [
-        ('/usr/bin', [ 'nimp-run/nimp-run.exe' ]),
-    ],
 )
 
 setuptools_info = dict(

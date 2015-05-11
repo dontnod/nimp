@@ -1,56 +1,179 @@
 # -*- coding: utf-8 -*-
 
-ODS_ENABLED = True
-
 import os
+import ctypes
+
 import sys
 import threading
+import subprocess
 import struct
-import mmap
+import time
 
-try:
-    import win32event
-    import winreg;
-except:
-    ODS_ENABLED = False
+class my_void_p(ctypes.c_void_p):
+    # Subclassing c_void_p prevents implicit casts to int
+    pass
+
+windll = None
+
+class WinDLL():
+    def __init__(self):
+        self._kernel32 = ctypes.cdll.LoadLibrary("kernel32.dll")
+
+        # ensure we got the right DLL
+        self._kernel32.GetLastError()
+
+        # import only the functions we need
+        self.CreateEvent = self._kernel32.CreateEventW
+        self.CreateEvent.restype = my_void_p
+        self.CreateEvent.argtypes = [my_void_p,
+                                     ctypes.c_int,
+                                     ctypes.c_int,
+                                     ctypes.c_wchar_p]
+
+        self.CreateFileMapping = self._kernel32.CreateFileMappingW
+        self.CreateFileMapping.restype = my_void_p
+        self.CreateFileMapping.argtypes = [my_void_p,
+                                           my_void_p,
+                                           ctypes.c_int,
+                                           ctypes.c_int,
+                                           ctypes.c_int,
+                                           ctypes.c_wchar_p]
+
+        self.SetEvent = self._kernel32.SetEvent
+        self.SetEvent.restype = ctypes.c_int
+        self.SetEvent.argtypes = [my_void_p]
+
+        self.WaitForMultipleObjects = self._kernel32.WaitForMultipleObjects
+        self.WaitForMultipleObjects.restype = ctypes.c_int
+        self.WaitForMultipleObjects.argtypes = [ctypes.c_int,
+                                                my_void_p,
+                                                ctypes.c_int,
+                                                ctypes.c_int]
+
+        self.MapViewOfFile = self._kernel32.MapViewOfFile
+        self.MapViewOfFile.restype = my_void_p
+        self.MapViewOfFile.argtypes = [my_void_p,
+                                       ctypes.c_int,
+                                       ctypes.c_int,
+                                       ctypes.c_int,
+                                       ctypes.c_int]
+
+        self.UnmapViewOfFile = self._kernel32.UnmapViewOfFile
+        self.UnmapViewOfFile.restype = ctypes.c_int
+        self.UnmapViewOfFile.argtypes = [my_void_p]
+
+        self.CloseHandle = self._kernel32.CloseHandle
+        self.CloseHandle.restype = ctypes.c_int
+        self.CloseHandle.argtypes = [my_void_p]
+
+        # Constants from winbase.h and others
+        self.INVALID_HANDLE_VALUE = my_void_p(-1).value
+
+        self.WAIT_OBJECT_0 = 0x00000000
+        self.WAIT_OBJECT_1 = 0x00000001
+        self.INFINITE      = 0xFFFFFFFF
+
+        self.PAGE_READWRITE = 0x4
+
+        self.FILE_MAP_READ = 0x0004
+
 
 #-------------------------------------------------------------------------------
 class OutputDebugStringLogger(threading.Thread):
     def __init__(self):
         super().__init__()
-        fd_in, fd_out            = os.pipe()
-        self.output              = os.fdopen(fd_in, 'rb')
-        self._pipe_in            = os.fdopen(fd_out, 'wb')
-        self._buffer_ready_event = win32event.CreateEvent(None, 0, 0, "DBWIN_BUFFER_READY")
-        self._data_ready_event   = win32event.CreateEvent(None, 0, 0, "DBWIN_DATA_READY")
-        self._stop_event         = win32event.CreateEvent(None, 0, 0, None)
-        self._buffer_length      = 4096
-        self._buffer             = mmap.mmap (0, self._buffer_length, "DBWIN_BUFFER", mmap.ACCESS_WRITE)
+
+        try:
+            global windll
+            windll = windll or WinDLL()
+        except:
+            raise
+            self.output = open(os.devnull, 'rb')
+            return
+
+        fd_in, fd_out = os.pipe()
+        self.output = os.fdopen(fd_in, 'rb')
+        self._pipe_in = os.fdopen(fd_out, 'wb')
+
+        self._buffer_ev = windll.CreateEvent(None, 0, 0, 'DBWIN_BUFFER_READY')
+        self._data_ev = windll.CreateEvent(None, 0, 0, 'DBWIN_DATA_READY')
+        self._stop_ev = windll.CreateEvent(None, 0, 0, None)
+        self._bufsize = 4096
+
+        self._mapping = windll.CreateFileMapping(windll.INVALID_HANDLE_VALUE,
+                                                 None,
+                                                 windll.PAGE_READWRITE,
+                                                 0,
+                                                 self._bufsize,
+                                                 'DBWIN_BUFFER');
+        self._buffer = windll.MapViewOfFile(self._mapping,
+                                            windll.FILE_MAP_READ,
+                                            0, 0,
+                                            self._bufsize)
+
+    def _pid_to_winpid(self, pid):
+        # In case we’re running in MSYS2 Python, the PID we got is actually an
+        # internal MSYS2 PID, and the PID we want to watch is actually the WINPID,
+        # which we retrieve using /bin/ps
+        try:
+            p = subprocess.Popen(["ps", "-p", str(pid)],
+                                 stdout = subprocess.PIPE,
+                                 stderr = subprocess.PIPE)
+            while True:
+                l = p.stdout.readline().split()
+                if not l:
+                    break
+                if len(l) >= 4 and l[0] == str(pid).encode('ascii'):
+                    pid = int(l[3])
+            p.wait()
+        except:
+            pass
+        return pid
 
     def attach(self, pid):
-        self._pid = pid
+        if not windll:
+            return
+
+        self._pid = self._pid_to_winpid(pid)
 
     def run(self):
-        process_id_length = 4
-        remaining_length = self._buffer_length - process_id_length
-        events = [self._data_ready_event, self._stop_event]
-        while True:
-            win32event.SetEvent(self._buffer_ready_event)
-            result = win32event.WaitForMultipleObjects(events, 0, win32event.INFINITE)
-            if result == win32event.WAIT_OBJECT_0:
-                self._buffer.seek(0)
-                process_id, = struct.unpack('L', self._buffer.read(process_id_length))
+        if not windll:
+            return
 
-                if process_id != self._pid:
+        pid_length = 4
+        data_length = self._bufsize - pid_length
+
+        events = [self._data_ev, self._stop_ev]
+        while True:
+            windll.SetEvent(self._buffer_ev)
+            result = windll.WaitForMultipleObjects(len(events),
+                                                   (my_void_p * len(events))(*events),
+                                                   0,
+                                                   windll.INFINITE)
+            if result == windll.WAIT_OBJECT_0:
+                pid, = struct.unpack('I', ctypes.string_at(self._buffer.value, pid_length))
+
+                if pid != self._pid:
                     continue
 
-                data = self._buffer.read(remaining_length)
+                data = ctypes.string_at(self._buffer.value + pid_length, data_length)
                 self._pipe_in.write(data[:data.index(0)])
-            elif result == (win32event.WAIT_OBJECT_0 + 1):
+
+            elif result == windll.WAIT_OBJECT_1:
                 break
 
+            else:
+                time.sleep(1)
+
     def stop(self):
-        win32event.SetEvent(self._stop_event)
-        self.join()
-        self._pipe_in.close()
+        if not windll:
+            self.join()
+        else:
+            windll.SetEvent(self._stop_ev)
+            self.join()
+            windll.UnmapViewOfFile(self._buffer)
+            windll.CloseHandle(self._mapping)
+            self._pipe_in.close()
+
         self.output.close()
+
