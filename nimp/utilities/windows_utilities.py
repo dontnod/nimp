@@ -9,6 +9,8 @@ import subprocess
 import struct
 import time
 
+from nimp.utilities.logging import *
+
 class my_void_p(ctypes.c_void_p):
     # Subclassing c_void_p prevents implicit casts to int
     pass
@@ -87,7 +89,6 @@ class OutputDebugStringLogger(threading.Thread):
             global windll
             windll = windll or WinDLL()
         except:
-            raise
             self.output = open(os.devnull, 'rb')
             return
 
@@ -114,27 +115,18 @@ class OutputDebugStringLogger(threading.Thread):
     def _pid_to_winpid(self, pid):
         # In case we’re running in MSYS2 Python, the PID we got is actually an
         # internal MSYS2 PID, and the PID we want to watch is actually the WINPID,
-        # which we retrieve using /bin/ps
+        # which we retrieve in /proc
         try:
-            p = subprocess.Popen(["ps", "-p", str(pid)],
-                                 stdout = subprocess.PIPE,
-                                 stderr = subprocess.PIPE)
-            while True:
-                l = p.stdout.readline().split()
-                if not l:
-                    break
-                if len(l) >= 4 and l[0] == str(pid).encode('ascii'):
-                    pid = int(l[3])
-            p.wait()
+            return int(open("/proc/%d/winpid" % (pid,)).read(10))
         except:
-            pass
-        return pid
+            return pid
 
     def attach(self, pid):
         if not windll:
             return
 
         self._pid = self._pid_to_winpid(pid)
+        log_verbose("Attached to process %d (winpid %d)" % (pid, self._pid))
 
     def run(self):
         if not windll:
