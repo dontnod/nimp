@@ -16,5 +16,6 @@ __all__ = [
     "ue4_build",
     "ue4_cook",
     "ue4_ship",
+    "vs_build",
 ]
 

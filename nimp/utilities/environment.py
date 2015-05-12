@@ -60,7 +60,8 @@ class Environment:
                               "x360"      : "XBox360",
                               "ps3"       : "PS3" }
 
-            self.platform = std_platforms[self.platform.lower()]
+            if(self.platform.lower() in std_platforms):
+                self.platform = std_platforms[self.platform.lower()]
 
             self.is_win32 = self.platform == "Win32"
             self.is_win64 = self.platform == "Win64"
@@ -86,9 +87,11 @@ class Environment:
                                    "XBox360" : "Xbox360",
                                    "PS3"     : "PS3" }
 
-            self.ue3_cook_platform = ue3_cook_platforms[self.platform]
-            self.ue3_build_platform = ue3_build_platforms[self.platform]
+            if(self.platform in ue3_cook_platforms):
+                self.ue3_cook_platform = ue3_cook_platforms[self.platform]
 
+            if(self.platform in ue3_build_platforms):
+                self.ue3_build_platform = ue3_build_platforms[self.platform]
 
             ue4_build_platforms = { "PS4"     : "PS4",
                                     "XboxOne" : "XboxOne",
@@ -104,18 +107,20 @@ class Environment:
                                    "XBox360" : "Xbox360",
                                    "PS3"     : "PS3" }
 
-            self.ue4_cook_platform = ue4_cook_platforms[self.platform]
-            self.ue4_build_platform = ue4_build_platforms[self.platform]
+            if(self.platform in ue4_cook_platforms):
+                self.ue4_cook_platform = ue4_cook_platforms[self.platform]
+                configuration = self.configuration.lower() if hasattr(self, 'configuration') and self.configuration is not None else 'final'
+                suffix = 'Final' if configuration in ['test', 'final'] else ''
+                self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, suffix)
+
+            if(self.platform in ue4_build_platforms):
+                self.ue4_build_platform = ue4_build_platforms[self.platform]
 
             if hasattr(self, 'dlc'):
                 if self.dlc is None:
                     self.dlc = self.project
 
-            configuration = self.configuration.lower() if hasattr(self, 'configuration') and self.configuration is not None else 'final'
-            dlc           = self.dlc if hasattr(self, 'dlc') else self.project
-            suffix        = 'Final' if configuration in ['test', 'final'] else ''
-
-            self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, suffix)
+            dlc = self.dlc if hasattr(self, 'dlc') else self.project
 
             banks_platforms = { "Win32"   : "PC",
                                 "Win64"   : "PC",
@@ -131,8 +136,10 @@ class Environment:
                               "PS3"     : "PS3",
                               "PS4"     : "PS4" }
 
-            self.wwise_banks_platform = banks_platforms[self.platform]
-            self.wwise_cmd_platform = cmd_platforms[self.platform]
+            if(self.platform in banks_platforms):
+                self.wwise_banks_platform = banks_platforms[self.platform]
+            if(self.platform in cmd_platforms):
+                self.wwise_cmd_platform = cmd_platforms[self.platform]
 
 #---------------------------------------------------------------------------
 def check_keys(dict, error_format, *args):
