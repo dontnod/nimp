@@ -66,19 +66,19 @@ def ue3_build(env):
 
 #---------------------------------------------------------------------------
 def ue3_ship(env, destination = None):
-    master_directory = env.format(env.cis_master_directory)
+    master_directory = env.format(env.publish_master)
 
     if os.path.exists(master_directory):
         log_notification("[nimp] Found a master at {0}: I’m going to build a patch", master_directory)
         if env.dlc == env.project:
-            return _ship_game_patch(env, destination or env.cis_ship_directory)
+            return _ship_game_patch(env, destination or env.publish_ship)
         else:
             log_error("[nimp] Sorry, building a DLC patch is still not implemented")
     else:
         if env.dlc == env.project:
             log_error("[nimp] Sorry, building a game master is still not implemented")
         else:
-            return _ship_dlc(env, destination or env.cis_ship_directory)
+            return _ship_dlc(env, destination or env.publish_ship)
 
 #---------------------------------------------------------------------------
 def _ship_dlc(env, destination):
@@ -104,7 +104,7 @@ def _ship_game_patch(env, destination):
     map = env.cook_maps[env.dlc.lower()]
 
     master_files = env.map_files()
-    master_files_source = master_files.src(env.cis_master_directory).recursive().files()
+    master_files_source = master_files.src(env.publish_master).recursive().files()
     log_notification("[nimp] Deploying master…")
     if not all_map(robocopy, master_files()):
         return False
@@ -121,7 +121,7 @@ def _ship_game_patch(env, destination):
 
     log_notification("[nimp] Redeploying master cook ignoring patched files…")
     patch_files = env.map_files()
-    patch_files.src(env.cis_master_directory).load_set("Patch")
+    patch_files.src(env.publish_master).load_set("Patch")
     files_to_exclude = [src for src, *args in patch_files()]
     master_files_source.exclude(*files_to_exclude)
     if not all_map(robocopy, master_files()):
@@ -129,7 +129,7 @@ def _ship_game_patch(env, destination):
 
     if hasattr(env, 'revision'):
         cook_files = env.map_files()
-        cook_files.to(env.cis_cooks_directory).load_set("Cook")
+        cook_files.to(env.publish_cook).load_set("Cook")
         if not all_map(robocopy, cook_files()):
             return False
 

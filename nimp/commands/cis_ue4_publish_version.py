@@ -46,7 +46,7 @@ class CisUe4PublishVersion(CisCommand):
                             add_not_versioned_files = False) as trans:
             files_to_deploy = env.map_files()
             for configuration in env.configurations:
-                files_to_deploy.override(configuration = configuration).src(env.cis_binaries_directory).glob("**")
+                files_to_deploy.override(configuration = configuration).src(env.publish_binaries).glob("**")
 
             log_notification("[nimp] Deploying binaries…")
             if not all_map(checkout_and_copy(trans), files_to_deploy()):
@@ -55,11 +55,11 @@ class CisUe4PublishVersion(CisCommand):
             if not env.keep_temp_binaries:
                 for configuration in env.configurations:
                     try:
-                        shutil.rmtree(env.format(env.cis_binaries_directory, configuration = configuration))
+                        shutil.rmtree(env.format(env.publish_binaries, configuration = configuration))
                     except Exception as ex:
                         log_error("[nimp] Error while cleaning binaries : {0}", ex)
 
-            files_to_publish = env.map_files().to(env.cis_version_directory)
+            files_to_publish = env.map_files().to(env.publish_version)
             log_notification("[nimp] Publishing version {0}…", configuration)
             files_to_publish.load_set("Version")
             if not all_map(robocopy, files_to_publish()):
