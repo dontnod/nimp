@@ -62,7 +62,9 @@ def call_process(directory, command, log_callback = _default_log_callback):
 
     def log_output(log_function, pipe):
         output_buffer = ""
-        while process.poll() == None:
+        # FIXME: it would be better to use while process.poll() == None
+        # here, but thread safety issues in Python < 3.4 prevent it.
+        while process:
             try:
                 for line in iter(pipe.readline, ''):
                     line = line.decode("cp850")
@@ -77,16 +79,16 @@ def call_process(directory, command, log_callback = _default_log_callback):
             except ValueError:
                 return
 
-    log_thread_args = [ (log_verbose, process.stdout), (log_error, process.stderr) ]
-
-    log_thread_args += [(log_verbose, ods_logger.output)]
-
+    log_thread_args = [ (log_verbose, process.stdout),
+                        (log_error, process.stderr),
+                        (log_verbose, ods_logger.output)]
     log_threads = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
 
     for thread in log_threads:
         thread.start()
 
     process_return = process.wait()
+    process = None
 
     ods_logger.stop()
 
