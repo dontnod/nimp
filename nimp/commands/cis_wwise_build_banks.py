@@ -12,9 +12,10 @@ class BuildWwiseBanksCommand(CisCommand):
 
     #---------------------------------------------------------------------------
     def cis_configure_arguments(self, env, parser):
-        parser.add_argument('platform',
+        parser.add_argument('-p',
+                            '--platform',
                             help    = 'Platform to build',
-                            metavar = '<PLATFORM>')
+                            metavar = '<platform>')
 
         parser.add_argument('--checkin',
                             help    = 'Automatically checkin result',
