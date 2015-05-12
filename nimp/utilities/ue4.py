@@ -21,12 +21,12 @@ def ue4_build(env):
         return False
 
     if env.ue4_build_platform == 'PS4':
-        if not _ue4_build_project(env.solution, 'PS4MapFileUtil', 'Win64',
+        if not _ue4_build_project(env.build.solution, 'PS4MapFileUtil', 'Win64',
                                   env.configuration, vs_version, 'Build'):
             log_error("[nimp] Could not build PS4MapFileUtil.exe")
             return False
 
-    return _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
+    return _ue4_build_project(env.build.solution, env.project.game_name, env.ue4_build_platform,
                               env.configuration, vs_version, 'Build')
 
 #---------------------------------------------------------------------------

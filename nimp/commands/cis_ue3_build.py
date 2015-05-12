@@ -61,7 +61,7 @@ class CisUe3BuildCommand(CisCommand):
                     return False
             log_notification("[nimp] Publishing Binaries…")
             files_to_publish = env.map_files()
-            files_to_publish.to(env.cis_binaries_directory).load_set("Binaries")
+            files_to_publish.to(env.publish.binaries).load_set("Binaries")
             if not all_map(robocopy, files_to_publish()):
                 return False
 
