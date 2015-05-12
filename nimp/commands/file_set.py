@@ -14,7 +14,8 @@ class MapCommand(Command):
         parser.add_argument('--arg',
                             help    = 'Set a format argument, that will be used in string interpolation.',
                             nargs=2,
-                            action='append')
+                            action='append',
+                            default = [])
 
         parser.add_argument('set_name',
                             help    = 'Set name to load',
