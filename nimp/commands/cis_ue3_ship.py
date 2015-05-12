@@ -39,10 +39,10 @@ class CisUe3Ship(CisCommand):
         if not env.is_win64:
             platforms += [env.platform]
 
-        with deploy_latest_revision(env, env.publish.version, env.revision, platforms):
-            if env.dlc != env.project.name:
+        with deploy_latest_revision(env, env.publish['version'], env.revision, platforms):
+            if env.dlc != env.project['name']:
                 master_files = env.map_files()
-                master_files.override(dlc = env.project.name).src(env.publish.cook).recursive().files()
+                master_files.override(dlc = env.project['name']).src(env.publish['cook']).recursive().files()
                 log_notification("[nimp] Deploying episode01 cook…")
                 if not all_map(robocopy, master_files()):
                     return False

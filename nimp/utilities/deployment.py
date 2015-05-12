@@ -56,7 +56,7 @@ def deploy_latest_revision(env, version_directory_format, revision, platforms):
 
     files_to_deploy = env.map_files()
     for platform in platforms:
-        files_to_deploy.override(revision = revision, platform = platform).src(env.publish.version).recursive().files()
+        files_to_deploy.override(revision = revision, platform = platform).src(env.publish['version']).recursive().files()
 
     with p4_transaction("Automatic Checkout",
                         revert_unchanged = False,
@@ -82,10 +82,10 @@ def upload_microsoft_symbols(env, paths):
                     [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
                       "add",
                       "/r", "/f", "@symbols_index.txt",
-                      "/s", env.publish.symbols,
+                      "/s", env.publish['symbols'],
                       "/compress",
                       "/o",
-                      "/t", "{0}_{1}_{2}".format(env.project.name, env.platform, env.configuration),
+                      "/t", "{0}_{1}_{2}".format(env.project['name'], env.platform, env.configuration),
                       "/v", env.revision ]) != 0:
         result = False
         log_error("[nimp] Oops! An error occurred while uploading symbols.")
