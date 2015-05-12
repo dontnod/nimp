@@ -38,16 +38,3 @@ class Command:
     def check(self, env):
         return True
 
-    #---------------------------------------------------------------------------
-    def _run_sub_command(self, env, command, arguments = []):
-        new_context = copy.copy(env)
-        parser = argparse.ArgumentParser()
-
-        command.configure_arguments(env, parser)
-
-        (parsed_arguments, unknown_args) = parser.parse_known_args(arguments)
-
-        setattr(new_context, 'arguments', parsed_arguments)
-        setattr(parsed_arguments, "unknown_args", unknown_args)
-        return command.run(new_context)
-

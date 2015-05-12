@@ -60,8 +60,7 @@ def _load_arguments(env, parser):
             if( not module.configure_arguments(env, parser)):
                 return False
 
-    (arguments, unknown_args) = parser.parse_known_args()
-    setattr(env, "unknown_args", unknown_args)
+    arguments = parser.parse_args()
 
     for key, value in vars(arguments).items():
         setattr(env, key, value)
