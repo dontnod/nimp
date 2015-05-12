@@ -19,7 +19,7 @@ def build_wwise_banks(env):
         checkin          : True to commit built banks, False otherwise."""
     platform         = env.platform
     wwise_project    = env.wwise['project']
-    wwise_banks_path = os.path.join(env.wwise['banks']_path, env.wwise_banks_platform)
+    wwise_banks_path = os.path.join(env.wwise['banks_path'], env.wwise_banks_platform)
     cl_name          = "[CIS] Updated {0} WWise Banks from CL {1}".format(platform, p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring/x64/Release/bin/WWiseCLI.exe")
 
