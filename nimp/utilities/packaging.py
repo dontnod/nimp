@@ -27,7 +27,7 @@ def generate_pkg_config(env, loose_files_dir = None):
     if not _load_package_config(env):
         return False
 
-    loose_files_dir = loose_files_dir or env.publish['ship']
+    loose_files_dir = loose_files_dir or env.cis_ship_directory
     if env.is_ps4:
         return generate_gp4(env, loose_files_dir)
 
@@ -38,8 +38,8 @@ def make_packages(env, source = None, destination = None):
     if(env.is_win32):
         return True
 
-    source = source or env.publish['ship']
-    destination = destination or env.publish['pkgs']
+    source = source or env.cis_ship_directory
+    destination = destination or env.cis_pkgs_directory
 
     if not _load_package_config(env):
         return False

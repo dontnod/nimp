@@ -49,27 +49,27 @@ class CisUe3PublishVersion(CisCommand):
                             revert_unchanged = False,
                             add_not_versioned_files = False) as trans:
             files_to_deploy = env.map_files()
-            for configuration in env.build['configurations']:
-                files_to_deploy.override(configuration = configuration).src(env.publish['binaries']).glob("**")
+            for configuration in env.configurations:
+                files_to_deploy.override(configuration = configuration).src(env.cis_binaries_directory).glob("**")
 
             log_notification("[nimp] Deploying binaries…")
             if not all_map(checkout_and_copy(trans), files_to_deploy()):
                 return False
 
             if not env.keep_temp_binaries:
-                for configuration in env.build['configurations']:
+                for configuration in env.configurations:
                     try:
-                        shutil.rmtree(env.format(env.publish['binaries'], configuration = configuration))
+                        shutil.rmtree(env.format(env.cis_binaries_directory, configuration = configuration))
                     except Exception as ex:
                         log_error("[nimp] Error while cleaning binaries : {0}", ex)
 
             if env.is_win64:
                 log_notification("[nimp] Building script…")
-                if not ue3_build_script(env.project['game_name']):
+                if not ue3_build_script(env.game):
                     log_error("[nimp] Error while building script")
                     return False
 
-            files_to_publish = env.map_files().to(env.publish['version'])
+            files_to_publish = env.map_files().to(env.cis_version_directory)
             log_notification("[nimp] Publishing version {0}…", configuration)
             files_to_publish.load_set("Version")
             if not all_map(robocopy, files_to_publish()):

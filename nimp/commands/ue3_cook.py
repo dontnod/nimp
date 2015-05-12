@@ -40,12 +40,12 @@ class Ue3CookCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        dlc = env.dlc if env.dlc is not None else env.project['name']
-        map = env.cook['maps'][dlc.lower()]
-        return ue3_cook(env.project['game_name'],
+        dlc = env.dlc if env.dlc is not None else env.project
+        map = env.cook_maps[dlc.lower()]
+        return ue3_cook(env.game,
                         map,
-                        env.cook['languages'],
-                        None if env.project['name'] == env.dlc else env.dlc,
+                        env.languages,
+                        None if env.project == env.dlc else env.dlc,
                         env.ue3_cook_platform,
                         env.configuration,
                         env.noexpansion,

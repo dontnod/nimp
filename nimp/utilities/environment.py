@@ -118,9 +118,9 @@ class Environment:
 
             if hasattr(self, 'dlc'):
                 if self.dlc is None:
-                    self.dlc = self.project['name']
+                    self.dlc = self.project
 
-            dlc = self.dlc if hasattr(self, 'dlc') else self.project['name']
+            dlc = self.dlc if hasattr(self, 'dlc') else self.project
 
             banks_platforms = { "Win32"   : "PC",
                                 "Win64"   : "PC",

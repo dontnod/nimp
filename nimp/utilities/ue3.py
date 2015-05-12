@@ -14,9 +14,9 @@ from nimp.utilities.deployment import *
 
 #-------------------------------------------------------------------------------
 def generate_toc(env, dlc):
-    for language in env.cook['languages']:
+    for language in env.languages:
         call_process(".", [ "Binaries/CookerSync.exe",
-                            env.project['game_name'],
+                            env.game,
                             "-p", env.ue3_cook_platform,
                             "-x", "Loc",
                             "-r", language,
@@ -25,7 +25,7 @@ def generate_toc(env, dlc):
                             "-dlcname", dlc])
 
     call_process(".", [ "Binaries/CookerSync.exe",
-                        env.project['game_name'],
+                        env.game,
                         "-p", env.ue3_cook_platform,
                         "-x", "ConsoleSyncProgrammer",
                         "-r", "INT",
@@ -37,7 +37,7 @@ def generate_toc(env, dlc):
 #---------------------------------------------------------------------------
 def ue3_build(env):
     vs_version      = '11'
-    solution        = env.build['solution']
+    solution        = env.solution
     configuration   = env.configuration
     result          = True
     version_file_cl = None
@@ -66,28 +66,28 @@ def ue3_build(env):
 
 #---------------------------------------------------------------------------
 def ue3_ship(env, destination = None):
-    master_directory = env.format(env.publish['master'])
+    master_directory = env.format(env.cis_master_directory)
 
     if os.path.exists(master_directory):
         log_notification("[nimp] Found a master at {0}: I’m going to build a patch", master_directory)
-        if env.dlc == env.project['name']:
-            return _ship_game_patch(env, destination or env.publish['ship'])
+        if env.dlc == env.project:
+            return _ship_game_patch(env, destination or env.cis_ship_directory)
         else:
             log_error("[nimp] Sorry, building a DLC patch is still not implemented")
     else:
-        if env.dlc == env.project['name']:
+        if env.dlc == env.project:
             log_error("[nimp] Sorry, building a game master is still not implemented")
         else:
-            return _ship_dlc(env, destination or env.publish['ship'])
+            return _ship_dlc(env, destination or env.cis_ship_directory)
 
 #---------------------------------------------------------------------------
 def _ship_dlc(env, destination):
-    map = env.cook['maps'][env.dlc.lower()]
+    map = env.cook_maps[env.dlc.lower()]
 
     log_notification("[nimp] Cooking…")
-    if not ue3_cook(env.project['game_name'],
+    if not ue3_cook(env.game,
                     map,
-                    env.cook['languages'],
+                    env.languages,
                     env.dlc,
                     env.ue3_cook_platform,
                     'final'):
@@ -101,18 +101,18 @@ def _ship_dlc(env, destination):
 
 #---------------------------------------------------------------------------
 def _ship_game_patch(env, destination):
-    map = env.cook['maps'][env.dlc.lower()]
+    map = env.cook_maps[env.dlc.lower()]
 
     master_files = env.map_files()
-    master_files_source = master_files.src(env.publish['master']).recursive().files()
+    master_files_source = master_files.src(env.cis_master_directory).recursive().files()
     log_notification("[nimp] Deploying master…")
     if not all_map(robocopy, master_files()):
         return False
 
     log_notification("[nimp] Cooking on top of master…")
-    if not ue3_cook(env.project['game_name'],
+    if not ue3_cook(env.game,
                     map,
-                    env.cook['languages'],
+                    env.languages,
                     None,
                     env.ue3_cook_platform,
                     'final',
@@ -121,7 +121,7 @@ def _ship_game_patch(env, destination):
 
     log_notification("[nimp] Redeploying master cook ignoring patched files…")
     patch_files = env.map_files()
-    patch_files.src(env.publish['master']).load_set("Patch")
+    patch_files.src(env.cis_master_directory).load_set("Patch")
     files_to_exclude = [src for src, *args in patch_files()]
     master_files_source.exclude(*files_to_exclude)
     if not all_map(robocopy, master_files()):
@@ -129,12 +129,12 @@ def _ship_game_patch(env, destination):
 
     if hasattr(env, 'revision'):
         cook_files = env.map_files()
-        cook_files.to(env.publish['cook']).load_set("Cook")
+        cook_files.to(env.cis_cooks_directory).load_set("Cook")
         if not all_map(robocopy, cook_files()):
             return False
 
     log_notification("[nimp] Generating TOC…")
-    if not generate_toc(env, dlc = "Episode01" if env.dlc == env.project['name'] else env.dlc):
+    if not generate_toc(env, dlc = "Episode01" if env.dlc == env.project else env.dlc):
         return False
 
     if env.is_ps3:
