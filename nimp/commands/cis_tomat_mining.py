@@ -23,6 +23,15 @@ class CisTomatMining(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, env):
+        if call_process('.', ['pacman', '-S', '--noconfirm', 'repman']) != 0:
+            return False
+
+        if call_process('.', ['repman', 'add', 'dont-nod', 'http://pacman']) != 0:
+            return False
+
+        if call_process('.', ['pacman', '-S', '--noconfirm', '--needed', 'tomat-console']) != 0:
+            return False
+
         return call_process('.',
                             [ 'TomatConsole',
                               'ImportFromUnreal',
