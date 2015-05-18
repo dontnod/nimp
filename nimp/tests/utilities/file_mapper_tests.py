@@ -48,6 +48,12 @@ class FileSetTests(unittest.TestCase):
         src.glob('foo/bar/corge.ext1', 'foo/bar/corge.ext2').exclude('*.ext2')
         self._check_files(files(), ('foo/bar/corge.ext1', 'foo/bar/corge.ext1'))
 
+    def test_exclude_ignore_case(self):
+        """ Exclude should remove files matching one of the given patterns.  """
+        files, src = self._file_mapper()
+        src.glob('foo/bar/corge.ext1', 'foo/bar/corge.ext2').exclude_ignore_case('*rGE.ext2')
+        self._check_files(files(), ('foo/bar/corge.ext1', 'foo/bar/corge.ext1'))
+
     def test_files(self):
         """ Files mapper should discard directories """
         files, src = self._file_mapper()

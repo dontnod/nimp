@@ -123,7 +123,8 @@ def _ship_game_patch(env, destination):
     patch_files = env.map_files()
     patch_files.src(env.publish_master).load_set("Patch")
     files_to_exclude = [src for src, *args in patch_files()]
-    master_files_source.exclude(*files_to_exclude)
+    log_notification("Excluding files {0}", files_to_exclude)
+    master_files_source.exclude_ignore_case(*files_to_exclude)
     if not all_map(robocopy, master_files()):
         return False
 

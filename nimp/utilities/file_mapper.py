@@ -112,11 +112,22 @@ class FileMapper(object):
 
     #---------------------------------------------------------------------------
     def exclude(self, *patterns):
+        return self._exclude(False, *patterns)
+
+    #---------------------------------------------------------------------------
+    def exclude_ignore_case(self, *patterns):
+        return self._exclude(True, *patterns)
+
+    #---------------------------------------------------------------------------
+    def _exclude(self, ignore_case, *patterns):
         """ Ignore source paths maching one of patterns
         """
         def _exclude_mapper(source = '', *args):
             for pattern in patterns:
                 pattern = self._format(pattern)
+                if ignore_case:
+                    source = source.lower()
+                    pattern = pattern.lower()
                 if fnmatch.fnmatch(source, pattern):
                     log_verbose("[nimp] Excluding file {0}", source)
                     raise StopIteration()
