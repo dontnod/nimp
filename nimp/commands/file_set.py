@@ -39,8 +39,9 @@ class MapCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        for key_value in env.arg:
-            setattr(env, key_value[0], key_value[1])
+        if(env.arg is not None):
+            for key_value in env.arg:
+                setattr(env, key_value[0], key_value[1])
         env.standardize_names()
 
         files = FileMapper(format_args = vars(env))
@@ -54,7 +55,8 @@ class MapCommand(Command):
         files_chain.load_set(env.set_name)
 
         if env.action == 'robocopy':
-            map(robocopy(env), files)
+            for source, destination in files():
+                robocopy(source, destination)
         elif env.action == 'checkout':
             with p4_transaction('Checkout') as trans:
                 map(trans.add, files)
