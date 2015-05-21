@@ -121,7 +121,7 @@ def _ship_game_patch(env, destination):
 
     log_notification("[nimp] Redeploying master cook ignoring patched files…")
     patch_files = env.map_files()
-    patch_files.src(env.publish_master).load_set("Patch")
+    patch_files.src(env.publish_master).override(step = 'patch').load_set("Patch")
     files_to_exclude = [src for src, *args in patch_files()]
     log_notification("Excluding files {0}", files_to_exclude)
     master_files_source.exclude_ignore_case(*files_to_exclude)
@@ -143,7 +143,7 @@ def _ship_game_patch(env, destination):
 
     log_notification("[nimp] Copying patched files to output directory…")
     patch_files = env.map_files()
-    patch_files.to(destination).load_set("Patch")
+    patch_files.to(destination).override(step = 'deploy').load_set("Patch")
     if not all_map(robocopy, patch_files()):
         return False
 
