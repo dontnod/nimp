@@ -47,7 +47,7 @@ def build_wwise_banks(env):
         if not all_map(checkout(trans), banks_files()):
             log_error("[nimp] Errors occurred while checking out banks, aborting…")
             return False
-        if call_process(".", wwise_command, log_callback = _wwise_log_callback) == 1:
+        if call_process(".", wwise_command, stdout_callback = _wwise_log_callback) == 1:
             log_error("[nimp] Error while running WWiseCLI…")
             trans.abort()
             return False

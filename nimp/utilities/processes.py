@@ -45,11 +45,12 @@ def capture_process_output(directory, command, input = None):
     return process.wait(), output.decode("cp437"), error.decode("cp437")
 
 #-------------------------------------------------------------------------------
-def call_process(directory, command, log_callback = _default_log_callback):
+def call_process(directory, command, stdout_callback = _default_log_callback,
+                                     stderr_callback = None):
     command = _sanitize_command(command)
     log_verbose("[nimp] Running “{0}” in “{1}”", " ".join(command), directory)
 
-    ods_logger = OutputDebugStringLogger()
+    debug_pipe = OutputDebugStringLogger()
 
     process = subprocess.Popen(command,
                                cwd     = directory,
@@ -57,10 +58,10 @@ def call_process(directory, command, log_callback = _default_log_callback):
                                stderr  = subprocess.PIPE,
                                stdin   = None,
                                bufsize = 0)
-    ods_logger.attach(process.pid)
-    ods_logger.start()
+    debug_pipe.attach(process.pid)
+    debug_pipe.start()
 
-    def log_output(log_function, pipe):
+    def output_worker(user_callback, log_function, pipe):
         output_buffer = ""
         # FIXME: it would be better to use while process.poll() == None
         # here, but thread safety issues in Python < 3.4 prevent it.
@@ -75,14 +76,17 @@ def call_process(directory, command, log_callback = _default_log_callback):
                     line = line.replace("{", "{{").replace("}", "}}")
                     line = line.rstrip('\r\n')
 
-                    log_callback(line, log_function)
+                    user_callback(line, log_function)
             except ValueError:
                 return
 
-    log_thread_args = [ (log_verbose, process.stdout),
-                        (log_error, process.stderr),
-                        (log_verbose, ods_logger.output)]
-    log_threads = [ threading.Thread(target = log_output, args = args) for args in log_thread_args ]
+    if not stderr_callback:
+        stderr_callback = stdout_callback
+
+    log_thread_args = [ (stdout_callback, log_verbose, process.stdout),
+                        (stderr_callback, log_error,   process.stderr),
+                        (stderr_callback, log_verbose, debug_pipe.output)]
+    log_threads = [ threading.Thread(target = output_worker, args = args) for args in log_thread_args ]
 
     for thread in log_threads:
         thread.start()
@@ -90,7 +94,7 @@ def call_process(directory, command, log_callback = _default_log_callback):
     process_return = process.wait()
     process = None
 
-    ods_logger.stop()
+    debug_pipe.stop()
 
     for thread in log_threads:
         thread.join()
