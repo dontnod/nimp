@@ -11,6 +11,7 @@ __all__ = [
     "file_set",
     "nimp_qa",
     "package",
+    "run",
     "ue3_build",
     "ue3_cook",
     "ue3_ship",
