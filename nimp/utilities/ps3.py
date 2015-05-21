@@ -27,6 +27,14 @@ def ps3_generate_pkgs(env, source, destination):
         pkg_conf_file   = env.format(os.path.join(source, package['conf']))
         safe_makedirs(pkg_destination)
 
+        if('drm_files' in package):
+            for drm_source, drm_dest in package['drm_files'].items():
+                drm_source = env.format(drm_source)
+                drm_dest = env.format(drm_dest)
+                drm_source = os.path.join(pkg_source, drm_source)
+                drm_dest = os.path.join(pkg_source, drm_dest)
+                if call_process('.', ['make_edata_npdrm', drm_source, drm_dest]) != 0:
+                    return False
         # make_package_npdrm doesn’t handle Unix path separators properly
         if os.environ.get('MSYSTEM') == 'MSYS':
             pkg_conf_file = pkg_conf_file.replace('/', '\\')
