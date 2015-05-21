@@ -33,6 +33,8 @@ def ps3_generate_pkgs(env, source, destination):
                 drm_dest = env.format(drm_dest)
                 drm_source = os.path.join(pkg_source, drm_source)
                 drm_dest = os.path.join(pkg_source, drm_dest)
+                drm_source = drm_source.replace('/', '\\')
+                drm_dest = drm_dest.replace('/', '\\')
                 if call_process('.', ['make_edata_npdrm', drm_source, drm_dest]) != 0:
                     return False
         # make_package_npdrm doesn’t handle Unix path separators properly
