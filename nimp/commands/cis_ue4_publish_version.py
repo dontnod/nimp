@@ -61,7 +61,7 @@ class CisUe4PublishVersion(CisCommand):
 
             files_to_publish = env.map_files().to(env.publish_version)
             log_notification("[nimp] Publishing version {0}…", configuration)
-            files_to_publish.load_set("Version")
+            files_to_publish.load_set("version")
             if not all_map(robocopy, files_to_publish()):
                 return False
 

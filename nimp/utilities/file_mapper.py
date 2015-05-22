@@ -228,7 +228,9 @@ class FileMapper(object):
         """ Formats given string using format arguments defined on all the
             nodes of the list.
         """
-        return str.format(**self._format_args)
+        result = str.format(**self._format_args)
+        result = time.strftime(result)
+        return result
 
     #---------------------------------------------------------------------------
     def __getattr__(self, name):
