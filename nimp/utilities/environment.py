@@ -120,6 +120,16 @@ class Environment:
             if(self.platform in ue4_build_platforms):
                 self.ue4_build_platform = ue4_build_platforms[self.platform]
 
+            upms_platforms = { "PS4"     : "PS4",
+                               "XboxOne" : "XboxOne",
+                               "Win64"   : "PC",
+                               "Win32"   : "PCConsole",
+                               "XBox360" : "Xbox360",
+                               "PS3"     : "PS3" }
+
+            if(self.platform in upms_platforms):
+                self.upms_platform = upms_platforms[self.platform]
+
             if hasattr(self, 'dlc'):
                 if self.dlc is None:
                     self.dlc = self.project
