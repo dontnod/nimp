@@ -31,7 +31,7 @@ def ue4_build(env):
 
 #---------------------------------------------------------------------------
 def _ue4_generate_project():
-    return call_process('.', ['./GenerateProjectFiles.bat'])
+    return call_process('.', ['../GenerateProjectFiles.bat'])
 
 #---------------------------------------------------------------------------
 def _ue4_build_project(sln_file, project, build_platform, configuration, vs_version, target = 'Rebuild'):
