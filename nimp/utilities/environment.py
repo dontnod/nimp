@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import time
+
 from nimp.utilities.logging import *
 from nimp.utilities.file_mapper import *
 
@@ -13,7 +15,9 @@ class Environment:
     def format(self, str, **override_kwargs):
         kwargs = vars(self).copy()
         kwargs.update(override_kwargs)
-        return str.format(**kwargs)
+        result = str.format(**kwargs)
+        result = time.strftime(result)
+        return result
 
     #---------------------------------------------------------------------------
     def call(self, method, *args, **override_kwargs):
