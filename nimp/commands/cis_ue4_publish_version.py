@@ -59,10 +59,17 @@ class CisUe4PublishVersion(CisCommand):
                     except Exception as ex:
                         log_error("[nimp] Error while cleaning binaries : {0}", ex)
 
-            files_to_publish = env.map_files().to(env.publish_version)
+            publish_version_path = env.format(env.publish_version)
+            files_to_publish = env.map_files().to(publish_version_path)
             log_notification("[nimp] Publishing version {0}…", configuration)
             files_to_publish.load_set("version")
             if not all_map(robocopy, files_to_publish()):
                 return False
 
+            log_notification("[nimp] Writing CL.txt file {0}…", configuration)
+            if(hasattr(env, 'cl_txt_path')):
+                cl_txt_path = os.path.join(publish_version_path, env.cl_txt_path)
+                with open(cl_txt_path, "w") as cl_txt_file:
+                    cl_txt_file.write("%s\n" % env.revision)
         return True
+
