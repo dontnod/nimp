@@ -7,10 +7,10 @@ import string
 import time
 import contextlib
 import shutil
-import platform
 
 from nimp.utilities.build import *
 from nimp.utilities.deployment import *
+from nimp.utilities.system import *
 
 
 #-------------------------------------------------------------------------------
@@ -39,7 +39,7 @@ def ps3_generate_pkgs(env, source, destination):
                 if call_process('.', ['make_edata_npdrm', drm_source, drm_dest]) != 0:
                     return False
         # make_package_npdrm doesn’t handle Unix path separators properly
-        if platform.system()[0:7] == 'MSYS_NT':
+        if is_msys():
             pkg_conf_file = pkg_conf_file.replace('/', '\\')
 
         if 0 != call_process(pkg_destination, ["make_package_npdrm", pkg_conf_file, pkg_source]):

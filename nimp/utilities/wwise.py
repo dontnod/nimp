@@ -2,12 +2,12 @@
 
 import os.path
 import shutil
-import platform
 
 from nimp.utilities.perforce import *
 from nimp.utilities.processes import *
 from nimp.utilities.file_mapper import *
 from nimp.utilities.deployment import *
+from nimp.utilities.system import *
 
 #---------------------------------------------------------------------------
 def build_wwise_banks(env):
@@ -25,7 +25,7 @@ def build_wwise_banks(env):
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring/x64/Release/bin/WWiseCLI.exe")
 
     # WWiseCLI doesn’t handle Unix path separators properly
-    if platform.system()[0:7] == 'MSYS_NT':
+    if is_msys():
         wwise_project = wwise_project.replace('/', '\\')
 
     # One of the WWise tools doesn’t like duplicate environment variables;

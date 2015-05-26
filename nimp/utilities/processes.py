@@ -7,9 +7,9 @@ import sys
 import threading
 import time
 import tempfile
-import platform
 
 from nimp.utilities.logging import *
+from nimp.utilities.system import *
 from nimp.utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ def _sanitize_command(command):
     # If we’re running under MSYS, leading slashes in command line arguments
     # will be treated as a path, so we need to escape them, except if the given
     # argument is indeed a file
-    if platform.system()[0:7] == 'MSYS_NT':
+    if is_msys():
         return [re.sub('^/', '//', x) for x in command]
 
     return command
