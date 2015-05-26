@@ -42,7 +42,12 @@ def capture_process_output(directory, command, input = None):
 
     # Bonjour toi qui te tappe un bug parce que j'ai fait le connard et mis
     # l'encodage en dur.
-    return process.wait(), output.decode("cp437"), error.decode("cp437")
+    try:
+        output, error = output.decode("utf-8"), error.decode("utf-8")
+    except:
+        output, error = output.decode("cp437"), error.decode("cp437")
+
+    return process.wait(), output, error
 
 #-------------------------------------------------------------------------------
 def call_process(directory, command, stdout_callback = _default_log_callback,
@@ -68,7 +73,10 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
         while process:
             try:
                 for line in iter(pipe.readline, ''):
-                    line = line.decode("cp850")
+                    try:
+                        line = line.decode("utf-8")
+                    except:
+                        line = line.decode("cp850")
 
                     if line == '':
                         break
