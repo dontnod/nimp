@@ -27,5 +27,5 @@ class CisLoadPackagesCommand(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, env):
-        #with deploy_latest_revision(env, env.publish_version, env.revision, ['Win64']):
-        return ue4_commandlet(env, "loadpackage", "-all")
+        with deploy_latest_revision(env, env.publish_version, env.revision, ['Win64']):
+            return ue4_commandlet(env, "loadpackage", "-all")
