@@ -6,20 +6,16 @@ from nimp.utilities.deployment  import *
 from nimp.utilities.file_mapper import *
 
 #-------------------------------------------------------------------------------
-class CisCommandletCommand(CisCommand):
+class CisLoadPackagesCommand(CisCommand):
     abstract = 0
     def __init__(self):
         CisCommand.__init__(self,
-                            'cis-commandlet',
-                            'Runs a commandlet')
+                            'cis-load-packages',
+                            'Checks pacakge loading')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
         CisCommand.configure_arguments(self, env, parser)
-
-        parser.add_argument('commandlet',
-                            help    = 'Commandlet name',
-                            metavar = '<COMMANDLET>')
 
         parser.add_argument('-r',
                             '--revision',
@@ -27,15 +23,9 @@ class CisCommandletCommand(CisCommand):
                             metavar = '<revision>',
                             default = None)
 
-        parser.add_argument('--args',
-                            help    = 'Arguments to give to the commandlet.',
-                            nargs=2,
-                            action='append',
-                            default = [])
-
         return True
 
     #---------------------------------------------------------------------------
     def _cis_run(self, env):
-        with deploy_latest_revision(env, env.publish_version, env.revision, ['Win64']):
-            return ue4_commandlet(env)
+        #with deploy_latest_revision(env, env.publish_version, env.revision, ['Win64']):
+        return ue4_commandlet(env, "loadpackage", "-all")
