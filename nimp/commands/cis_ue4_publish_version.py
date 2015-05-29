@@ -66,10 +66,18 @@ class CisUe4PublishVersion(CisCommand):
             if not all_map(robocopy, files_to_publish()):
                 return False
 
-            log_notification("[nimp] Writing CL.txt file {0}…", configuration)
-            if(hasattr(env, 'cl_txt_path')):
-                cl_txt_path = os.path.join(publish_version_path, env.cl_txt_path)
-                with open(cl_txt_path, "w") as cl_txt_file:
-                    cl_txt_file.write("%s\n" % env.revision)
+            if(hasattr(env, 'unreal_prop_path')):
+                publish_to_unreal_prop = env.map_files().to(env.unreal_prop_path)
+                log_notification("[nimp] Copying files to unreal prop…")
+                publish_to_unreal_prop.load_set("version")
+
+                if not all_map(robocopy, publish_to_unreal_prop()):
+                    return False
+
+                log_notification("[nimp] Writing CL.txt file {0}…", configuration)
+                if(hasattr(env, 'cl_txt_path')):
+                    cl_txt_path = os.path.join(publish_version_path, env.cl_txt_path)
+                    with open(cl_txt_path, "w") as cl_txt_file:
+                        cl_txt_file.write("%s\n" % env.revision)
         return True
 

@@ -37,3 +37,16 @@ def _ue4_generate_project():
 def _ue4_build_project(sln_file, project, build_platform, configuration, vs_version, target = 'Rebuild'):
     return vsbuild(sln_file, build_platform, configuration, project, vs_version, target)
 
+#---------------------------------------------------------------------------
+def ue4_commandlet(env):
+    cmdline = [ "../Engine/Binaries/Win64/UE4Editor.exe",
+               env.game,
+               "-run",
+               env.commandlet]
+
+    if(env.arg is not None):
+        for key_value in env.arg:
+            cmdline += [key_value[0], key_value[1]]
+    cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
+
+    return call_process(".", cmdline) == 0
