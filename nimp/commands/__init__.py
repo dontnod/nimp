@@ -1,6 +1,7 @@
 __all__ = [
     "_command",
     "cis_tomat_mining",
+    "cis_run_commandlet",
     "cis_ue3_build",
     "cis_ue3_publish_version",
     "cis_ue3_ship",
