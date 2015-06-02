@@ -4,7 +4,7 @@ from nimp.commands._command import *
 from nimp.utilities.ue4 import *
 
 #-------------------------------------------------------------------------------
-class Ue3ShipCommand(Command):
+class Ue4ShipCommand(Command):
     def __init__(self):
         Command.__init__(self, 'ue4-ship', 'Generate shippable loose files in target directory')
 
