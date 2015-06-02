@@ -46,7 +46,12 @@ class CisUe4PublishVersion(CisCommand):
                             add_not_versioned_files = False) as trans:
             files_to_deploy = env.map_files()
             for configuration in env.configurations:
-                files_to_deploy.override(configuration = configuration).src(env.publish_binaries).glob("**")
+                deploy_config = files_to_deploy.override(configuration = configuration).src(env.publish_binaries)
+
+                if(hasattr(env, 'deploy_version_root')):
+                    deploy_config = deploy_config.to(env.deploy_version_root)
+
+                deploy_config.glob("**")
 
             log_notification("[nimp] Deploying binaries…")
             if not all_map(checkout_and_copy(trans), files_to_deploy()):
@@ -68,7 +73,7 @@ class CisUe4PublishVersion(CisCommand):
 
             if(hasattr(env, 'unreal_prop_path')):
                 unreal_prop_path = env.format(env.unreal_prop_path)
-                publish_to_unreal_prop = env.map_files().to(unreal_prop_path)
+                publish_to_unreal_prop = env.map_files().override(is_unreal_prop_version = True).to(unreal_prop_path)
                 log_notification("[nimp] Copying files to unreal prop…")
                 publish_to_unreal_prop.load_set("version")
 

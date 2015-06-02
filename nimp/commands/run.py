@@ -21,7 +21,10 @@ class RunCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        cmdline = [] + env.command
+        cmdline = []
+        for arg in env.command:
+            cmdline.extend(env.format(arg))
+
         return call_process(".", cmdline,
                             stdout_callback = _stdout_callback,
                             stderr_callback = _stderr_callback) == 0
