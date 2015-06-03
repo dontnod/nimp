@@ -16,6 +16,10 @@ from nimp.utilities.deployment import *
 def ue4_build(env):
     vs_version = '12'
 
+    if not env.configuration:
+        log_error("[nimp] Invalid empty value for configuration")
+        return False
+
     if _ue4_generate_project() != 0:
         log_error("[nimp] Error generating UE4 project files")
         return False

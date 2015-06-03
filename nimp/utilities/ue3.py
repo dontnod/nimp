@@ -42,6 +42,10 @@ def ue3_build(env):
     result          = True
     version_file_cl = None
 
+    if not configuration:
+        log_error("[nimp] Invalid empty value for configuration")
+        return False
+
     log_verbose("[nimp] Building UBT")
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
         log_error("[nimp] Error building UBT")
