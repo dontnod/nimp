@@ -150,13 +150,26 @@ def p4_submit(cl_number):
     return _p4_run_command(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number]) is not None
 
 #-------------------------------------------------------------------------------
-def p4_sync(cl_number = None):
+def p4_sync(file = None, cl_number = None):
     p4_command = ["p4", "-z", "tag", "sync"]
+    file_spec = ""
+
+    if file is not None:
+        file_spec = file
 
     if cl_number is not None:
-        p4_command = p4_command + ["@{0}".format(cl_number)]
+        file_spec += "@%s" % cl_number
 
-    return _p4_run_command(".", p4_command) is not None
+    if len(file_spec) > 0:
+        p4_command += [file_spec]
+
+    result, output, error = capture_process_output('.', p4_command, None)
+    if (result != 0 or error != '') and 'file(s) up-to-date' not in error:
+            log_error("Error syncing : {0}", error)
+            return False
+
+    return True
+
 
 #-------------------------------------------------------------------------------
 def p4_transaction(cl_description, submit_on_success = False, revert_unchanged = True, add_not_versioned_files = True):
