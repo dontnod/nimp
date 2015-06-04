@@ -30,7 +30,7 @@ def _get_nodes_dictionary(node_list):
     for node_it in node_list:
         node_name = node_it.name()
         if node_name in node_dictionary:
-            log_error('[nimp] Found two nodes named "{0}": {1} and {2}',
+            log_error(log_prefix() + 'Found two nodes named "{0}": {1} and {2}',
                       node_name,
                       all_nodes[node_name].__class__.__name__,
                       node_it.__class__.__name__)
@@ -62,7 +62,7 @@ def _recursive_topological_sort(node,
 
         for dependency_name_it in node.dependencies():
             if dependency_name_it not in all_nodes:
-                log_warning('[nimp] Unknown node "{0}" in "{1}" dependencies', dependency_name_it, node_name)
+                log_warning(log_prefix() + 'Unknown node "{0}" in "{1}" dependencies', dependency_name_it, node_name)
                 continue
 
             dependency_it = all_nodes[dependency_name_it]
@@ -72,7 +72,7 @@ def _recursive_topological_sort(node,
                                                                  visited_nodes_names,
                                                                  sorted_nodes_names)
             if(not no_circular_dependency):
-                log_error("[nimp] Circular node dependency detected: {0} -> {1}",
+                log_error(log_prefix() + "Circular node dependency detected: {0} -> {1}",
                           node_name,
                           dependency_name_it)
                 return False

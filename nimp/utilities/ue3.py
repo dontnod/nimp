@@ -43,12 +43,12 @@ def ue3_build(env):
     version_file_cl = None
 
     if not configuration:
-        log_error("[nimp] Invalid empty value for configuration")
+        log_error(log_prefix() + "Invalid empty value for configuration")
         return False
 
-    log_verbose("[nimp] Building UBT")
+    log_verbose(log_prefix() + "Building UBT")
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
-        log_error("[nimp] Error building UBT")
+        log_error(log_prefix() + "Error building UBT")
         return False
 
     def _build(solution, vs_version):
@@ -73,14 +73,14 @@ def ue3_ship(env, destination = None):
     master_directory = env.format(env.publish_master)
 
     if os.path.exists(master_directory):
-        log_notification("[nimp] Found a master at {0}: I’m going to build a patch", master_directory)
+        log_notification(log_prefix() + "Found a master at {0}: I’m going to build a patch", master_directory)
         if env.dlc == env.project:
             return _ship_game_patch(env, destination or env.publish_ship)
         else:
-            log_error("[nimp] Sorry, building a DLC patch is still not implemented")
+            log_error(log_prefix() + "Sorry, building a DLC patch is still not implemented")
     else:
         if env.dlc == env.project:
-            log_error("[nimp] Sorry, building a game master is still not implemented")
+            log_error(log_prefix() + "Sorry, building a game master is still not implemented")
         else:
             return _ship_dlc(env, destination or env.publish_ship)
 
@@ -88,7 +88,7 @@ def ue3_ship(env, destination = None):
 def _ship_dlc(env, destination):
     map = env.cook_maps[env.dlc.lower()]
 
-    log_notification("[nimp] Cooking…")
+    log_notification(log_prefix() + "Cooking…")
     if not ue3_cook(env.game,
                     map,
                     env.languages,
@@ -97,7 +97,7 @@ def _ship_dlc(env, destination):
                     'final'):
         return False
 
-    log_notification("[nimp] Copying DLC to output directory…")
+    log_notification(log_prefix() + "Copying DLC to output directory…")
     dlc_files = env.map_files()
     dlc_files.to(destination).load_set("DLC")
 
@@ -109,11 +109,11 @@ def _ship_game_patch(env, destination):
 
     master_files = env.map_files()
     master_files_source = master_files.src(env.publish_master).recursive().files()
-    log_notification("[nimp] Deploying master…")
+    log_notification(log_prefix() + "Deploying master…")
     if not all_map(robocopy, master_files()):
         return False
 
-    log_notification("[nimp] Cooking on top of master…")
+    log_notification(log_prefix() + "Cooking on top of master…")
     if not ue3_cook(env.game,
                     map,
                     env.languages,
@@ -123,7 +123,7 @@ def _ship_game_patch(env, destination):
                     incremental = True):
         return False
 
-    log_notification("[nimp] Redeploying master cook ignoring patched files…")
+    log_notification(log_prefix() + "Redeploying master cook ignoring patched files…")
     patch_files = env.map_files()
     patch_files.src(env.publish_master).override(step = 'patching').load_set("Patch")
     files_to_exclude = [src for src, *args in patch_files()]
@@ -138,14 +138,14 @@ def _ship_game_patch(env, destination):
         if not all_map(robocopy, cook_files()):
             return False
 
-    log_notification("[nimp] Generating TOC…")
+    log_notification(log_prefix() + "Generating TOC…")
     if not generate_toc(env, dlc = "Episode01" if env.dlc == env.project else env.dlc):
         return False
 
     if env.is_ps3:
         _generate_ps3_binaries(env)
 
-    log_notification("[nimp] Copying patched files to output directory…")
+    log_notification(log_prefix() + "Copying patched files to output directory…")
     patch_files = env.map_files()
     patch_files.to(destination).override(step = 'deploy').load_set("Patch")
     if not all_map(robocopy, patch_files()):
@@ -185,7 +185,7 @@ def ue3_commandlet(game, name, args):
     game_executable = os.path.join(game + '.exe')
     game_path = os.path.join(game_directory, game_executable)
     if not os.path.exists(game_path):
-        log_error('[nimp] Unable to find game executable at {0}', game_path)
+        log_error(log_prefix() + "Unable to find game executable at {0}", game_path)
         return False
 
     cmdline = [ "./" + game_executable, name ] + args + ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
@@ -226,7 +226,7 @@ def _ue3_build_project(sln_file, project, configuration, vs_version, target = 'R
 
 #---------------------------------------------------------------------------
 def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
-    log_notification("[nimp] Building Editor C# libraries")
+    log_notification(log_prefix() + "Building Editor C# libraries")
 
     editor_config = 'Debug' if configuration.lower() == "debug" else 'Release'
 
@@ -246,7 +246,7 @@ def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
         shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.dll'), dll_target)
         shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.pdb'), dll_target)
     except Exception as ex:
-        log_error("[nimp] Error while copying editor dlls {0}".format(ex))
+        log_error(log_prefix() + "Error while copying editor dlls {0}".format(ex))
         return False
     return True
 

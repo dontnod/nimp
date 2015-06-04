@@ -90,15 +90,15 @@ class FileMapper(object):
         try:
             conf = open(file_name, "rb").read()
         except Exception as exception:
-            log_error("[nimp] Unable to open file: {0}", exception)
+            log_error(log_prefix() + "Unable to open file: {0}", exception)
             return None
         try:
             exec(compile(conf, file_name, 'exec'), None, locals)
             if not "map" in locals:
-                log_error("[nimp] Configuration file {0} has no function called 'map'.", file_name)
+                log_error(log_prefix() + "Configuration file {0} has no function called 'map'.", file_name)
                 return None
         except Exception as e:
-            log_error("[nimp] Unable to load file {0}: {1}", file_name, str(e))
+            log_error(log_prefix() + "Unable to load file {0}: {1}", file_name, str(e))
             return None
 
         locals['map'](self)
@@ -129,7 +129,7 @@ class FileMapper(object):
                     source = source.lower()
                     pattern = pattern.lower()
                 if fnmatch.fnmatch(source, pattern):
-                    log_verbose("[nimp] Excluding file {0}", source)
+                    log_verbose(log_prefix() + "Excluding file {0}", source)
                     raise StopIteration()
             yield (source,) + args
         return self.append(_exclude_mapper)

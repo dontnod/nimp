@@ -32,14 +32,14 @@ def p4_clean_workspace():
     pending_changelists = p4_get_pending_changelists()
 
     for cl_number in pending_changelists:
-        log_notification("[nimp] Deleting changelist {0}", cl_number)
+        log_notification(log_prefix() + "Deleting changelist {0}", cl_number)
         result = result and p4_delete_changelist(cl_number)
 
     return result
 
 #-------------------------------------------------------------------------------
 def p4_create_config_file(port, user, password, client):
-    log_notification("[nimp] Creating .p4config file")
+    log_notification(log_prefix() + "Creating .p4config file")
     p4_config_template = """
 P4USER={user}
 P4PORT={port}
@@ -202,7 +202,7 @@ class _PerforceTransaction:
         elif p4_add(self._cl_number, path):
              return True
 
-        log_error("[nimp] An error occurred while adding file to Perforce transaction")
+        log_error(log_prefix() + "An error occurred while adding file to Perforce transaction")
         self._success = False
 
         return False
@@ -221,19 +221,19 @@ class _PerforceTransaction:
             raise value
 
         if not self._success and self._cl_number is not None:
-            log_verbose("[nimp] Perforce transaction aborted, reverting and deleting CLs…")
+            log_verbose(log_prefix() + "Perforce transaction aborted, reverting and deleting CLs…")
             p4_revert_changelist(self._cl_number)
             p4_delete_changelist(self._cl_number)
         elif self._cl_number is not None:
             if self._revert_unchanged:
-                log_verbose("[nimp] Reverting unchanged files…")
+                log_verbose(log_prefix() + "Reverting unchanged files…")
                 if not p4_revert_unchanged(self._cl_number):
                     return False
             if self._submit_on_success:
-                log_verbose("[nimp] Committing result…")
+                log_verbose(log_prefix() + "Committing result…")
                 return p4_submit(self._cl_number)
         else:
-            log_error("[nimp] An error occurred while entering Perforce transaction, so not doing anything here.")
+            log_error(log_prefix() + "An error occurred while entering Perforce transaction, so not doing anything here.")
         return True
 
 #-------------------------------------------------------------------------------
@@ -241,7 +241,7 @@ def _p4_run_command(directory, command, input = None, log_errors = True):
     result, output, error = capture_process_output(directory, command, input)
     if result != 0 or error != '':
         if log_errors:
-            log_error("[nimp] Perforce error: {1}", input, error.rstrip('\r\n'))
+            log_error(log_prefix() + "Perforce error: {1}", input, error.rstrip('\r\n'))
         return None
     return output
 
@@ -256,7 +256,7 @@ def _p4_parse_command_output(directory, command, pattern, input = None, log_erro
 
     if(match is None):
         if log_errors:
-            log_error('[nimp] Error while parsing p4 command "{0}" output (got {1})', " ".join(command), output)
+            log_error(log_prefix() + 'Error while parsing p4 command "{0}" output (got {1})', " ".join(command), output)
         return None
 
     result = match.group(1)

@@ -126,7 +126,7 @@ class OutputDebugStringLogger(threading.Thread):
             return
 
         self._pid = self._pid_to_winpid(pid)
-        log_verbose("[nimp] Attached to process %d (winpid %d)" % (pid, self._pid))
+        log_verbose(log_prefix() + "Attached to process %d (winpid %d)" % (pid, self._pid))
 
     def run(self):
         if not windll:

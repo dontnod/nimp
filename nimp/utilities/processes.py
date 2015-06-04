@@ -29,7 +29,7 @@ def _sanitize_command(command):
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None):
     command = _sanitize_command(command)
-    log_verbose("[nimp] Running “{0}” in “{1}”", " ".join(command), directory)
+    log_verbose(log_prefix() + "Running “{0}” in “{1}”", " ".join(command), directory)
 
     process = subprocess.Popen(command,
                                cwd    = directory,
@@ -53,7 +53,7 @@ def capture_process_output(directory, command, input = None):
 def call_process(directory, command, stdout_callback = _default_log_callback,
                                      stderr_callback = None):
     command = _sanitize_command(command)
-    log_verbose("[nimp] Running “{0}” in “{1}”", " ".join(command), directory)
+    log_verbose(log_prefix() + "Running “{0}” in “{1}”", " ".join(command), directory)
 
     debug_pipe = OutputDebugStringLogger()
 
@@ -107,6 +107,6 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
     for thread in log_threads:
         thread.join()
 
-    log_verbose("[nimp] Program returned with code {0}", process_return)
+    log_verbose(log_prefix() + "Program returned with code {0}", process_return)
     return process_return
 

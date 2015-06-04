@@ -52,7 +52,7 @@ class CisUe3PublishVersion(CisCommand):
             for configuration in env.configurations:
                 files_to_deploy.override(configuration = configuration).src(env.publish_binaries).glob("**")
 
-            log_notification("[nimp] Deploying binaries…")
+            log_notification(log_prefix() + "Deploying binaries…")
             if not all_map(checkout_and_copy(trans), files_to_deploy()):
                 return False
 
@@ -61,16 +61,16 @@ class CisUe3PublishVersion(CisCommand):
                     try:
                         shutil.rmtree(env.format(env.publish_binaries, configuration = configuration))
                     except Exception as ex:
-                        log_error("[nimp] Error while cleaning binaries : {0}", ex)
+                        log_error(log_prefix() + "Error while cleaning binaries : {0}", ex)
 
             if env.is_win64:
-                log_notification("[nimp] Building script…")
+                log_notification(log_prefix() + "Building script…")
                 if not ue3_build_script(env.game):
-                    log_error("[nimp] Error while building script")
+                    log_error(log_prefix() + "Error while building script")
                     return False
 
             files_to_publish = env.map_files().to(env.publish_version)
-            log_notification("[nimp] Publishing version {0}…", configuration)
+            log_notification(log_prefix() + "Publishing version {0}…", configuration)
             files_to_publish.load_set("Version")
             if not all_map(robocopy, files_to_publish()):
                 return False

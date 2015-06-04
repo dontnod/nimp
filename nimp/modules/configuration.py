@@ -39,7 +39,7 @@ def _load_settings(env):
         return True
 
     if not env.load_config_file(".nimp.conf"):
-        log_error("[nimp] Error loading .nimp.conf.")
+        log_error(log_prefix() + "Error loading .nimp.conf.")
         return False
 
     return True

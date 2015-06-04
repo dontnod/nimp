@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import time
+
+
 #-------------------------------------------------------------------------------
 DEFAULT_BAR_TEMPLATE = "{label}[{filled_chars}{empty_chars}] {position}/{total} - {time_left} - {step_name}"
 DEFAULT_BAR_WIDTH    = 15
@@ -17,6 +20,12 @@ g_logger = None
 def set_logger(logger):
     global g_logger
     g_logger = logger
+
+
+#-------------------------------------------------------------------------------
+def log_prefix():
+    return time.strftime("[%H:%M:%S] Nimp: ")
+
 
 #-------------------------------------------------------------------------------
 def log_message(log_level, message_format, *args):

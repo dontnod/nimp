@@ -18,17 +18,17 @@ def ue4_build(env):
     vs_version = '12'
 
     if not env.configuration:
-        log_error("[nimp] Invalid empty value for configuration")
+        log_error(log_prefix() + "Invalid empty value for configuration")
         return False
 
     if _ue4_generate_project() != 0:
-        log_error("[nimp] Error generating UE4 project files")
+        log_error(log_prefix() + "Error generating UE4 project files")
         return False
 
     if env.ue4_build_platform == 'PS4':
         if not _ue4_build_project(env.solution, 'PS4MapFileUtil', 'Win64',
                                   env.configuration, vs_version, 'Build'):
-            log_error("[nimp] Could not build PS4MapFileUtil.exe")
+            log_error(log_prefix() + "Could not build PS4MapFileUtil.exe")
             return False
 
     # The Durango XDK does not support Visual Studio 2013 yet

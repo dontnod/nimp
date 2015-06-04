@@ -53,7 +53,7 @@ class CisUe4PublishVersion(CisCommand):
 
                 deploy_config.glob("**")
 
-            log_notification("[nimp] Deploying binaries…")
+            log_notification(log_prefix() + "Deploying binaries…")
             if not all_map(checkout_and_copy(trans), files_to_deploy()):
                 return False
 
@@ -62,11 +62,11 @@ class CisUe4PublishVersion(CisCommand):
                     try:
                         shutil.rmtree(env.format(env.publish_binaries, configuration = configuration))
                     except Exception as ex:
-                        log_error("[nimp] Error while cleaning binaries : {0}", ex)
+                        log_error(log_prefix() + "Error while cleaning binaries : {0}", ex)
 
             publish_version_path = env.format(env.publish_version)
             files_to_publish = env.map_files().to(publish_version_path)
-            log_notification("[nimp] Publishing version {0}…", configuration)
+            log_notification(log_prefix() + "Publishing version {0}…", configuration)
             files_to_publish.load_set("version")
             if not all_map(robocopy, files_to_publish()):
                 return False
@@ -74,13 +74,13 @@ class CisUe4PublishVersion(CisCommand):
             if(hasattr(env, 'unreal_prop_path')):
                 unreal_prop_path = env.format(env.unreal_prop_path)
                 publish_to_unreal_prop = env.map_files().override(is_unreal_prop_version = True).to(unreal_prop_path)
-                log_notification("[nimp] Copying files to unreal prop…")
+                log_notification(log_prefix() + "Copying files to unreal prop…")
                 publish_to_unreal_prop.load_set("version")
 
                 if not all_map(robocopy, publish_to_unreal_prop()):
                     return False
 
-                log_notification("[nimp] Writing CL.txt file {0}…", configuration)
+                log_notification(log_prefix() + "Writing CL.txt file {0}…", configuration)
                 if(hasattr(env, 'cl_txt_path')):
                     cl_txt_path = os.path.join(unreal_prop_path, env.cl_txt_path)
                     with open(cl_txt_path, "w") as cl_txt_file:
