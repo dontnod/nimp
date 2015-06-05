@@ -75,5 +75,9 @@ class CisCommand(Command):
                 log_notification("Syncing file {0} to revision {1}", file_path, revision)
                 if not p4_sync(file_path, revision):
                     return False
+                if file_path == ".nimp.conf":
+                    log_notification("Reloading config...")
+                    if not env.load_config_file(".nimp.conf"):
+                        return False
         return True
 
