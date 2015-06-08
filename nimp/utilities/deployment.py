@@ -55,6 +55,8 @@ def deploy_latest_revision(env, version_directory_format, revision, platforms):
             raise Exception("Unable to find a suitable revision for platform %s" % platform)
 
     files_to_deploy = env.map_files()
+    if(hasattr(env, 'deploy_version_root')):
+        files_to_deploy = files_to_deploy.to(env.deploy_version_root)
     for platform in platforms:
         files_to_deploy.override(revision = revision, platform = platform).src(env.publish_version).recursive().files()
 
