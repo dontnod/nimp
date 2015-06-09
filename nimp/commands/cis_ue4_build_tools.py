@@ -27,6 +27,12 @@ class CisUe4BuildTools(CisCommand):
                                        'Swarm',
                                        'NetworkProfiler'])
 
+        parser.add_argument('-r',
+                            '--revision',
+                            help    = 'Current revision',
+                            metavar = '<revision>',
+                            default = None)
+
         parser.add_argument('--no-checkin',
                             help    = 'Don\'t checkin result.',
                             action  = "store_false",
