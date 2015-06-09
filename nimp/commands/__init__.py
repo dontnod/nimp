@@ -7,6 +7,7 @@ __all__ = [
     "cis_ue3_publish_version",
     "cis_ue3_ship",
     "cis_ue4_build",
+    "cis_ue4_build_tools",
     "cis_ue4_publish_version",
     "cis_ue4_ship",
     "cis_wwise_build_banks",
