@@ -13,20 +13,6 @@ class CisUe4BuildTools(CisCommand):
 
     #---------------------------------------------------------------------------
     def cis_configure_arguments(self, env, parser):
-        parser.add_argument('tools_to_build',
-                            help    = 'Commandlet arguments',
-                            metavar = '<ARGS>',
-                            nargs    = '*',
-                            default = ['DotNetUtilities',
-                                       'Swarm',
-                                       'LightMass',
-                                       'ShaderCompileWorker',
-                                       'SymbolDebugger',
-                                       'UnrealFileServer',
-                                       'UnrealFrontend',
-                                       'Swarm',
-                                       'NetworkProfiler'])
-
         parser.add_argument('-r',
                             '--revision',
                             help    = 'Current revision',
@@ -37,6 +23,21 @@ class CisUe4BuildTools(CisCommand):
                             help    = 'Don\'t checkin result.',
                             action  = "store_false",
                             default = True)
+
+        parser.add_argument('tools_to_build',
+                            help    = 'Tools to build',
+                            metavar = '<ARGS>',
+                            nargs    = argparse.REMAINDER,
+                            default = ['DotNetUtilities',
+                                       'Swarm',
+                                       'LightMass',
+                                       'ShaderCompileWorker',
+                                       'SymbolDebugger',
+                                       'UnrealFileServer',
+                                       'UnrealFrontend',
+                                       'Swarm',
+                                       'NetworkProfiler'])
+
         return True
 
     #---------------------------------------------------------------------------

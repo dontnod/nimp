@@ -22,7 +22,7 @@ class CisCommandlet(CisCommand):
         parser.add_argument('args',
                             help    = 'Commandlet arguments',
                             metavar = '<ARGS>',
-                            nargs    = argparse.REMAINDER,)
+                            nargs    = argparse.REMAINDER)
 
         parser.add_argument('-r',
                             '--revision',
