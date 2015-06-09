@@ -56,11 +56,20 @@ def ue4_build_tools(env):
             files_to_checkout.src('../Engine/Binaries').glob(*globs)
             return all_map(checkout(trans), files_to_checkout())
 
+        def add_binaries(*globs):
+            files_to_checkout = env.map_files()
+            files_to_checkout.src('../Engine/Binaries').glob(*globs)
+            for source, dest in files_to_checkout():
+                if not trans.add(source):
+                    return False
+            return True
+
         def build_unreal_project(project, *files_to_checkout):
             if not checkout_binaries(*files_to_checkout):
                 return False
             else:
-                return _ue4_build_project(env.solution, project, 'Win64', 'Development', vs_version, 'Rebuild')
+                result = _ue4_build_project(env.solution, project, 'Win64', 'Development', vs_version, 'Rebuild')
+                return result and add_binaries(*files_to_checkout)
 
         result = True
 
@@ -84,21 +93,24 @@ def ue4_build_tools(env):
             result &= build_unreal_project('UnrealFrontend', 'Win64/UnrealFrontend.*', 'Win64/UnrealFrontend-*.*', 'Win64/PS4/UnrealFrontend-*.*')
         if 'swarm' in tools_to_build:
             log_notification("Building Swarm")
-            if not checkout_binaries('DotNET/AgentInterface.*',
-                                     'DotNET/SwarmAgent.*',
-                                     'DotNET/SwarmCoordinator.*',
-                                     'DotNET/SwarmCoordinatorInterface.*',
-                                     'DotNET/UnrealControls.*',
-                                     'Win64/AgentInterface.*'):
+            binaries = ['DotNET/AgentInterface.*',
+                        'DotNET/SwarmAgent.*',
+                        'DotNET/SwarmCoordinator.*',
+                        'DotNET/SwarmCoordinatorInterface.*',
+                        'DotNET/UnrealControls.*',
+                        'Win64/AgentInterface.*']
+            if not checkout_binaries(*binaries):
                 result = False
             else:
                 result &= vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln', 'Any CPU', 'Development', None, '10', 'Rebuild')
+                result &= add_binaries(*binaries)
         if 'networkprofiler' in tools_to_build:
             log_notification("Building NetworkProfiler")
             if not checkout_binaries('DotNET/NetworkProfiler.*'):
                 result = False
             else:
                 result &= vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln', 'Any CPU', 'Development', None, '10', 'Rebuild')
+                result &= add_binaries('DotNET/NetworkProfiler.*')
         if not result:
             trans.abort()
         return result
