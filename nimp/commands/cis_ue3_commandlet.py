@@ -6,7 +6,7 @@ from nimp.utilities.deployment  import *
 from nimp.utilities.packaging   import *
 
 #-------------------------------------------------------------------------------
-class CisCommandlet(CisCommand):
+class CisUe3Commandlet(CisCommand):
     abstract = 0
     def __init__(self):
         CisCommand.__init__(self, 'cis-ue3-commandlet', 'Executes an unreal 3 commandlet.')
