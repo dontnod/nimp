@@ -47,10 +47,13 @@ class CisUe3Ship(CisCommand):
                 if not all_map(robocopy, master_files()):
                     return False
 
+            log_notification(log_prefix() + "Performing UE3 ship…")
             if not ue3_ship(env):
                 return False
+            log_notification(log_prefix() + "Generating package config…")
             if not generate_pkg_config(env):
                 return False
+            log_notification(log_prefix() + "Building packages…")
             if not make_packages(env):
                 return False
 

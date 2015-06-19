@@ -107,6 +107,6 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
     for thread in log_threads:
         thread.join()
 
-    log_verbose(log_prefix() + "Program returned with code {0}", process_return)
+    log_verbose(log_prefix() + "Program “{0}” finished with exit code {1}", command[0], process_return)
     return process_return
 
