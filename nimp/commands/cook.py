@@ -2,12 +2,13 @@
 
 from nimp.commands._command import *
 from nimp.utilities.ue3 import *
+from nimp.utilities.ue4 import *
 
 #-------------------------------------------------------------------------------
-class Ue3CookCommand(Command):
+class CookCommand(Command):
 
     def __init__(self):
-        Command.__init__(self, 'ue3-cook', 'Cook contents using UE3')
+        Command.__init__(self, 'cook', 'Cook contents for UE3 or UE4')
 
     #---------------------------------------------------------------------------
     # configure_arguments
@@ -40,13 +41,21 @@ class Ue3CookCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        dlc = env.dlc if env.dlc is not None else env.project
-        map = env.cook_maps[dlc.lower()]
-        return ue3_cook(env.game,
-                        map,
-                        env.languages,
-                        None if env.project == env.dlc else env.dlc,
-                        env.ue3_cook_platform,
-                        env.configuration,
-                        env.noexpansion,
-                        env.incremental)
+        if env.project_type is "UE4":
+            return ue4_cook(env)
+
+        if env.project_type is "UE3":
+            dlc = env.dlc if env.dlc is not None else env.project
+            map = env.cook_maps[dlc.lower()]
+            return ue3_cook(env.game,
+                            map,
+                            env.languages,
+                            None if env.project == env.dlc else env.dlc,
+                            env.ue3_cook_platform,
+                            env.configuration,
+                            env.noexpansion,
+                            env.incremental)
+
+        log_error(log_prefix() + "Invalid project type {0}" % (env.project_type))
+        return False
+
