@@ -41,10 +41,10 @@ class CookCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        if env.project_type is "UE4":
+        if hasattr(env, 'project_type') and env.project_type is 'UE4':
             return ue4_cook(env)
 
-        if env.project_type is "UE3":
+        if hasattr(env, 'project_type') and env.project_type is 'UE3':
             dlc = env.dlc if env.dlc is not None else env.project
             map = env.cook_maps[dlc.lower()]
             return ue3_cook(env.game,

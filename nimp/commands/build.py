@@ -2,20 +2,29 @@
 
 from nimp.commands._command import *
 from nimp.utilities.ue3 import *
+from nimp.utilities.ue4 import *
 
 #-------------------------------------------------------------------------------
-class Ue3BuildCommand(Command):
+class BuildCommand(Command):
 
     def __init__(self):
-        Command.__init__(self, 'ue3-build', 'Build UE3 executable')
+        Command.__init__(self, 'build', 'Build UE3 or UE4 executable')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
+
+        if hasattr(env, 'project_type') and env.project_type is 'UE4':
+            default_config = 'development'
+        elif hasattr(env, 'project_type') and env.project_type is 'UE3':
+            default_config = 'release'
+        else:
+            default_config = 'release'
+
         parser.add_argument('-c',
                             '--configuration',
                             help    = 'configuration to build',
                             metavar = '<configuration>',
-                            default = 'release')
+                            default = default_config)
 
         parser.add_argument('-p',
                             '--platform',
@@ -29,6 +38,19 @@ class Ue3BuildCommand(Command):
                             default = False)
         return True
 
+
     #---------------------------------------------------------------------------
     def run(self, env):
-        return ue3_build(env)
+
+        # Unreal Engine 4
+        if hasattr(env, 'project_type') and env.project_type is 'UE4':
+            return ue4_build(env)
+
+        # Unreal Engine 3
+        if hasattr(env, 'project_type') and env.project_type is 'UE3':
+            return ue3_build(env)
+
+        # Error!
+        log_error(log_prefix() + "Invalid project type {0}" % (env.project_type))
+        return False
+

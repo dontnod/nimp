@@ -17,10 +17,8 @@ __all__ = [
     "package",
     "run",
     "cook",
-    "ue3_build",
-    "ue3_ship",
-    "ue4_build",
-    "ue4_ship",
+    "build",
+    "ship",
     "upgrade",
     "vs_build",
 ]
