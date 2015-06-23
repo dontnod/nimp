@@ -23,7 +23,7 @@ def ps3_generate_pkgs(env, source, destination):
         packages_config = packages_config[env.dlc]
 
     for package in packages_config:
-        pkg_destination = env.format(destination, pkg_dest = package['pkg_dest'])
+        pkg_destination = env.format(os.path.join(destination, package['pkg_dest']))
         pkg_source      = env.format(os.path.join(source, package['source']))
         pkg_conf_file   = env.format(os.path.join(source, package['conf']))
         safe_makedirs(pkg_destination)
