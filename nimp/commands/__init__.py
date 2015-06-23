@@ -17,6 +17,7 @@ __all__ = [
     "package",
     "run",
     "cook",
+    "shaders",
     "build",
     "ship",
     "upgrade",

@@ -68,6 +68,16 @@ def ue3_build(env):
     else:
         return _build(solution, vs_version)
 
+
+# Rebuild shaders
+def ue3_shaders(env):
+    args = [ '-platform=' + env.ue3_shader_platform,
+             '-refcache',
+             '-skipmaps',
+             '-allow_parallel_precompileshaders' ]
+    return ue3_commandlet(env.game, 'precompileshaders', args)
+
+
 #---------------------------------------------------------------------------
 def ue3_ship(env, destination = None):
     master_directory = env.format(env.publish_master)
