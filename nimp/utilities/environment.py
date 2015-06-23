@@ -49,23 +49,35 @@ class Environment:
 
         return True
 
+
+    # Try to guess the Unreal platform name; the return
+    # value should match UE3’s appGetPlatformString().
+    def normalize_platform_string(self, platform):
+        std_platforms = { "ps4"       : "PS4",
+                          "orbis"     : "PS4",
+                          "xboxone"   : "XboxOne",
+                          "dingo"     : "XboxOne",
+                          "win32"     : "Win32",
+                          "pcconsole" : "Win32",
+                          "win64"     : "Win64",
+                          "pc"        : "Win64",
+                          "windows"   : "Win64",
+                          "xbox360"   : "XBox360",
+                          "x360"      : "XBox360",
+                          "ps3"       : "PS3",
+                          "linux"     : "Linux",
+                          "mac"       : "Mac",
+                          "macos"     : "Mac" }
+
+        if platform.lower() in std_platforms:
+            return std_platforms[platform.lower()]
+        else:
+            return ""
+
+
     def standardize_names(self):
         if hasattr(self, "platform"):
-            std_platforms = { "ps4"       : "PS4",
-                              "orbis"     : "PS4",
-                              "xboxone"   : "XboxOne",
-                              "dingo"     : "XboxOne",
-                              "win32"     : "Win32",
-                              "pcconsole" : "Win32",
-                              "win64"     : "Win64",
-                              "pc"        : "Win64",
-                              "windows"   : "Win64",
-                              "xbox360"   : "XBox360",
-                              "x360"      : "XBox360",
-                              "ps3"       : "PS3" }
-
-            if(self.platform.lower() in std_platforms):
-                self.platform = std_platforms[self.platform.lower()]
+            self.platform = self.normalize_platform_string(self.platform)
 
             self.is_win32 = self.platform == "Win32"
             self.is_win64 = self.platform == "Win64"
@@ -73,6 +85,8 @@ class Environment:
             self.is_ps4   = self.platform == "PS4"
             self.is_x360  = self.platform == "XBox360"
             self.is_xone  = self.platform == "XboxOne"
+            self.is_linux = self.platform == "Linux"
+            self.is_mac   = self.platform == "Mac"
 
             self.is_microsoft_platform = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
             self.is_sony_platform      = self.is_ps3 or self.is_ps4
@@ -89,13 +103,27 @@ class Environment:
                                    "Win64"   : "PC",
                                    "Win32"   : "PCConsole",
                                    "XBox360" : "Xbox360",
-                                   "PS3"     : "PS3" }
+                                   "PS3"     : "PS3",
+                                   "Linux"   : "PCConsole",
+                                   "Mac"     : "PCConsole" }
 
-            if(self.platform in ue3_cook_platforms):
+            ue3_shader_platforms = { "PS4"     : "ORBIS",
+                                     "XboxOne" : "Dingo",
+                                     "Win64"   : "PC",
+                                     "Win32"   : "PCConsole",
+                                     "XBox360" : "Xbox360",
+                                     "PS3"     : "PS3",
+                                     "Linux"   : "Linux",
+                                     "Mac"     : "Mac" }
+
+            if self.platform in ue3_build_platforms:
+                self.ue3_build_platform = ue3_build_platforms[self.platform]
+
+            if self.platform in ue3_cook_platforms:
                 self.ue3_cook_platform = ue3_cook_platforms[self.platform]
 
-            if(self.platform in ue3_build_platforms):
-                self.ue3_build_platform = ue3_build_platforms[self.platform]
+            if self.platform in ue3_shader_platforms:
+                self.ue3_shader_platform = ue3_shader_platforms[self.platform]
 
             ue4_build_platforms = { "PS4"     : "PS4",
                                     "XboxOne" : "XboxOne",
@@ -111,13 +139,13 @@ class Environment:
                                    "XBox360" : "Xbox360",
                                    "PS3"     : "PS3" }
 
-            if(self.platform in ue4_cook_platforms):
+            if self.platform in ue4_cook_platforms:
                 self.ue4_cook_platform = ue4_cook_platforms[self.platform]
                 configuration = self.configuration.lower() if hasattr(self, 'configuration') and self.configuration is not None else 'final'
                 suffix = 'Final' if configuration in ['test', 'final'] else ''
                 self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, suffix)
 
-            if(self.platform in ue4_build_platforms):
+            if self.platform in ue4_build_platforms:
                 self.ue4_build_platform = ue4_build_platforms[self.platform]
 
             upms_platforms = { "PS4"     : "PS4",
@@ -127,7 +155,7 @@ class Environment:
                                "XBox360" : "Xbox360",
                                "PS3"     : "PS3" }
 
-            if(self.platform in upms_platforms):
+            if self.platform in upms_platforms:
                 self.upms_platform = upms_platforms[self.platform]
 
             if hasattr(self, 'dlc'):
@@ -150,10 +178,11 @@ class Environment:
                               "PS3"     : "PS3",
                               "PS4"     : "PS4" }
 
-            if(self.platform in banks_platforms):
+            if self.platform in banks_platforms:
                 self.wwise_banks_platform = banks_platforms[self.platform]
-            if(self.platform in cmd_platforms):
+            if self.platform in cmd_platforms:
                 self.wwise_cmd_platform = cmd_platforms[self.platform]
+
 
 #---------------------------------------------------------------------------
 def check_keys(dict, error_format, *args):
