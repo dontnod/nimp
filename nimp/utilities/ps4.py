@@ -24,7 +24,12 @@ def generate_gp4(env, dest_dir):
 
     for package in packages_config:
         mandatory_keys_error_format = "{{key}} should be defined in gp4 settings for {dlc}".format(dlc = env.dlc)
-        if not check_keys(package, mandatory_keys_error_format, 'gp4_file', 'volume_type', 'content_id', 'passcode'):
+        if not check_keys(package, mandatory_keys_error_format,
+                          'gp4_file',
+                          'volume_id',
+                          'volume_type',
+                          'content_id',
+                          'passcode'):
             return False
 
         gp4_file = env.format(os.path.join(dest_dir, package['gp4_file']), **package)
@@ -33,6 +38,7 @@ def generate_gp4(env, dest_dir):
             os.remove(gp4_file)
         create_gp4_command = ['orbis-pub-cmd.exe',
                               'gp4_proj_create',
+                              #'--volume_id',   package['volume_id'],
                               '--volume_type', package['volume_type'],
                               '--content_id',  package['content_id'],
                               '--passcode',    package['passcode'] ]
@@ -91,8 +97,15 @@ def generate_gp4(env, dest_dir):
 
         for source, destination in pkg_files():
             log_notification("{0}   {1}", source, destination)
-            destination = destination.replace('\\', '/')
-            if call_process('.', ['orbis-pub-cmd.exe', 'gp4_file_add', source, destination, gp4_file]) != 0:
+
+            add_file_command = ['orbis-pub-cmd.exe', 'gp4_file_add']
+
+            if os.path.splitext(destination)[1].lower() in [ '.bin', '.bnk', '.pck', '.xxx' ]:
+                add_file_command += ['--pfs_compression', 'enable' ]
+
+            add_file_command += [source, destination.replace('\\', '/'), gp4_file]
+
+            if call_process('.', add_file_command) != 0:
                 return False
 
     return True
