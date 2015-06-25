@@ -102,12 +102,9 @@ def p4_get_files_status(*files):
 def p4_edit(cl_number, *files):
     edit_input = ""
 
-    for file_name, head_action in p4_get_files_status(*files):
+    for file_name, head_action, action in p4_get_files_status(*files):
         if head_action == "delete":
             log_verbose("Ignoring deleted file {0}", file_name)
-            continue
-        elif head_action is "not_versionned":
-            log_verbose("Ignoring not versionned file {0}", file_name)
             continue
         log_verbose("Adding file {0} to checkout", file_name)
         edit_input += file_name + "\n"
