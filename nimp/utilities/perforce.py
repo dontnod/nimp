@@ -206,7 +206,7 @@ def p4_submit(cl_number):
     log_notification("Submiting changelist {0}...", cl_number)
     result, output, error = capture_process_output(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number])
 
-    if error is not None:
+    if error is not None and error != "":
         if "No files to submit." in error:
             log_notification("CL {0} is empty, deleting it...", cl_number)
             return p4_delete_changelist(cl_number)
