@@ -67,8 +67,76 @@ def p4_delete_changelist(cl_number):
     return output is not None
 
 #-------------------------------------------------------------------------------
-def p4_edit(cl_number, file):
-    return _p4_run_command(".", ["p4", "-z", "tag", "edit", "-c", cl_number, file])
+def p4_get_files_status(*files):
+    files = list(files)
+    for i in range(0, len(files)):
+        if os.path.isdir(files[i]):
+            files[i] = files[i] + "/..."
+
+    result, output, error = capture_process_output(".", ["p4", "-x", "-", "-z", "tag","fstat"], '\n'.join(files))
+    files_infos = output.strip().replace('\r', '').split('\n\n')
+    edit_input = ""
+
+    for file_info in files_infos:
+        if "no such file(s)" in file_info or "file(s) not in client" in file_info:
+            continue
+        file_name_match   = re.search(r"\.\.\.\s*clientFile\s*(.*)", file_info)
+        head_action_match = re.search(r"\.\.\.\s*headAction\s*(\w*)", file_info)
+        action_match      = re.search(r"\.\.\.\s*action\s*(\w*)", file_info)
+
+        if file_name_match is None or head_action_match is None:
+            log_error("Got unexpected output from p4 fstat : {0}", file_info)
+            continue
+
+        file_name = file_name_match.group(1)
+        if action_match is not None:
+            action = action_match.group(1)
+        else:
+            action = None
+
+        head_action = head_action_match.group(1)
+
+        yield (file_name, head_action, action)
+
+#-------------------------------------------------------------------------------
+def p4_edit(cl_number, *files):
+    edit_input = ""
+
+    for file_name, head_action in p4_get_files_status(*files):
+        if head_action == "delete":
+            log_verbose("Ignoring deleted file {0}", file_name)
+            continue
+        elif head_action is "not_versionned":
+            log_verbose("Ignoring not versionned file {0}", file_name)
+            continue
+        log_verbose("Adding file {0} to checkout", file_name)
+        edit_input += file_name + "\n"
+
+    return _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "edit", "-c", cl_number], edit_input)
+
+#-------------------------------------------------------------------------------
+def p4_reconcile(cl_number, *files):
+    delete_input = ""
+    for file_name, head_action, action in p4_get_files_status(*files):
+        if action == "edit" and not os.path.exists(file_name):
+            log_verbose("Manually reverting and deleting checkouted and missing file {0}", file_name)
+            delete_input += file_name + "\n"
+
+    if delete_input != "":
+        if not _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "revert"], delete_input):
+            return False
+        if not _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "delete", "-c", cl_number], delete_input):
+            return False
+
+    reconcile_input = ""
+    files = list(files)
+    for file in files:
+        reconcile_input += file
+        if os.path.isdir(file):
+            reconcile_input +=  "/..."
+        reconcile_input += "\n"
+
+    return _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "reconcile", "-c", cl_number], reconcile_input, False)
 
 #-------------------------------------------------------------------------------
 def p4_get_changelist_description(cl_number):
@@ -129,15 +197,6 @@ def p4_is_file_versioned(file_path):
     return not "no such file(s)" in error and not "file(s) not in client" in error
 
 #-------------------------------------------------------------------------------
-def p4_reconcile(cl_number, path):
-    if os.path.isdir(path):
-        path = path + "/..."
-
-    if _p4_run_command(".", ["p4", "-z", "tag", "reconcile", "-c", cl_number, path]) is None:
-            return False
-    return True
-
-#-------------------------------------------------------------------------------
 def p4_revert_changelist(cl_number):
     return _p4_run_command(".", ["p4", "-z", "tag", "revert", "-c", cl_number, "//..."]) is not None
 
@@ -147,7 +206,17 @@ def p4_revert_unchanged(cl_number):
 
 #-------------------------------------------------------------------------------
 def p4_submit(cl_number):
-    return _p4_run_command(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number]) is not None
+    log_notification("Submiting changelist {0}...", cl_number)
+    result, output, error = capture_process_output(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number])
+
+    if error is not None:
+        if "No files to submit." in error:
+            log_notification("CL {0} is empty, deleting it...", cl_number)
+            return p4_delete_changelist(cl_number)
+        log_error("Perforce error submiting changelist {0} : {1}", cl_number, error)
+        return False
+
+    return True
 
 #-------------------------------------------------------------------------------
 def p4_sync(file = None, cl_number = None):

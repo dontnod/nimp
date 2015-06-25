@@ -90,7 +90,7 @@ class FileMapper(object):
         try:
             conf = open(file_name, "rb").read()
         except Exception as exception:
-            log_error(log_prefix() + "Unable to open file: {0}", exception)
+            log_error(log_prefix() + "Error loading file set : unable to open file: {0}", exception)
             return None
         try:
             exec(compile(conf, file_name, 'exec'), None, locals)
@@ -98,10 +98,12 @@ class FileMapper(object):
                 log_error(log_prefix() + "Configuration file {0} has no function called 'map'.", file_name)
                 return None
         except Exception as e:
-            log_error(log_prefix() + "Unable to load file {0}: {1}", file_name, str(e))
+            log_error(log_prefix() + "Error loading file set : unable to load file {0}: {1}", file_name, str(e))
             return None
 
         locals['map'](self)
+
+        return self
 
     #---------------------------------------------------------------------------
     def override(self, **format):

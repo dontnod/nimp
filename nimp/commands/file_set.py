@@ -24,7 +24,7 @@ class MapCommand(Command):
         parser.add_argument('action',
                             help    = 'Action to execute on listed files',
                             metavar = '<ACTION>',
-                            choices = ['robocopy', 'checkout', 'generate-toc', 'list'])
+                            choices = ['robocopy', 'checkout', 'generate-toc', 'reconcile', 'reconcile_and_submit', 'list'])
 
         parser.add_argument('--to',
                             help    = 'Destination, if relevant',

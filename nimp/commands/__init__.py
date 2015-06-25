@@ -15,6 +15,7 @@ __all__ = [
     "file_set",
     "nimp_qa",
     "package",
+    "perforce",
     "run",
     "cook",
     "shaders",
