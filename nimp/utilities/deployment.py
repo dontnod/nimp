@@ -99,7 +99,17 @@ def upload_microsoft_symbols(env, paths):
 #-------------------------------------------------------------------------------
 def robocopy(source, destination, *args):
     """ 'Robust' copy. """
-    log_verbose("{0} => {1}", source, destination)
+
+    # If these look like a Windows path, get rid of all "/" path separators
+    if os.sep is '\\':
+        source = source.replace('/', '\\')
+        destination = destination.replace('/', '\\')
+    elif os.sep is '/':
+        source = source.replace('\\', '/')
+        destination = destination.replace('\\', '/')
+
+    log_verbose(log_prefix() + 'Copying “{0}” to “{1}”', source, destination)
+
     if os.path.isdir(source):
         safe_makedirs(destination)
     elif os.path.isfile(source):
@@ -109,8 +119,10 @@ def robocopy(source, destination, *args):
             if os.path.exists(destination):
                 os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
             shutil.copy2(source, destination)
-        except:
+        except Exception as e:
+            log_error(log_prefix() + 'Error: {0}', e)
             return False
+
     return True
 
 #-------------------------------------------------------------------------------
