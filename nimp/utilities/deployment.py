@@ -72,13 +72,13 @@ def deploy_latest_revision(env, version_directory_format, revision, platforms):
 def upload_microsoft_symbols(env, paths):
     symbols = env.map_files()
 
+    search = [ '**/*.pdb' ]
+    if env.is_x360:
+        search.append('**/*.xdb')
+
     for path in paths:
-        for g in [ "**/*.pdb", "**/*.xdb" ]:
-            try:
-                symbols.src(path).glob(g)
-            except:
-                # Not finding symbols is OK for some platforms
-                pass
+        for g in search:
+            symbols.src(path).glob(g)
 
     with open("symbols_index.txt", "w") as symbols_index:
         for src, dest in symbols():
