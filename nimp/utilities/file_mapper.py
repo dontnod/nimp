@@ -219,7 +219,10 @@ class FileMapper(object):
             if os.path.isdir(source):
                 for file in os.listdir(source):
                     child_source = os.path.normpath(os.path.join(source, file))
-                    child_dest = os.path.normpath(os.path.join(destination, file))
+                    if destination is not None:
+                        child_dest = os.path.normpath(os.path.join(destination, file))
+                    else:
+                        child_dest = os.path.normpath(file)
                     for child_source, child_destination in _recursive_mapper(child_source, child_dest):
                         yield (child_source, child_destination)
         return self.append(_recursive_mapper)
