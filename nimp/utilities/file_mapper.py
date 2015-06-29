@@ -53,10 +53,12 @@ class FileMapper(object):
     def glob(self, *patterns):
         def _glob_mapper(src = '', dst = '', *args):
             source_path_len = len(split_path(src))
-            for glob_path in patterns:
-                glob_path = self._format(glob_path)
-                glob_path = os.path.join(src, glob_path)
+            for pattern in patterns:
+                found = False
+                pattern = self._format(pattern)
+                glob_path = os.path.join(src, pattern)
                 for glob_source in glob2.glob(glob_path):
+                    found = True
                     glob_source = str(glob_source)
                     # This is merely equivalent to os.path.relpath(source, self._source_path)
                     # excepted it will handle globs pattern in the base path.
@@ -66,6 +68,8 @@ class FileMapper(object):
                     destination = os.path.join(dst, destination)
                     destination = os.path.normpath(destination)
                     yield (glob_source, destination) + args
+                if not found:
+                    raise Exception("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
         return self.append(_glob_mapper)
 
     #--------------------------------------------------------------------------
