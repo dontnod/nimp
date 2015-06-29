@@ -73,7 +73,12 @@ def upload_microsoft_symbols(env, paths):
     symbols = env.map_files()
 
     for path in paths:
-        symbols.src(path).glob("**/*.pdb", "**/*.xdb")
+        for g in [ "**/*.pdb", "**/*.xdb" ]:
+            try:
+                symbols.src(path).glob(g)
+            except:
+                # Not finding symbols is OK for some platforms
+                pass
 
     with open("symbols_index.txt", "w") as symbols_index:
         for src, dest in symbols():
