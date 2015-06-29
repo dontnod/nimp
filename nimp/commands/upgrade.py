@@ -6,7 +6,7 @@ from nimp.utilities.processes import *
 from nimp.commands._command import *
 
 #-------------------------------------------------------------------------------
-class RunCommand(Command):
+class UpgradeCommand(Command):
 
     def __init__(self):
         Command.__init__(self, 'upgrade', 'Upgrade Nimp')
