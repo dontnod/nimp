@@ -58,9 +58,9 @@ class CisUe3BuildCommand(CisCommand):
             return False
 
         log_notification(log_prefix() + "Publishing symbols…")
-        if env.is_microsoft_platform:
-            if not upload_microsoft_symbols(env, ["Binaries/{0}".format(env.platform)]):
-                return False
+        symbols_to_publish = env.map_files().load_set("Symbols")
+        if not upload_symbols(env, symbols_to_publish()):
+            return False
 
         return True
 

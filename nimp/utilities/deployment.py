@@ -69,35 +69,28 @@ def deploy_latest_revision(env, version_directory_format, revision, platforms):
         yield
 
 #------------------------------------------------------------------------------
-def upload_microsoft_symbols(env, paths):
-    symbols = env.map_files()
-
-    search = [ '**/*.pdb' ]
-    if env.is_x360:
-        search.append('**/*.xdb')
-
-    for path in paths:
-        for g in search:
-            symbols.src(path).glob(g)
-
-    with open("symbols_index.txt", "w") as symbols_index:
-        for src, dest in symbols():
-            symbols_index.write(src + "\n")
+def upload_symbols(env, symbols):
 
     result = True
-    if call_process(".",
-                    [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
-                      "add",
-                      "/r", "/f", "@symbols_index.txt",
-                      "/s", env.publish_symbols,
-                      "/compress",
-                      "/o",
-                      "/t", "{0}_{1}_{2}".format(env.project, env.platform, env.configuration),
-                      "/v", env.revision ]) != 0:
-        result = False
-        log_error(log_prefix() + "Oops! An error occurred while uploading symbols.")
 
-    os.remove("symbols_index.txt")
+    if env.is_microsoft_platform:
+        with open("symbols_index.txt", "w") as symbols_index:
+            for src, dest in symbols:
+                symbols_index.write(src + "\n")
+
+        if call_process(".",
+                        [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+                          "add",
+                          "/r", "/f", "@symbols_index.txt",
+                          "/s", env.publish_symbols,
+                          "/compress",
+                          "/o",
+                          "/t", "{0}_{1}_{2}".format(env.project, env.platform, env.configuration),
+                          "/v", env.revision ]) != 0:
+            result = False
+            log_error(log_prefix() + "Oops! An error occurred while uploading symbols.")
+
+        os.remove("symbols_index.txt")
 
     return result
 
