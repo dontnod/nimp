@@ -46,28 +46,21 @@ class CisUe3BuildCommand(CisCommand):
     def _cis_run(self, env):
         env.generate_version_file = True
 
-        with p4_transaction("Binaries checkout",
-                            submit_on_success = False,
-                            revert_unchanged = False,
-                            add_not_versioned_files = False) as transaction:
-            files_to_checkout = env.map_files()
-            files_to_checkout.load_set("Binaries")
-            if not all_map(checkout(transaction), files_to_checkout()):
+        if not env.publish_only:
+            log_notification(log_prefix() + "Building game…")
+            if not ue3_build(env):
                 return False
 
-            if not env.publish_only:
-                log_notification(log_prefix() + "Building game…")
-                if not ue3_build(env):
-                    return False
-            log_notification(log_prefix() + "Publishing Binaries…")
-            files_to_publish = env.map_files()
-            files_to_publish.to(env.publish_binaries).load_set("Binaries")
-            if not all_map(robocopy, files_to_publish()):
-                return False
+        log_notification(log_prefix() + "Publishing Binaries…")
+        files_to_publish = env.map_files()
+        files_to_publish.to(env.publish_binaries).load_set("Binaries")
+        if not all_map(robocopy, files_to_publish()):
+            return False
 
-            log_notification(log_prefix() + "Publishing symbols…")
-            if env.is_microsoft_platform:
-                if not upload_microsoft_symbols(env, ["Binaries/{0}".format(env.platform)]):
-                    return False
+        log_notification(log_prefix() + "Publishing symbols…")
+        if env.is_microsoft_platform:
+            if not upload_microsoft_symbols(env, ["Binaries/{0}".format(env.platform)]):
+                return False
 
         return True
+
