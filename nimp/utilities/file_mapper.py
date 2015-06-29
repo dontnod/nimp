@@ -23,8 +23,9 @@ def all_map(mapper, file_set):
     return True
 
 #-------------------------------------------------------------------------------
-def _default_mapper(*args):
-    yield args
+def _default_mapper(source, destination):
+    yield (source, destination)
+
 
 class FileMapper(object):
     """ TODO : Eventuellement utiliser les PurePath, de python 3.4, qui simplifieraient
@@ -38,11 +39,13 @@ class FileMapper(object):
         self._format_args = format_args
 
     #---------------------------------------------------------------------------
-    def __call__(self, *args):
-        results = self._mapper(*args)
+    def __call__(self, source = None, destination = None):
+        results = self._mapper(source, destination)
         if len(self._next) == 0:
             for result in results:
-                yield result
+                # Only test the first element because some filemappers only worry about source
+                if result[0] is not None:
+                    yield result
         else:
             for result in results:
                 for next in self._next:
@@ -51,23 +54,36 @@ class FileMapper(object):
 
     #---------------------------------------------------------------------------
     def glob(self, *patterns):
-        def _glob_mapper(src = '', dst = '', *args):
-            source_path_len = len(split_path(src))
+        def _glob_mapper(src, dst):
+            if src is None:
+                source_path_len = 0
+            else:
+                source_path_len = len(split_path(src))
+
             for pattern in patterns:
                 found = False
                 pattern = self._format(pattern)
-                glob_path = os.path.join(src, pattern)
+                if src is None:
+                    glob_path = pattern
+                else:
+                    glob_path = os.path.join(src, pattern)
+                print("matching for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
+
                 for glob_source in glob2.glob(glob_path):
                     found = True
                     glob_source = str(glob_source)
                     # This is merely equivalent to os.path.relpath(source, self._source_path)
                     # excepted it will handle globs pattern in the base path.
                     glob_source = os.path.normpath(glob_source)
-                    destination = split_path(glob_source)[source_path_len:]
-                    destination = '/'.join(destination)
-                    destination = os.path.join(dst, destination)
-                    destination = os.path.normpath(destination)
-                    yield (glob_source, destination) + args
+                    if dst is not None:
+                        destination = split_path(glob_source)[source_path_len:]
+                        destination = '/'.join(destination)
+                        destination = os.path.join(dst, destination)
+                        destination = os.path.normpath(destination)
+                    else:
+                        destination = None
+
+                    yield (glob_source, destination)
                 if not found:
                     raise Exception("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
         return self.append(_glob_mapper)
@@ -128,7 +144,7 @@ class FileMapper(object):
     def _exclude(self, ignore_case, *patterns):
         """ Ignore source paths maching one of patterns
         """
-        def _exclude_mapper(source = '', *args):
+        def _exclude_mapper(source, destination):
             for pattern in patterns:
                 pattern = self._format(pattern)
                 if ignore_case:
@@ -137,16 +153,16 @@ class FileMapper(object):
                 if fnmatch.fnmatch(source, pattern):
                     log_verbose(log_prefix() + "Excluding file {0}", source)
                     raise StopIteration()
-            yield (source,) + args
+            yield (source, destination)
         return self.append(_exclude_mapper)
 
     #---------------------------------------------------------------------------
     def files(self):
         """ Discards directories from processed paths
         """
-        def _files_mapper(source = '', *args):
+        def _files_mapper(source, destination):
             if os.path.isfile(source):
-                yield (source,) + args
+                yield (source, destination)
         return self.append(_files_mapper)
 
     #---------------------------------------------------------------------------
@@ -154,10 +170,13 @@ class FileMapper(object):
         """ Prepends 'source' to path given to subsequent calls.
         """
         from_src = self._format(from_src)
-        def _src_mapper(source = '', *args):
-            source = os.path.join(self._format(source), from_src)
+        def _src_mapper(source, destination):
+            if source is None:
+                source = from_src
+            else:
+                source = os.path.join(self._format(source), from_src)
             source = os.path.normpath(source)
-            yield (source,) + args
+            yield (source, destination)
         return self.append(_src_mapper)
 
     #---------------------------------------------------------------------------
@@ -165,10 +184,12 @@ class FileMapper(object):
         """ Stores processed files and don't process them if they already have been.
         """
         processed_files = set()
-        def _once_mapper(source, *args):
+        def _once_mapper(source, destination):
+            if source is None:
+                raise Exception("once() called on empty fileset")
             if not source in processed_files:
                 processed_files.add(source)
-                yield (source,) + args
+                yield (source, destination)
 
         return self.append(_once_mapper)
 
@@ -176,11 +197,13 @@ class FileMapper(object):
     def newer(self):
         """ Ignore files when source is newer than destination.
         """
-        def _newer_mapper(source, destination, *args):
+        def _newer_mapper(source, destination):
+            if source is None or destination is None:
+                raise Exception("newer() called on empty fileset")
             if not os.path.exists(destination):
-                yield (source, destination) + args
+                yield (source, destination)
             elif os.path.getmtime(source) > os.path.getmtime(destination):
-                yield (source, destination) + args
+                yield (source, destination)
 
         return self.append(_newer_mapper)
 
@@ -189,14 +212,16 @@ class FileMapper(object):
         """ Recurvively list all children of processed source if it is a
             directory.
         """
-        def _recursive_mapper(source, destination = '', *args):
-            yield (source, destination) + args
+        def _recursive_mapper(source, destination):
+            if source is None:
+                raise Exception("recursive() called on empty fileset")
+            yield (source, destination)
             if os.path.isdir(source):
                 for file in os.listdir(source):
                     child_source = os.path.normpath(os.path.join(source, file))
                     child_dest = os.path.normpath(os.path.join(destination, file))
                     for child_source, child_destination in _recursive_mapper(child_source, child_dest):
-                        yield (child_source, child_destination) + args
+                        yield (child_source, child_destination)
         return self.append(_recursive_mapper)
 
     #---------------------------------------------------------------------------
@@ -205,9 +230,11 @@ class FileMapper(object):
         """
         pattern = self._format(pattern)
         repl = self._format(repl)
-        def _replace_mapper(source, destination, *args):
+        def _replace_mapper(source, destination):
+            if destination is None:
+                raise Exception("replace() called with destination = None")
             destination = re.sub(pattern, repl, destination, flags = flags)
-            yield (source, destination) + args
+            yield (source, destination)
         return self.append(_replace_mapper)
 
     #---------------------------------------------------------------------------
@@ -216,17 +243,22 @@ class FileMapper(object):
             path processed.
         """
         to_destination = self._format(to_destination)
-        def _to_mapper(source = '', destination = '', *args):
-            destination = os.path.join(destination, to_destination)
-            yield (source, destination) + args
+        def _to_mapper(source, destination):
+            if destination is None:
+                destination = to_destination
+            else:
+                destination = os.path.join(destination, to_destination)
+            yield (source, destination)
         return self.append(_to_mapper)
 
     #---------------------------------------------------------------------------
     def upper(self):
         """ Yields all destination files uppercase
         """
-        def _upper_mapper(source, destination, *args):
-            yield (source, destination.upper()) + args
+        def _upper_mapper(source, destination):
+            if destination is None:
+                raise Exception("upper() called with destination = None")
+            yield (source, destination.upper())
         return self.append(_upper_mapper)
 
     #---------------------------------------------------------------------------
@@ -246,3 +278,4 @@ class FileMapper(object):
             return self._format_args[name]
         except KeyError:
             raise AttributeError(name)
+

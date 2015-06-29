@@ -7,7 +7,7 @@ import tempfile
 
 from nimp.utilities.file_mapper import *
 
-def _yield_mapper(src = '', destination = '', *args):
+def _yield_mapper(src, destination):
     yield os.path.normpath(src), os.path.normpath(destination)
 
 class FileSetTests(unittest.TestCase):
@@ -15,14 +15,14 @@ class FileSetTests(unittest.TestCase):
         super(FileSetTests, self).__init__(methodName)
 
     def _file_mapper(self, **format_args):
-        mapper = FileMapper(_yield_mapper, format_args = format_args)
-        return mapper, mapper.src("mocks/file_mapper_tests")
+        mapper = FileMapper(format_args = format_args)
+        return mapper, mapper.src("mocks/file_mapper_tests").to('.')
 
     def _check_files(self, mapper_files, *expected_files):
         abs_expected_files = []
-        for file in expected_files:
-            expected_src = os.path.normpath(os.path.join("mocks/file_mapper_tests", file[0]))
-            abs_expected_files.append((expected_src, os.path.normpath(file[1])))
+        for src, dst in expected_files:
+            expected_src = os.path.normpath(os.path.join("mocks/file_mapper_tests", src))
+            abs_expected_files.append((expected_src, os.path.normpath(dst)))
         self.assertListEqual(list(mapper_files), abs_expected_files)
 
     def test_call(self):
@@ -63,7 +63,8 @@ class FileSetTests(unittest.TestCase):
     def test_glob_absolute(self):
         """ Call to a file_mapper should support absolute paths """
         abs_qux_path = os.path.abspath("mocks/file_mapper_tests/qux.ext1")
-        files = FileMapper(_yield_mapper).glob(abs_qux_path)
+        files = FileMapper()
+        files.to('.').glob(abs_qux_path)
         self.assertListEqual(list(files()), [(abs_qux_path,abs_qux_path)])
 
     def test_glob_recursive(self):
