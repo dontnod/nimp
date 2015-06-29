@@ -55,6 +55,8 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
     command = _sanitize_command(command)
     log_verbose(log_prefix() + "Running “{0}” in “{1}”", " ".join(command), directory)
 
+    disable_win32_dialogs()
+
     debug_pipe = OutputDebugStringLogger()
 
     process = subprocess.Popen(command,

@@ -68,6 +68,10 @@ class WinDLL():
         self.CloseHandle.restype = ctypes.c_int
         self.CloseHandle.argtypes = [my_void_p]
 
+        self.SetErrorMode = self._kernel32.SetErrorMode
+        self.SetErrorMode.restype = ctypes.c_int
+        self.SetErrorMode.argtypes = [ctypes.c_int]
+
         # Constants from winbase.h and others
         self.INVALID_HANDLE_VALUE = my_void_p(-1).value
 
@@ -78,6 +82,25 @@ class WinDLL():
         self.PAGE_READWRITE = 0x4
 
         self.FILE_MAP_READ = 0x0004
+
+        self.SEM_FAILCRITICALERRORS = 0x0001
+        self.SEM_NOGPFAULTERRORBOX  = 0x0002
+        self.SEM_NOOPENFILEERRORBOX = 0x8000
+
+
+#
+# Disable “Entry Point Not Found” and “Application Error” dialogs for child processes
+#
+def disable_win32_dialogs():
+    try:
+        global windll
+        windll = windll or WinDLL()
+    except:
+        return
+
+    windll.SetErrorMode(windll.SEM_FAILCRITICALERRORS \
+                         | windll.SEM_NOGPFAULTERRORBOX \
+                         | windll.SEM_NOOPENFILEERRORBOX)
 
 
 #-------------------------------------------------------------------------------
