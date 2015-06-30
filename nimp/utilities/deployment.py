@@ -132,7 +132,7 @@ def force_delete(file):
 
 #-------------------------------------------------------------------------------
 def checkout(transaction):
-    def _checkout_mapper(src, dst):
+    def _checkout_mapper(src, dest):
         if src is None:
             return True
         if os.path.isfile(src) and not transaction.add(src):
@@ -143,12 +143,12 @@ def checkout(transaction):
 
 #-------------------------------------------------------------------------------
 def checkout_and_copy(transaction):
-    def _checkout_and_copy_mapper(src, dst):
-        if src is None:
+    def _checkout_and_copy_mapper(src, dest):
+        if dest is None:
             return True
-        if os.path.isfile(dst) and not transaction.add(dst):
+        if os.path.isfile(dest) and not transaction.add(dest):
             return False
-        if not robocopy(src, dst):
+        if not robocopy(src, dest):
             return False
         return True
 
@@ -156,7 +156,7 @@ def checkout_and_copy(transaction):
 
 #-----------------------------------------------------------------------------
 def generate_toc(file):
-    def _generate_toc_mapper(src, dst):
+    def _generate_toc_mapper(src, dest):
         if src is None:
             return
         file, ext = os.path.splitext(src)
