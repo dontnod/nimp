@@ -95,28 +95,28 @@ def upload_symbols(env, symbols):
     return result
 
 #-------------------------------------------------------------------------------
-def robocopy(source, destination, *args):
+def robocopy(src, dest):
     """ 'Robust' copy. """
 
     # If these look like a Windows path, get rid of all "/" path separators
     if os.sep is '\\':
-        source = source.replace('/', '\\')
-        destination = destination.replace('/', '\\')
+        src = src.replace('/', '\\')
+        dest = dest.replace('/', '\\')
     elif os.sep is '/':
-        source = source.replace('\\', '/')
-        destination = destination.replace('\\', '/')
+        src = src.replace('\\', '/')
+        dest = dest.replace('\\', '/')
 
-    log_verbose(log_prefix() + 'Copying “{0}” to “{1}”', source, destination)
+    log_verbose(log_prefix() + 'Copying “{0}” to “{1}”', src, dest)
 
-    if os.path.isdir(source):
-        safe_makedirs(destination)
-    elif os.path.isfile(source):
-        dest_dir = os.path.dirname(destination)
+    if os.path.isdir(src):
+        safe_makedirs(dest)
+    elif os.path.isfile(src):
+        dest_dir = os.path.dirname(dest)
         safe_makedirs(dest_dir)
         try:
-            if os.path.exists(destination):
-                os.chmod(destination, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-            shutil.copy2(source, destination)
+            if os.path.exists(dest):
+                os.chmod(dest, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+            shutil.copy2(src, dest)
         except Exception as e:
             log_error(log_prefix() + 'Error: {0}', e)
             return False
@@ -132,25 +132,33 @@ def force_delete(file):
 
 #-------------------------------------------------------------------------------
 def checkout(transaction):
-    def _checkout_mapper(source, *args):
-        if os.path.isfile(source) and not transaction.add(source):
+    def _checkout_mapper(src, dst):
+        if src is None:
+            return True
+        if os.path.isfile(src) and not transaction.add(src):
             return False
         return True
+
     return _checkout_mapper
 
 #-------------------------------------------------------------------------------
 def checkout_and_copy(transaction):
-    def _checkout_and_copy_mapper(source, destination, *args):
-        if os.path.isfile(destination) and not transaction.add(destination):
+    def _checkout_and_copy_mapper(src, dst):
+        if src is None:
+            return True
+        if os.path.isfile(dst) and not transaction.add(dst):
             return False
-        if not robocopy(source, destination):
+        if not robocopy(src, dst):
             return False
         return True
+
     return _checkout_and_copy_mapper
 
 #-----------------------------------------------------------------------------
 def generate_toc(file):
-    def _generate_toc_mapper(src, *args):
+    def _generate_toc_mapper(src, dst):
+        if src is None:
+            return
         file, ext = os.path.splitext(src)
         uncompressed_size_file = '{0}.uncompressed_size'.format(file)
         uncompressed_size = 0
@@ -160,5 +168,6 @@ def generate_toc(file):
         size = os.path.getsize(src)
         md5 = get_file_md5(src)
         file.write('{0} {1} {2} {3}', size, uncompressed_size, src, md5)
+
     return _generate_toc_mapper
 

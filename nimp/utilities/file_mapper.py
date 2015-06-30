@@ -17,8 +17,10 @@ from nimp.utilities.paths import *
 
 #-------------------------------------------------------------------------------
 def all_map(mapper, file_set):
-    for args in file_set:
-        if not mapper(*args):
+    for src, dest in file_set:
+        if src is None:
+            pass
+        if not mapper(src, dst):
             return False
     return True
 
@@ -67,7 +69,6 @@ class FileMapper(object):
                     glob_path = pattern
                 else:
                     glob_path = os.path.join(src, pattern)
-                print("matching for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
 
                 for glob_source in glob2.glob(glob_path):
                     found = True
