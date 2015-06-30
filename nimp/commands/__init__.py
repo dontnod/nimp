@@ -20,12 +20,5 @@ __all__ = [
     "ship",
     "upgrade",
     "vs_build",
-    # Deprecated
-    "cis_ue3_build",
-    "cis_ue4_build",
-    "cis_ue3_ship",
-    "cis_ue4_ship",
-    "cis_ue3_publish_version",
-    "cis_ue4_publish_version",
 ]
 
