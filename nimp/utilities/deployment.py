@@ -145,7 +145,7 @@ def checkout(transaction):
 def checkout_and_copy(transaction):
     def _checkout_and_copy_mapper(src, dest):
         if dest is None:
-            return True
+            raise Exception("checkout_and_copy() called on empty destination")
         if os.path.isfile(dest) and not transaction.add(dest):
             return False
         if not robocopy(src, dest):

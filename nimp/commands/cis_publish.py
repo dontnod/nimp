@@ -50,7 +50,8 @@ class CisPublish(CisCommand):
                             revert_unchanged = False,
                             add_not_versioned_files = False) as trans:
 
-            files_to_deploy = env.map_files()
+            files_to_deploy = env.map_files().to('.')
+
             for configuration in env.configurations:
                 tmp = files_to_deploy.override(configuration = configuration).src(env.publish_binaries)
 
