@@ -52,13 +52,13 @@ class CisPublish(CisCommand):
 
             files_to_deploy = env.map_files()
             for configuration in env.configurations:
-                deploy_config = files_to_deploy.override(configuration = configuration).src(env.publish_binaries)
+                tmp = files_to_deploy.override(configuration = configuration).src(env.publish_binaries)
 
-                # UE4 only?
-                if hasattr(env, 'deploy_version_root'):
-                    deploy_config = deploy_config.to(env.deploy_version_root)
+                # UE4 only? FIXME: the logic here doesn’t seem sane to me…
+                #if hasattr(env, 'deploy_version_root'):
+                #    tmp.to(env.deploy_version_root).glob("**")
 
-                deploy_config.glob("**")
+                tmp.glob("**")
 
             log_notification(log_prefix() + "Deploying binaries…")
             if not all_map(checkout_and_copy(trans), files_to_deploy()):
