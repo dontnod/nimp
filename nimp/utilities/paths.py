@@ -33,6 +33,12 @@ def safe_makedirs(path):
         path = path.replace('/', '\\')
     elif os.sep is '/':
         path = path.replace('\\', '/')
-    if not os.path.exists(path):
+
+    try:
         os.makedirs(path)
+    except FileExistsError:
+        # Maybe someone else created the directory for us; if so, ignore error
+        if os.path.exists(path):
+            return
+        raise
 
