@@ -109,7 +109,7 @@ def _ship_dlc(env, destination):
 
     log_notification(log_prefix() + "Copying DLC to output directory…")
     dlc_files = env.map_files()
-    dlc_files.to(destination).load_set("DLC")
+    dlc_files.to(destination).load_set("dlc")
 
     return all_map(robocopy, dlc_files())
 
@@ -135,7 +135,7 @@ def _ship_game_patch(env, destination):
 
     log_notification(log_prefix() + "Redeploying master cook ignoring patched files…")
     patch_files = env.map_files()
-    patch_files.src(env.publish_master).override(step = 'patching').load_set("Patch")
+    patch_files.src(env.publish_master).override(step = 'patching').load_set("patch")
     files_to_exclude = [src for src, *args in patch_files()]
     log_notification("Excluding files {0}", files_to_exclude)
     master_files_source.exclude_ignore_case(*files_to_exclude)
@@ -144,7 +144,7 @@ def _ship_game_patch(env, destination):
 
     if hasattr(env, 'revision'):
         cook_files = env.map_files()
-        cook_files.to(env.publish_cook).load_set("Cook")
+        cook_files.to(env.publish_cook).load_set("cook")
         if not all_map(robocopy, cook_files()):
             return False
 
@@ -157,7 +157,7 @@ def _ship_game_patch(env, destination):
 
     log_notification(log_prefix() + "Copying patched files to output directory…")
     patch_files = env.map_files()
-    patch_files.to(destination).override(step = 'deploy').load_set("Patch")
+    patch_files.to(destination).override(step = 'deploy').load_set("patch")
     if not all_map(robocopy, patch_files()):
         return False
 

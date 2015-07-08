@@ -78,11 +78,11 @@ class PerforceCommand(Command):
 
     #---------------------------------------------------------------------------
     def _register_checkout(self, subparsers):
-        _register_file_set_command(subparsers , "checkout", "Checks out a file set", p4_edit)
+        _register_fileset_command(subparsers , "checkout", "Checks out a fileset", p4_edit)
 
     #---------------------------------------------------------------------------
     def _register_reconcile(self, subparsers):
-        _register_file_set_command(subparsers, "reconcile", "Reconciles a file set", p4_reconcile)
+        _register_fileset_command(subparsers, "reconcile", "Reconciles a fileset", p4_reconcile)
 
     #---------------------------------------------------------------------------
     def _register_submit(self, subparsers):
@@ -95,19 +95,19 @@ class PerforceCommand(Command):
             return p4_submit(cl_number)
 
         parser = subparsers.add_parser("submit",
-                                       help = "Reconciles a file set")
+                                       help = "Reconciles a fileset")
         parser.add_argument('cl_name', metavar = '<FORMAT>', type = str)
         parser.set_defaults(p4_command_to_run = _execute)
 
 #---------------------------------------------------------------------------
-def _register_file_set_command(subparsers, command_name, help, p4_func):
+def _register_fileset_command(subparsers, command_name, help, p4_func):
     def _execute(env):
         cl_number = p4_get_or_create_changelist(env.format(env.cl_name))
 
         if cl_number is None:
             return False
 
-        if env.file_set:
+        if env.fileset:
             files = env.map_files()
             if files.load_set(env.format(env.p4_path)) is None:
                 return False
@@ -120,8 +120,8 @@ def _register_file_set_command(subparsers, command_name, help, p4_func):
                                     help = help)
     parser.add_argument('cl_name', metavar = '<STR>', type = str)
     parser.add_argument('p4_path', metavar = '<PATH>', type = str)
-    parser.add_argument('--file-set',
-                        help    = "Handle path as a file set, not a regular path.",
+    parser.add_argument('--fileset',
+                        help    = "Handle path as a fileset, not a regular path.",
                         action  = "store_true",
                         default = False)
     parser.add_argument('--arg',

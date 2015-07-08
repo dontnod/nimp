@@ -7,7 +7,7 @@ from nimp.utilities.file_mapper import *
 #-------------------------------------------------------------------------------
 class MapCommand(Command):
     def __init__(self):
-        Command.__init__(self, 'file-set', 'Do stuff on a list of file (previously known as cookersync)')
+        Command.__init__(self, 'fileset', 'Do stuff on a list of files')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):

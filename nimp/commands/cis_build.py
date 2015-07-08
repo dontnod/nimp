@@ -63,13 +63,13 @@ class CisBuildCommand(CisCommand):
 
         log_notification(log_prefix() + "Publishing Binaries…")
         files_to_publish = env.map_files()
-        files_to_publish.to(env.publish_binaries).load_set("Binaries")
+        files_to_publish.to(env.publish_binaries).load_set("binaries")
         if not all_map(robocopy, files_to_publish()):
             return False
 
 
         log_notification(log_prefix() + "Publishing symbols…")
-        symbols_to_publish = env.map_files().load_set("Symbols")
+        symbols_to_publish = env.map_files().load_set("symbols")
         if not upload_symbols(env, symbols_to_publish()):
             return False
 

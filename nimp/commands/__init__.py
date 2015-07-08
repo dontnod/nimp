@@ -8,7 +8,7 @@ __all__ = [
     "cis_publish",
     "cis_ue4_build_tools",
     "cis_wwise_build_banks",
-    "file_set",
+    "fileset",
     "nimp_qa",
     "package",
     "perforce",

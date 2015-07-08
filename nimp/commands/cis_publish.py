@@ -83,7 +83,7 @@ class CisPublish(CisCommand):
             publish_version_path = env.format(env.publish_version)
             files_to_publish = env.map_files().to(publish_version_path)
             log_notification(log_prefix() + "Publishing version {0}…", configuration)
-            files_to_publish.load_set("Version")
+            files_to_publish.load_set("version")
             if not all_map(robocopy, files_to_publish()):
                 return False
 

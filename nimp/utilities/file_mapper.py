@@ -16,8 +16,8 @@ from nimp.utilities.logging import *
 from nimp.utilities.paths import *
 
 #-------------------------------------------------------------------------------
-def all_map(mapper, file_set):
-    for src, dest in file_set:
+def all_map(mapper, fileset):
+    for src, dest in fileset:
         if src is None:
             pass
         if not mapper(src, dest):
@@ -99,19 +99,14 @@ class FileMapper(object):
     def load_set(self, set_name):
         file_name = self._format(set_name)
         if not os.path.exists(file_name) or not os.path.isfile(file_name):
-            # TODO : Always hardcode this directory to avoid bloating .nimp.conf. The file_sets_directory conf variable is
-            # still used in LIS repository
-            if hasattr(self, "file_sets_directory"):
-                file_sets_directory = self.file_sets_directory
-            else:
-                file_sets_directory = ".nimp/file_sets"
-            file_name = os.path.join(file_sets_directory, set_name + ".txt")
+            # Always hardcode this directory to avoid bloating .nimp.conf.
+            file_name = os.path.join(".nimp/filesets", set_name + ".txt")
             file_name = self._format(file_name)
         locals = {}
         try:
             conf = open(file_name, "rb").read()
         except Exception as exception:
-            log_error(log_prefix() + "Error loading file set : unable to open file: {0}", exception)
+            log_error(log_prefix() + "Error loading fileset: unable to open file: {0}", exception)
             return None
         try:
             exec(compile(conf, file_name, 'exec'), None, locals)
@@ -119,7 +114,7 @@ class FileMapper(object):
                 log_error(log_prefix() + "Configuration file {0} has no function called 'map'.", file_name)
                 return None
         except Exception as e:
-            log_error(log_prefix() + "Error loading file set : unable to load file {0}: {1}", file_name, str(e))
+            log_error(log_prefix() + "Error loading fileset: unable to load file {0}: {1}", file_name, str(e))
             return None
 
         locals['map'](self)
