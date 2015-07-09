@@ -84,12 +84,12 @@ def ue3_ship(env, destination = None):
 
     if os.path.exists(master_directory):
         log_notification(log_prefix() + "Found a master at {0}: I’m going to build a patch", master_directory)
-        if env.dlc == env.project:
+        if env.dlc == 'main':
             return _ship_game_patch(env, destination or env.publish_ship)
         else:
             log_error(log_prefix() + "Sorry, building a DLC patch is still not implemented")
     else:
-        if env.dlc == env.project:
+        if env.dlc == 'main':
             log_error(log_prefix() + "Sorry, building a game master is still not implemented")
         else:
             return _ship_dlc(env, destination or env.publish_ship)
@@ -149,7 +149,7 @@ def _ship_game_patch(env, destination):
             return False
 
     log_notification(log_prefix() + "Generating TOC…")
-    if not generate_toc(env, dlc = "Episode01" if env.dlc == env.project else env.dlc):
+    if not generate_toc(env, dlc = "Episode01" if env.dlc == 'main' else env.dlc):
         return False
 
     if env.is_ps3:

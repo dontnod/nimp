@@ -45,12 +45,12 @@ class CookCommand(Command):
             return ue4_cook(env)
 
         if hasattr(env, 'project_type') and env.project_type is 'UE3':
-            dlc = env.dlc if env.dlc is not None else env.project
+            dlc = env.dlc if env.dlc is not None else 'main'
             map = env.cook_maps[dlc.lower()]
             return ue3_cook(env.game,
                             map,
                             env.languages,
-                            None if env.project == env.dlc else env.dlc,
+                            None if env.dlc == 'main' else env.dlc,
                             env.ue3_cook_platform,
                             env.configuration,
                             env.noexpansion,

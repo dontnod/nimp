@@ -25,7 +25,7 @@ class PackageCommand(Command):
                             metavar = '<platform>')
 
         parser.add_argument('--dlc',
-                            help    = 'Dlc to pack',
+                            help    = 'DLC to pack',
                             metavar = '<dlc>',
                             default = None)
 

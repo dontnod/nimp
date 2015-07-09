@@ -28,7 +28,7 @@ class CisShip(CisCommand):
                             metavar = '<platform>')
 
         parser.add_argument('--dlc',
-                            help    = 'Dlc to cook',
+                            help    = 'DLC to cook',
                             metavar = '<dlc>',
                             default = None)
         return True
@@ -48,9 +48,9 @@ class CisShip(CisCommand):
                 platforms += [env.platform]
 
             with deploy_latest_revision(env, env.publish_version, env.revision, platforms):
-                if env.dlc != env.project:
+                if env.dlc != 'main':
                     master_files = env.map_files()
-                    master_files.override(dlc = env.project).src(env.publish_cook).recursive().files()
+                    master_files.override(dlc = 'main').src(env.publish_cook).recursive().files()
                     log_notification(log_prefix() + "Deploying episode01 cook…")
                     if not all_map(robocopy, master_files()):
                         return False
