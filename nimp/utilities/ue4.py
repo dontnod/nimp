@@ -114,6 +114,29 @@ def ue4_build_tools(env):
         if not result:
             trans.abort()
         return result
+
+
+#
+# Helper commands for configuration sanitising
+#
+
+def get_ue4_build_platform(platform):
+    d = { "ps4"     : "PS4",
+          "xboxone" : "XboxOne",
+          "win64"   : "Win64",
+          "win32"   : "Win32",
+          "linux"   : "Linux", }
+    return d[platform] if platform in d else platform
+
+def get_ue4_cook_platform(platform):
+    d = { "ps4"     : "FIXME",
+          "xboxone" : "FIXME",
+          "win64"   : "FIXME",
+          "win32"   : "FIXME",
+          "linux"   : "FIXME", }
+    return d[platform] if platform in d else platform
+
+
 #---------------------------------------------------------------------------
 def _ue4_build_project(sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):

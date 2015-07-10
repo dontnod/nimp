@@ -5,6 +5,7 @@ import time
 from nimp.utilities.logging import *
 from nimp.utilities.file_mapper import *
 from nimp.utilities.ue3 import *
+from nimp.utilities.ue4 import *
 
 #-------------------------------------------------------------------------------
 class Environment:
@@ -99,7 +100,6 @@ class Environment:
 
 
         if hasattr(self, "configuration"):
-
             self.ue3_build_configuration = get_ue3_build_config(self.configuration)
 
             ue4_build_configurations = { "debug"    : "Debug",
@@ -125,33 +125,20 @@ class Environment:
             self.is_microsoft_platform = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
             self.is_sony_platform      = self.is_ps3 or self.is_ps4
 
+            # UE3 stuff
             self.ue3_build_platform =  get_ue3_build_platform(self.platform)
             self.ue3_cook_platform =   get_ue3_cook_platform(self.platform)
             self.ue3_shader_platform = get_ue3_shader_platform(self.platform)
 
-            ue4_build_platforms = { "ps4"     : "PS4",
-                                    "xboxone" : "XboxOne",
-                                    "win64"   : "Win64",
-                                    "win32"   : "Win32",
-                                    "xbox360" : "Xbox360",
-                                    "ps3"     : "PS3" }
-
-            ue4_cook_platforms = { "ps4"     : "ORBIS",
-                                   "xboxone" : "XboxOne",
-                                   "win64"   : "PC",
-                                   "win32"   : "PCConsole",
-                                   "xbox360" : "Xbox360",
-                                   "ps3"     : "PS3" }
-
-            if self.platform in ue4_cook_platforms:
-                self.ue4_cook_platform = ue4_cook_platforms[self.platform]
-                configuration = self.configuration.lower() if hasattr(self, 'configuration') and self.configuration is not None else 'final'
-                suffix = 'Final' if configuration in ['test', 'final'] else ''
+            if hasattr(self, "configuration"):
+                suffix = 'Final' if self.configuration in ['test', 'shipping'] else ''
                 self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, suffix)
 
-            if self.platform in ue4_build_platforms:
-                self.ue4_build_platform = ue4_build_platforms[self.platform]
+            # UE4 stuff
+            self.ue4_build_platform = get_ue4_build_platform(self.platform)
+            self.ue4_cook_platform  = get_ue4_cook_platform(self.platform)
 
+            # Other stuff
             upms_platforms = { "ps4"     : "PS4",
                                "xboxone" : "XboxOne",
                                "win64"   : "PC",
