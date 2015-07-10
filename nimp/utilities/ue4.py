@@ -18,7 +18,7 @@ from nimp.utilities.perforce import *
 def ue4_build(env):
     vs_version = '12'
 
-    if not env.configuration:
+    if not env.ue4_build_configuration:
         log_error(log_prefix() + "Invalid empty value for configuration")
         return False
 
@@ -28,7 +28,7 @@ def ue4_build(env):
 
     if env.ue4_build_platform == 'PS4':
         if not _ue4_build_project(env.solution, 'PS4MapFileUtil', 'Win64',
-                                  env.configuration, vs_version, 'Build'):
+                                  env.ue4_build_configuration, vs_version, 'Build'):
             log_error(log_prefix() + "Could not build PS4MapFileUtil.exe")
             return False
 
@@ -37,7 +37,7 @@ def ue4_build(env):
         vs_version = '11'
 
     return _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
-                              env.configuration, vs_version, 'Build')
+                              env.ue4_build_configuration, vs_version, 'Build')
 
 
 #---------------------------------------------------------------------------

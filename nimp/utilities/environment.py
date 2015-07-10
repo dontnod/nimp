@@ -73,9 +73,15 @@ class Environment:
             return ""
 
 
+    #
+    # Normalise configuration and platform names, then create some
+    # convenient variables for various jobs
+    #
     def standardize_names(self):
+
         if hasattr(self, "configuration"):
             std_configs = { "debug"    : "debug",
+                            "devel"    : "devel",
                             "release"  : "release",
                             "test"     : "test",
                             "shipping" : "shipping",
@@ -86,6 +92,13 @@ class Environment:
             else:
                 self.configuration = ""
 
+
+        if hasattr(self, "platform"):
+            self.platform = self.normalize_platform_string(self.platform)
+
+
+        if hasattr(self, "configuration"):
+
             ue3_build_configurations = { "debug"    : "Debug",
                                          "release"  : "Release",
                                          "test"     : "Test",
@@ -95,10 +108,17 @@ class Environment:
             if self.configuration in ue3_build_configurations:
                 self.ue3_build_configuration = ue3_build_configurations[self.configuration]
 
+            ue4_build_configurations = { "debug"    : "Debug",
+                                         "devel"    : "Development Editor" if self.platform is "win64" else "Development",
+                                         "test"     : "Test",
+                                         "shipping" : "Shipping",
+                                       }
+
+            if self.configuration in ue4_build_configurations:
+                self.ue4_build_configuration = ue4_build_configurations[self.configuration]
+
 
         if hasattr(self, "platform"):
-            self.platform = self.normalize_platform_string(self.platform)
-
             self.is_win32 = self.platform == "win32"
             self.is_win64 = self.platform == "win64"
             self.is_ps3   = self.platform == "ps3"
