@@ -53,7 +53,8 @@ class CisPublish(CisCommand):
             files_to_deploy = env.map_files().to('.')
 
             for configuration in env.configurations:
-                tmp = files_to_deploy.override(configuration = configuration).src(env.publish_binaries)
+                tmp = files_to_deploy.override(configuration = configuration,
+                                               ue3_build_configuration = get_ue3_build_platform(configuration)).src(env.publish_binaries)
 
                 # UE4 only? FIXME: the logic here doesn’t seem sane to me…
                 #if hasattr(env, 'deploy_version_root'):

@@ -69,13 +69,60 @@ def ue3_build(env):
         return _build(solution, vs_version)
 
 
+#
 # Rebuild shaders
+#
+
 def ue3_shaders(env):
     args = [ '-platform=' + env.ue3_shader_platform,
              '-refcache',
              '-skipmaps',
              '-allow_parallel_precompileshaders' ]
     return ue3_commandlet(env.game, 'precompileshaders', args)
+
+#
+# Helper commands for configuration sanitising
+#
+
+def get_ue3_build_config(config):
+    d = { "debug"    : "Debug",
+          "release"  : "Release",
+          "test"     : "Test",
+          "shipping" : "Shipping", }
+    return d[config] if config in d else config
+
+def get_ue3_build_platform(platform):
+    # Try to guess the Unreal platform name; the return
+    # value should match UE3’s appGetPlatformString().
+    d = { "ps4"     : "ORBIS",
+          "xboxone" : "Dingo",
+          "win64"   : "Win64",
+          "win32"   : "Win32",
+          "xbox360" : "Xbox360",
+          "ps3"     : "PS3", }
+    return d[platform] if platform in d else platform
+
+def get_ue3_cook_platform(platform):
+    d = { "ps4"     : "ORBIS",
+          "xboxone" : "Dingo",
+          "win64"   : "PC",
+          "win32"   : "PCConsole",
+          "xbox360" : "Xbox360",
+          "ps3"     : "PS3",
+          "linux"   : "PCConsole",
+          "mac"     : "PCConsole", }
+    return d[platform] if platform in d else platform
+
+def get_ue3_shader_platform(platform):
+    d = { "ps4"     : "ORBIS",
+          "xboxone" : "Dingo",
+          "win64"   : "PC",
+          "win32"   : "PC",
+          "xbox360" : "Xbox360",
+          "ps3"     : "PS3",
+          "linux"   : "Linux",
+          "mac"     : "Mac", }
+    return d[platform] if platform in d else platform
 
 
 #---------------------------------------------------------------------------

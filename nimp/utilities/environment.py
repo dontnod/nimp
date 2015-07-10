@@ -4,6 +4,7 @@ import time
 
 from nimp.utilities.logging import *
 from nimp.utilities.file_mapper import *
+from nimp.utilities.ue3 import *
 
 #-------------------------------------------------------------------------------
 class Environment:
@@ -99,14 +100,7 @@ class Environment:
 
         if hasattr(self, "configuration"):
 
-            ue3_build_configurations = { "debug"    : "Debug",
-                                         "release"  : "Release",
-                                         "test"     : "Test",
-                                         "shipping" : "Shipping",
-                                       }
-
-            if self.configuration in ue3_build_configurations:
-                self.ue3_build_configuration = ue3_build_configurations[self.configuration]
+            self.ue3_build_configuration = get_ue3_build_config(self.configuration)
 
             ue4_build_configurations = { "debug"    : "Debug",
                                          "devel"    : "Development Editor" if self.platform is "win64" else "Development",
@@ -131,41 +125,9 @@ class Environment:
             self.is_microsoft_platform = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
             self.is_sony_platform      = self.is_ps3 or self.is_ps4
 
-            # Try to guess the Unreal platform name; the return
-            # value should match UE3’s appGetPlatformString().
-            ue3_build_platforms = { "ps4"     : "ORBIS",
-                                    "xboxone" : "Dingo",
-                                    "win64"   : "Win64",
-                                    "win32"   : "Win32",
-                                    "xbox360" : "Xbox360",
-                                    "ps3"     : "PS3" }
-
-            ue3_cook_platforms = { "ps4"     : "ORBIS",
-                                   "xboxone" : "Dingo",
-                                   "win64"   : "PC",
-                                   "win32"   : "PCConsole",
-                                   "xbox360" : "Xbox360",
-                                   "ps3"     : "PS3",
-                                   "linux"   : "PCConsole",
-                                   "mac"     : "PCConsole" }
-
-            ue3_shader_platforms = { "ps4"     : "ORBIS",
-                                     "xboxone" : "Dingo",
-                                     "win64"   : "PC",
-                                     "win32"   : "PC",
-                                     "xbox360" : "Xbox360",
-                                     "ps3"     : "PS3",
-                                     "linux"   : "Linux",
-                                     "mac"     : "Mac" }
-
-            if self.platform in ue3_build_platforms:
-                self.ue3_build_platform = ue3_build_platforms[self.platform]
-
-            if self.platform in ue3_cook_platforms:
-                self.ue3_cook_platform = ue3_cook_platforms[self.platform]
-
-            if self.platform in ue3_shader_platforms:
-                self.ue3_shader_platform = ue3_shader_platforms[self.platform]
+            self.ue3_build_platform =  get_ue3_build_platform(self.platform)
+            self.ue3_cook_platform =   get_ue3_cook_platform(self.platform)
+            self.ue3_shader_platform = get_ue3_shader_platform(self.platform)
 
             ue4_build_platforms = { "ps4"     : "PS4",
                                     "xboxone" : "XboxOne",
