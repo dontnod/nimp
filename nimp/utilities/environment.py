@@ -152,7 +152,7 @@ class Environment:
             ue3_shader_platforms = { "ps4"     : "ORBIS",
                                      "xboxone" : "Dingo",
                                      "win64"   : "PC",
-                                     "win32"   : "PCConsole",
+                                     "win32"   : "PC",
                                      "xbox360" : "Xbox360",
                                      "ps3"     : "PS3",
                                      "linux"   : "Linux",
