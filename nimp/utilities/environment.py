@@ -50,24 +50,22 @@ class Environment:
         return True
 
 
-    # Try to guess the Unreal platform name; the return
-    # value should match UE3’s appGetPlatformString().
     def normalize_platform_string(self, platform):
-        std_platforms = { "ps4"       : "PS4",
-                          "orbis"     : "PS4",
-                          "xboxone"   : "XboxOne",
-                          "dingo"     : "XboxOne",
-                          "win32"     : "Win32",
-                          "pcconsole" : "Win32",
-                          "win64"     : "Win64",
-                          "pc"        : "Win64",
-                          "windows"   : "Win64",
-                          "xbox360"   : "XBox360",
-                          "x360"      : "XBox360",
-                          "ps3"       : "PS3",
-                          "linux"     : "Linux",
-                          "mac"       : "Mac",
-                          "macos"     : "Mac" }
+        std_platforms = { "ps4"       : "ps4",
+                          "orbis"     : "ps4",
+                          "xboxone"   : "xboxone",
+                          "dingo"     : "xboxone",
+                          "win32"     : "win32",
+                          "pcconsole" : "win32",
+                          "win64"     : "win64",
+                          "pc"        : "win64",
+                          "windows"   : "win64",
+                          "xbox360"   : "xbox360",
+                          "x360"      : "xbox360",
+                          "ps3"       : "ps3",
+                          "linux"     : "linux",
+                          "mac"       : "mac",
+                          "macos"     : "mac" }
 
         if platform.lower() in std_platforms:
             return std_platforms[platform.lower()]
@@ -76,45 +74,69 @@ class Environment:
 
 
     def standardize_names(self):
+        if hasattr(self, "configuration"):
+            std_configs = { "debug"    : "debug",
+                            "release"  : "release",
+                            "test"     : "test",
+                            "shipping" : "shipping",
+                          }
+
+            if self.configuration.lower() in std_configs:
+                self.configuration = std_configs[self.configuration.lower()]
+            else:
+                self.configuration = ""
+
+            ue3_build_configurations = { "debug"    : "Debug",
+                                         "release"  : "Release",
+                                         "test"     : "Test",
+                                         "shipping" : "Shipping",
+                                       }
+
+            if self.configuration in ue3_build_configurations:
+                self.ue3_build_configuration = ue3_build_configurations[self.configuration]
+
+
         if hasattr(self, "platform"):
             self.platform = self.normalize_platform_string(self.platform)
 
-            self.is_win32 = self.platform == "Win32"
-            self.is_win64 = self.platform == "Win64"
-            self.is_ps3   = self.platform == "PS3"
-            self.is_ps4   = self.platform == "PS4"
-            self.is_x360  = self.platform == "XBox360"
-            self.is_xone  = self.platform == "XboxOne"
-            self.is_linux = self.platform == "Linux"
-            self.is_mac   = self.platform == "Mac"
+            self.is_win32 = self.platform == "win32"
+            self.is_win64 = self.platform == "win64"
+            self.is_ps3   = self.platform == "ps3"
+            self.is_ps4   = self.platform == "ps4"
+            self.is_x360  = self.platform == "xbox360"
+            self.is_xone  = self.platform == "xboxone"
+            self.is_linux = self.platform == "linux"
+            self.is_mac   = self.platform == "mac"
 
             self.is_microsoft_platform = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
             self.is_sony_platform      = self.is_ps3 or self.is_ps4
 
-            ue3_build_platforms = { "PS4"     : "ORBIS",
-                                    "XboxOne" : "Dingo",
-                                    "Win64"   : "Win64",
-                                    "Win32"   : "Win32",
-                                    "XBox360" : "Xbox360",
-                                    "PS3"     : "PS3" }
+            # Try to guess the Unreal platform name; the return
+            # value should match UE3’s appGetPlatformString().
+            ue3_build_platforms = { "ps4"     : "ORBIS",
+                                    "xboxone" : "Dingo",
+                                    "win64"   : "Win64",
+                                    "win32"   : "Win32",
+                                    "xbox360" : "Xbox360",
+                                    "ps3"     : "PS3" }
 
-            ue3_cook_platforms = { "PS4"     : "ORBIS",
-                                   "XboxOne" : "Dingo",
-                                   "Win64"   : "PC",
-                                   "Win32"   : "PCConsole",
-                                   "XBox360" : "Xbox360",
-                                   "PS3"     : "PS3",
-                                   "Linux"   : "PCConsole",
-                                   "Mac"     : "PCConsole" }
+            ue3_cook_platforms = { "ps4"     : "ORBIS",
+                                   "xboxone" : "Dingo",
+                                   "win64"   : "PC",
+                                   "win32"   : "PCConsole",
+                                   "xbox360" : "Xbox360",
+                                   "ps3"     : "PS3",
+                                   "linux"   : "PCConsole",
+                                   "mac"     : "PCConsole" }
 
-            ue3_shader_platforms = { "PS4"     : "ORBIS",
-                                     "XboxOne" : "Dingo",
-                                     "Win64"   : "PC",
-                                     "Win32"   : "PCConsole",
-                                     "XBox360" : "Xbox360",
-                                     "PS3"     : "PS3",
-                                     "Linux"   : "Linux",
-                                     "Mac"     : "Mac" }
+            ue3_shader_platforms = { "ps4"     : "ORBIS",
+                                     "xboxone" : "Dingo",
+                                     "win64"   : "PC",
+                                     "win32"   : "PCConsole",
+                                     "xbox360" : "Xbox360",
+                                     "ps3"     : "PS3",
+                                     "linux"   : "Linux",
+                                     "mac"     : "Mac" }
 
             if self.platform in ue3_build_platforms:
                 self.ue3_build_platform = ue3_build_platforms[self.platform]
@@ -125,19 +147,19 @@ class Environment:
             if self.platform in ue3_shader_platforms:
                 self.ue3_shader_platform = ue3_shader_platforms[self.platform]
 
-            ue4_build_platforms = { "PS4"     : "PS4",
-                                    "XboxOne" : "XboxOne",
-                                    "Win64"   : "Win64",
-                                    "Win32"   : "Win32",
-                                    "XBox360" : "Xbox360",
-                                    "PS3"     : "PS3" }
+            ue4_build_platforms = { "ps4"     : "PS4",
+                                    "xboxone" : "XboxOne",
+                                    "win64"   : "Win64",
+                                    "win32"   : "Win32",
+                                    "xbox360" : "Xbox360",
+                                    "ps3"     : "PS3" }
 
-            ue4_cook_platforms = { "PS4"     : "ORBIS",
-                                   "XboxOne" : "XboxOne",
-                                   "Win64"   : "PC",
-                                   "Win32"   : "PCConsole",
-                                   "XBox360" : "Xbox360",
-                                   "PS3"     : "PS3" }
+            ue4_cook_platforms = { "ps4"     : "ORBIS",
+                                   "xboxone" : "XboxOne",
+                                   "win64"   : "PC",
+                                   "win32"   : "PCConsole",
+                                   "xbox360" : "Xbox360",
+                                   "ps3"     : "PS3" }
 
             if self.platform in ue4_cook_platforms:
                 self.ue4_cook_platform = ue4_cook_platforms[self.platform]
@@ -148,12 +170,12 @@ class Environment:
             if self.platform in ue4_build_platforms:
                 self.ue4_build_platform = ue4_build_platforms[self.platform]
 
-            upms_platforms = { "PS4"     : "PS4",
-                               "XboxOne" : "XboxOne",
-                               "Win64"   : "PC",
-                               "Win32"   : "PCConsole",
-                               "XBox360" : "Xbox360",
-                               "PS3"     : "PS3" }
+            upms_platforms = { "ps4"     : "PS4",
+                               "xboxone" : "XboxOne",
+                               "win64"   : "PC",
+                               "win32"   : "PCConsole",
+                               "xbox360" : "Xbox360",
+                               "ps3"     : "PS3" }
 
             if self.platform in upms_platforms:
                 self.upms_platform = upms_platforms[self.platform]
@@ -164,19 +186,19 @@ class Environment:
 
             dlc = self.dlc if hasattr(self, 'dlc') else 'main'
 
-            banks_platforms = { "Win32"   : "PC",
-                                "Win64"   : "PC",
-                                "XBox360" : "X360",
-                                "XboxOne" : "XboxOne",
-                                "PS3"     : "PS3",
-                                "PS4"     : "PS4" }
+            banks_platforms = { "win32"   : "PC",
+                                "win64"   : "PC",
+                                "xbox360" : "X360",
+                                "xboxone" : "XboxOne",
+                                "ps3"     : "PS3",
+                                "ps4"     : "PS4" }
 
-            cmd_platforms = { "Win32"   : "Windows",
-                              "Win64"   : "Windows",
-                              "XBox360" : "XBox360",
-                              "XboxOne" : "XboxOne",
-                              "PS3"     : "PS3",
-                              "PS4"     : "PS4" }
+            cmd_platforms = { "win32"   : "Windows",
+                              "win64"   : "Windows",
+                              "xbox360" : "XBox360",
+                              "xboxone" : "XboxOne",
+                              "ps3"     : "PS3",
+                              "ps4"     : "PS4" }
 
             if self.platform in banks_platforms:
                 self.wwise_banks_platform = banks_platforms[self.platform]

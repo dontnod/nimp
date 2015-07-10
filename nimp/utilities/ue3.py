@@ -38,7 +38,7 @@ def generate_toc(env, dlc):
 def ue3_build(env):
     vs_version      = '11'
     solution        = env.solution
-    configuration   = env.configuration
+    configuration   = env.ue3_build_configuration
     result          = True
     version_file_cl = None
 
