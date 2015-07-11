@@ -14,6 +14,8 @@ import re
 
 from nimp.utilities.logging import *
 from nimp.utilities.paths import *
+from nimp.utilities.ue3 import *
+from nimp.utilities.ue4 import *
 
 #-------------------------------------------------------------------------------
 def all_map(mapper, fileset):
