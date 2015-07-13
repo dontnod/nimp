@@ -11,6 +11,7 @@ import os
 
 from nimp.utilities.build import *
 from nimp.utilities.deployment import *
+from nimp.utilities.file_mapper import *
 from nimp.utilities.perforce import *
 
 
