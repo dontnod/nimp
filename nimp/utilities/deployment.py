@@ -19,7 +19,7 @@ from nimp.utilities.file_mapper import *
 from nimp.utilities.hashing import *
 
 #---------------------------------------------------------------------------
-def get_latest_available_revision(env, version_directory_format, start_revision, **override_args):
+def get_latest_available_revision(env, version_directory_format, max_revision, **override_args):
     revisions = []
     format_args = vars(env).copy()
     format_args.update(override_args)
@@ -41,10 +41,10 @@ def get_latest_available_revision(env, version_directory_format, start_revision,
     revisions.sort(reverse=True)
 
     for revision in revisions:
-        if start_revision is None or int(revision) >= int(start_revision):
+        if max_revision is None or int(revision) <= int(max_revision):
             return revision
 
-    raise Exception('No revision >= %s in %s. Candidates are: %s' % (revision, version_directories_glob, ' '.join(revisions)))
+    raise Exception('No revision <= %s in %s. Candidates are: %s' % (max_revision, version_directories_glob, ' '.join(revisions)))
 
 #----------------------------------------------------------------------------
 @contextlib.contextmanager
