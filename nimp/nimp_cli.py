@@ -15,6 +15,14 @@ from nimp.utilities.environment import *
 
 #-------------------------------------------------------------------------------
 def main():
+
+    # Some Windows tools don’t like “duplicate” environment variables, i.e.
+    # when only the case differs; we remove any lowercase version we find.
+    # The loop is O(n²) but we don’t have that many entries so it’s all right.
+    env_vars = [x.lower() for x in os.environ.keys()]
+    for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
+        del os.environ[dupe]
+
     result = 0
     try:
         module_instances = get_dependency_sorted_instances(modules, Module)
@@ -42,3 +50,4 @@ def main():
 if(__name__ == "__main__"):
     return_code = main()
     sys.exit(return_code)
+
