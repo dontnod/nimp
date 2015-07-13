@@ -89,7 +89,10 @@ def get_ue3_build_config(config):
           "release"  : "Release",
           "test"     : "Test",
           "shipping" : "Shipping", }
-    return d[config] if config in d else config
+    if config not in d:
+        log_warning(log_prefix() + 'Unsupported UE3 build configuration “%s”' % (config))
+        return None
+    return d[config]
 
 def get_ue3_build_platform(platform):
     # Try to guess the Unreal platform name; the return
@@ -100,7 +103,10 @@ def get_ue3_build_platform(platform):
           "win32"   : "Win32",
           "xbox360" : "Xbox360",
           "ps3"     : "PS3", }
-    return d[platform] if platform in d else platform
+    if platform not in d:
+        log_warning(log_prefix() + 'Unsupported UE3 build platform “%s”' % (platform))
+        return None
+    return d[platform]
 
 def get_ue3_cook_platform(platform):
     d = { "ps4"     : "ORBIS",
@@ -111,7 +117,10 @@ def get_ue3_cook_platform(platform):
           "ps3"     : "PS3",
           "linux"   : "PCConsole",
           "mac"     : "PCConsole", }
-    return d[platform] if platform in d else platform
+    if platform not in d:
+        log_warning(log_prefix() + 'Unsupported UE3 cook platform “%s”' % (platform))
+        return None
+    return d[platform]
 
 def get_ue3_shader_platform(platform):
     d = { "ps4"     : "ORBIS",
@@ -122,7 +131,10 @@ def get_ue3_shader_platform(platform):
           "ps3"     : "PS3",
           "linux"   : "Linux",
           "mac"     : "Mac", }
-    return d[platform] if platform in d else platform
+    if platform not in d:
+        log_warning(log_prefix() + 'Unsupported UE3 shader platform “%s”' % (platform))
+        return None
+    return d[platform]
 
 
 #---------------------------------------------------------------------------
