@@ -61,11 +61,12 @@ def deploy_latest_revision(env, version_directory_format, revision, platforms):
     for platform in platforms:
         files_to_deploy.override(revision = revision, platform = platform).src(env.publish_version).recursive().files()
 
+    import nimp.utilities.file_mapper as file_mapper
     with p4_transaction("Automatic Checkout",
                         revert_unchanged = False,
                         submit_on_success = False,
                         add_not_versioned_files = False) as transaction:
-        if not all_map(checkout_and_copy(transaction), files_to_deploy()):
+        if not file_mapper.all_map(checkout_and_copy(transaction), files_to_deploy()):
             raise Exception("Error while deploying %s binaries" % platform)
         yield
 
