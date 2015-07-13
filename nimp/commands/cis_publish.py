@@ -34,7 +34,7 @@ class CisPublish(CisCommand):
         parser.add_argument('-c',
                             '--configurations',
                             help    = 'Configurations to deploy',
-                            metavar = '<platform>',
+                            metavar = '<configurations>',
                             nargs = '+')
 
         parser.add_argument('--keep-temp-binaries',
@@ -53,8 +53,14 @@ class CisPublish(CisCommand):
             files_to_deploy = env.map_files().to('.')
 
             for configuration in env.configurations:
-                tmp = files_to_deploy.override(configuration = configuration,
-                                               ue3_build_configuration = get_ue3_build_config(configuration)).src(env.publish_binaries)
+                if hasattr(env, 'project_type') and env.project_type is 'UE3':
+                    tmp = files_to_deploy.override(configuration = configuration,
+                                                   ue3_build_configuration = get_ue3_build_config(configuration))
+                else:
+                    tmp = files_to_deploy.override(configuration = configuration,
+                                                   ue4_build_configuration = get_ue4_build_config(configuration, env.platform))
+
+                tmp.src(env.publish_binaries)
 
                 # UE4 only? FIXME: the logic here doesn’t seem sane to me…
                 #if hasattr(env, 'deploy_version_root'):
