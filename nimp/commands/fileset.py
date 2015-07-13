@@ -13,35 +13,36 @@ class MapCommand(Command):
     def configure_arguments(self, env, parser):
         parser.add_argument('--arg',
                             help    = 'Set a format argument, that will be used in string interpolation.',
-                            nargs=2,
+                            metavar = '<KEY>=<VALUE>'
+                            nargs=1,
                             action='append',
                             default = [])
 
         parser.add_argument('set_name',
-                            help    = 'Set name to load',
+                            help    = 'Set name to load (e.g. binaries, version…)',
                             metavar = '<SET_FILE>')
 
         parser.add_argument('action',
-                            help    = 'Action to execute on listed files',
+                            help    = 'Action to execute on listed files (one of: robocopy, checkout, toc, reconcile, reconcile_and_submit, list)',
                             metavar = '<ACTION>',
-                            choices = ['robocopy', 'checkout', 'generate-toc', 'reconcile', 'reconcile_and_submit', 'list'])
+                            choices = ['robocopy', 'checkout', 'toc', 'reconcile', 'reconcile_and_submit', 'list'])
+
+        parser.add_argument('--src',
+                            help    = 'Source directory',
+                            metavar = '<DIR>')
 
         parser.add_argument('--to',
                             help    = 'Destination, if relevant',
                             metavar = '<DIR>',
                             default = None)
 
-        parser.add_argument('--src',
-                            help    = 'Source directory',
-                            metavar = '<DIR>')
-
         return True
 
     #---------------------------------------------------------------------------
     def run(self, env):
         if(env.arg is not None):
-            for key_value in env.arg:
-                setattr(env, key_value[0], key_value[1])
+            for key, value in env.arg.split('='):
+                setattr(env, key, value)
         env.standardize_names()
 
         files = FileMapper(format_args = vars(env))
@@ -63,7 +64,7 @@ class MapCommand(Command):
         elif env.action == 'list':
             for source, destination in files():
                 log_notification("{0} => {1}", source, destination)
-        elif env.action == 'generate-toc':
+        elif env.action == 'toc':
             log_error(log_prefix() + "Not implemented yet")
 
         return True
