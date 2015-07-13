@@ -12,10 +12,10 @@ class MapCommand(Command):
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
         parser.add_argument('--arg',
-                            help    = 'Set a format argument, that will be used in string interpolation.',
-                            metavar = '<KEY>=<VALUE>'
-                            nargs=1,
-                            action='append',
+                            help    = 'Add a key/value pair for use in string interpolation',
+                            metavar = '<KEY>=<VALUE>',
+                            nargs   = 1,
+                            action  = 'append',
                             default = [])
 
         parser.add_argument('set_name',
@@ -40,8 +40,8 @@ class MapCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        if(env.arg is not None):
-            for key, value in env.arg.split('='):
+        if env.arg is not None:
+            for key, value in [x[0].split('=') for x in env.arg]:
                 setattr(env, key, value)
         env.standardize_names()
 
