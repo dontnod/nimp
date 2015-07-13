@@ -120,6 +120,16 @@ def ue4_build_tools(env):
 # Helper commands for configuration sanitising
 #
 
+def get_ue4_build_config(config, platform):
+    d = { "debug"    : "Debug",
+          "devel"    : "Development Editor" if platform is "win64" else "Development",
+          "test"     : "Test",
+          "shipping" : "Shipping", }
+    if config not in d:
+        log_warning(log_prefix() + 'Unsupported UE4 build config “%s”' % (config))
+        return None
+    return d[config]
+
 def get_ue4_build_platform(platform):
     d = { "ps4"     : "PS4",
           "xboxone" : "XboxOne",

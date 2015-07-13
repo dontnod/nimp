@@ -98,21 +98,6 @@ class Environment:
         if hasattr(self, "platform"):
             self.platform = self.normalize_platform_string(self.platform)
 
-
-        if hasattr(self, "configuration"):
-            self.ue3_build_configuration = get_ue3_build_config(self.configuration)
-
-            ue4_build_configurations = { "debug"    : "Debug",
-                                         "devel"    : "Development Editor" if self.platform is "win64" else "Development",
-                                         "test"     : "Test",
-                                         "shipping" : "Shipping",
-                                       }
-
-            if self.configuration in ue4_build_configurations:
-                self.ue4_build_configuration = ue4_build_configurations[self.configuration]
-
-
-        if hasattr(self, "platform"):
             self.is_win32 = self.platform == "win32"
             self.is_win64 = self.platform == "win64"
             self.is_ps3   = self.platform == "ps3"
@@ -131,6 +116,11 @@ class Environment:
             self.ue3_shader_platform = get_ue3_shader_platform(self.platform)
 
             if hasattr(self, "configuration"):
+                self.ue3_build_configuration = get_ue3_build_config(self.configuration)
+
+                self.ue4_build_configuration = get_ue4_build_config(self.configuration,
+                                                                    self.platform)
+
                 suffix = 'Final' if self.configuration in ['test', 'shipping'] else ''
                 self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, suffix)
 
