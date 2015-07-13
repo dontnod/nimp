@@ -41,18 +41,19 @@ def get_latest_available_revision(env, version_directory_format, start_revision,
     revisions.sort(reverse=True)
 
     for revision in revisions:
-        if start_revision is None or revision <= start_revision:
+        if start_revision is None or int(revision) >= int(start_revision):
             return revision
 
-    return None
+    raise Exception('No revision >= %s in %s. Candidates are: %s' % (revision, version_directories_glob, ' '.join(revisions)))
 
 #----------------------------------------------------------------------------
 @contextlib.contextmanager
 def deploy_latest_revision(env, version_directory_format, revision, platforms):
+
+    # Check that there is a revision for each platform
     for platform in platforms:
-        revision = get_latest_available_revision(env, version_directory_format, revision, platform = platform)
-        if revision is None:
-            raise Exception("Unable to find a suitable revision for platform %s" % platform)
+        revision = get_latest_available_revision(env, version_directory_format,
+                                                 revision, platform = platform)
 
     files_to_deploy = env.map_files()
     if(hasattr(env, 'deploy_version_root')):
