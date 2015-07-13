@@ -30,7 +30,7 @@ class BuildCommand(Command):
                             '--platform',
                             help    = 'platform to build',
                             metavar = '<platform>',
-                            default = 'Win64')
+                            default = 'win64')
 
         parser.add_argument('--generate-version-file',
                             help    = 'Generates a code file containing build specific informations',

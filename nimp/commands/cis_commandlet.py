@@ -35,7 +35,7 @@ class CisCommandlet(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, env):
-        with deploy_latest_revision(env, env.publish_version, env.revision, ['Win64']):
+        with deploy_latest_revision(env, env.publish_version, env.revision, ['win64']):
 
             # Unreal Engine 4
             if hasattr(env, 'project_type') and env.project_type is 'UE4':

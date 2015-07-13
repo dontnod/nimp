@@ -42,7 +42,7 @@ class CisShip(CisCommand):
 
         # Unreal Engine 3
         if hasattr(env, 'project_type') and env.project_type is 'UE3':
-            platforms = ["Win64"]
+            platforms = ['win64']
 
             if not env.is_win64:
                 platforms += [env.platform]
