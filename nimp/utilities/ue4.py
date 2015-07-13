@@ -47,6 +47,8 @@ def _ue4_generate_project():
 
 #---------------------------------------------------------------------------
 def ue4_build_tools(env):
+    import nimp.utilities.file_mapper as file_mapper
+
     vs_version = '12'
     tools_to_build = [tool.lower() for tool in env.tools_to_build]
     cl_name = "[CIS] Built tools from CL %s" % env.revision if hasattr(env, 'revision') else 'Build Tools'
@@ -55,7 +57,7 @@ def ue4_build_tools(env):
         def checkout_binaries(*globs):
             files_to_checkout = env.map_files()
             files_to_checkout.src('../Engine/Binaries').glob(*globs)
-            return all_map(checkout(trans), files_to_checkout())
+            return file_mapper.all_map(checkout(trans), files_to_checkout())
 
         def add_binaries(*globs):
             files_to_checkout = env.map_files()

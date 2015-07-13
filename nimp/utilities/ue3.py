@@ -11,6 +11,8 @@ import os
 
 from nimp.utilities.build import *
 from nimp.utilities.deployment import *
+from nimp.utilities.file_mapper import *
+from nimp.utilities.perforce import *
 
 #-------------------------------------------------------------------------------
 def generate_toc(env, dlc):
@@ -155,6 +157,8 @@ def ue3_ship(env, destination = None):
 
 #---------------------------------------------------------------------------
 def _ship_dlc(env, destination):
+    import nimp.utilities.file_mapper as file_mapper
+
     map = env.cook_maps[env.dlc.lower()]
 
     log_notification(log_prefix() + "Cooking…")
@@ -170,16 +174,18 @@ def _ship_dlc(env, destination):
     dlc_files = env.map_files()
     dlc_files.to(destination).load_set("dlc")
 
-    return all_map(robocopy, dlc_files())
+    return file_mapper.all_map(robocopy, dlc_files())
 
 #---------------------------------------------------------------------------
 def _ship_game_patch(env, destination):
+    import nimp.utilities.file_mapper as file_mapper
+
     map = env.cook_maps[env.dlc.lower()]
 
     master_files = env.map_files()
     master_files_source = master_files.src(env.publish_master).recursive().files()
     log_notification(log_prefix() + "Deploying master…")
-    if not all_map(robocopy, master_files()):
+    if not file_mapper.all_map(robocopy, master_files()):
         return False
 
     log_notification(log_prefix() + "Cooking on top of master…")
@@ -198,13 +204,13 @@ def _ship_game_patch(env, destination):
     files_to_exclude = [src for src, *args in patch_files()]
     log_notification("Excluding files {0}", files_to_exclude)
     master_files_source.exclude_ignore_case(*files_to_exclude)
-    if not all_map(robocopy, master_files()):
+    if not file_mapper.all_map(robocopy, master_files()):
         return False
 
     if hasattr(env, 'revision'):
         cook_files = env.map_files()
         cook_files.to(env.publish_cook).load_set("cook")
-        if not all_map(robocopy, cook_files()):
+        if not file_mapper.all_map(robocopy, cook_files()):
             return False
 
     log_notification(log_prefix() + "Generating TOC…")
@@ -217,7 +223,7 @@ def _ship_game_patch(env, destination):
     log_notification(log_prefix() + "Copying patched files to output directory…")
     patch_files = env.map_files()
     patch_files.to(destination).override(step = 'deploy').load_set("patch")
-    if not all_map(robocopy, patch_files()):
+    if not file_mapper.all_map(robocopy, patch_files()):
         return False
 
     if env.is_win32:
