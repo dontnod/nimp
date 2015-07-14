@@ -67,5 +67,6 @@ def _load_arguments(env, parser):
         setattr(env, key, value)
 
     env.standardize_names()
+    env.setup_envvars()
     return True
 

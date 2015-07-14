@@ -165,6 +165,15 @@ class Environment:
                 self.wwise_cmd_platform = cmd_platforms[self.platform]
 
 
+    #
+    # Apply environment variables from .nimp.conf
+    #
+    def setup_envvars(self):
+        if hasattr(self, 'environment'):
+            for key, val in self.environment.items():
+                os.environ[key] = val
+
+
 #---------------------------------------------------------------------------
 def check_keys(dict, error_format, *args):
     result = True
