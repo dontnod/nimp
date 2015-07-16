@@ -71,13 +71,6 @@ class CisPublish(CisCommand):
             if not all_map(checkout_and_copy(trans), files_to_deploy()):
                 return False
 
-            if not env.keep_temp_binaries:
-                for configuration in env.configurations:
-                    try:
-                        shutil.rmtree(env.format(env.publish_binaries, configuration = configuration))
-                    except Exception as ex:
-                        log_error(log_prefix() + "Error while cleaning binaries : {0}", ex)
-
             # Only for Unreal Engine 3: build scripts
             if hasattr(env, 'project_type') and env.project_type is 'UE3':
                 if env.is_win64:
@@ -109,6 +102,14 @@ class CisPublish(CisCommand):
                         cl_txt_path = os.path.join(unreal_prop_path, env.cl_txt_path)
                         with open(cl_txt_path, "w") as cl_txt_file:
                             cl_txt_file.write("%s\n" % env.revision)
+
+            # If everything went well, remove temporary binaries
+            if not env.keep_temp_binaries:
+                for configuration in env.configurations:
+                    try:
+                        shutil.rmtree(env.format(env.publish_binaries, configuration = configuration))
+                    except Exception as ex:
+                        log_error(log_prefix() + "Error while cleaning binaries : {0}", ex)
 
         return True
 
