@@ -14,10 +14,6 @@ class CisCommand(Command):
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        parser.add_argument('p4_client',
-                            metavar = '<CLIENT_NAME>',
-                            type    = str)
-
         parser.add_argument('--local',
                             help    = "Don't touch workspace or P4 settings.",
                             action  = "store_true",
@@ -32,6 +28,11 @@ class CisCommand(Command):
                             help    = 'Remove all unversionned files',
                             action  = "store_true",
                             default = False)
+
+        parser.add_argument('--p4client',
+                            help = 'Perforce client',
+                            required = True,
+                            type = str)
 
         parser.add_argument('--p4port',
                             help = 'Perforce port',
@@ -72,7 +73,7 @@ class CisCommand(Command):
 
     def _setup_perforce(self, env):
         if not env.local:
-            if not p4_create_config_file(env.p4port, env.p4user, env.p4pass, env.p4_client):
+            if not p4_create_config_file(env.p4port, env.p4user, env.p4pass, env.p4client):
                 return False
 
             if not p4_clean_workspace():

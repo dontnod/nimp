@@ -56,7 +56,10 @@ class PerforceCommand(Command):
             return True
 
         parser = subparsers.add_parser("prepare-workspace", help = "Writes a .p4config file and removes all pending CLs from workspace")
-        parser.add_argument('p4_client', metavar = '<CLIENT_NAME>', type = str)
+        parser.add_argument('--p4client',
+                            metavar = '<CLIENT_NAME>',
+                            required = True,
+                            type = str)
         parser.add_argument("--patch-config",
                             help = "Path to the patch config file",
                             metavar = "<FILE>",
