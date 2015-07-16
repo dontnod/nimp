@@ -121,8 +121,9 @@ class Environment:
                 self.ue4_build_configuration = get_ue4_build_config(self.configuration,
                                                                     self.platform)
 
-                suffix = 'Final' if self.configuration in ['test', 'shipping'] else ''
-                self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, suffix)
+            cook_cfg = self.configuration if hasattr(self, 'configuration') else None
+            cook_suffix = 'Final' if cook_cfg in ['test', 'shipping', None] else ''
+            self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, cook_suffix)
 
             # UE4 stuff
             self.ue4_build_platform = get_ue4_build_platform(self.platform)
