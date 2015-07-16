@@ -86,22 +86,21 @@ class CisPublish(CisCommand):
             if not all_map(robocopy, files_to_publish()):
                 return False
 
-            # Only for Unreal Engine 4: unrealprop
-            if hasattr(env, 'project_type') and env.project_type is 'UE4':
-                if hasattr(env, 'unreal_prop_path'):
-                    unreal_prop_path = env.format(env.unreal_prop_path)
-                    publish_to_unreal_prop = env.map_files().override(is_unreal_prop_version = True).to(unreal_prop_path)
-                    log_notification(log_prefix() + "Copying files to unreal prop…")
-                    publish_to_unreal_prop.load_set("version")
+            # Support UnrealProp if necessary
+            if hasattr(env, 'unreal_prop_path'):
+                unreal_prop_path = env.format(env.unreal_prop_path)
+                publish_to_unreal_prop = env.map_files().override(is_unreal_prop_version = True).to(unreal_prop_path)
+                log_notification(log_prefix() + "Copying files to unreal prop…")
+                publish_to_unreal_prop.load_set("version")
 
-                    if not all_map(robocopy, publish_to_unreal_prop()):
-                        return False
+                if not all_map(robocopy, publish_to_unreal_prop()):
+                    return False
 
-                    log_notification(log_prefix() + "Writing CL.txt file {0}…", configuration)
-                    if hasattr(env, 'cl_txt_path'):
-                        cl_txt_path = os.path.join(unreal_prop_path, env.cl_txt_path)
-                        with open(cl_txt_path, "w") as cl_txt_file:
-                            cl_txt_file.write("%s\n" % env.revision)
+                log_notification(log_prefix() + "Writing CL.txt file {0}…", configuration)
+                if hasattr(env, 'cl_txt_path'):
+                    cl_txt_path = os.path.join(unreal_prop_path, env.cl_txt_path)
+                    with open(cl_txt_path, "w") as cl_txt_file:
+                        cl_txt_file.write("%s\n" % env.revision)
 
             # If everything went well, remove temporary binaries
             if not env.keep_temp_binaries:
