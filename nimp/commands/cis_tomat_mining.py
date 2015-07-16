@@ -5,10 +5,6 @@ from nimp.utilities.ue3         import *
 from nimp.utilities.deployment  import *
 from nimp.utilities.file_mapper import *
 
-FARM_P4_PORT     = "farmproxy:1666"
-FARM_P4_USER     = "CIS-CodeBuilder"
-FARM_P4_PASSWORD = "CIS-CodeBuilder"
-
 #-------------------------------------------------------------------------------
 class CisTomatMining(CisCommand):
     abstract = 0

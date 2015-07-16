@@ -8,10 +8,6 @@ from nimp.utilities.ue4         import *
 from nimp.utilities.file_mapper import *
 from nimp.utilities.deployment  import *
 
-FARM_P4_PORT     = "farmproxy:1666"
-FARM_P4_USER     = "CIS-CodeBuilder"
-FARM_P4_PASSWORD = "CIS-CodeBuilder"
-
 #-------------------------------------------------------------------------------
 class CisPublish(CisCommand):
     abstract = 0

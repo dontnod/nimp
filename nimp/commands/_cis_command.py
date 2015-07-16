@@ -3,10 +3,6 @@
 from nimp.commands._command import *
 from nimp.utilities.perforce import *
 
-FARM_P4_PORT     = "farmproxy:1666"
-FARM_P4_USER     = "CIS-CodeBuilder"
-FARM_P4_PASSWORD = "CIS-CodeBuilder"
-
 #-------------------------------------------------------------------------------
 class CisCommand(Command):
     abstract = 1 # Vieux hackos pour que l'introspection n'instancie pas cette
@@ -37,6 +33,21 @@ class CisCommand(Command):
                             action  = "store_true",
                             default = False)
 
+        parser.add_argument('--p4port',
+                            help = 'Perforce port',
+                            required = True,
+                            type = str)
+
+        parser.add_argument('--p4user',
+                            help = 'Perforce user',
+                            required = True,
+                            type = str)
+
+        parser.add_argument('--p4pass',
+                            help = 'Perforce pass',
+                            required = True,
+                            type = str)
+
         return self.cis_configure_arguments(env, parser)
 
     #---------------------------------------------------------------------------
@@ -46,7 +57,7 @@ class CisCommand(Command):
     #---------------------------------------------------------------------------
     def run(self, env):
         if not self._setup_perforce(env):
-            log_error("Error setuping perforce workspace")
+            log_error("Error setting up Perforce workspace")
             return False
 
         result = self._cis_run(env)
@@ -61,7 +72,7 @@ class CisCommand(Command):
 
     def _setup_perforce(self, env):
         if not env.local:
-            if not p4_create_config_file(FARM_P4_PORT, FARM_P4_USER, FARM_P4_PASSWORD, env.p4_client):
+            if not p4_create_config_file(env.p4port, env.p4user, env.p4pass, env.p4_client):
                 return False
 
             if not p4_clean_workspace():

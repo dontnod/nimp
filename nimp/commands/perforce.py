@@ -4,10 +4,6 @@ from nimp.commands._command     import *
 from nimp.utilities.perforce    import *
 from nimp.utilities.file_mapper import *
 
-FARM_P4_PORT     = "farmproxy:1666"
-FARM_P4_USER     = "CIS-CodeBuilder"
-FARM_P4_PASSWORD = "CIS-CodeBuilder"
-
 #-------------------------------------------------------------------------------
 class PerforceCommand(Command):
     def __init__(self):
@@ -37,7 +33,7 @@ class PerforceCommand(Command):
     #---------------------------------------------------------------------------
     def _register_prepare_workspace(self, subparsers):
         def _execute(env):
-            if not p4_create_config_file(FARM_P4_PORT, FARM_P4_USER, FARM_P4_PASSWORD, env.p4_client):
+            if not p4_create_config_file(env.p4port, env.p4user, env.p4pass, env.p4_client):
                 return False
 
             if not p4_clean_workspace():
@@ -59,7 +55,7 @@ class PerforceCommand(Command):
                             return False
             return True
 
-        parser = subparsers.add_parser("prepare-workspace", help = "Writes a .P4CONFIG file and removes all pending CLs from workspace")
+        parser = subparsers.add_parser("prepare-workspace", help = "Writes a .p4config file and removes all pending CLs from workspace")
         parser.add_argument('p4_client', metavar = '<CLIENT_NAME>', type = str)
         parser.add_argument("--patch-config",
                             help = "Path to the patch config file",
