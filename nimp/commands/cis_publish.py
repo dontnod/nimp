@@ -48,6 +48,9 @@ class CisPublish(CisCommand):
 
             files_to_deploy = env.map_files().to('.')
 
+            if hasattr(env, 'project_type') and env.project_type is 'UE4':
+                files_to_deploy = files_to_deploy.to('..')
+
             for configuration in env.configurations:
                 if hasattr(env, 'project_type') and env.project_type is 'UE3':
                     tmp = files_to_deploy.override(configuration = configuration,
