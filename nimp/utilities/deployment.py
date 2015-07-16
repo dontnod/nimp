@@ -122,6 +122,9 @@ def robocopy(src, dest):
         except Exception as e:
             log_error(log_prefix() + 'Error: {0}', e)
             return False
+    else:
+        log_error(log_prefix() + 'Error: not such file or directory “{0}”', src)
+        return False
 
     return True
 
