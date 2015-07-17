@@ -12,6 +12,22 @@ class PerforceCommand(Command):
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
         subparsers  = parser.add_subparsers(title='P4 Commands')
+
+        parser.add_argument('--p4port',
+                            help = 'Perforce port',
+                            required = True,
+                            type = str)
+
+        parser.add_argument('--p4user',
+                            help = 'Perforce user',
+                            required = True,
+                            type = str)
+
+        parser.add_argument('--p4pass',
+                            help = 'Perforce pass',
+                            required = True,
+                            type = str)
+
         self._register_prepare_workspace(subparsers)
         self._register_clean_workspace(subparsers)
         self._register_checkout(subparsers)
@@ -33,7 +49,7 @@ class PerforceCommand(Command):
     #---------------------------------------------------------------------------
     def _register_prepare_workspace(self, subparsers):
         def _execute(env):
-            if not p4_create_config_file(env.p4port, env.p4user, env.p4pass, env.p4_client):
+            if not p4_create_config_file(env.p4port, env.p4user, env.p4pass, env.p4client):
                 return False
 
             if not p4_clean_workspace():
@@ -56,14 +72,17 @@ class PerforceCommand(Command):
             return True
 
         parser = subparsers.add_parser("prepare-workspace", help = "Writes a .p4config file and removes all pending CLs from workspace")
+
         parser.add_argument('--p4client',
                             metavar = '<CLIENT_NAME>',
                             required = True,
                             type = str)
+
         parser.add_argument("--patch-config",
                             help = "Path to the patch config file",
                             metavar = "<FILE>",
                             default = "None")
+
         parser.set_defaults(p4_command_to_run = _execute)
 
     #---------------------------------------------------------------------------
