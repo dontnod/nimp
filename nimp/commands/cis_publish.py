@@ -96,11 +96,25 @@ class CisPublish(CisCommand):
                 if not all_map(robocopy, publish_to_unreal_prop()):
                     return False
 
-                log_notification(log_prefix() + "Writing CL.txt file {0}…", configuration)
                 if hasattr(env, 'cl_txt_path'):
+                    log_notification(log_prefix() + "Writing changelist file {0} for {1}…", env.cl_txt_path, configuration)
                     cl_txt_path = os.path.join(unreal_prop_path, env.cl_txt_path)
                     with open(cl_txt_path, "w") as cl_txt_file:
                         cl_txt_file.write("%s\n" % env.revision)
+
+                # Many Epic tools only consider the build valid if they find a *TOC.txt file
+                # See for instance GetLatestBuildFromUnrealProp() in CIS Build Controller
+                # Also, Patoune insists on having a specific TOC name, hence the toc_name part
+                if hasattr(env, 'game') and hasattr(env, 'upms_platform'):
+                    log_notification(log_prefix() + "Writing fake TOC for UnrealProp")
+
+                    toc_dir = os.path.join(unreal_prop_path, env.game)
+                    safe_makedirs(toc_dir)
+
+                    toc_name = '%s%sTOC.txt' % (env.upms_platform, 'FINAL' if env.is_win32 else '')
+                    toc_path = os.path.join(toc_dir, toc_name)
+                    with open(toc_path, "w") as toc_file:
+                        pass
 
             # If everything went well, remove temporary binaries
             if not env.keep_temp_binaries:
@@ -108,7 +122,7 @@ class CisPublish(CisCommand):
                     try:
                         shutil.rmtree(env.format(env.publish_binaries, configuration = configuration))
                     except Exception as ex:
-                        log_error(log_prefix() + "Error while cleaning binaries : {0}", ex)
+                        log_error(log_prefix() + "Error while cleaning binaries: {0}", ex)
 
         return True
 
