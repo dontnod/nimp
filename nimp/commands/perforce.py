@@ -13,19 +13,18 @@ class PerforceCommand(Command):
     def configure_arguments(self, env, parser):
         subparsers  = parser.add_subparsers(title='P4 Commands')
 
+        # These are not marked required=True because sometimes we don’t
+        # really need them.
         parser.add_argument('--p4port',
                             help = 'Perforce port',
-                            required = True,
                             type = str)
 
         parser.add_argument('--p4user',
                             help = 'Perforce user',
-                            required = True,
                             type = str)
 
         parser.add_argument('--p4pass',
                             help = 'Perforce pass',
-                            required = True,
                             type = str)
 
         self._register_prepare_workspace(subparsers)
