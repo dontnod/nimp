@@ -79,34 +79,42 @@ def ue4_build_tools(env):
         if 'dotnetutilities' in tools_to_build:
             log_notification("Building DotNETUtilities")
             result &= build_unreal_project('DotNETUtilities', 'DotNET/DotNETUtilities.*')
+
         if 'lightmass' in tools_to_build:
             log_notification("Building UnrealLightMass")
             result &= build_unreal_project('UnrealLightMass', 'Win64/UnrealLightmass.*', 'Win64/UnrealLightmass-*.*')
+
         if 'shadercompileworker' in tools_to_build:
             log_notification("Building ShaderCompileWorker")
             result &= build_unreal_project('ShaderCompileWorker', 'Win64/ShaderCompileWorker.*', 'Win64/ShaderCompileWorker-*.*')
+
         if 'symboldebugger' in tools_to_build:
             log_notification("Building SymbolDebugger")
             result &= build_unreal_project('SymbolDebugger', 'Win64/SymbolDebugger.*')
+
         if 'unrealfileserver' in tools_to_build:
             log_notification("Building UnrealFileServer")
             result &= build_unreal_project('UnrealFileServer', 'Win64/UnrealFileServer.*')
+
         if 'unrealfrontend' in tools_to_build:
             log_notification("Building UnrealFrontend")
             result &= build_unreal_project('UnrealFrontend', 'Win64/UnrealFrontend.*', 'Win64/UnrealFrontend-*.*', 'Win64/PS4/UnrealFrontend-*.*')
+
         if 'swarm' in tools_to_build:
-            log_notification("Building Swarm")
-            binaries = ['DotNET/AgentInterface.*',
-                        'DotNET/SwarmAgent.*',
-                        'DotNET/SwarmCoordinator.*',
-                        'DotNET/SwarmCoordinatorInterface.*',
-                        'DotNET/UnrealControls.*',
-                        'Win64/AgentInterface.*']
+            log_notification("Building UnrealSwarm")
+            binaries = [ 'DotNET/SwarmInterface.*',
+                         'DotNET/SwarmAgent.*',
+                         'DotNET/SwarmCommonUtils.*',
+                         'DotNET/SwarmCoordinator.*',
+                         'DotNET/SwarmCoordinatorInterface.*',
+                         'DotNET/UnrealControls.*',
+                         'Win64/AgentInterface.*' ]
             if not checkout_binaries(*binaries):
                 result = False
             else:
                 result &= vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln', 'Any CPU', 'Development', None, '10', 'Rebuild')
                 result &= add_binaries(*binaries)
+
         if 'networkprofiler' in tools_to_build:
             log_notification("Building NetworkProfiler")
             if not checkout_binaries('DotNET/NetworkProfiler.*'):
@@ -114,6 +122,7 @@ def ue4_build_tools(env):
             else:
                 result &= vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln', 'Any CPU', 'Development', None, '10', 'Rebuild')
                 result &= add_binaries('DotNET/NetworkProfiler.*')
+
         if not result:
             trans.abort()
         return result
