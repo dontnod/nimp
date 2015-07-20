@@ -106,15 +106,21 @@ class CisPublish(CisCommand):
                 # See for instance GetLatestBuildFromUnrealProp() in CIS Build Controller
                 # Also, Patoune insists on having a specific TOC name, hence the toc_name part
                 if hasattr(env, 'game') and hasattr(env, 'upms_platform'):
-                    log_notification(log_prefix() + "Writing fake TOC for UnrealProp")
+                    if env.project_type is 'UE3':
+                        toc_name = '%s%sTOC.txt' % (env.upms_platform, 'FINAL' if env.is_win32 else '')
+                        toc_content = ''
+                    else:
+                        toc_name = 'TOC.xml'
+                        toc_content = '<lol></lol>\n'
+
+                    log_notification(log_prefix() + "Writing fake TOC {0} for UnrealProp", toc_name)
 
                     toc_dir = os.path.join(unreal_prop_path, env.game)
                     safe_makedirs(toc_dir)
 
-                    toc_name = '%s%sTOC.txt' % (env.upms_platform, 'FINAL' if env.is_win32 else '')
                     toc_path = os.path.join(toc_dir, toc_name)
-                    with open(toc_path, "w") as toc_file:
-                        pass
+                    with open(toc_path, "w") as toc_fd:
+                        toc_fd.write(toc_content)
 
             # If everything went well, remove temporary binaries
             if not env.keep_temp_binaries:
