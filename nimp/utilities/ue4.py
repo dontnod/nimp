@@ -37,9 +37,23 @@ def ue4_build(env):
     if env.is_xone:
         vs_version = '11'
 
-    return _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
-                              env.ue4_build_configuration, vs_version, 'Build')
+    # Build the main binaries
+    result = _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
+                                env.ue4_build_configuration, vs_version, 'Build')
 
+    # Build the tools if necessary
+    if env.ue4_build_platform == 'Win64' and env.ue4_build_configuration == 'Development Editor':
+        for tool in [ 'DotNETUtilities',
+                      'AutomationTool',
+                      'UnrealFrontend',
+                      'UnrealLightmass',
+                      'UnrealFileServer',
+                      'ShaderCompileWorker',
+                      'SymbolDebugger', ]:
+            result &= _ue4_build_project(env.solution, tool, env.ue4_build_platform,
+                                         env.ue4_build_configuration, vs_version, 'Build')
+
+    return result
 
 #---------------------------------------------------------------------------
 def _ue4_generate_project():
