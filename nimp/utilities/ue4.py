@@ -37,7 +37,8 @@ def ue4_build(env):
                    'UnrealLightmass',
                    'UnrealFileServer',
                    'ShaderCompileWorker',
-                   'SymbolDebugger', ]
+                   'SymbolDebugger',
+                   'PS4DevKitUtil', ]
 
     if env.platform == 'ps4':
         tools += [ 'PS4MapFileUtil' ]
