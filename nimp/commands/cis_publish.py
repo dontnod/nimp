@@ -96,11 +96,12 @@ class CisPublish(CisCommand):
                 if not all_map(robocopy, publish_to_unreal_prop()):
                     return False
 
-                if hasattr(env, 'cl_txt_path'):
-                    log_notification(log_prefix() + "Writing changelist file {0} for {1}…", env.cl_txt_path, configuration)
-                    cl_txt_path = os.path.join(unreal_prop_path, env.cl_txt_path)
-                    with open(cl_txt_path, "w") as cl_txt_file:
-                        cl_txt_file.write("%s\n" % env.revision)
+                # Patoune wants this file
+                cl_name = 'CL.txt'
+                log_notification(log_prefix() + "Writing changelist file {0} for {1}…", cl_name, configuration)
+                cl_path = os.path.join(unreal_prop_path, cl_name)
+                with open(cl_path, "w") as cl_fd:
+                    cl_fd.write('%s\n' % env.revision)
 
                 # Many Epic tools only consider the build valid if they find a *TOC.txt file
                 # See for instance GetLatestBuildFromUnrealProp() in CIS Build Controller

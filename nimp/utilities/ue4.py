@@ -51,8 +51,13 @@ def ue4_build(env):
             log_error(log_prefix() + "Could not build %s" % (tool, ))
             return False
 
-    # Build tools from other solutions
+    # Build tools from other solutions or with other flags
     if env.platform == 'win64' and env.configuration == 'devel':
+
+        if not _ue4_build_project(env.solution, 'BootstrapPackagedGame', 'Win64',
+                                  'Shipping', vs_version, 'Build'):
+            log_error(log_prefix() + "Could not build BootstrapPackagedGame")
+            return False
 
         if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln', 'Any CPU',
                        'Development', None, '10', 'Rebuild'):
