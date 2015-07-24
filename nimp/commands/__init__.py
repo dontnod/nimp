@@ -15,6 +15,7 @@ __all__ = [
     "cook",
     "shaders",
     "build",
+    "publish",
     "ship",
     "upgrade",
     "vs_build",

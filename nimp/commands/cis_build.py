@@ -58,8 +58,7 @@ class CisBuildCommand(CisCommand):
 
 
         log_notification(log_prefix() + "Publishing Binaries…")
-        files_to_publish = env.map_files()
-        files_to_publish.to(env.publish_binaries).load_set("binaries")
+        files_to_publish = env.map_files().to(env.publish_binaries).load_set("binaries")
         if not all_map(robocopy, files_to_publish()):
             return False
 
