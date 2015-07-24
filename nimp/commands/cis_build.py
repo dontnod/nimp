@@ -31,12 +31,6 @@ class CisBuildCommand(CisCommand):
                             help    = 'configuration to build',
                             metavar = '<configuration>')
 
-
-        parser.add_argument('--publish-only',
-                            help    = "Don't build game, publish binaries and symbols only.",
-                            action  = "store_true",
-                            default = False)
-
         return True
 
     #---------------------------------------------------------------------------
@@ -45,11 +39,6 @@ class CisBuildCommand(CisCommand):
 
         if not env.publish_only:
             log_notification(log_prefix() + "Building game…")
-
-            # Unreal Engine 4
-            if hasattr(env, 'project_type') and env.project_type is 'UE4':
-                if not ue4_build(env):
-                    return False
 
             # Unreal Engine 3
             if hasattr(env, 'project_type') and env.project_type is 'UE3':

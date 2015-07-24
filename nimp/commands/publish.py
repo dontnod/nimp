@@ -15,11 +15,6 @@ class PublishCommand(Command):
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        parser.add_argument('-r',
-                            '--revision',
-                            help = 'Current revision',
-                            metavar = '<revision>')
-
         parser.add_argument('-p',
                             '--platform',
                             help = 'platforms to build',
@@ -34,6 +29,12 @@ class PublishCommand(Command):
                             '--mode',
                             help = 'operating mode (binaries, symbols)',
                             metavar = '<mode>')
+
+        # FIXME: could we avoid this argument? right now we need it for upload_symbols
+        parser.add_argument('-r',
+                            '--revision',
+                            help = 'revision',
+                            metavar = '<revision>')
 
         return True
 
