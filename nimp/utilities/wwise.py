@@ -21,7 +21,7 @@ def build_wwise_banks(env):
     platform         = env.platform
     wwise_project    = env.wwise_project
     wwise_banks_path = os.path.join(env.wwise_banks_path, env.wwise_banks_platform)
-    cl_name          = "[CIS] Updated {0} WWise Banks from CL {1}".format(platform, p4_get_last_synced_changelist())
+    cl_description   = "[CIS] Updated {0} WWise banks from changelist {1}".format(platform, p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring/x64/Release/bin/WWiseCLI.exe")
 
     # WWiseCLI doesn’t handle Unix path separators properly
@@ -34,7 +34,7 @@ def build_wwise_banks(env):
                      "-Platform",
                      env.wwise_cmd_platform]
 
-    with p4_transaction(cl_name, submit_on_success = env.checkin) as trans:
+    with p4_transaction(cl_description, submit_on_success = env.checkin) as trans:
         log_notification(log_prefix() + "Checking out banks…")
         banks_files = env.map_files()
         banks_files.src(wwise_banks_path).recursive().files()
