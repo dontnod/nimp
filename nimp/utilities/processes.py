@@ -81,6 +81,9 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
                         line = line.decode("cp850")
 
                     if line == '':
+                        # Sleep for 5 milliseconds if there was no data,
+                        # or we’ll hog the CPU.
+                        time.sleep(0.005)
                         break
 
                     line = line.replace("{", "{{").replace("}", "}}")
