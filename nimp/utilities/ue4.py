@@ -13,6 +13,7 @@ from nimp.utilities.build import *
 from nimp.utilities.deployment import *
 from nimp.utilities.file_mapper import *
 from nimp.utilities.perforce import *
+from nimp.utilities.system import *
 
 
 #---------------------------------------------------------------------------
@@ -86,7 +87,10 @@ def ue4_build(env):
 #
 
 def _ue4_generate_project():
-    return call_process('.', ['../GenerateProjectFiles.bat'])
+    if is_msys():
+        return call_process('.', ['../GenerateProjectFiles.bat'])
+    else:
+        return call_process('..', ['/bin/sh', 'GenerateProjectFiles.sh'])
 
 
 #
@@ -130,8 +134,15 @@ def get_ue4_cook_platform(platform):
 def _ue4_build_project(sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
 
-    return vsbuild(sln_file, build_platform, configuration,
-                   project, vs_version, target)
+    if is_msys():
+        return vsbuild(sln_file, build_platform, configuration,
+                       project, vs_version, target)
+
+    else:
+        project_name = project
+        if configuration not in ['Development', 'Development Editor']:
+            project_name += '-Linux-' + configuration
+        call_process('..', ['make', project_name])
 
 
 #---------------------------------------------------------------------------
