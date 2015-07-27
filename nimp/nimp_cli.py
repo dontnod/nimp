@@ -16,6 +16,8 @@ from nimp.utilities.environment import *
 #-------------------------------------------------------------------------------
 def main():
 
+    t0 = time.time()
+
     # Some Windows tools don’t like “duplicate” environment variables, i.e.
     # when only the case differs; we remove any lowercase version we find.
     # The loop is O(n²) but we don’t have that many entries so it’s all right.
@@ -44,9 +46,12 @@ def main():
 
     except KeyboardInterrupt:
         log_notification(log_prefix() + "Interrompu. Zy av, t'es un ouf toi")
-        return 1
+        result = 1
     except SystemExit:
-        return 1
+        result = 1
+
+    t1 = time.time()
+    log_notification(log_prefix() + "Command took %f seconds." % (t1 - t0,))
 
     return result
 
