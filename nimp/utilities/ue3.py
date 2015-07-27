@@ -48,10 +48,14 @@ def ue3_build(env):
         log_error(log_prefix() + "Invalid empty value for configuration")
         return False
 
-    log_verbose(log_prefix() + "Building UBT")
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
         log_error(log_prefix() + "Error building UBT")
         return False
+
+    # Build tools
+    if env.platform == 'win64' and env.configuration == 'release':
+        if not _ue3_build_tools():
+            return False
 
     def _build(solution, vs_version):
         if env.is_win64:
@@ -293,11 +297,96 @@ def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = F
 
 
 #---------------------------------------------------------------------------
-def _ue3_build_project(sln_file, project, configuration, vs_version, target = 'Rebuild'):
+def _ue3_build_project(sln_file, project, configuration, vs_version):
     base_dir = 'Development/Src'
     sln_file = os.path.join(base_dir, sln_file)
 
-    return vsbuild(sln_file, 'Mixed platforms', configuration, project, vs_version, target)
+    return vsbuild(sln_file, 'Mixed platforms', configuration, project, vs_version, 'Build')
+
+
+#
+# Build tools
+#
+def _ue3_build_tools():
+
+    # We only need a 64-bit version of these ones
+    win64_tools = [ 'UnrealFrontend', # needed by UnrealSwarm
+                    'UnrealSwarm',
+                    'MemLeakCheckDiffer',
+                    'UnrealLoc',
+                    'PackageDiffFrontend',
+                    'StatsViewer',
+                    'GameplayProfiler',
+                    'MemoryProfiler2',
+                    'UnSetup', ]
+
+    # TODO 'CrashReport'? also, UnrealDVDLayout is now on ClickOnce
+
+    # We also need a 32-bit version of these ones
+    win32_64_tools = [ 'UnrealLightmass',
+                       'ShaderCompileWorker', ]
+
+    # These tools require Visual 2012
+    vs2012_tools = [ 'UnrealFrontend',
+                     'MemLeakCheckDiffer',
+                     'UnrealLoc', ]
+
+    # These tools require “Mixed Platforms” as the platform instead of 'x64'
+    mixed_tools = [ 'UnrealFrontend' ]
+
+    # These tools require “Any CPU”
+    anycpu_tools = [ 'UnrealLoc',
+                     'UnSetup',
+                     'PackageDiffFrontend',
+                     'StatsViewer',
+                     'GameplayProfiler', ]
+
+    for tool in win64_tools + win32_64_tools:
+
+        override_vs_version = '10'
+        override_platform = 'x64'
+
+        if tool in vs2012_tools:
+            override_vs_version = '11'
+
+        if tool in mixed_tools:
+            override_platform = 'Mixed Platforms'
+        elif tool in anycpu_tools:
+            override_platform = 'Any CPU'
+
+        # Compile the x64 or Any CPU version
+        if not vsbuild('Development/Tools/%s/%s.sln' % (tool, tool),
+                       override_platform, 'Release', None, override_vs_version):
+            log_error(log_prefix() + "Could not build %s" % (tool,))
+            return False
+
+        # If necessary, compile a Win32 version
+        if tool in win32_64_tools:
+            if not vsbuild('Development/Tools/%s/%s.sln' % (tool, tool),
+                           'Win32', 'Release', None, override_vs_version):
+                log_error(log_prefix() + "Could not build %s" % (tool,))
+                return False
+
+    # Console tools
+    for tool in [ 'PS3',
+                  'Windows',
+                  'Xe',
+                  'Dingo',
+                  'Orbis', ]:
+
+        dir1 = 'Xenon' if tool is 'Xe' else tool
+        dir2 = '' if tool is 'Orbis' else tool
+        platforms = [ 'x64' ] if tool is 'Orbis' else [ 'x64', 'Win32' ]
+
+        for platform in platforms:
+
+            if not vsbuild('Development/Src/%s/%sTools/%sTools.sln' % (dir1, dir2, tool),
+                           platform, 'Release', None, '11'):
+                log_error(log_prefix() + "Could not build %sTools for %s" % (tool, platform))
+                return False
+
+    return True
+
 
 #---------------------------------------------------------------------------
 def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
@@ -337,7 +426,7 @@ def _ue3_build_game(sln_file, ue3_build_platform, configuration, vs_version):
     }
 
     platform_project = dict_vcxproj[ue3_build_platform.lower()]
-    return _ue3_build_project(sln_file, platform_project, configuration, vs_version, 'Build')
+    return _ue3_build_project(sln_file, platform_project, configuration, vs_version)
 
 #---------------------------------------------------------------------------
 @contextlib.contextmanager
