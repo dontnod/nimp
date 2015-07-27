@@ -37,14 +37,17 @@ class CisBuildCommand(CisCommand):
     def _cis_run(self, env):
         env.generate_version_file = True
 
-        if not env.publish_only:
-            log_notification(log_prefix() + "Building game…")
+        log_notification(log_prefix() + "Building game…")
 
-            # Unreal Engine 3
-            if hasattr(env, 'project_type') and env.project_type is 'UE3':
-                if not ue3_build(env):
-                    return False
+        # Unreal Engine 3
+        if hasattr(env, 'project_type') and env.project_type is 'UE3':
+            if not ue3_build(env):
+                return False
 
+        # Unreal Engine 4
+        if hasattr(env, 'project_type') and env.project_type is 'UE4':
+            log_error(log_prefix() + "cis-build is deprecated for UE4 projects")
+            return False
 
         log_notification(log_prefix() + "Publishing Binaries…")
         files_to_publish = env.map_files().to(env.publish_binaries).load_set("binaries")
