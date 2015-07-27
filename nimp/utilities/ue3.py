@@ -14,27 +14,6 @@ from nimp.utilities.deployment import *
 from nimp.utilities.file_mapper import *
 from nimp.utilities.perforce import *
 
-#-------------------------------------------------------------------------------
-def generate_toc(env, dlc):
-    for language in env.languages:
-        call_process(".", [ "Binaries/CookerSync.exe",
-                            env.game,
-                            "-p", env.ue3_cook_platform,
-                            "-x", "Loc",
-                            "-r", language,
-                            "-nd",
-                            "-final",
-                            "-dlcname", dlc])
-
-    call_process(".", [ "Binaries/CookerSync.exe",
-                        env.game,
-                        "-p", env.ue3_cook_platform,
-                        "-x", "ConsoleSyncProgrammer",
-                        "-r", "INT",
-                        "-nd",
-                        "-final",
-                        "-dlcname", dlc])
-    return True
 
 #---------------------------------------------------------------------------
 def ue3_build(env):
@@ -217,9 +196,6 @@ def _ship_game_patch(env, destination):
         if not file_mapper.all_map(robocopy, cook_files()):
             return False
 
-    log_notification(log_prefix() + "Generating TOC…")
-    if not generate_toc(env, dlc = "Episode01" if env.dlc == 'main' else env.dlc):
-        return False
 
     if env.is_ps3:
         _generate_ps3_binaries(env)

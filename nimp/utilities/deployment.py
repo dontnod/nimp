@@ -159,20 +159,3 @@ def checkout_and_copy(transaction):
 
     return _checkout_and_copy_mapper
 
-#-----------------------------------------------------------------------------
-def generate_toc(file):
-    def _generate_toc_mapper(src, dest):
-        if src is None:
-            return
-        file, ext = os.path.splitext(src)
-        uncompressed_size_file = '{0}.uncompressed_size'.format(file)
-        uncompressed_size = 0
-        if os.path.isfile(uncompressed_size):
-            with open(uncompressed_size_file, 'r') as uncompressed_size_file:
-                uncompressed_size = uncompressed_size_file.read()
-        size = os.path.getsize(src)
-        md5 = get_file_md5(src)
-        file.write('{0} {1} {2} {3}', size, uncompressed_size, src, md5)
-
-    return _generate_toc_mapper
-
