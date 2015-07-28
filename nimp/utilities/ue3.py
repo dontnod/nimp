@@ -350,9 +350,12 @@ def _ue3_build_tools():
                   'Dingo',
                   'Orbis', ]:
 
+        # We need to build Win32 first then x64, at least in the case of XeTools,
+        # because otherwise the project’s going to copy an incorrect version of
+        # Interop.XDevkit.1.0.dll
+        platforms = [ 'x64' ] if tool is 'Orbis' else [ 'Win32', 'x64' ]
         dir1 = 'Xenon' if tool is 'Xe' else tool
         dir2 = '' if tool is 'Orbis' else tool
-        platforms = [ 'x64' ] if tool is 'Orbis' else [ 'x64', 'Win32' ]
 
         for platform in platforms:
 
