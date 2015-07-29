@@ -129,12 +129,12 @@ def ue3_ship(env, destination = None):
     if os.path.exists(master_directory):
         log_notification(log_prefix() + "Found a master at {0}: I’m going to build a patch", master_directory)
         if env.dlc == 'main':
-            return _ship_game_patch(env, destination or env.publish_ship)
+            return _ship_game(env, destination or env.publish_ship, True)
         else:
             log_error(log_prefix() + "Sorry, building a DLC patch is still not implemented")
     else:
         if env.dlc == 'main':
-            log_error(log_prefix() + "Sorry, building a game master is still not implemented")
+            return _ship_game(env, destination or env.publish_ship)
         else:
             return _ship_dlc(env, destination or env.publish_ship)
 
@@ -160,35 +160,37 @@ def _ship_dlc(env, destination):
     return file_mapper.all_map(robocopy, dlc_files())
 
 #---------------------------------------------------------------------------
-def _ship_game_patch(env, destination):
+def _ship_game(env, destination, incremental = False):
     import nimp.utilities.file_mapper as file_mapper
 
     map = env.cook_maps[env.dlc.lower()]
 
-    master_files = env.map_files()
-    master_files_source = master_files.src(env.publish_master).recursive().files()
-    log_notification(log_prefix() + "Deploying master…")
-    if not file_mapper.all_map(robocopy, master_files()):
-        return False
+    if incremental:
+        master_files = env.map_files()
+        master_files_source = master_files.src(env.publish_master).recursive().files()
+        log_notification(log_prefix() + "Deploying master…")
+        if not file_mapper.all_map(robocopy, master_files()):
+            return False
 
-    log_notification(log_prefix() + "Cooking on top of master…")
+    log_notification(log_prefix() + "Cooking…")
     if not ue3_cook(env.game,
                     map,
                     env.languages,
                     None,
                     env.ue3_cook_platform,
                     'final',
-                    incremental = True):
+                    incremental = incremental):
         return False
 
-    log_notification(log_prefix() + "Redeploying master cook ignoring patched files…")
-    patch_files = env.map_files()
-    patch_files.src(env.publish_master).override(step = 'patching').load_set("patch")
-    files_to_exclude = [src for src, *args in patch_files()]
-    log_notification("Excluding files {0}", files_to_exclude)
-    master_files_source.exclude_ignore_case(*files_to_exclude)
-    if not file_mapper.all_map(robocopy, master_files()):
-        return False
+    if incremental:
+        log_notification(log_prefix() + "Redeploying master cook ignoring patched files…")
+        patch_files = env.map_files()
+        patch_files.src(env.publish_master).override(step = 'patching').load_set("patch")
+        files_to_exclude = [src for src, *args in patch_files()]
+        log_notification("Excluding files {0}", files_to_exclude)
+        master_files_source.exclude_ignore_case(*files_to_exclude)
+        if not file_mapper.all_map(robocopy, master_files()):
+            return False
 
     if hasattr(env, 'revision'):
         cook_files = env.map_files()
@@ -196,18 +198,20 @@ def _ship_game_patch(env, destination):
         if not file_mapper.all_map(robocopy, cook_files()):
             return False
 
-
     if env.is_ps3:
         _generate_ps3_binaries(env)
 
-    log_notification(log_prefix() + "Copying patched files to output directory…")
-    patch_files = env.map_files()
-    patch_files.to(destination).override(step = 'deploy').load_set("patch")
-    if not file_mapper.all_map(robocopy, patch_files()):
-        return False
+    log_notification(log_prefix() + "Copying files to output directory…")
+    if incremental:
+        patch_files = env.map_files()
+        patch_files.to(destination).override(step = 'deploy').load_set("patch")
+        if not file_mapper.all_map(robocopy, patch_files()):
+            return False
 
-    if env.is_win32:
-        _fix_pc_ini(env, destination)
+        if env.is_win32:
+            _fix_pc_ini(env, destination)
+    else:
+        log_warning(log_prefix() + "Not implemented")
 
     return True
 
