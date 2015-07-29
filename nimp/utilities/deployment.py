@@ -17,6 +17,7 @@ import pathlib
 from nimp.utilities.perforce import *
 from nimp.utilities.file_mapper import *
 from nimp.utilities.hashing import *
+from nimp.utilities.paths import *
 
 #---------------------------------------------------------------------------
 def get_latest_available_revision(env, version_directory_format, max_revision, **override_args):
