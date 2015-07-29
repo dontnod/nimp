@@ -56,18 +56,23 @@ def ue4_build(env):
     # Build tools from other solutions or with other flags
     if env.platform == 'win64' and env.configuration == 'devel':
 
-        if not _ue4_build_project(env.solution, 'BootstrapPackagedGame', 'Win64',
-                                  'Shipping', vs_version, 'Build'):
+        if not _ue4_build_project(env.solution, 'BootstrapPackagedGame',
+                                  'Win64', 'Shipping', vs_version, 'Build'):
             log_error(log_prefix() + "Could not build BootstrapPackagedGame")
             return False
 
-        if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln', 'Any CPU',
-                       'Development', None, '10', 'Rebuild'):
+        if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
+                       'Any CPU', 'Development', None, '10', 'Build'):
+            log_error(log_prefix() + "Could not build SwarmInterface")
+            return False
+
+        if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
+                       'Any CPU', 'Development', None, '10', 'Build'):
             log_error(log_prefix() + "Could not build UnrealSwarm")
             return False
 
-        if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln', 'Any CPU',
-                       'Development', None, '10', 'Rebuild'):
+        if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
+                       'Any CPU', 'Development', None, '10', 'Build'):
             log_error(log_prefix() + "Could not build NetworkProfiler")
             return False
 
