@@ -100,8 +100,8 @@ def get_ue3_cook_platform(platform):
           "win32"   : "PCConsole",
           "xbox360" : "Xbox360",
           "ps3"     : "PS3",
-          "linux"   : "PCConsole",
-          "mac"     : "PCConsole", }
+          "linux"   : "MacOSX",
+          "mac"     : "MacOSX", }
     if platform not in d:
         log_warning(log_prefix() + 'Unsupported UE3 cook platform “%s”' % (platform))
         return None
