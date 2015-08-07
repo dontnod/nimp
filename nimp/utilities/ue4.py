@@ -18,8 +18,6 @@ from nimp.utilities.system import *
 
 #---------------------------------------------------------------------------
 def ue4_build(env):
-    vs_version = '12'
-
     if not env.ue4_build_configuration:
         log_error(log_prefix() + "Invalid empty value for configuration")
         return False
@@ -27,6 +25,15 @@ def ue4_build(env):
     if _ue4_generate_project() != 0:
         log_error(log_prefix() + "Error generating UE4 project files")
         return False
+
+    # The Durango XDK does not support Visual Studio 2013 yet, so if UE4
+    # detected it, it created VS 2012 project files and we have to use that
+    # version to build the tools instead.
+    vs_version = '12'
+    for line in open(env.solution):
+        if '# Visual Studio 2012' in line:
+            vs_version = '11'
+            break
 
     # Build tools from the UE4 solution if necessary
     tools = []
@@ -75,10 +82,6 @@ def ue4_build(env):
                        'Any CPU', 'Development', None, '10', 'Build'):
             log_error(log_prefix() + "Could not build NetworkProfiler")
             return False
-
-    # The Durango XDK does not support Visual Studio 2013 yet
-    if env.is_xone:
-        vs_version = '11'
 
     # Build the main binaries
     result = _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
