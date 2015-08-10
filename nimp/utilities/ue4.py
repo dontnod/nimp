@@ -69,17 +69,17 @@ def ue4_build(env):
             return False
 
         if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
-                       'Any CPU', 'Development', None, '10', 'Build'):
+                       'Any CPU', 'Development', None, '11', 'Build'):
             log_error(log_prefix() + "Could not build SwarmInterface")
             return False
 
         if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
-                       'Any CPU', 'Development', None, '10', 'Build'):
+                       'Any CPU', 'Development', None, '11', 'Build'):
             log_error(log_prefix() + "Could not build UnrealSwarm")
             return False
 
         if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
-                       'Any CPU', 'Development', None, '10', 'Build'):
+                       'Any CPU', 'Development', None, '11', 'Build'):
             log_error(log_prefix() + "Could not build NetworkProfiler")
             return False
 
