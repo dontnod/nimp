@@ -46,7 +46,9 @@ def ue4_build(env):
                    'UnrealFileServer',
                    'ShaderCompileWorker',
                    'SymbolDebugger',
-                   'PS4DevKitUtil', ]
+                   'PS4DevKitUtil',
+                   'PS4MapFileUtil',
+                   'XboxOnePDBFileUtil', ]
 
     if env.platform == 'ps4':
         tools += [ 'PS4MapFileUtil' ]
@@ -54,7 +56,7 @@ def ue4_build(env):
     if env.platform == 'xboxone':
         tools += [ 'XboxOnePDBFileUtil' ]
 
-    for tool in tools:
+    for tool in set(tools):
         if not _ue4_build_project(env.solution, tool, 'Win64',
                                   env.ue4_build_configuration, vs_version, 'Build'):
             log_error(log_prefix() + "Could not build %s" % (tool, ))
