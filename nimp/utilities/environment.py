@@ -81,12 +81,35 @@ class Environment:
     #
     def standardize_names(self):
 
-        if hasattr(self, "configuration"):
-            std_configs = { "debug"    : "debug",
-                            "devel"    : "devel",
-                            "release"  : "release",
-                            "test"     : "test",
-                            "shipping" : "shipping",
+        # Detect Unreal Engine 3 or Unreal Engine 4
+
+        self.is_ue3 = hasattr(self, 'project_type') and self.project_type is 'UE3'
+        self.is_ue4 = hasattr(self, 'project_type') and self.project_type is 'UE4'
+
+        # If none were provided, force a configuration and a platform name
+        # using some sane project-specific defaults
+
+        if not hasattr(self, 'configuration'):
+            if self.is_ue4:
+                self.configuration = 'devel'
+            elif self.is_ue3:
+                self.configuration = 'release'
+
+        if not hasattr(self, 'platform'):
+            if self.is_ue4 or self.is_ue3:
+                if is_msys():
+                    self.platform = 'win64'
+                else:
+                    self.platform = 'linux'
+
+        # Now properly normalise configuration and platform name
+
+        if hasattr(self, 'configuration'):
+            std_configs = { 'debug'    : 'debug',
+                            'devel'    : 'devel',
+                            'release'  : 'release',
+                            'test'     : 'test',
+                            'shipping' : 'shipping',
                           }
 
             if self.configuration.lower() in std_configs:
