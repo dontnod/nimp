@@ -30,10 +30,13 @@ def ue4_build(env):
     # detected it, it created VS 2012 project files and we have to use that
     # version to build the tools instead.
     vs_version = '12'
-    for line in open(env.solution):
-        if '# Visual Studio 2012' in line:
-            vs_version = '11'
-            break
+    try:
+        for line in open(env.solution):
+            if '# Visual Studio 2012' in line:
+                vs_version = '11'
+                break
+    except:
+        pass
 
     # Build tools from the UE4 solution if necessary
     tools = []
