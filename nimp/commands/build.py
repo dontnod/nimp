@@ -13,24 +13,15 @@ class BuildCommand(Command):
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
 
-        if hasattr(env, 'project_type') and env.project_type is 'UE4':
-            default_config = 'development'
-        elif hasattr(env, 'project_type') and env.project_type is 'UE3':
-            default_config = 'release'
-        else:
-            default_config = 'release'
-
         parser.add_argument('-c',
                             '--configuration',
                             help    = 'configuration to build',
-                            metavar = '<configuration>',
-                            default = default_config)
+                            metavar = '<configuration>')
 
         parser.add_argument('-p',
                             '--platform',
                             help    = 'platform to build',
-                            metavar = '<platform>',
-                            default = 'win64')
+                            metavar = '<platform>')
 
         parser.add_argument('--generate-version-file',
                             help    = 'Generates a code file containing build specific informations',
@@ -43,11 +34,11 @@ class BuildCommand(Command):
     def run(self, env):
 
         # Unreal Engine 4
-        if hasattr(env, 'project_type') and env.project_type is 'UE4':
+        if env.is_ue4:
             return ue4_build(env)
 
         # Unreal Engine 3
-        if hasattr(env, 'project_type') and env.project_type is 'UE3':
+        if env.is_ue3:
             return ue3_build(env)
 
         # Error!

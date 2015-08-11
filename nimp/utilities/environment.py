@@ -89,13 +89,13 @@ class Environment:
         # If none were provided, force a configuration and a platform name
         # using some sane project-specific defaults
 
-        if not hasattr(self, 'configuration'):
+        if not hasattr(self, 'configuration') or self.configuration == None:
             if self.is_ue4:
                 self.configuration = 'devel'
             elif self.is_ue3:
                 self.configuration = 'release'
 
-        if not hasattr(self, 'platform'):
+        if not hasattr(self, 'platform') or self.platform == None:
             if self.is_ue4 or self.is_ue3:
                 if is_msys():
                     self.platform = 'win64'
