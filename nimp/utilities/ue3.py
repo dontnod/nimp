@@ -27,6 +27,10 @@ def ue3_build(env):
         log_error(log_prefix() + "Invalid empty value for configuration")
         return False
 
+    # Shortcut for Linux builds
+    if not is_msys():
+        return call_process('./Development/Src', ['make', 'all', 'CONFIGURATION=' + configuration]) == 0
+
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
         log_error(log_prefix() + "Error building UBT")
         return False
