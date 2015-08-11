@@ -23,8 +23,8 @@ def main():
     # The loop is O(n²) but we don’t have that many entries so it’s all right.
     env_vars = [x.lower() for x in os.environ.keys()]
     for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
-        dupelist = [x for x in os.environ.keys() if x.lower() == dupe ]
-        log_warning(log_prefix() + "Fixing duplicate environment variable: " + ", ".join(dupelist))
+        dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
+        log_warning(log_prefix() + "Fixing duplicate environment variable: " + '/'.join(dupelist))
         for d in dupelist[1:]:
             del os.environ[d]
 
