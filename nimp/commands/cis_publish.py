@@ -48,14 +48,14 @@ class CisPublish(CisCommand):
 
             files_to_deploy = env.map_files().to('.')
 
-            if hasattr(env, 'project_type') and env.project_type is 'UE4':
+            if env.is_ue4:
                 files_to_deploy = files_to_deploy.to('..')
 
             for configuration in env.configurations:
-                if hasattr(env, 'project_type') and env.project_type is 'UE3':
+                if env.is_ue3:
                     tmp = files_to_deploy.override(configuration = configuration,
                                                    ue3_build_configuration = get_ue3_build_config(configuration))
-                else:
+                elif env.is_ue4:
                     tmp = files_to_deploy.override(configuration = configuration,
                                                    ue4_build_configuration = get_ue4_build_config(configuration, env.platform))
 
@@ -72,12 +72,11 @@ class CisPublish(CisCommand):
                 return False
 
             # Only for Unreal Engine 3: build scripts
-            if hasattr(env, 'project_type') and env.project_type is 'UE3':
-                if env.is_win64:
-                    log_notification(log_prefix() + "Building script…")
-                    if not ue3_build_script(env.game):
-                        log_error(log_prefix() + "Error while building script")
-                        return False
+            if env.is_ue3 and env.is_win64:
+                log_notification(log_prefix() + "Building script…")
+                if not ue3_build_script(env.game):
+                    log_error(log_prefix() + "Error while building script")
+                    return False
 
             publish_version_path = env.format(env.publish_version)
             files_to_publish = env.map_files().to(publish_version_path)
@@ -107,10 +106,10 @@ class CisPublish(CisCommand):
                 # See for instance GetLatestBuildFromUnrealProp() in CIS Build Controller
                 # Also, Patoune insists on having a specific TOC name, hence the toc_name part
                 if hasattr(env, 'game') and hasattr(env, 'upms_platform'):
-                    if env.project_type is 'UE3':
+                    if env.is_ue3:
                         toc_name = '%s%sTOC.txt' % (env.upms_platform, 'FINAL' if env.is_win32 else '')
                         toc_content = ''
-                    else:
+                    elif env.is_ue4:
                         toc_name = 'TOC.xml'
                         toc_content = '<lol></lol>\n'
 

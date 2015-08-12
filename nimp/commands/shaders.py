@@ -23,10 +23,10 @@ class ShaderCommand(Command):
 
 
     def run(self, env):
-        if hasattr(env, 'project_type') and env.project_type is 'UE4':
+        if env.is_ue4:
             return ue4_shaders(env)
 
-        if hasattr(env, 'project_type') and env.project_type is 'UE3':
+        if env.is_ue3:
             return ue3_shaders(env)
 
         log_error(log_prefix() + "Invalid project type {0}" % (env.project_type))

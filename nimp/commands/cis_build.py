@@ -40,12 +40,12 @@ class CisBuildCommand(CisCommand):
         log_notification(log_prefix() + "Building game…")
 
         # Unreal Engine 3
-        if hasattr(env, 'project_type') and env.project_type is 'UE3':
+        if env.is_ue3:
             if not ue3_build(env):
                 return False
 
         # Unreal Engine 4
-        if hasattr(env, 'project_type') and env.project_type is 'UE4':
+        if env.is_ue4:
             log_error(log_prefix() + "cis-build is deprecated for UE4 projects")
             return False
 

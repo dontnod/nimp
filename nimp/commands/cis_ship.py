@@ -38,11 +38,11 @@ class CisShip(CisCommand):
     def _cis_run(self, env):
 
         # Unreal Engine 4
-        if hasattr(env, 'project_type') and env.project_type is 'UE4':
+        if env.is_ue4:
             return ue4_ship(env, env.destination)
 
         # Unreal Engine 3
-        if hasattr(env, 'project_type') and env.project_type is 'UE3':
+        if env.is_ue3:
             platforms = ['win64']
 
             if not env.is_win64:

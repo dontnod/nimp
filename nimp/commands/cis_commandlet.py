@@ -39,10 +39,10 @@ class CisCommandlet(CisCommand):
         with deploy_latest_revision(env, env.publish_version, env.revision, ['win64']):
 
             # Unreal Engine 4
-            if hasattr(env, 'project_type') and env.project_type is 'UE4':
+            if env.is_ue4:
                 return ue4_commandlet(env, env.commandlet, *env.args)
 
             # Unreal Engine 3
-            if hasattr(env, 'project_type') and env.project_type is 'UE3':
+            if env.is_ue3:
                 return ue3_commandlet(env.game, env.commandlet, list(env.args))
 

@@ -22,6 +22,7 @@ class ShipCommand(Command):
                             metavar = '<dlc>',
                             default = None)
 
+        # FIXME: env.is_ue4 is not present at this time, but we want it
         if hasattr(env, 'project_type') and env.project_type is 'UE4':
             parser.add_argument('destination',
                                 help    = 'Destination Directory',
@@ -53,11 +54,11 @@ class ShipCommand(Command):
     def run(self, env):
 
         # Unreal Engine 4
-        if hasattr(env, 'project_type') and env.project_type is 'UE4':
+        if env.is_ue4:
             return ue4_ship(env, env.destination)
 
         # Unreal Engine 3
-        if hasattr(env, 'project_type') and env.project_type is 'UE3':
+        if env.is_ue3:
             loose_files_dir = env.format(env.loose_dir)
             pkgs_dir = env.format(env.pkg_dir)
 
