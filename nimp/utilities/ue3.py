@@ -69,6 +69,29 @@ def ue3_shaders(env):
              '-allow_parallel_precompileshaders' ]
     return ue3_commandlet(env.game, 'precompileshaders', args)
 
+
+#
+# Rebuild lights
+#
+
+def ue3_lights(env, map_list):
+
+    # Duplicate referent layers
+    if not ue3_commandlet(env.game, 'dneduplicatereferentlayercommandlet', []):
+        return False
+
+    for map_name in map_list:
+
+        # Build lightmaps
+        if not ue3_commandlet(env.game, 'rebuildlight', [ map_name, '-quality=production', '-nocheckin' ]):
+            return False
+
+        # Build lightprobes
+        if not ue3_commandlet(env.game, 'editor', [ map_name, '-buildlightprobes', '-nocheckin' ]):
+            return False
+
+    return True
+
 #
 # Helper commands for configuration sanitising
 #
@@ -243,21 +266,28 @@ def _generate_ps3_binaries(env):
             return False
 
 #---------------------------------------------------------------------------
-def ue3_commandlet(game, name, args):
+def ue3_commandlet(game, commandlet_name, args):
+
     game_directory = os.path.join('Binaries', 'Win64')
-    game_executable = os.path.join(game + '.exe')
-    game_path = os.path.join(game_directory, game_executable)
+    game_binary = game + '.exe'
+    game_path = os.path.join(game_directory, game_binary)
     if not os.path.exists(game_path):
         log_error(log_prefix() + "Unable to find game executable at {0}", game_path)
         return False
 
-    cmdline = [ "./" + game_executable, name ] + args + ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
+    args += [ '-nopause',
+              '-buildmachine',
+              '-forcelogflush',
+              '-unattended',
+              '-noscriptcheck' ]
+    cmdline = [ os.path.join('.', game_binary), commandlet_name ] + args
 
     return call_process(game_directory, cmdline) == 0
 
 #---------------------------------------------------------------------------
 def ue3_build_script(game):
-    return ue3_commandlet(game, 'make', ['-full', '-release']) and ue3_commandlet(game, 'make', [ '-full', '-final_release' ])
+    return ue3_commandlet(game, 'make', [ '-full', '-release' ]) \
+       and ue3_commandlet(game, 'make', [ '-full', '-final_release' ])
 
 #---------------------------------------------------------------------------
 def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False, incremental = False):

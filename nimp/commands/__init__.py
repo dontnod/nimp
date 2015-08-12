@@ -13,6 +13,7 @@ __all__ = [
     "perforce",
     "run",
     "cook",
+    "lights",
     "shaders",
     "build",
     "publish",
