@@ -51,6 +51,7 @@ def ue4_build(env):
                    'SymbolDebugger',
                    'PS4DevKitUtil',
                    'PS4MapFileUtil',
+                   'XboxOnePackageNameUtil',
                    'XboxOnePDBFileUtil', ]
 
     if env.platform == 'ps4':
