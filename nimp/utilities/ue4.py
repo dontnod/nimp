@@ -51,7 +51,6 @@ def ue4_build(env):
                    'SymbolDebugger',
                    'PS4DevKitUtil',
                    'PS4MapFileUtil',
-                   'XboxOnePackageNameUtil',
                    'XboxOnePDBFileUtil', ]
 
     if env.platform == 'ps4':
@@ -87,6 +86,11 @@ def ue4_build(env):
         if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
                        'Any CPU', 'Development', None, '11', 'Build'):
             log_error(log_prefix() + "Could not build NetworkProfiler")
+            return False
+
+        if not vsbuild('../Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
+                       'x64', 'Development', None, '11', 'Build'):
+            log_error(log_prefix() + "Could not build XboxOnePackageNameUtil")
             return False
 
     # Build the main binaries
