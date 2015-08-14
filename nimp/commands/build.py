@@ -27,6 +27,12 @@ class BuildCommand(Command):
                             help    = 'Generates a code file containing build specific informations',
                             action  = "store_true",
                             default = False)
+
+        parser.add_argument('--only-prerequisites',
+                            help = 'Only build prerequisite tools',
+                            action = "store_true",
+                            default = False)
+
         return True
 
 

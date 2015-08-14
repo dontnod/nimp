@@ -40,6 +40,10 @@ def ue3_build(env):
         if not _ue3_build_tools():
             return False
 
+    # If we only wanted prerequisites, bail out
+    if hasattr(env, 'only_prerequisites') and env.only_prerequisites:
+        return True
+
     def _build(solution, vs_version):
         if env.is_win64:
             if not _ue3_build_editor_dlls(solution, configuration, vs_version):
