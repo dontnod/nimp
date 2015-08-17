@@ -7,6 +7,7 @@ __all__ = [
     "cis_ship",
     "cis_publish",
     "cis_wwise_build_banks",
+    "deploy",
     "fileset",
     "nimp_qa",
     "package",

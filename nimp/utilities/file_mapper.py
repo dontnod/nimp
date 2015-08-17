@@ -30,7 +30,6 @@ def all_map(mapper, fileset):
 def _default_mapper(src, dest):
     yield (src, dest)
 
-
 class FileMapper(object):
     """ TODO : Eventuellement utiliser les PurePath, de python 3.4, qui simplifieraient
         quelque trucs, nottament dans les globs.
