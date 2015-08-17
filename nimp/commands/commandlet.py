@@ -8,15 +8,13 @@ from nimp.utilities.packaging   import *
 from nimp.utilities.file_mapper import *
 
 #-------------------------------------------------------------------------------
-class CisCommandlet(CisCommand):
+class Commandlet(Command):
     abstract = 0
     def __init__(self):
-        CisCommand.__init__(self, 'cis-commandlet', 'Executes an Unreal commandlet.')
+        CisCommand.__init__(self, 'commandlet', 'Executes an Unreal commandlet.')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        CisCommand.configure_arguments(self, env, parser)
-
         parser.add_argument('commandlet',
                             help    = 'Commandlet name',
                             metavar = '<COMMAND>')
@@ -35,14 +33,12 @@ class CisCommandlet(CisCommand):
         return True
 
     #---------------------------------------------------------------------------
-    def _cis_run(self, env):
-        with deploy_latest_revision(env, env.publish_version, env.revision, ['win64']):
+    def run(self, env):
+        # Unreal Engine 4
+        if env.is_ue4:
+            return ue4_commandlet(env, env.commandlet, *env.args)
 
-            # Unreal Engine 4
-            if env.is_ue4:
-                return ue4_commandlet(env, env.commandlet, *env.args)
-
-            # Unreal Engine 3
-            if env.is_ue3:
-                return ue3_commandlet(env.game, env.commandlet, list(env.args))
+        # Unreal Engine 3
+        if env.is_ue3:
+            return ue3_commandlet(env.game, env.commandlet, list(env.args))
 
