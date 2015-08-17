@@ -113,7 +113,7 @@ class PerforceCommand(Command):
 
         parser = subparsers.add_parser("submit",
                                        help = "Reconciles a fileset")
-        parser.add_argument('cl_name', metavar = '<FORMAT>', type = str)
+        parser.add_argument('cl_name', metavar = '<FORMAT>', type = str, default = None)
         parser.set_defaults(p4_command_to_run = _execute)
 
 #---------------------------------------------------------------------------
@@ -130,7 +130,7 @@ def _register_fileset_command(subparsers, command_name, help, p4_func):
                 return False
             files = [file[0] for file in files()]
         else:
-            files = [env.p4_path]
+            files = [env.format(env.p4_path)]
 
         return p4_func(cl_number, *files)
     parser = subparsers.add_parser(command_name,

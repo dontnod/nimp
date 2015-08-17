@@ -6,6 +6,7 @@ from nimp.utilities.logging import *
 from nimp.utilities.file_mapper import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
+from nimp.utilities.perforce import *
 
 #-------------------------------------------------------------------------------
 class Environment:
@@ -80,7 +81,8 @@ class Environment:
     # convenient variables for various jobs
     #
     def standardize_names(self):
-
+        # Perforce usefull stuff
+        self.last_synced_cl = p4_get_last_synced_changelist()
         # Detect Unreal Engine 3 or Unreal Engine 4
 
         self.is_ue3 = hasattr(self, 'project_type') and self.project_type is 'UE3'

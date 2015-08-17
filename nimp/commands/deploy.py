@@ -41,24 +41,31 @@ class DeployCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        files_to_deploy = env.map_files()
+        files_to_deploy = mapper = env.map_files()
+        if hasattr(env, 'deploy_version_root'):
+            mapper = mapper.to(env.deploy_version_root)
+        else:
+            mapper.to('.')
+
         if not hasattr(env, 'mode') or env.mode == 'binaries':
             log_notification(log_prefix() + "Deploying Binaries…")
-            files_to_deploy.to('.').src(env.publish_binaries).glob("**").files()
+            mapper = mapper.src(env.publish_binaries)
 
         elif env.mode == 'version':
             src = env.publish_version
-            if env.max_revision is not None:
+            if env.revision is None:
                 revision = get_latest_available_revision(env, src, **vars(env))
                 if revision is None:
                     return False
                 env.revision = revision
             log_notification(log_prefix() + "Deploying version…")
-            files_to_deploy.to('.').src(src).glob("**").files()
+            mapper = mapper.src(src)
 
         elif env.mode == 'cook':
             log_error("Not implemented yet...")
             return False
+
+        mapper.glob("**").files()
 
         cl_number = p4_get_or_create_changelist('Deployment')
         if cl_number is None:

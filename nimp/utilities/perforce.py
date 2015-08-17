@@ -84,17 +84,21 @@ def p4_get_files_status(*files):
         head_action_match = re.search(r"\.\.\.\s*headAction\s*(\w*)", file_info)
         action_match      = re.search(r"\.\.\.\s*action\s*(\w*)", file_info)
 
-        if file_name_match is None or head_action_match is None:
+        if file_name_match is None:
             log_error("Got unexpected output from p4 fstat : {0}", file_info)
             continue
 
         file_name = file_name_match.group(1)
+
         if action_match is not None:
             action = action_match.group(1)
         else:
             action = None
 
-        head_action = head_action_match.group(1)
+        if head_action_match is not None:
+            head_action = head_action_match.group(1)
+        else:
+            head_action = None
 
         yield (file_name, head_action, action)
 

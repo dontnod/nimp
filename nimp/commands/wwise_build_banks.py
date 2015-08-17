@@ -4,25 +4,21 @@ from nimp.commands._cis_command import *
 from nimp.utilities.wwise import *
 
 #-------------------------------------------------------------------------------
-class BuildWwiseBanksCommand(CisCommand):
+class BuildWwiseBanksCommand(Command):
     abstract = 0
     #---------------------------------------------------------------------------
     def __init__(self):
-        CisCommand.__init__(self, 'cis-wwise-build-banks', 'Builds Wwise Banks')
+        CisCommand.__init__(self, 'wwise-build-banks', 'Builds Wwise Banks')
 
     #---------------------------------------------------------------------------
-    def cis_configure_arguments(self, env, parser):
+    def configure_arguments(self, env, parser):
         parser.add_argument('-p',
                             '--platform',
                             help    = 'Platform to build',
                             metavar = '<platform>')
 
-        parser.add_argument('--checkin',
-                            help    = 'Automatically checkin result',
-                            action  = "store_true",
-                            default = False)
         return True
 
     #---------------------------------------------------------------------------
-    def _cis_run(self, env):
+    def run(self, env):
         return build_wwise_banks(env)

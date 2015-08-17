@@ -18,10 +18,7 @@ def build_wwise_banks(env):
                               eventually submit (*.bnk files directory).
         wwise_project       : Relative path of the WWise project to build.
         checkin             : True to commit built banks, False otherwise."""
-    platform         = env.platform
     wwise_project    = env.wwise_project
-    wwise_banks_path = os.path.join(env.wwise_banks_path, env.wwise_banks_platform)
-    cl_description   = "[CIS] Updated {0} WWise banks from changelist {1}".format(platform, p4_get_last_synced_changelist())
     wwise_cli_path   = os.path.join(os.getenv('WWISEROOT'), "Authoring/x64/Release/bin/WWiseCLI.exe")
 
     # WWiseCLI doesn’t handle Unix path separators properly
@@ -34,20 +31,9 @@ def build_wwise_banks(env):
                      "-Platform",
                      env.wwise_cmd_platform]
 
-    with p4_transaction(cl_description, submit_on_success = env.checkin) as trans:
-        log_notification(log_prefix() + "Checking out banks…")
-        banks_files = env.map_files()
-        banks_files.src(wwise_banks_path).recursive().files()
-        if not all_map(checkout(trans), banks_files()):
-            log_error(log_prefix() + "Errors occurred while checking out banks, aborting…")
-            return False
-        if call_process(".", wwise_command, stdout_callback = _wwise_log_callback) == 1:
-            log_error(log_prefix() + "Error while running WWiseCLI…")
-            trans.abort()
-            return False
-
-        log_notification(log_prefix() + "Adding created banks to Perforce…")
-        return all_map(checkout(trans), banks_files())
+    if call_process(".", wwise_command, stdout_callback = _wwise_log_callback) == 1:
+        log_error(log_prefix() + "Error while running WWiseCLI…")
+        return False
 
 #---------------------------------------------------------------------------
 def _wwise_log_callback(line, default_log_function):

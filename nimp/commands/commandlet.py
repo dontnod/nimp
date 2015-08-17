@@ -24,12 +24,6 @@ class Commandlet(Command):
                             metavar = '<ARGS>',
                             nargs    = argparse.REMAINDER)
 
-        parser.add_argument('-r',
-                            '--revision',
-                            help    = 'Current revision',
-                            metavar = '<revision>',
-                            default = None)
-
         return True
 
     #---------------------------------------------------------------------------

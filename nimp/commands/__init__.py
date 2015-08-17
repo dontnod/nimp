@@ -6,7 +6,6 @@ __all__ = [
     "cis_build",
     "cis_ship",
     "cis_publish",
-    "cis_wwise_build_banks",
     "deploy",
     "fileset",
     "nimp_qa",
@@ -21,5 +20,6 @@ __all__ = [
     "ship",
     "upgrade",
     "vs_build",
+    "wwise_build_banks",
 ]
 
