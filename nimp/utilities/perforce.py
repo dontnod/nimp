@@ -23,7 +23,8 @@ Description:\n\
 
 #-------------------------------------------------------------------------------
 def p4_add(cl_number, path):
-    return _p4_run_command(".", ["p4", "-z", "tag", "add", "-c", cl_number, path])
+    output = _p4_run_command(".", ["p4", "-z", "tag", "add", "-c", cl_number, path])
+    return output is not None
 
 #-------------------------------------------------------------------------------
 def p4_clean_workspace():
@@ -113,7 +114,8 @@ def p4_edit(cl_number, *files):
         log_verbose("Adding file {0} to checkout", file_name)
         edit_input += file_name + "\n"
 
-    return _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "edit", "-c", cl_number], edit_input)
+    output = _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "edit", "-c", cl_number], edit_input)
+    return output is not None
 
 #-------------------------------------------------------------------------------
 def p4_reconcile(cl_number, *files):
@@ -124,9 +126,9 @@ def p4_reconcile(cl_number, *files):
             delete_input += file_name + "\n"
 
     if delete_input != "":
-        if not _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "revert"], delete_input):
+        if _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "revert"], delete_input) is None:
             return False
-        if not _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "delete", "-c", cl_number], delete_input):
+        if _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "delete", "-c", cl_number], delete_input) is None:
             return False
 
     reconcile_input = ""
@@ -137,7 +139,8 @@ def p4_reconcile(cl_number, *files):
             reconcile_input +=  "/..."
         reconcile_input += "\n"
 
-    return _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "reconcile", "-c", cl_number], reconcile_input, False)
+    output = _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "reconcile", "-c", cl_number], reconcile_input, False)
+    return output is not None
 
 #-------------------------------------------------------------------------------
 def p4_get_changelist_description(cl_number):
@@ -199,11 +202,13 @@ def p4_is_file_versioned(file_path):
 
 #-------------------------------------------------------------------------------
 def p4_revert_changelist(cl_number):
-    return _p4_run_command(".", ["p4", "-z", "tag", "revert", "-c", cl_number, "//..."]) is not None
+    output = _p4_run_command(".", ["p4", "-z", "tag", "revert", "-c", cl_number, "//..."])
+    return output is not None
 
 #-------------------------------------------------------------------------------
 def p4_revert_unchanged(cl_number):
-    return _p4_run_command(".", ["p4", "-z", "tag", "revert", "-a", "-c", cl_number, "//..."]) is not None
+    output = _p4_run_command(".", ["p4", "-z", "tag", "revert", "-a", "-c", cl_number, "//..."])
+    return output is not None
 
 #-------------------------------------------------------------------------------
 def p4_submit(cl_number):
