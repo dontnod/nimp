@@ -45,7 +45,7 @@ class DeployCommand(Command):
         if hasattr(env, 'deploy_version_root'):
             mapper = mapper.to(env.deploy_version_root)
         else:
-            mapper.to('.')
+            mapper = mapper.to('.')
 
         if not hasattr(env, 'mode') or env.mode == 'binaries':
             log_notification(log_prefix() + "Deploying Binaries…")
