@@ -17,7 +17,7 @@ class UpgradeCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        cmdline = ['pip3', 'install', '--upgrade', 'git+http://git/nimp.git']
+        cmdline = ['pip3', 'install', '--upgrade', '--no-deps', 'git+http://git/nimp.git']
 
         return call_process(".", cmdline,
                             stdout_callback = _stdout_callback,
