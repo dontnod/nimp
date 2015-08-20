@@ -76,7 +76,6 @@ class DeployCommand(Command):
         p4_edit(cl_number, *dst_files)
 
         for src, dst in files:
-            print('Copying ' + src)
             if not robocopy(src, dst):
                 return False
 
