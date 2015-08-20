@@ -54,12 +54,12 @@ def ue4_build(env):
                    'XboxOnePDBFileUtil', ]
 
     if env.platform == 'ps4':
-        tools += [ 'PS4MapFileUtil' ]
+        if 'PS4MapFileUtil' not in tools: tools += [ 'PS4MapFileUtil' ]
 
     if env.platform == 'xboxone':
-        tools += [ 'XboxOnePDBFileUtil' ]
+        if 'XboxOnePDBFileUtil' not in tools: tools += [ 'XboxOnePDBFileUtil' ]
 
-    for tool in set(tools):
+    for tool in tools:
         if not _ue4_build_project(env.solution, tool, 'Win64',
                                   env.ue4_build_configuration, vs_version, 'Build'):
             log_error(log_prefix() + "Could not build %s" % (tool, ))
