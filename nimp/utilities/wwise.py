@@ -35,6 +35,8 @@ def build_wwise_banks(env):
         log_error(log_prefix() + "Error while running WWiseCLI…")
         return False
 
+    return True
+
 #---------------------------------------------------------------------------
 def _wwise_log_callback(line, default_log_function):
     """ WWiseCLI output callback to log as error specific output. """
