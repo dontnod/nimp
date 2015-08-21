@@ -139,8 +139,8 @@ def p4_reconcile(cl_number, *files):
             reconcile_input +=  "/..."
         reconcile_input += "\n"
 
-    output = _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "reconcile", "-c", cl_number], reconcile_input)
-    return output is not None
+    _p4_run_command(".", ["p4", "-x", "-", "-z", "tag", "reconcile", "-c", cl_number], reconcile_input, False)
+    return True
 
 #-------------------------------------------------------------------------------
 def p4_get_changelist_description(cl_number):
