@@ -45,7 +45,7 @@ def main():
                 break
 
     except KeyboardInterrupt:
-        log_notification(log_prefix() + "Interrompu. Zy av, t'es un ouf toi")
+        log_notification(log_prefix() + "Interrupted. Hit Ctrl-C again to quit.")
         result = 1
     except SystemExit:
         result = 1
