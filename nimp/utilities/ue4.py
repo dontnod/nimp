@@ -38,6 +38,11 @@ def ue4_build(env):
     except:
         pass
 
+    # For some reason nothing copies this file on OS X
+    if platform.system() == 'Darwin':
+        robocopy('../Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
+                 '../Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
+
     # Build tools from the UE4 solution if necessary
     tools = []
 
@@ -142,7 +147,8 @@ def get_ue4_build_platform(platform):
           "xboxone" : "XboxOne",
           "win64"   : "Win64",
           "win32"   : "Win32",
-          "linux"   : "Linux", }
+          "linux"   : "Linux",
+          "mac"     : "Mac", }
     if platform not in d:
         log_warning(log_prefix() + 'Unsupported UE4 build platform “%s”' % (platform))
         return None
@@ -167,6 +173,10 @@ def _ue4_build_project(sln_file, project, build_platform,
     if is_msys():
         return vsbuild(sln_file, build_platform, configuration,
                        project, vs_version, target)
+
+    elif platform.system() == 'Darwin':
+        return call_process('..', ['/bin/sh', 'Engine/Build/BatchFiles/Mac/Build.sh',
+                                   project, build_platform, configuration]) == 0
 
     else:
         project_name = project

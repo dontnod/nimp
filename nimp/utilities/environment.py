@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import time
+import platform
 
 from nimp.utilities.logging import *
 from nimp.utilities.file_mapper import *
@@ -99,6 +100,8 @@ class Environment:
             if self.is_ue4 or self.is_ue3:
                 if is_msys():
                     self.platform = 'win64'
+                elif platform.system() == 'Darwin':
+                    self.platform = 'mac'
                 else:
                     self.platform = 'linux'
 
