@@ -73,8 +73,8 @@ def ue4_build(env):
         if 'XboxOnePDBFileUtil' not in tools: tools += [ 'XboxOnePDBFileUtil' ]
 
     for tool in tools:
-        if not _ue4_build_project(env.solution, tool, 'Win64',
-                                  env.ue4_build_configuration, vs_version, 'Build'):
+        if not _ue4_build_project(env.solution, tool,
+                                  'Win64', 'Development', vs_version, 'Build'):
             log_error(log_prefix() + "Could not build %s" % (tool, ))
             return False
 
