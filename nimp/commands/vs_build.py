@@ -26,15 +26,15 @@ class VsBuildCommand(Command):
                             default = 'Build')
 
         parser.add_argument('-c',
-                            '--configuration',
+                            '--vs-configuration',
                             help    = 'configuration to build',
-                            metavar = '<configuration>',
+                            metavar = '<vs-configuration>',
                             default = 'release')
 
         parser.add_argument('-p',
-                            '--platform',
+                            '--vs-platform',
                             help    = 'platform to build',
-                            metavar = '<platform>',
+                            metavar = '<vs-platform>',
                             default = 'Win64')
 
         parser.add_argument('--vs-version',
@@ -45,4 +45,4 @@ class VsBuildCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        return vsbuild(env.solution, env.platform, env.configuration, env.project, env.vs_version, env.target)
+        return vsbuild(env.solution, env.vs_platform, env.vs_configuration, env.project, env.vs_version, env.target)
