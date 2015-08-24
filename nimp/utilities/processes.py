@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import os.path
 import re
 import subprocess
 import sys
@@ -22,7 +23,13 @@ def _sanitize_command(command):
     # will be treated as a path, so we need to escape them, except if the given
     # argument is indeed a file
     if is_msys():
-        return [re.sub('^/', '//', x) for x in command]
+        tmp = []
+        for x in command:
+            if len(x) > 5 and (os.path.isfile(x) or os.path.isdir(x)):
+                tmp.append(x)
+            else:
+                tmp.append(re.sub('^/', '//', x))
+        command = tmp
 
     return command
 
