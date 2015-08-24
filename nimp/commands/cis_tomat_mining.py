@@ -5,6 +5,9 @@ from nimp.utilities.ue3         import *
 from nimp.utilities.deployment  import *
 from nimp.utilities.file_mapper import *
 
+import tempfile
+import shutil
+
 #-------------------------------------------------------------------------------
 class CisTomatMining(CisCommand):
     abstract = 0
@@ -19,19 +22,33 @@ class CisTomatMining(CisCommand):
 
     #---------------------------------------------------------------------------
     def _cis_run(self, env):
+
         if call_process('.', ['pacman', '-S', '--noconfirm', 'repman']) != 0:
             return False
 
-        if call_process('.', ['repman', 'add', 'dont-nod', 'http://pacman']) != 0:
+        if call_process('.', ['repman', 'add', 'dont-nod', 'http://pacman/']) != 0:
             return False
 
-        if call_process('.', ['pacman', '-S', '--noconfirm', '--needed', 'tomat-console']) != 0:
+        if call_process('.', ['pacman', '-Scc', '--noconfirm']) != 0:
             return False
 
-        return call_process('.',
-                            [ 'TomatConsole',
-                              'ImportFromUnreal',
-                              '--RepositoryUri',
-                              'sql://mining@console',
-                              '--UnrealEnginePath',
-                              'Binaries/Win64/ExampleGame.exe' ])
+        if call_process('.', ['pacman', '-S', '--noconfirm', '--force', 'tomat-console']) != 0:
+            return False
+
+        tmpdir = tempfile.mkdtemp()
+        success = True
+
+        if success and env.is_ue3:
+            success = ue3_commandlet(env.game, 'dnetomatminingcommandlet', [ tmpdir ])
+
+        if success:
+            success = call_process('.', [ 'TomatConsole',
+                                          'ImportFromUnreal',
+                                          '--RepositoryUri', 'sql://mining@console',
+                                          '--TmpDirectory', tmpdir ]) == 0
+
+        # Clean up after ourselves
+        shutil.rmtree(tmpdir)
+
+        return success
+
