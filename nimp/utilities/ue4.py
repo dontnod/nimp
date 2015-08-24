@@ -86,14 +86,15 @@ def ue4_build(env):
             log_error(log_prefix() + "Could not build BootstrapPackagedGame")
             return False
 
-        if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
-                       'Any CPU', 'Development', None, '11', 'Build'):
-            log_error(log_prefix() + "Could not build SwarmInterface")
-            return False
-
+        # This also builds AgentInterface.dll, needed by SwarmInterface.sln
         if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
                        'Any CPU', 'Development', None, '11', 'Build'):
             log_error(log_prefix() + "Could not build UnrealSwarm")
+            return False
+
+        if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
+                       'Any CPU', 'Development', None, '11', 'Build'):
+            log_error(log_prefix() + "Could not build SwarmInterface")
             return False
 
         if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
