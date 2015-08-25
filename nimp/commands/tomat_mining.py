@@ -47,7 +47,7 @@ class TomatMining(Command):
                                               '--RepositoryUri', 'sql://mining@console',
                                               '--TmpDirectory', tmpdir ]) == 0
             # Clean up after ourselves
-            #shutil.rmtree(tmpdir)
+            shutil.rmtree(tmpdir)
 
             return success
 
