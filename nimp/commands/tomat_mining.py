@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._cis_command import *
+from nimp.commands._command import *
+
 from nimp.utilities.ue3         import *
 from nimp.utilities.deployment  import *
 from nimp.utilities.file_mapper import *
@@ -9,19 +10,17 @@ import tempfile
 import shutil
 
 #-------------------------------------------------------------------------------
-class CisTomatMining(CisCommand):
-    abstract = 0
+class TomatMining(Command):
+
     def __init__(self):
-        CisCommand.__init__(self,
-                            'cis-tomat-mining',
-                            'Mines UE3 content into Tomat')
+        Command.__init__(self, 'tomat-mining', 'Mines UE3 content into Tomat')
 
     #---------------------------------------------------------------------------
-    def cis_configure_arguments(self, env, parser):
+    def configure_arguments(self, env, parser):
         return True
 
     #---------------------------------------------------------------------------
-    def _cis_run(self, env):
+    def run(self, env):
 
         if call_process('.', ['pacman', '-S', '--noconfirm', 'repman']) != 0:
             return False
@@ -35,10 +34,10 @@ class CisTomatMining(CisCommand):
         if call_process('.', ['pacman', '-S', '--noconfirm', '--force', 'tomat-console']) != 0:
             return False
 
-        tmpdir = tempfile.mkdtemp()
-        success = True
-
         if env.is_ue3:
+            tmpdir = tempfile.mkdtemp()
+            success = True
+
             if success:
                 success = ue3_commandlet(env.game, 'dnetomatminingcommandlet', [ tmpdir ])
 
@@ -47,9 +46,11 @@ class CisTomatMining(CisCommand):
                                               'ImportFromUnreal',
                                               '--RepositoryUri', 'sql://mining@console',
                                               '--TmpDirectory', tmpdir ]) == 0
+            # Clean up after ourselves
+            #shutil.rmtree(tmpdir)
 
-        # Clean up after ourselves
-        #shutil.rmtree(tmpdir)
+            return success
 
-        return success
+        # Unknown platform
+        return False
 

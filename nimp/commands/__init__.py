@@ -2,7 +2,6 @@ __all__ = [
     "_command",
     "commandlet",
     "cis_load_packages",
-    "cis_tomat_mining",
     "cis_build",
     "cis_ship",
     "cis_publish",
@@ -20,6 +19,7 @@ __all__ = [
     "ship",
     "upgrade",
     "vs_build",
+    "tomat_mining",
     "wwise_build_banks",
 ]
 
