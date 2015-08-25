@@ -38,17 +38,18 @@ class CisTomatMining(CisCommand):
         tmpdir = tempfile.mkdtemp()
         success = True
 
-        if success and env.is_ue3:
-            success = ue3_commandlet(env.game, 'dnetomatminingcommandlet', [ tmpdir ])
+        if env.is_ue3:
+            if success:
+                success = ue3_commandlet(env.game, 'dnetomatminingcommandlet', [ tmpdir ])
 
-        if success:
-            success = call_process('.', [ 'TomatConsole',
-                                          'ImportFromUnreal',
-                                          '--RepositoryUri', 'sql://mining@console',
-                                          '--TmpDirectory', tmpdir ]) == 0
+            if success:
+                success = call_process('.', [ 'TomatConsole',
+                                              'ImportFromUnreal',
+                                              '--RepositoryUri', 'sql://mining@console',
+                                              '--TmpDirectory', tmpdir ]) == 0
 
         # Clean up after ourselves
-        shutil.rmtree(tmpdir)
+        #shutil.rmtree(tmpdir)
 
         return success
 
