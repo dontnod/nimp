@@ -119,7 +119,7 @@ def robocopy(src, dest):
     elif os.path.isfile(src):
         dest_dir = os.path.dirname(dest)
         safe_makedirs(dest_dir)
-        while max_retries > 0:
+        while True:
             try:
                 if os.path.exists(dest):
                     os.chmod(dest, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
@@ -127,12 +127,11 @@ def robocopy(src, dest):
                 break
             except IOError as e:
                 log_error(log_prefix() + 'I/O error {0}: {1}', e.errno, e.strerror)
-                if max_retries > 0:
-                    log_error(log_prefix() + 'Retrying after 1 second ({0} retries left)', max_retries)
-                    max_retries -= 1
-                    time.sleep(1)
-                    continue
-                return False
+                max_retries -= 1
+                if max_retries <= 0:
+                    return False
+                log_error(log_prefix() + 'Retrying after 1 second ({0} retries left)', max_retries)
+                time.sleep(1)
             except Exception as e:
                 log_error(log_prefix() + 'Copy error: {0}', e)
                 return False
