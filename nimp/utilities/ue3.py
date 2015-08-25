@@ -173,11 +173,11 @@ def ue3_ship(env, destination = None):
 def _ship_dlc(env, destination):
     import nimp.utilities.file_mapper as file_mapper
 
-    map = env.cook_maps[env.dlc.lower()]
+    maps = env.cook_maps[env.dlc.lower()]
 
     log_notification(log_prefix() + "Cooking…")
     if not ue3_cook(env.game,
-                    map,
+                    maps,
                     env.languages,
                     env.dlc,
                     env.ue3_cook_platform,
@@ -194,7 +194,7 @@ def _ship_dlc(env, destination):
 def _ship_game(env, destination, incremental = False):
     import nimp.utilities.file_mapper as file_mapper
 
-    map = env.cook_maps[env.dlc.lower()]
+    maps = env.cook_maps[env.dlc.lower()]
 
     if incremental:
         master_files = env.map_files()
@@ -205,7 +205,7 @@ def _ship_game(env, destination, incremental = False):
 
     log_notification(log_prefix() + "Cooking…")
     if not ue3_cook(env.game,
-                    map,
+                    maps,
                     env.languages,
                     None,
                     env.ue3_cook_platform,
@@ -294,8 +294,8 @@ def ue3_build_script(game):
        and ue3_commandlet(game, 'make', [ '-full', '-final_release' ])
 
 #---------------------------------------------------------------------------
-def ue3_cook(game, map, languages, dlc, platform, configuration, noexpansion = False, incremental = False):
-    commandlet_arguments = [ map ]
+def ue3_cook(game, maps, languages, dlc, platform, configuration, noexpansion = False, incremental = False):
+    commandlet_arguments = maps
 
     if not incremental:
         commandlet_arguments += ['-full']

@@ -46,9 +46,9 @@ class CookCommand(Command):
 
         if env.is_ue3:
             dlc = env.dlc if env.dlc is not None else 'main'
-            map = env.cook_maps[dlc.lower()]
+            maps = env.cook[dlc.lower()]
             return ue3_cook(env.game,
-                            map,
+                            maps,
                             env.languages,
                             None if env.dlc == 'main' else env.dlc,
                             env.ue3_cook_platform,

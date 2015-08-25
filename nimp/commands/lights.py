@@ -29,7 +29,7 @@ class LightsCommand(Command):
             log_error(log_prefix() + "No light contexts specified in .nimp.conf")
             return False
 
-        map_list = env.lights[env.context]
+        map_list = env.lighting_maps[env.context]
 
         if env.is_ue4:
             return ue4_lights(env, map_list)
