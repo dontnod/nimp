@@ -24,7 +24,7 @@ class BuildCommand(Command):
                             metavar = '<platform>')
 
         parser.add_argument('--generate-version-file',
-                            help    = 'Generates a code file containing build specific informations',
+                            help    = 'Generates a C++ file with build information',
                             action  = "store_true",
                             default = False)
 
