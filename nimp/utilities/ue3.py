@@ -37,7 +37,9 @@ def ue3_build(env):
 
     # Build tools
     if env.platform == 'win64' and env.configuration == 'release':
-        if not _ue3_build_tools():
+        if hasattr(env, 'no_prerequisites') and env.no_prerequisites:
+            pass
+        elif not _ue3_build_tools():
             return False
 
     # If we only wanted prerequisites, bail out

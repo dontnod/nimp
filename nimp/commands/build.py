@@ -28,6 +28,11 @@ class BuildCommand(Command):
                             action  = "store_true",
                             default = False)
 
+        parser.add_argument('--no-prerequisites',
+                            help = 'Do not build prerequisite tools',
+                            action = "store_true",
+                            default = False)
+
         parser.add_argument('--only-prerequisites',
                             help = 'Only build prerequisite tools',
                             action = "store_true",
