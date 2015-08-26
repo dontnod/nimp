@@ -3,7 +3,6 @@ __all__ = [
     "commandlet",
     "cis_load_packages",
     "cis_build",
-    "cis_ship",
     "cis_publish",
     "deploy",
     "fileset",

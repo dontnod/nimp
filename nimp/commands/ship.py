@@ -22,6 +22,11 @@ class ShipCommand(Command):
                             metavar = '<dlc>',
                             default = None)
 
+        parser.add_argument('-r',
+                            '--revision',
+                            help = 'revision',
+                            metavar = '<revision>')
+
         # FIXME: env.is_ue4 is not present at this time, but we want it
         if hasattr(env, 'project_type') and env.project_type is 'UE4':
             parser.add_argument('destination',
@@ -37,7 +42,7 @@ class ShipCommand(Command):
                                 help    = 'Packages destination Directory',
                                 metavar = '<PACKAGES_DIRECTORY>')
 
-            parser.add_argument('--packages-only',
+            parser.add_argument('--only-packages',
                                 help    = 'Use existing loose files to build packages',
                                 action  = "store_true",
                                 default = False)
@@ -62,13 +67,24 @@ class ShipCommand(Command):
             loose_files_dir = env.format(env.loose_dir)
             pkgs_dir = env.format(env.pkg_dir)
 
-            if not env.packages_only:
+            if not env.only_packages:
+                if env.dlc is not 'main':
+                    log_notification(log_prefix() + "Deploying original cook…")
+                    master_files = env.map_files()
+                    master_files.override(dlc = 'main', revision = 'HEAD').src(env.publish_cook).recursive().files()
+                    if not all_map(robocopy, master_files()):
+                        return False
+
+                log_notification(log_prefix() + "Performing UE3 ship…")
                 if not ue3_ship(env, loose_files_dir):
                     return False
+
+                log_notification(log_prefix() + "Generating package config…")
                 if not generate_pkg_config(env, loose_files_dir):
                     return False
 
             if not env.no_packages:
+                log_notification(log_prefix() + "Building packages…")
                 if not make_packages(env, loose_files_dir, pkgs_dir):
                     return False
 
