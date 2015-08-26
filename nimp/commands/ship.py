@@ -64,8 +64,10 @@ class ShipCommand(Command):
 
         # Unreal Engine 3
         if env.is_ue3:
-            loose_files_dir = env.format(env.loose_dir)
-            pkgs_dir = env.format(env.pkg_dir)
+
+            # FIXME: maybe this should be handled inside ue3_ship() etc.
+            loose_files_dir = env.format(env.loose_dir) if env.loose_dir else None
+            pkgs_dir = env.format(env.pkg_dir) if env.pkg_dir else None
 
             if not env.only_packages:
                 if env.dlc is not 'main':
