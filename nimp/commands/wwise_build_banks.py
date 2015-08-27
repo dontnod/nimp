@@ -5,10 +5,9 @@ from nimp.utilities.wwise import *
 
 #-------------------------------------------------------------------------------
 class BuildWwiseBanksCommand(Command):
-    abstract = 0
-    #---------------------------------------------------------------------------
+
     def __init__(self):
-        CisCommand.__init__(self, 'wwise-build-banks', 'Builds Wwise Banks')
+        Command.__init__(self, 'wwise-build-banks', 'Builds Wwise Banks')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
@@ -22,3 +21,4 @@ class BuildWwiseBanksCommand(Command):
     #---------------------------------------------------------------------------
     def run(self, env):
         return build_wwise_banks(env)
+

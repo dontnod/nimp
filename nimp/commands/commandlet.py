@@ -9,9 +9,8 @@ from nimp.utilities.file_mapper import *
 
 #-------------------------------------------------------------------------------
 class Commandlet(Command):
-    abstract = 0
     def __init__(self):
-        CisCommand.__init__(self, 'commandlet', 'Executes an Unreal commandlet.')
+        Command.__init__(self, 'commandlet', 'Executes an Unreal commandlet.')
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
