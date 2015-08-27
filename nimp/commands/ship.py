@@ -12,6 +12,11 @@ class ShipCommand(Command):
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
+        parser.add_argument('-c',
+                            '--configuration',
+                            help    = 'Configuration to publish',
+                            metavar = '<configuration>')
+
         parser.add_argument('-p',
                             '--platform',
                             help    = 'Platforms to publish',
