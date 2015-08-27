@@ -22,6 +22,12 @@ class TomatMining(Command):
     #---------------------------------------------------------------------------
     def run(self, env):
 
+        # Must be a UE3 project
+        if not env.is_ue3:
+            log_error(log_prefix() + "Invalid project type {0}" % (env.project_type))
+            return False
+
+        # Install tomat-console using pacman
         if call_process('.', ['pacman', '-S', '--noconfirm', 'repman']) != 0:
             return False
 
@@ -34,23 +40,19 @@ class TomatMining(Command):
         if call_process('.', ['pacman', '-S', '--noconfirm', '--force', 'tomat-console']) != 0:
             return False
 
-        if env.is_ue3:
-            tmpdir = tempfile.mkdtemp()
-            success = True
+        tmpdir = tempfile.mkdtemp()
+        success = True
 
-            if success:
-                success = ue3_commandlet(env.game, 'dnetomatminingcommandlet', [ tmpdir ])
+        if success:
+            success = ue3_commandlet(env.game, 'dnetomatminingcommandlet', [ tmpdir ])
 
-            if success:
-                success = call_process('.', [ 'TomatConsole',
-                                              'ImportFromUnreal',
-                                              '--RepositoryUri', 'sql://mining@console',
-                                              '--TmpDirectory', tmpdir ]) == 0
-            # Clean up after ourselves
-            shutil.rmtree(tmpdir)
+        if success:
+            success = call_process('.', [ 'TomatConsole',
+                                          'ImportFromUnreal',
+                                          '--RepositoryUri', 'sql://mining@console',
+                                          '--TmpDirectory', tmpdir ]) == 0
+        # Clean up after ourselves
+        shutil.rmtree(tmpdir)
 
-            return success
-
-        # Unknown platform
-        return False
+        return success
 
