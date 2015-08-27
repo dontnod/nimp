@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._cis_command import *
+from nimp.commands._command import *
+
 from nimp.utilities.wwise import *
 
 #-------------------------------------------------------------------------------

@@ -1,7 +1,6 @@
 __all__ = [
     "_command",
     "commandlet",
-    "cis_load_packages",
     "deploy",
     "fileset",
     "nimp_qa",

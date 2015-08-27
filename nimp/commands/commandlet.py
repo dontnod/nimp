@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._cis_command import *
-from nimp.utilities.ue3         import *
-from nimp.utilities.ue4         import *
-from nimp.utilities.deployment  import *
-from nimp.utilities.packaging   import *
+from nimp.commands._command import *
+
+from nimp.utilities.ue3 import *
+from nimp.utilities.ue4 import *
+from nimp.utilities.deployment import *
+from nimp.utilities.packaging import *
 from nimp.utilities.file_mapper import *
 
 #-------------------------------------------------------------------------------
