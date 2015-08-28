@@ -4,6 +4,7 @@ from nimp.commands._command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
 from nimp.utilities.packaging import *
+from nimp.utilities.file_mapper import *
 
 #-------------------------------------------------------------------------------
 class ShipCommand(Command):
@@ -121,9 +122,9 @@ class ShipCommand(Command):
                         patch_files = env.map_files()
                         patch_files.src(env.publish_master).override(step = 'patching').load_set("patch")
                         files_to_exclude = [src for src, *args in patch_files()]
-                        log_notification("Excluding files %s", files_to_exclude)
+                        log_notification(log_prefix() + "Excluding files %s" % (files_to_exclude))
                         master_files_source.exclude_ignore_case(*files_to_exclude)
-                        if not file_mapper.all_map(robocopy, master_files()):
+                        if not all_map(robocopy, master_files()):
                             return False
 
             if not env.only_packages:
@@ -131,7 +132,7 @@ class ShipCommand(Command):
                 if ship_game and hasattr(env, 'revision'):
                     cook_files = env.map_files()
                     cook_files.to(env.publish_cook).load_set("cook")
-                    if not file_mapper.all_map(robocopy, cook_files()):
+                    if not all_map(robocopy, cook_files()):
                         return False
 
             if not env.only_packages:
@@ -150,7 +151,7 @@ class ShipCommand(Command):
                         log_notification(log_prefix() + "Copying files to output directory…")
                         patch_files = env.map_files()
                         patch_files.to(destination).override(step = 'deploy').load_set("patch")
-                        if not file_mapper.all_map(robocopy, patch_files()):
+                        if not all_map(robocopy, patch_files()):
                             return False
 
                         # Win32-specific step
@@ -161,7 +162,7 @@ class ShipCommand(Command):
                     dlc_files = env.map_files()
                     dlc_files.to(destination).load_set("dlc")
 
-                    if not file_mapper.all_map(robocopy, dlc_files()):
+                    if not all_map(robocopy, dlc_files()):
                         return False
 
             if not env.no_packages:
