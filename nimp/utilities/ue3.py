@@ -210,7 +210,7 @@ def ue3_cook(game, maps, languages, dlc, platform, configuration, noexpansion = 
     if not incremental:
         commandlet_arguments += ['-full']
 
-    if configuration in [ 'test', 'final' ]:
+    if configuration in [ 'test', 'shipping' ]:
         commandlet_arguments += [ '-cookforfinal' ]
 
     commandlet_arguments += ['-multilanguagecook=' + '+'.join(languages), '-platform='+ platform ]
