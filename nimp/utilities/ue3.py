@@ -215,7 +215,7 @@ def ue3_cook(game, maps, languages, dlc, platform, configuration, noexpansion = 
 
     commandlet_arguments += ['-multilanguagecook=' + '+'.join(languages), '-platform='+ platform ]
 
-    if dlc is not 'main':
+    if dlc != 'main':
         commandlet_arguments += ["-dlcname={0}".format(dlc)]
 
     if noexpansion:
