@@ -25,7 +25,7 @@ class LightsCommand(Command):
 
 
     def run(self, env):
-        if not hasattr(env, 'lights'):
+        if not hasattr(env, 'lighting_maps'):
             log_error(log_prefix() + "No light contexts specified in .nimp.conf")
             return False
 
