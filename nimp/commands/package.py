@@ -37,11 +37,11 @@ class PackageCommand(Command):
                                 metavar = '<DIR>')
 
         if hasattr(env, 'project_type') and env.project_type is 'UE3':
-            parser.add_argument('loose_files_directory',
+            parser.add_argument('--loose-files-directory',
                                 help    = 'Loose files destination Directory',
                                 metavar = '<LOOSE_FILES_DIRECTORY>')
 
-            parser.add_argument('packages_directory',
+            parser.add_argument('--packages-directory',
                                 help    = 'Packages destination Directory',
                                 metavar = '<PACKAGES_DIRECTORY>')
 

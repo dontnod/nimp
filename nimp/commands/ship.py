@@ -40,13 +40,14 @@ class ShipCommand(Command):
                                 metavar = '<DIR>')
 
         if hasattr(env, 'project_type') and env.project_type is 'UE3':
-            parser.add_argument('--loose-dir',
+            parser.add_argument('--loose-files-directory',
                                 help    = 'Loose files destination Directory',
                                 metavar = '<LOOSE_FILES_DIRECTORY>')
 
-            parser.add_argument('--pkg-dir',
+            parser.add_argument('--packages-directory',
                                 help    = 'Packages destination Directory',
                                 metavar = '<PACKAGES_DIRECTORY>')
+
 
         return True
 
@@ -61,7 +62,7 @@ class ShipCommand(Command):
         # Unreal Engine 3
         if env.is_ue3:
 
-            loose_files_dir = env.format(env.loose_dir) if env.loose_dir else None
+            loose_dir = env.format(env.loose_files_directory) if env.loose_files_directory else env.publish_ship
 
             ship_game = (env.dlc == 'main')
             ship_incremental = os.path.exists(env.format(env.publish_master))
@@ -126,8 +127,6 @@ class ShipCommand(Command):
 
             if True:
                 # Publish final files to env.publish_ship
-                destination = loose_files_dir or env.publish_ship
-
                 if ship_game:
                     # PS3-specific step
                     if env.is_ps3:
@@ -139,17 +138,17 @@ class ShipCommand(Command):
                     else:
                         log_notification(log_prefix() + "Copying files to output directory…")
                         patch_files = env.map_files()
-                        patch_files.to(destination).override(step = 'deploy').load_set("patch")
+                        patch_files.to(loose_dir).override(step = 'deploy').load_set("patch")
                         if not all_map(robocopy, patch_files()):
                             return False
 
                         # Win32-specific step
                         if env.is_win32:
-                            ue3_fix_pc_ini(env, destination)
+                            ue3_fix_pc_ini(env, loose_dir)
                 else:
                     log_notification(log_prefix() + "Copying DLC to output directory…")
                     dlc_files = env.map_files()
-                    dlc_files.to(destination).load_set("dlc")
+                    dlc_files.to(loose_dir).load_set("dlc")
 
                     if not all_map(robocopy, dlc_files()):
                         return False
