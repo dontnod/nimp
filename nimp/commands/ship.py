@@ -23,15 +23,15 @@ class ShipCommand(Command):
                             help    = 'Platforms to publish',
                             metavar = '<platform>')
 
-        parser.add_argument('--dlc',
-                            help    = 'DLCs to ship',
-                            metavar = '<dlc>',
-                            default = None)
-
         parser.add_argument('-r',
                             '--revision',
                             help = 'revision',
                             metavar = '<revision>')
+
+        parser.add_argument('--dlc',
+                            help    = 'DLCs to ship',
+                            metavar = '<dlc>',
+                            default = None)
 
         # FIXME: env.is_ue4 is not present at this time, but we want it
         if hasattr(env, 'project_type') and env.project_type is 'UE4':
@@ -48,16 +48,6 @@ class ShipCommand(Command):
                                 help    = 'Packages destination Directory',
                                 metavar = '<PACKAGES_DIRECTORY>')
 
-            parser.add_argument('--only-packages',
-                                help    = 'Use existing loose files to build packages',
-                                action  = "store_true",
-                                default = False)
-
-            parser.add_argument('--no-packages',
-                                help    = 'Don’t build console packages',
-                                action  = "store_true",
-                                default = False)
-
         return True
 
 
@@ -72,12 +62,11 @@ class ShipCommand(Command):
         if env.is_ue3:
 
             loose_files_dir = env.format(env.loose_dir) if env.loose_dir else None
-            pkgs_dir = env.format(env.pkg_dir) if env.pkg_dir else None
 
             ship_game = (env.dlc == 'main')
             ship_incremental = os.path.exists(env.format(env.publish_master))
 
-            if not env.only_packages:
+            if True:
                 log_notification(log_prefix() + "Performing UE3 ship… game:%d incremental:%d"
                                                 % (ship_game, ship_incremental))
 
@@ -127,7 +116,7 @@ class ShipCommand(Command):
                         if not all_map(robocopy, master_files()):
                             return False
 
-            if not env.only_packages:
+            if True:
                 # Publish cooked directory to env.publish_cook
                 if ship_game and hasattr(env, 'revision'):
                     cook_files = env.map_files()
@@ -135,7 +124,7 @@ class ShipCommand(Command):
                     if not all_map(robocopy, cook_files()):
                         return False
 
-            if not env.only_packages:
+            if True:
                 # Publish final files to env.publish_ship
                 destination = loose_files_dir or env.publish_ship
 
@@ -164,17 +153,6 @@ class ShipCommand(Command):
 
                     if not all_map(robocopy, dlc_files()):
                         return False
-
-            if not env.no_packages:
-                # Generate package configuration
-                log_notification(log_prefix() + "Generating package config…")
-                if not generate_pkg_config(env, loose_files_dir):
-                    return False
-
-                # Generate packages
-                log_notification(log_prefix() + "Building packages…")
-                if not make_packages(env, loose_files_dir, pkgs_dir):
-                    return False
 
             return True
 
