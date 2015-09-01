@@ -64,6 +64,9 @@ class ShipCommand(Command):
 
             loose_dir = env.format(env.loose_files_directory) if env.loose_files_directory else env.publish_ship
 
+            log_notification(log_prefix() + "Looking for master in %s"
+                                            % (env.format(env.publish_master)))
+
             ship_game = (env.dlc == 'main')
             ship_incremental = os.path.exists(env.format(env.publish_master))
 
@@ -72,7 +75,7 @@ class ShipCommand(Command):
                                                 % (ship_game, ship_incremental))
 
                 if ship_incremental and not ship_game:
-                    log_error(log_prefix() + "Sorry, building a DLC patch is still not implemented")
+                    log_error(log_prefix() + "Building a DLC patch is still not implemented")
                     return False
 
                 # If cooking a DLC or a patch, we first need the original cook;
