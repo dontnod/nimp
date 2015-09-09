@@ -29,7 +29,8 @@ def ue3_build(env):
 
     # Shortcut for Linux builds
     if not is_msys():
-        return call_process('./Development/Src', ['make', 'all', 'CONFIGURATION=' + configuration]) == 0
+        platform = env.ue3_build_platform
+        return call_process('./Development/Src', ['make', 'all', 'CONFIGURATION=' + configuration, 'PLATFORM=' + platform]) == 0
 
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
         log_error(log_prefix() + "Error building UBT")
@@ -120,7 +121,9 @@ def get_ue3_build_platform(platform):
           "win64"   : "Win64",
           "win32"   : "Win32",
           "xbox360" : "Xbox360",
-          "ps3"     : "PS3", }
+          "ps3"     : "PS3",
+          "linux"   : "Linux32",
+          "mac"     : "Mac", }
     if platform not in d:
         log_warning(log_prefix() + 'Unsupported UE3 build platform “%s”' % (platform))
         return None
