@@ -11,9 +11,17 @@ from nimp.utilities.perforce import *
 
 #-------------------------------------------------------------------------------
 class Environment:
-    #---------------------------------------------------------------------------
+
     def __init__(self):
-        pass
+        # Some Windows tools don’t like “duplicate” environment variables, i.e.
+        # where only the case differs; we remove any lowercase version we find.
+        # The loop is O(n²) but we don’t have that many entries so it’s all right.
+        env_vars = [x.lower() for x in os.environ.keys()]
+        for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
+            dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
+            log_warning(log_prefix() + "Fixing duplicate environment variable: " + '/'.join(dupelist))
+            for d in dupelist[1:]:
+                del os.environ[d]
 
     #---------------------------------------------------------------------------
     def format(self, str, **override_kwargs):
@@ -45,7 +53,7 @@ class Environment:
         settings = Settings()
         settings_content = _read_config_file(filename)
 
-        if(settings_content is None):
+        if settings_content is None:
             return False
 
         for key, value in settings_content.items():

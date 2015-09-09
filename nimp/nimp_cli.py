@@ -18,21 +18,11 @@ def main():
 
     t0 = time.time()
 
-    # Some Windows tools don’t like “duplicate” environment variables, i.e.
-    # when only the case differs; we remove any lowercase version we find.
-    # The loop is O(n²) but we don’t have that many entries so it’s all right.
-    env_vars = [x.lower() for x in os.environ.keys()]
-    for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
-        dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
-        log_warning(log_prefix() + "Fixing duplicate environment variable: " + '/'.join(dupelist))
-        for d in dupelist[1:]:
-            del os.environ[d]
-
     result = 0
     try:
         module_instances = get_dependency_sorted_instances(modules, Module)
 
-        if(module_instances is None):
+        if module_instances is None:
             log_error(log_prefix() + "Unable to satisfy modules dependencies.")
             return 1
 
@@ -55,7 +45,7 @@ def main():
 
     return result
 
-if(__name__ == "__main__"):
+if __name__ == "__main__":
     return_code = main()
     sys.exit(return_code)
 
