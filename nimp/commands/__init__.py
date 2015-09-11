@@ -15,7 +15,5 @@ __all__ = [
     "ship",
     "upgrade",
     "vs_build",
-    "tomat_mining",
-    "wwise_build_banks",
 ]
 

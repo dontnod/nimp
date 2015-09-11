@@ -31,7 +31,7 @@ def get_local_module_dependencies(base_directory, module, modules_found = []):
 #-------------------------------------------------------------------------------
 def get_instances(module, type):
     result = instanciate_types_suppress_doubles(module, type)
-    return result.values()
+    return list(result.values())
 
 #-------------------------------------------------------------------------------
 def get_dependency_sorted_instances(module, type):

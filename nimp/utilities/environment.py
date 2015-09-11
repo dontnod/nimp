@@ -187,17 +187,8 @@ class Environment:
                                 "ps3"     : "PS3",
                                 "ps4"     : "PS4" }
 
-            cmd_platforms = { "win32"   : "Windows",
-                              "win64"   : "Windows",
-                              "xbox360" : "XBox360",
-                              "xboxone" : "XboxOne",
-                              "ps3"     : "PS3",
-                              "ps4"     : "PS4" }
-
             if self.platform in banks_platforms:
                 self.wwise_banks_platform = banks_platforms[self.platform]
-            if self.platform in cmd_platforms:
-                self.wwise_cmd_platform = cmd_platforms[self.platform]
 
 
     #
