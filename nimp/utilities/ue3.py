@@ -366,14 +366,14 @@ def _ue3_build_game(sln_file, ue3_build_platform, configuration, vs_version):
 @contextlib.contextmanager
 def _ue3_generate_version_file():
     with p4_transaction("Version File Checkout",
-                    submit_on_success = False,
-                    revert_unchanged = False) as transaction:
+                        submit_on_success = False,
+                        revert_unchanged = False) as transaction:
         _write_version_file(transaction,
                             'Development/Src/Engine/DNE/DNEOnlineSuiteBuildId.h',
                             '#define SEE_ONLINE_SUITE_BUILD_ID "{random_character}@%Y-%m-%dT%H:%M:%S.000Z@{machine_name}-v4"\n' +
                             '#define DNE_FORCE_USE_ONLINE_SUITE 1\n')
         _write_version_file(transaction,
-                            'Development\Src\ExampleGame\Src\AdriftVersion.cpp',
+                            'Development/Src/ExampleGame/Src/AdriftVersion.cpp',
                             '#include "ExampleGame.h"\n' +
                             '#include <AdriftVersion.h>\n' +
                             'FString fVersion = "[%Y-%m-%d_%H_%M_CL{cl}]";\n')
@@ -392,3 +392,4 @@ def _write_version_file(transaction, version_file_path, version_file_format):
 
     with open(version_file_path, "w") as version_file:
         version_file.write(version_file_content)
+
