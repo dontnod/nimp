@@ -97,17 +97,10 @@ def generate_gp4(env, dest_dir):
 
         # Remember all directories to which we stored files
         known_dirs = {}
+        gp4_contents = None
 
         for src, dst in pkg_files():
             dst = dst.replace('\\', '/')
-
-            add_file_command = [ 'orbis-pub-cmd.exe', 'gp4_file_add' ]
-
-            # Compress these files
-            if os.path.splitext(dst)[1].lower() in [ '.bin', '.bnk', '.pck', '.xxx' ]:
-                add_file_command += [ '--pfs_compression', 'enable' ]
-
-            add_file_command += [src, dst, gp4_file]
 
             # Speed optimisation: if we have already stored a file in this directory,
             # directly edit the GP4 file and copy the relevant line. This is orders of
@@ -117,32 +110,50 @@ def generate_gp4(env, dest_dir):
             # extension (because we handle compression differently).
 
             key = '%s|%s|%s' % (os.path.dirname(src), os.path.dirname(dst), os.path.splitext(dst)[1].lower())
+
             file_is_renamed = os.path.basename(src) != os.path.basename(dst)
             shortcut = False
 
             if not file_is_renamed and key in known_dirs:
-                gp4 = open(gp4_file).readlines()
+                if gp4_contents is None:
+                    gp4_contents = open(gp4_file).readlines()
                 pattern = known_dirs[key]
 
-                for n in range(len(gp4)):
-                    line = gp4[n]
+                for n in range(len(gp4_contents)):
+                    line = gp4_contents[n]
                     if pattern not in line:
                         continue
                     line = line.replace(pattern, dst)
-                    if line == gp4[n]:
-                        continue
-                    with open(gp4_file, 'w') as f:
-                        log_notification("Directly adding {0} → {1} to GP4", src, dst)
-                        f.writelines(gp4[:n] + [ line ] + gp4[n:])
+                    if line != gp4_contents[n]:
+                        log_notification("Directly adding {0} → {1} to {2}", src, dst, gp4_file)
+                        gp4_contents = gp4_contents[:n] + [ line ] + gp4_contents[n:]
                         shortcut = True
                         break
 
             if not shortcut:
+                # Save in-memory GP4 contents first
+                if gp4_contents is not None:
+                    with open(gp4_file, 'w') as f:
+                        f.writelines(gp4_contents)
+                        gp4_contents = None
+
+                # Now call orbis-pub-cmd
+                add_file_command = [ 'orbis-pub-cmd.exe', 'gp4_file_add' ]
+
+                if os.path.splitext(dst)[1].lower() in [ '.bin', '.bnk', '.pck', '.xxx' ]:
+                    add_file_command += [ '--pfs_compression', 'enable' ]
+
+                add_file_command += [src, dst, gp4_file]
+
                 if call_process('.', add_file_command) != 0:
                     return False
 
             if not file_is_renamed:
                 known_dirs[key] = dst
+
+        if gp4_contents is not None:
+            with open(gp4_file, 'w') as f:
+                f.writelines(gp4_contents)
 
     return True
 
