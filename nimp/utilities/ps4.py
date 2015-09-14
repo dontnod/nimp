@@ -95,18 +95,54 @@ def generate_gp4(env, dest_dir):
         pkg_files = env.map_files().override(**package).src(dest_dir)
         pkg_files.load_set(env.packages_config_file)
 
-        for source, destination in pkg_files():
-            log_notification("{0}   {1}", source, destination)
+        # Remember all directories to which we stored files
+        known_dirs = {}
 
-            add_file_command = ['orbis-pub-cmd.exe', 'gp4_file_add']
+        for src, dst in pkg_files():
+            dst = dst.replace('\\', '/')
 
-            if os.path.splitext(destination)[1].lower() in [ '.bin', '.bnk', '.pck', '.xxx' ]:
-                add_file_command += ['--pfs_compression', 'enable' ]
+            add_file_command = [ 'orbis-pub-cmd.exe', 'gp4_file_add' ]
 
-            add_file_command += [source, destination.replace('\\', '/'), gp4_file]
+            # Compress these files
+            if os.path.splitext(dst)[1].lower() in [ '.bin', '.bnk', '.pck', '.xxx' ]:
+                add_file_command += [ '--pfs_compression', 'enable' ]
 
-            if call_process('.', add_file_command) != 0:
-                return False
+            add_file_command += [src, dst, gp4_file]
+
+            # Speed optimisation: if we have already stored a file in this directory,
+            # directly edit the GP4 file and copy the relevant line. This is orders of
+            # magnitude faster than running orbis-pub-cmd.exe.
+            # The file being added must have same source and destination filename.
+            # The GP4 line we copy must have same source and target dir _and_ same
+            # extension (because we handle compression differently).
+
+            key = '%s|%s|%s' % (os.path.dirname(src), os.path.dirname(dst), os.path.splitext(dst)[1].lower())
+            file_is_renamed = os.path.basename(src) != os.path.basename(dst)
+            shortcut = False
+
+            if not file_is_renamed and key in known_dirs:
+                gp4 = open(gp4_file).readlines()
+                pattern = known_dirs[key]
+
+                for n in range(len(gp4)):
+                    line = gp4[n]
+                    if pattern not in line:
+                        continue
+                    line = line.replace(pattern, dst)
+                    if line == gp4[n]:
+                        continue
+                    with open(gp4_file, 'w') as f:
+                        log_notification("Directly adding {0} → {1} to GP4", src, dst)
+                        f.writelines(gp4[:n] + [ line ] + gp4[n:])
+                        shortcut = True
+                        break
+
+            if not shortcut:
+                if call_process('.', add_file_command) != 0:
+                    return False
+
+            if not file_is_renamed:
+                known_dirs[key] = dst
 
     return True
 
