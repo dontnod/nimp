@@ -87,7 +87,7 @@ class FileMapper(object):
 
                     yield (glob_source, new_dest)
                 if not found:
-                    log_error(+ "No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
+                    log_error("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
                     #raise Exception("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
         return self.append(_glob_mapper)
 
