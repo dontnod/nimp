@@ -19,7 +19,7 @@ class Environment:
         env_vars = [x.lower() for x in os.environ.keys()]
         for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
             dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
-            log_warning(log_prefix() + "Fixing duplicate environment variable: " + '/'.join(dupelist))
+            log_warning("Fixing duplicate environment variable: " + '/'.join(dupelist))
             for d in dupelist[1:]:
                 del os.environ[d]
 
