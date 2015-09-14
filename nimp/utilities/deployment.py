@@ -101,7 +101,7 @@ def robocopy(src, dest):
     """ 'Robust' copy. """
 
     # Retry up to 5 times after I/O errors
-    max_retries = 5
+    max_retries = 10
 
     # If these look like a Windows path, get rid of all "/" path separators
     if os.sep is '\\':
@@ -129,8 +129,8 @@ def robocopy(src, dest):
                 max_retries -= 1
                 if max_retries <= 0:
                     return False
-                log_error('Retrying after 1 second ({0} retries left)', max_retries)
-                time.sleep(1)
+                log_error('Retrying after 10 seconds ({0} retries left)', max_retries)
+                time.sleep(10)
             except Exception as e:
                 log_error('Copy error: {0}', e)
                 return False
