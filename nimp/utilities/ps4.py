@@ -177,7 +177,9 @@ def ps4_generate_pkgs(env, loose_files_dir, destination):
         print(dest_dir)
         safe_makedirs(dest_dir)
 
-        if call_process(dest_dir, ["orbis-pub-cmd.exe", "img_create", gp4_file, pkg_file]) != 0:
+        if call_process(dest_dir,
+                        ["orbis-pub-cmd.exe", "img_create", gp4_file, pkg_file],
+                        heartbeat = 30) != 0:
             return False
 
     return True

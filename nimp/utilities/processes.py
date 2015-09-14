@@ -58,7 +58,8 @@ def capture_process_output(directory, command, input = None):
 
 #-------------------------------------------------------------------------------
 def call_process(directory, command, stdout_callback = _default_log_callback,
-                                     stderr_callback = None):
+                                     stderr_callback = None,
+                                     heartbeat = 0):
     command = _sanitize_command(command)
     log_verbose("Running “{0}” in “{1}”", " ".join(command), directory)
 
@@ -74,6 +75,14 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
                                bufsize = 0)
     debug_pipe.attach(process.pid)
     debug_pipe.start()
+
+    def heartbeat_worker(heartbeat):
+        t = time.monotonic()
+        while process:
+            if heartbeat > 0 and time.monotonic() > t + heartbeat:
+                log_verbose("Keepalive for {0}", command[0])
+                t += heartbeat
+            time.sleep(0.050)
 
     def output_worker(user_callback, log_function, pipe):
         output_buffer = ""
@@ -106,9 +115,12 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
     log_thread_args = [ (stdout_callback, LOG_LEVEL_VERBOSE, process.stdout),
                         (stderr_callback, LOG_LEVEL_ERROR,   process.stderr),
                         (stderr_callback, LOG_LEVEL_VERBOSE, debug_pipe.output)]
-    log_threads = [ threading.Thread(target = output_worker, args = args) for args in log_thread_args ]
+    worker_threads = [ threading.Thread(target = output_worker, args = args) for args in log_thread_args ]
+    # Send keepalive to stderr if requested
+    if heartbeat > 0:
+        worker_threads += [ threading.Thread(target = heartbeat_worker, args = (heartbeat, )) ]
 
-    for thread in log_threads:
+    for thread in worker_threads:
         thread.start()
 
     process_return = process.wait()
@@ -116,7 +128,7 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
 
     debug_pipe.stop()
 
-    for thread in log_threads:
+    for thread in worker_threads:
         thread.join()
 
     if process_return == 0:
