@@ -28,8 +28,8 @@ def log_prefix():
     return "[%s] Nimp: " % (ts)
 
 #-------------------------------------------------------------------------------
-def log_message(log_level, prefix, message_format, *args):
-    if prefix:
+def log_message(log_level, add_prefix, message_format, *args):
+    if add_prefix:
         message_format = log_prefix() + message_format
     if(g_logger is not None):
         g_logger.log_message(log_level, message_format, *args)

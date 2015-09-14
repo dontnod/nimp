@@ -46,6 +46,15 @@ def list_all_revisions(env, version_directory_format, **override_args):
             rev_infos = rev_match.groupdict()
             rev_infos['path'] = version_directory
             rev_infos['creation_date'] = datetime.fromtimestamp(os.path.getctime(version_directory))
+
+            if not 'platform' in rev_infos:
+                rev_infos['platform'] = "*"
+            if not 'dlc' in rev_infos:
+                rev_infos['dlc'] = "*"
+            if not 'configuration' in rev_infos:
+                rev_infos['configuration'] = "*"
+
+            rev_infos['rev_type'] = '{dlc}_{platform}_{configuration}'.format(**rev_infos)
             revisions += [rev_infos]
 
     return sorted(revisions, key=lambda rev_infos: rev_infos['revision'], reverse = True)
@@ -61,7 +70,6 @@ def get_latest_available_revision(env, version_directory_format, max_revision, *
 
 #------------------------------------------------------------------------------
 def upload_symbols(env, symbols):
-
     result = True
 
     if env.is_microsoft_platform:
