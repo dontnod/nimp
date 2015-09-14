@@ -45,8 +45,8 @@ def upload_symbols(env, symbols):
     return result
 
 #------------------------------------------------------------------------------
-def get_symbol_transactions(env):
-    server_txt_path =  os.path.join(env.format(env.publish_symbols), "000Admin", "server.txt")
+def get_symbol_transactions(symsrv):
+    server_txt_path =  os.path.join(symsrv, "000Admin", "server.txt")
     if not os.path.exists(server_txt_path):
         log_error("Unable to find the file {0}, aborting.", server_txt)
         return None
@@ -69,13 +69,9 @@ def get_symbol_transactions(env):
     return transaction_infos
 
 #------------------------------------------------------------------------------
-def delete_symbol_transaction(env, id):
-    if env.is_microsoft_platform:
-        if call_process(".",
-                        [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
-                          "del",
-                          "/i", id,
-                          "/s", env.format(env.publish_symbols) ]) != 0:
-            log_error(log_prefix() + "Oops! An error occurred while deleting symbols.")
-            return False
+def delete_symbol_transaction(symsrv, id):
+    if call_process(".",
+                    [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe", "del", "/i", id, "/s", symsrv]) != 0:
+        log_error("Oops! An error occurred while deleting symbols.")
+        return False
     return True

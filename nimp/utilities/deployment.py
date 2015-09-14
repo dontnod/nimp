@@ -23,34 +23,32 @@ from nimp.utilities.paths import *
 #---------------------------------------------------------------------------
 def list_all_revisions(env, version_directory_format, **override_args):
     revisions = []
-    format_args = vars(env).copy()
+    format_args = { 'revision' : '*', 'platform' : '*', 'dlc' : '*', 'configuration' : '*' }
+
+    format_args.update(vars(env).copy())
     format_args.update(override_args)
-    format_args['revision']  = '*'
-    format_args['platform']  = '*'
-    format_args['dlc']  = '*'
-    format_args['configuration']  = '*'
-    format_args.update(override_args)
+
     version_directory_format = version_directory_format.replace('\\', '/')
     version_directories_glob = version_directory_format.format(**format_args)
 
+    format_args.update({'revision' : '(?P<revision>\d+)',
+                        'platform'  : '(?P<platform>\w+)',
+                        'dlc' : '(?P<dlc>\w+)',
+                        'configuration' : '(?P<configuration>\w+)'})
+
     for version_directory in glob.glob(version_directories_glob):
-        format_args['revision'] = '(?P<revision>\d+)'
-        format_args['platform']  = '(?P<platform>\w+)'
-        format_args['dlc']  = '(?P<dlc>\w+)'
-        format_args['configuration']  = '(?P<configuration>\w+)'
+        version_directory = version_directory.replace('\\', '/')
+        version_regex = version_directory_format.format(**format_args)
 
-        version_directory       = version_directory.replace('\\', '/')
-        version_regex           = version_directory_format.format(**format_args)
+        rev_match = re.match(version_regex, version_directory)
 
-        version_match = re.match(version_regex, version_directory)
+        if rev_match is not None:
+            rev_infos = rev_match.groupdict()
+            rev_infos['path'] = version_directory
+            rev_infos['creation_date'] = datetime.fromtimestamp(os.path.getctime(version_directory))
+            revisions += [rev_infos]
 
-        if version_match is not None:
-            version_infos = version_match.groupdict()
-            version_infos['path'] = version_directory
-            version_infos['creation_date'] = datetime.datetime.fromtimestamp(os.path.getctime(version_directory))
-            revisions += [(version_infos['revision'], version_infos)]
-
-    return [version_infos for (rev, version_infos) in sorted(revisions, key=lambda tup: tup[0], reverse = True)]
+    return sorted(revisions, key=lambda rev_infos: rev_infos['revision'], reverse = True)
 
 #---------------------------------------------------------------------------
 def get_latest_available_revision(env, version_directory_format, max_revision, **override_args):

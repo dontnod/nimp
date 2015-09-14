@@ -8,6 +8,7 @@ from nimp.utilities.ue4 import *
 from nimp.utilities.deployment import *
 from nimp.utilities.file_mapper import *
 from nimp.utilities.symbols import *
+from nimp.utilities.environment import *
 
 #-------------------------------------------------------------------------------
 class PruneVersionsCommand(Command):
@@ -24,63 +25,96 @@ class PruneVersionsCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        directories_to_wipe = []
-        symbol_transactions = get_symbol_transactions(env)
+        prune_policy_path = os.path.join(env.directory, '.prune_policy.conf')
+        prune_policy = read_config_file(prune_policy_path)
 
-        if not symbol_transactions:
-            return False
+        if not prune_policy:
+            log_error("Error while loading prune policy configuration %s" % prune_policy_path)
+            return 1
 
-        referenced_transactions = set()
-        now = datetime.datetime.now()
+        if not 'policies' in prune_policy:
+            log_warning("No policiy declaration found in prune_policy.conf, doing nothing")
+            return True
 
-        for directory, settings in env.prune_policy.items():
-            log_notification("Listing version to wipe from of {0}", directory)
-            revisions_infos = list_all_revisions(env, getattr(env, directory))
-            nb_revisions = len(revisions_infos)
+        sym_transactions = None
+        if 'symsrv' in prune_policy:
+            sym_transactions = get_symbol_transactions(prune_policy['symsrv'])
 
-            if 'min_revisions' in settings and int(settings['min_revisions']) >= nb_revisions:
-                log_notification("Found only {0} revisions in this directory : keeping them all", nb_revisions)
-                continue
-            for revision_info in revisions_infos:
-                revision_age = now - revision_info['creation_date']
+            if not sym_transactions:
+                return False
 
-                if settings['max_age'] < revision_age:
-                    log_verbose("Revision in {0} is {1} old : wipping", revision_info['path'], revision_age)
-                    directories_to_wipe.append(revision_info['path'])
+        success = True
+        for policy in prune_policy['policies']:
+            success &= _prune(env, policy, sym_transactions)
 
-                elif 'sym_comment_pattern' in settings:
-                    sym_comment_pattern = env.format(settings['sym_comment_pattern'], **revision_info)
-                    sym_comment_re = re.compile(sym_comment_pattern)
+        for sym_trans in sym_transactions:
+            if not 'used' in sym_trans or not sym_trans['used']:
+                log_notification("Deleting unused symbol transaction {0}...", sym_trans['comment'])
+                if not env.dry:
+                    success &= delete_symbol_transaction(env, id)
 
-                    for transaction in symbol_transactions:
-                        if sym_comment_re.match(transaction['comment']):
-                            log_verbose("Version {0} is to keep and reference symbol transaction {1} : marking transaction as referenced.", revision_info['revision'], transaction['id'])
-                            referenced_transactions.add(transaction['id'])
+        return success
 
-        transactions_to_delete = set([transaction['id'] for transaction in symbol_transactions])
-        transactions_to_delete -= referenced_transactions
+#---------------------------------------------------------------------------
+def _prune(env, policy, sym_transactions):
+    keeped_revs = []
+    pruned_revs = []
 
-        shutil_error = False
-        def _on_shutil_error(function, path, excinfo):
-            os.chmod(path, stat.S_IWRITE)
-            try:
-                os.remove(path)
-            except Exception as ex:
-                log_error("Error deleting file {0} : {1}", path, ex)
-                shutil_error = True
+    shutil_error = False
+    def _on_shutil_error(function, path, excinfo):
+        os.chmod(path, stat.S_IWRITE)
+        try:
+            os.remove(path)
+        except Exception as ex:
+            log_warning("Error deleting file {0} : {1}", path, ex)
+            shutil_error = True
 
-        for path in directories_to_wipe:
-            log_notification("Deleting {0}...", path)
-            if not env.dry:
-                shutil.rmtree(path, onerror = _on_shutil_error)
+    for pattern in policy['patterns']:
+        log_notification("Pruning revisions matching %s" % os.path.join(env.directory, pattern.replace("{", "{{").replace("}", "}}")))
+        # FIXME : Better than overriding the platform here, we maybe could give arguments here to filter the revisions to delete
+        revs_infos = list_all_revisions(env, os.path.join(env.directory, pattern), platform = '*')
+        rev_id = 0
+        for rev_infos in revs_infos:
+            if not _keep_revision(policy, rev_id, rev_infos):
+                if not env.dry:
+                    shutil.rmtree(path, onerror = _on_shutil_error)
+            elif 'sym_comment_pattern' in policy:
+                _mark_used_symbols(rev_infos, policy['sym_comment_pattern'], sym_transactions)
+            rev_id += 1
+    return not shutil_error
 
-        if shutil_error:
-            return False
-
-        for id in transactions_to_delete:
-            log_notification("Deleting transaction {0}...", id)
-            if not env.dry:
-                if not delete_symbol_transaction(env, id):
-                    return False
-
+#---------------------------------------------------------------------------
+def _keep_revision(policy, rev_id, rev_infos):
+    if 'min_revisions' in policy and policy['min_revisions'] >= rev_id:
+        log_notification("Keeping {0}th revision {1} due to min_revisions <= {2}", rev_id, rev_infos['path'], policy['min_revisions'])
         return True
+
+    revision_age = datetime.now() - rev_infos['creation_date']
+    if 'min_age' in policy and policy['min_age'] >= revision_age:
+        log_verbose("Keeping revision in {0} created on {1} because it's newer than policy's min_age {2}", rev_infos['path'], rev_infos['creation_date'], policy['min_age'])
+        return True
+
+    keep_file_path = os.path.join(rev_infos['path'], 'dont_prune_me')
+    if os.path.exists(keep_file_path):
+        log_verbose("Keeping revision in {0} because it's marked as to be keeped", rev_infos['path'])
+        return True
+
+    if 'max_revisions' in policy and policy['max_revisions'] < rev_id:
+        log_verbose("Deleting {0}th revision {1} due to max_revisions <= {2}.",  rev_id, rev_infos['path'], policy['max_revisions'])
+        return False
+
+    if 'max_age' in policy and policy['max_age'] < revision_age:
+        log_verbose("Deleting revision in {0} created on {1} because it's older than policy's max_age {2}", rev_infos['path'], rev_infos['creation_date'], policy['max_age'])
+        return False
+
+    return True
+
+#---------------------------------------------------------------------------
+def _mark_used_symbols(rev_infos, sym_comment_pattern, sym_transactions):
+    sym_comment_pattern = sym_comment_pattern.format(**rev_infos)
+    sym_comment_re = re.compile(sym_comment_pattern)
+
+    for transaction in sym_transactions:
+        if sym_comment_re.match(transaction['comment']):
+            log_verbose("Marking symbol transaction {0} as used due to revision {1} referencing it.", transaction['comment'], rev_infos['path'])
+            transaction['used'] = True
