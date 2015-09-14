@@ -61,7 +61,6 @@ class PackageCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-
         loose_dir = env.format(env.loose_files_directory) if env.loose_files_directory else env.publish_ship
         pkg_dir = env.format(env.packages_directory) if env.packages_directory else env.publish_pkgs
 

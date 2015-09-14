@@ -11,6 +11,7 @@ __all__ = [
     "lights",
     "shaders",
     "build",
+    "prune-versions",
     "publish",
     "ship",
     "upgrade",
