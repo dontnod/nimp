@@ -134,3 +134,4 @@ def ps4_generate_pkgs(env, loose_files_dir, destination):
             return False
 
     return True
+

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from nimp.commands._command import *
-from nimp.utilities.packaging import *
+from nimp.utilities.processes import *
+from nimp.utilities.ps3 import *
+from nimp.utilities.ps4 import *
 
 #-------------------------------------------------------------------------------
 class PackageCommand(Command):
@@ -60,16 +62,47 @@ class PackageCommand(Command):
     #---------------------------------------------------------------------------
     def run(self, env):
 
-        loose_dir = env.format(env.loose_files_directory) if env.loose_files_directory else None
-        pkg_dir = env.format(env.packages_directory) if env.packages_directory else None
+        loose_dir = env.format(env.loose_files_directory) if env.loose_files_directory else env.publish_ship
+        pkg_dir = env.format(env.packages_directory) if env.packages_directory else env.publish_pkgs
 
+        # Generate package configuration (.gp4, .xml, etc.)
         if not env.only_packages:
-            if not generate_pkg_config(env, loose_dir):
-                return False
 
+            # Everywhere except Win32
+            if not env.is_win32:
+                if not _load_package_config(env):
+                    return False
+
+            # Only on PS4
+            if env.is_ps4:
+                if not generate_gp4(env, loose_dir):
+                    return False
+
+        # Generate the packages themselves
         if not env.no_packages:
-            if not make_packages(env, loose_dir, pkg_dir):
-                return False
+
+            # Everywhere except Win32
+            if not env.is_win32:
+                if not _load_package_config(env):
+                    return False
+
+            if env.is_ps3:
+                if not ps3_generate_pkgs(env, loose_dir, pkg_dir):
+                    return False
+            elif env.is_ps4:
+                if not ps4_generate_pkgs(env, loose_dir, pkg_dir):
+                    return False
 
         return True
+
+
+def _load_package_config(env):
+    if not env.check_keys('packages_config_file'):
+        return False
+
+    package_config = env.format(env.packages_config_file)
+
+    if not env.load_config_file(package_config):
+        return False
+    return True
 
