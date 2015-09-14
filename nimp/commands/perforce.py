@@ -41,7 +41,7 @@ class PerforceCommand(Command):
                 setattr(env, key_value[0], key_value[1])
         env.standardize_names()
         if not hasattr(env, 'p4_command_to_run'):
-            log_error(log_prefix() + "No P4 command specified. Please try nimp perforce -h to get a list of available commands")
+            log_error("No P4 command specified. Please try nimp perforce -h to get a list of available commands")
             return False
         return env.p4_command_to_run(env)
 

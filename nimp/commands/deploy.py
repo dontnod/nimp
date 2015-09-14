@@ -48,7 +48,7 @@ class DeployCommand(Command):
             mapper = mapper.to('.')
 
         if not hasattr(env, 'mode') or env.mode == 'binaries':
-            log_notification(log_prefix() + "Deploying Binaries…")
+            log_notification("Deploying Binaries…")
             mapper = mapper.src(env.publish_binaries)
 
         elif env.mode == 'version':
@@ -58,7 +58,7 @@ class DeployCommand(Command):
                 if revision is None:
                     return False
                 env.revision = revision
-            log_notification(log_prefix() + "Deploying version…")
+            log_notification("Deploying version…")
             mapper = mapper.src(src)
 
         elif env.mode == 'cook':

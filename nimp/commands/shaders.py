@@ -4,15 +4,9 @@ from nimp.commands._command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
 
-#
-# This command builds shader caches for Unreal projects
-#
-
 class ShaderCommand(Command):
-
     def __init__(self):
         Command.__init__(self, 'shaders', 'Build shaders for UE3 or UE4')
-
 
     def configure_arguments(self, env, parser):
         parser.add_argument('-p',
@@ -29,6 +23,6 @@ class ShaderCommand(Command):
         if env.is_ue3:
             return ue3_shaders(env)
 
-        log_error(log_prefix() + "Invalid project type {0}" % (env.project_type))
+        log_error("Invalid project type {0}" % (env.project_type))
         return False
 

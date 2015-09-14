@@ -26,7 +26,7 @@ class LightsCommand(Command):
 
     def run(self, env):
         if not hasattr(env, 'lighting_maps'):
-            log_error(log_prefix() + "No light contexts specified in .nimp.conf")
+            log_error("No light contexts specified in .nimp.conf")
             return False
 
         map_list = env.lighting_maps[env.context]
@@ -37,6 +37,6 @@ class LightsCommand(Command):
         if env.is_ue3:
             return ue3_lights(env, map_list)
 
-        log_error(log_prefix() + "Invalid project type {0}" % (env.project_type))
+        log_error("Invalid project type {0}" % (env.project_type))
         return False
 

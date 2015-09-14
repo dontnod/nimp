@@ -40,7 +40,7 @@ def _load_settings(env):
         return True
 
     if not env.load_config_file(nimp_conf_file):
-        log_error(log_prefix() + "Error loading %s" % (nimp_conf_file))
+        log_error("Error loading %s" % (nimp_conf_file))
         return False
 
     return True

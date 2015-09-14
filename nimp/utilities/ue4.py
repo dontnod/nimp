@@ -19,11 +19,11 @@ from nimp.utilities.system import *
 #---------------------------------------------------------------------------
 def ue4_build(env):
     if not env.ue4_build_configuration:
-        log_error(log_prefix() + "Invalid empty value for configuration")
+        log_error("Invalid empty value for configuration")
         return False
 
     if _ue4_generate_project() != 0:
-        log_error(log_prefix() + "Error generating UE4 project files")
+        log_error("Error generating UE4 project files")
         return False
 
     # The Durango XDK does not support Visual Studio 2013 yet, so if UE4
@@ -75,7 +75,7 @@ def ue4_build(env):
     for tool in tools:
         if not _ue4_build_project(env.solution, tool,
                                   'Win64', 'Development', vs_version, 'Build'):
-            log_error(log_prefix() + "Could not build %s" % (tool, ))
+            log_error("Could not build %s" % (tool, ))
             return False
 
     # Build tools from other solutions or with other flags
@@ -83,28 +83,28 @@ def ue4_build(env):
 
         if not _ue4_build_project(env.solution, 'BootstrapPackagedGame',
                                   'Win64', 'Shipping', vs_version, 'Build'):
-            log_error(log_prefix() + "Could not build BootstrapPackagedGame")
+            log_error("Could not build BootstrapPackagedGame")
             return False
 
         # This also builds AgentInterface.dll, needed by SwarmInterface.sln
         if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
                        'Any CPU', 'Development', None, '11', 'Build'):
-            log_error(log_prefix() + "Could not build UnrealSwarm")
+            log_error("Could not build UnrealSwarm")
             return False
 
         if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
                        'Any CPU', 'Development', None, '11', 'Build'):
-            log_error(log_prefix() + "Could not build SwarmInterface")
+            log_error("Could not build SwarmInterface")
             return False
 
         if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
                        'Any CPU', 'Development', None, '11', 'Build'):
-            log_error(log_prefix() + "Could not build NetworkProfiler")
+            log_error("Could not build NetworkProfiler")
             return False
 
         if not vsbuild('../Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
                        'x64', 'Development', None, '11', 'Build'):
-            log_error(log_prefix() + "Could not build XboxOnePackageNameUtil")
+            log_error("Could not build XboxOnePackageNameUtil")
             return False
 
     # If we only wanted prerequisites, bail out
@@ -139,7 +139,7 @@ def get_ue4_build_config(config, platform):
           "test"     : "Test",
           "shipping" : "Shipping", }
     if config not in d:
-        log_warning(log_prefix() + 'Unsupported UE4 build config “%s”' % (config))
+        log_warning('Unsupported UE4 build config “%s”' % (config))
         return None
     return d[config]
 
@@ -151,7 +151,7 @@ def get_ue4_build_platform(platform):
           "linux"   : "Linux",
           "mac"     : "Mac", }
     if platform not in d:
-        log_warning(log_prefix() + 'Unsupported UE4 build platform “%s”' % (platform))
+        log_warning('Unsupported UE4 build platform “%s”' % (platform))
         return None
     return d[platform]
 
@@ -162,7 +162,7 @@ def get_ue4_cook_platform(platform):
           "win32"   : "FIXME",
           "linux"   : "FIXME", }
     if platform not in d:
-        log_warning(log_prefix() + 'Unsupported UE4 cook platform “%s”' % (platform))
+        log_warning('Unsupported UE4 cook platform “%s”' % (platform))
         return None
     return d[platform]
 

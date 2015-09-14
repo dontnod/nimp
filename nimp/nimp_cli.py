@@ -23,7 +23,7 @@ def main():
         module_instances = get_dependency_sorted_instances(modules, Module)
 
         if module_instances is None:
-            log_error(log_prefix() + "Unable to satisfy modules dependencies.")
+            log_error("Unable to satisfy modules dependencies.")
             return 1
 
         env = Environment()
@@ -35,13 +35,13 @@ def main():
                 break
 
     except KeyboardInterrupt:
-        log_notification(log_prefix() + "Interrupted. Hit Ctrl-C again to quit.")
+        log_notification("Interrupted. Hit Ctrl-C again to quit.")
         result = 1
     except SystemExit:
         result = 1
 
     t1 = time.time()
-    log_notification(log_prefix() + "Command took %f seconds." % (t1 - t0,))
+    log_notification("Command took %f seconds." % (t1 - t0,))
 
     return result
 

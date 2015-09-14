@@ -14,8 +14,8 @@ from nimp.utilities.system import *
 from nimp.utilities.windows_utilities import *
 
 #-------------------------------------------------------------------------------
-def _default_log_callback(line, default_log_function):
-    default_log_function(line)
+def _default_log_callback(line, log_level):
+    log_message(log_level, False, line)
 
 #-------------------------------------------------------------------------------
 def _sanitize_command(command):
@@ -36,7 +36,7 @@ def _sanitize_command(command):
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None):
     command = _sanitize_command(command)
-    log_verbose(log_prefix() + "Running “{0}” in “{1}”", " ".join(command), directory)
+    log_verbose("Running “{0}” in “{1}”", " ".join(command), directory)
 
     process = subprocess.Popen(command,
                                cwd    = directory,
@@ -60,7 +60,7 @@ def capture_process_output(directory, command, input = None):
 def call_process(directory, command, stdout_callback = _default_log_callback,
                                      stderr_callback = None):
     command = _sanitize_command(command)
-    log_verbose(log_prefix() + "Running “{0}” in “{1}”", " ".join(command), directory)
+    log_verbose("Running “{0}” in “{1}”", " ".join(command), directory)
 
     disable_win32_dialogs()
 
@@ -103,9 +103,9 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
     if not stderr_callback:
         stderr_callback = stdout_callback
 
-    log_thread_args = [ (stdout_callback, log_verbose, process.stdout),
-                        (stderr_callback, log_error,   process.stderr),
-                        (stderr_callback, log_verbose, debug_pipe.output)]
+    log_thread_args = [ (stdout_callback, LOG_LEVEL_VERBOSE, process.stdout),
+                        (stderr_callback, LOG_LEVEL_ERROR,   process.stderr),
+                        (stderr_callback, LOG_LEVEL_VERBOSE, debug_pipe.output)]
     log_threads = [ threading.Thread(target = output_worker, args = args) for args in log_thread_args ]
 
     for thread in log_threads:
@@ -123,7 +123,7 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
         log = log_verbose
     else:
         log = log_error
-    log(log_prefix() + "Program “{0}” finished with exit code {1}", command[0], process_return)
+    log("Program “{0}” finished with exit code {1}", command[0], process_return)
 
     return process_return
 

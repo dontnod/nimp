@@ -90,7 +90,7 @@ def upload_symbols(env, symbols):
                           "/t", "{0}_{1}_{2}".format(env.project, env.platform, env.configuration),
                           "/v", env.revision ]) != 0:
             result = False
-            log_error(log_prefix() + "Oops! An error occurred while uploading symbols.")
+            log_error("Oops! An error occurred while uploading symbols.")
 
         os.remove("symbols_index.txt")
 
@@ -111,7 +111,7 @@ def robocopy(src, dest):
         src = src.replace('\\', '/')
         dest = dest.replace('\\', '/')
 
-    log_verbose(log_prefix() + 'Copying “{0}” to “{1}”', src, dest)
+    log_verbose('Copying “{0}” to “{1}”', src, dest)
 
     if os.path.isdir(src):
         safe_makedirs(dest)
@@ -125,17 +125,17 @@ def robocopy(src, dest):
                 shutil.copy2(src, dest)
                 break
             except IOError as e:
-                log_error(log_prefix() + 'I/O error {0}: {1}', e.errno, e.strerror)
+                log_error('I/O error {0}: {1}', e.errno, e.strerror)
                 max_retries -= 1
                 if max_retries <= 0:
                     return False
-                log_error(log_prefix() + 'Retrying after 1 second ({0} retries left)', max_retries)
+                log_error('Retrying after 1 second ({0} retries left)', max_retries)
                 time.sleep(1)
             except Exception as e:
-                log_error(log_prefix() + 'Copy error: {0}', e)
+                log_error('Copy error: {0}', e)
                 return False
     else:
-        log_error(log_prefix() + 'Error: not such file or directory “{0}”', src)
+        log_error('Error: not such file or directory “{0}”', src)
         return False
 
     return True

@@ -53,19 +53,19 @@ class PublishCommand(Command):
     #---------------------------------------------------------------------------
     def run(self, env):
         if not hasattr(env, 'mode') or env.mode == 'binaries':
-            log_notification(log_prefix() + "Publishing binaries…")
+            log_notification("Publishing binaries…")
             files_to_publish = env.map_files().to(env.publish_binaries).load_set("binaries")
             if not all_map(robocopy, files_to_publish()):
                 return False
 
         elif env.mode == 'symbols':
-            log_notification(log_prefix() + "Publishing symbols…")
+            log_notification("Publishing symbols…")
             symbols_to_publish = env.map_files().load_set("symbols")
             if not upload_symbols(env, symbols_to_publish()):
                 return False
 
         elif env.mode == 'version':
-            log_notification(log_prefix() + "Publishing version…")
+            log_notification("Publishing version…")
 
             files_to_deploy = env.map_files().to('.')
             if env.is_ue4:
@@ -87,20 +87,20 @@ class PublishCommand(Command):
 
                 tmp.glob("**")
 
-            log_notification(log_prefix() + "Deploying binaries…")
+            log_notification("Deploying binaries…")
             if not all_map(robocopy, files_to_deploy()):
                 return False
 
             # Only for Unreal Engine 3: build scripts
             if env.is_ue3 and env.is_win64:
-                log_notification(log_prefix() + "Building script…")
+                log_notification("Building script…")
                 if not ue3_build_script(env.game):
-                    log_error(log_prefix() + "Error while building script")
+                    log_error("Error while building script")
                     return False
 
             publish_version_path = env.format(env.publish_version)
             files_to_publish = env.map_files().to(publish_version_path)
-            log_notification(log_prefix() + "Publishing version {0}…", configuration)
+            log_notification("Publishing version {0}…", configuration)
             files_to_publish.load_set("version")
             if not all_map(robocopy, files_to_publish()):
                 return False
@@ -109,7 +109,7 @@ class PublishCommand(Command):
             if hasattr(env, 'unreal_prop_path'):
                 unreal_prop_path = env.format(env.unreal_prop_path)
                 publish_to_unreal_prop = env.map_files().override(is_unreal_prop_version = True).to(unreal_prop_path)
-                log_notification(log_prefix() + "Copying files to unreal prop…")
+                log_notification("Copying files to unreal prop…")
                 publish_to_unreal_prop.load_set("version")
 
                 if not all_map(robocopy, publish_to_unreal_prop()):
@@ -117,7 +117,7 @@ class PublishCommand(Command):
 
                 # Patoune wants this file
                 cl_name = 'CL.txt'
-                log_notification(log_prefix() + "Writing changelist file {0} for {1}…", cl_name, configuration)
+                log_notification("Writing changelist file {0} for {1}…", cl_name, configuration)
                 cl_path = os.path.join(unreal_prop_path, cl_name)
                 with open(cl_path, "w") as cl_fd:
                     cl_fd.write('%s\n' % env.revision)
@@ -133,7 +133,7 @@ class PublishCommand(Command):
                         toc_name = 'TOC.xml'
                         toc_content = '<lol></lol>\n'
 
-                    log_notification(log_prefix() + "Writing fake TOC {0} for UnrealProp", toc_name)
+                    log_notification("Writing fake TOC {0} for UnrealProp", toc_name)
 
                     toc_dir = os.path.join(unreal_prop_path, env.game)
                     safe_makedirs(toc_dir)
@@ -148,7 +148,7 @@ class PublishCommand(Command):
                     try:
                         shutil.rmtree(env.format(env.publish_binaries, configuration = configuration))
                     except Exception as ex:
-                        log_error(log_prefix() + "Error while cleaning binaries: {0}", ex)
+                        log_error("Error while cleaning binaries: {0}", ex)
 
         return True
 

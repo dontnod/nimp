@@ -27,29 +27,30 @@ def log_prefix():
     ts = datetime.utcnow().strftime('%H:%M:%S.%f')[:-3]
     return "[%s] Nimp: " % (ts)
 
-
 #-------------------------------------------------------------------------------
-def log_message(log_level, message_format, *args):
+def log_message(log_level, prefix, message_format, *args):
+    if prefix:
+        message_format = log_prefix() + message_format
     if(g_logger is not None):
         g_logger.log_message(log_level, message_format, *args)
     elif log_level == LOG_LEVEL_WARNING or log_level == LOG_LEVEL_ERROR:
         print(message_format.format(*args))
 
 #-------------------------------------------------------------------------------
-def log_verbose(message_format, *args):
-    log_message(LOG_LEVEL_VERBOSE, message_format, *args)
+def log_verbose(message_format, *args, **kwargs):
+    log_message(LOG_LEVEL_VERBOSE, True, message_format, *args)
 
 #-------------------------------------------------------------------------------
 def log_notification(message_format, *args):
-    log_message(LOG_LEVEL_NOTIFICATION, message_format, *args)
+    log_message(LOG_LEVEL_NOTIFICATION, True, message_format, *args)
 
 #-------------------------------------------------------------------------------
 def log_warning(message_format, *args):
-    log_message(LOG_LEVEL_WARNING, message_format, *args)
+    log_message(LOG_LEVEL_WARNING, True, message_format, *args)
 
 #-------------------------------------------------------------------------------
 def log_error(message_format, *args):
-    log_message(LOG_LEVEL_ERROR, message_format, *args)
+    log_message(LOG_LEVEL_ERROR, True, message_format, *args)
 
 #-------------------------------------------------------------------------------
 def start_progress(total,

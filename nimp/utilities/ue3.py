@@ -24,7 +24,7 @@ def ue3_build(env):
     version_file_cl = None
 
     if not configuration:
-        log_error(log_prefix() + "Invalid empty value for configuration")
+        log_error("Invalid empty value for configuration")
         return False
 
     # Shortcut for Linux builds
@@ -33,7 +33,7 @@ def ue3_build(env):
         return call_process('./Development/Src', ['make', 'all', 'CONFIGURATION=' + configuration, 'PLATFORM=' + platform]) == 0
 
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
-        log_error(log_prefix() + "Error building UBT")
+        log_error("Error building UBT")
         return False
 
     # Build tools
@@ -109,7 +109,7 @@ def get_ue3_build_config(config):
           "test"     : "Test",
           "shipping" : "Shipping", }
     if config not in d:
-        log_warning(log_prefix() + 'Unsupported UE3 build configuration “%s”' % (config))
+        log_warning('Unsupported UE3 build configuration “%s”' % (config))
         return None
     return d[config]
 
@@ -125,7 +125,7 @@ def get_ue3_build_platform(platform):
           "linux"   : "Linux32",
           "mac"     : "Mac", }
     if platform not in d:
-        log_warning(log_prefix() + 'Unsupported UE3 build platform “%s”' % (platform))
+        log_warning('Unsupported UE3 build platform “%s”' % (platform))
         return None
     return d[platform]
 
@@ -139,7 +139,7 @@ def get_ue3_cook_platform(platform):
           "linux"   : "MacOSX",
           "mac"     : "MacOSX", }
     if platform not in d:
-        log_warning(log_prefix() + 'Unsupported UE3 cook platform “%s”' % (platform))
+        log_warning('Unsupported UE3 cook platform “%s”' % (platform))
         return None
     return d[platform]
 
@@ -153,7 +153,7 @@ def get_ue3_shader_platform(platform):
           "linux"   : "Linux",
           "mac"     : "Mac", }
     if platform not in d:
-        log_warning(log_prefix() + 'Unsupported UE3 shader platform “%s”' % (platform))
+        log_warning('Unsupported UE3 shader platform “%s”' % (platform))
         return None
     return d[platform]
 
@@ -189,7 +189,7 @@ def ue3_commandlet(game, commandlet_name, args):
     game_binary = game + '.exe'
     game_path = os.path.join(game_directory, game_binary)
     if not os.path.exists(game_path):
-        log_error(log_prefix() + "Unable to find game executable at {0}", game_path)
+        log_error("Unable to find game executable at {0}", game_path)
         return False
 
     args += [ '-nopause',
@@ -288,14 +288,14 @@ def _ue3_build_tools():
         # Compile the x64 or Any CPU version
         if not vsbuild('Development/Tools/%s/%s.sln' % (tool, tool),
                        override_platform, 'Release', None, override_vs_version):
-            log_error(log_prefix() + "Could not build %s" % (tool,))
+            log_error("Could not build %s" % (tool,))
             return False
 
         # If necessary, compile a Win32 version
         if tool in win32_64_tools:
             if not vsbuild('Development/Tools/%s/%s.sln' % (tool, tool),
                            'Win32', 'Release', None, override_vs_version):
-                log_error(log_prefix() + "Could not build %s" % (tool,))
+                log_error("Could not build %s" % (tool,))
                 return False
 
     # Console tools
@@ -316,7 +316,7 @@ def _ue3_build_tools():
 
             if not vsbuild('Development/Src/%s/%sTools/%sTools.sln' % (dir1, dir2, tool),
                            platform, 'Release', None, '11'):
-                log_error(log_prefix() + "Could not build %sTools for %s" % (tool, platform))
+                log_error("Could not build %sTools for %s" % (tool, platform))
                 return False
 
     return True
@@ -324,7 +324,7 @@ def _ue3_build_tools():
 
 #---------------------------------------------------------------------------
 def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
-    log_notification(log_prefix() + "Building Editor C# libraries")
+    log_notification("Building Editor C# libraries")
 
     editor_config = 'Debug' if configuration.lower() == "debug" else 'Release'
 
@@ -344,7 +344,7 @@ def _ue3_build_editor_dlls(sln_file, configuration, vs_version):
         shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.dll'), dll_target)
         shutil.copy(os.path.join(dll_source, 'UnrealEdCSharp.pdb'), dll_target)
     except Exception as ex:
-        log_error(log_prefix() + "Error while copying editor dlls {0}".format(ex))
+        log_error("Error while copying editor dlls {0}".format(ex))
         return False
     return True
 

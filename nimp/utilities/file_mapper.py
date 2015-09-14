@@ -87,7 +87,7 @@ class FileMapper(object):
 
                     yield (glob_source, new_dest)
                 if not found:
-                    log_error(log_prefix() + "No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
+                    log_error(+ "No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
                     #raise Exception("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
         return self.append(_glob_mapper)
 
@@ -108,15 +108,15 @@ class FileMapper(object):
         try:
             conf = open(file_name, "rb").read()
         except Exception as exception:
-            log_error(log_prefix() + "Error loading fileset: unable to open file: {0}", exception)
+            log_error("Error loading fileset: unable to open file: {0}", exception)
             return None
         try:
             exec(compile(conf, file_name, 'exec'), None, locals)
             if not "map" in locals:
-                log_error(log_prefix() + "Configuration file {0} has no function called 'map'.", file_name)
+                log_error("Configuration file {0} has no function called 'map'.", file_name)
                 return None
         except Exception as e:
-            log_error(log_prefix() + "Error loading fileset: unable to load file {0}: {1}", file_name, str(e))
+            log_error("Error loading fileset: unable to load file {0}: {1}", file_name, str(e))
             return None
 
         locals['map'](self)
@@ -149,7 +149,7 @@ class FileMapper(object):
                     src = src.lower()
                     pattern = pattern.lower()
                 if fnmatch.fnmatch(src, pattern):
-                    log_verbose(log_prefix() + "Excluding file {0}", src)
+                    log_verbose("Excluding file {0}", src)
                     raise StopIteration()
             yield (src, dest)
         return self.append(_exclude_mapper)

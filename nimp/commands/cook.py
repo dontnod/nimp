@@ -56,6 +56,6 @@ class CookCommand(Command):
                             env.noexpansion,
                             env.incremental)
 
-        log_error(log_prefix() + "Invalid project type {0}" % (env.project_type))
+        log_error("Invalid project type {0}", (env.project_type))
         return False
 

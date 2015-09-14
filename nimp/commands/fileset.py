@@ -65,6 +65,6 @@ class MapCommand(Command):
             for source, destination in files():
                 log_notification("{0} => {1}", source, destination)
         elif env.action == 'toc':
-            log_error(log_prefix() + "Not implemented yet")
+            log_error("Not implemented yet")
 
         return True

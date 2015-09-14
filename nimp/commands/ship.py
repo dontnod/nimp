@@ -64,25 +64,23 @@ class ShipCommand(Command):
 
             loose_dir = env.format(env.loose_files_directory) if env.loose_files_directory else env.publish_ship
 
-            log_notification(log_prefix() + "Looking for master in %s"
-                                            % (env.format(env.publish_master)))
+            log_notification("Looking for master in %s" % (env.format(env.publish_master)))
 
             ship_game = (env.dlc == 'main')
             ship_incremental = os.path.exists(env.format(env.publish_master))
 
             if True:
-                log_notification(log_prefix() + "Performing UE3 ship… game:%d incremental:%d"
-                                                % (ship_game, ship_incremental))
+                log_notification("Performing UE3 ship… game:%d incremental:%d" % (ship_game, ship_incremental))
 
                 if ship_incremental and not ship_game:
-                    log_error(log_prefix() + "Building a DLC patch is still not implemented")
+                    log_error("Building a DLC patch is still not implemented")
                     return False
 
                 # If cooking a DLC or a patch, we first need the original cook;
                 # either the master cook (when shipping a game patch) or one of
                 # the latest cooks done by buildbot
                 if ship_incremental or not ship_game:
-                    log_notification(log_prefix() + "Deploying original cook…")
+                    log_notification("Deploying original cook…")
                     master_files = env.map_files()
                     if ship_game:
                         master_files_source = master_files.src(env.publish_master) \
@@ -99,7 +97,7 @@ class ShipCommand(Command):
                 # Now we can cook the desired maps
                 maps = env.cook_maps[env.dlc.lower()]
 
-                log_notification(log_prefix() + "Cooking maps: %s" % (" ".join(maps)))
+                log_notification("Cooking maps: %s" % (" ".join(maps)))
                 if not ue3_cook(env.game,
                                 maps,
                                 env.languages,
@@ -111,11 +109,11 @@ class ShipCommand(Command):
 
                 # If necessary, overwrite files we didn’t want to patch from the master again
                 if ship_game and ship_incremental:
-                        log_notification(log_prefix() + "Redeploying master cook ignoring patched files…")
+                        log_notification("Redeploying master cook ignoring patched files…")
                         patch_files = env.map_files()
                         patch_files.src(env.publish_master).override(step = 'patching').load_set("patch")
                         files_to_exclude = [src for src, *args in patch_files()]
-                        log_notification(log_prefix() + "Excluding files %s" % (files_to_exclude))
+                        log_notification("Excluding files %s" % (files_to_exclude))
                         master_files_source.exclude_ignore_case(*files_to_exclude)
                         if not all_map(robocopy, master_files()):
                             return False
@@ -137,9 +135,9 @@ class ShipCommand(Command):
 
                     if not ship_incremental:
                         # FIXME: implement this!
-                        log_warning(log_prefix() + "Publishing full game is not implemented")
+                        log_warning("Publishing full game is not implemented")
                     else:
-                        log_notification(log_prefix() + "Copying files to output directory…")
+                        log_notification("Copying files to output directory…")
                         patch_files = env.map_files()
                         patch_files.to(loose_dir).override(step = 'deploy').load_set("patch")
                         if not all_map(robocopy, patch_files()):
@@ -149,7 +147,7 @@ class ShipCommand(Command):
                         if env.is_win32:
                             ue3_fix_pc_ini(env, loose_dir)
                 else:
-                    log_notification(log_prefix() + "Copying DLC to output directory…")
+                    log_notification("Copying DLC to output directory…")
                     dlc_files = env.map_files()
                     dlc_files.to(loose_dir).load_set("dlc")
 
@@ -159,6 +157,6 @@ class ShipCommand(Command):
             return True
 
         # Error!
-        log_error(log_prefix() + "Invalid project type %s" % (env.project_type))
+        log_error("Invalid project type %s" % (env.project_type))
         return False
 

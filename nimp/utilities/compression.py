@@ -19,35 +19,35 @@ MAXIMUM_STEP_NAME_WIDTH = 57
 
 #-------------------------------------------------------------------------------
 def extract(archive_file_name, destination_directory, archive_type = None, before_decompress_file_callback = None):
-    log_verbose(log_prefix() + "Determining type of archive {0}", archive_file_name)
+    log_verbose("Determining type of archive {0}", archive_file_name)
     if(archive_type is None):
         first_extension =  os.path.splitext(archive_file_name)[1]
         file_name_without_extension = os.path.splitext(archive_file_name)[0]
         second_extension = os.path.splitext(file_name_without_extension)[1]
         if(first_extension == ".zip"):
             archive_type = ZIP_FILE
-            log_verbose(log_prefix() + "Archive must be a zip")
+            log_verbose("Archive must be a zip")
         elif(first_extension == ".tar"):
-            log_verbose(log_prefix() + "Archive must be an uncompressed tarfile")
+            log_verbose("Archive must be an uncompressed tarfile")
             archive_type = TAR_FILE
         elif( ( first_extension == ".gz" or first_extension == ".bz2") and ( second_extension == ".tar" ) ):
-            log_verbose(log_prefix() + "Archive must be a compressed tarfile")
+            log_verbose("Archive must be a compressed tarfile")
             archive_type = TAR_FILE
         else:
-            log_error(log_prefix() + "Unable to determine archive type of {0} based on it's name. Please specify it", archive_file_name)
+            log_error("Unable to determine archive type of {0} based on it's name. Please specify it", archive_file_name)
             return False
     if(archive_type == TAR_FILE):
         return _decompress_tar(archive_file_name, destination_directory)
     elif(archive_type == ZIP_FILE):
         return _decompress_zip(archive_file_name, destination_directory)
     else:
-        log_error(log_prefix() + "Bad archive type. Please specify TAR_FILE or ZIP_FILE")
+        log_error("Bad archive type. Please specify TAR_FILE or ZIP_FILE")
 
     return False
 
 #-------------------------------------------------------------------------------
 def _decompress_tar(file_name, destination_directory, before_decompress_file_callback = None):
-    log_verbose(log_prefix() + "Decompressing {0} in {1}", file_name, destination_directory)
+    log_verbose("Decompressing {0} in {1}", file_name, destination_directory)
     try:
         tar_file = tarfile.open(file_name)
         file_names = tar_file.getnames()
@@ -65,18 +65,18 @@ def _decompress_tar(file_name, destination_directory, before_decompress_file_cal
         end_progress()
 
     except tarfile.TarError as tar_error:
-        log_error(log_prefix() + "Error while opening tarfile {0}: {1}", file_name, tar_error)
+        log_error("Error while opening tarfile {0}: {1}", file_name, tar_error)
         return False
     except IOError as io_error:
-        log_error(log_prefix() + "Unable to open tarfile {0}: {1}", file_name, io_error)
+        log_error("Unable to open tarfile {0}: {1}", file_name, io_error)
         return False
 
-    log_verbose(log_prefix() + "Decompression succeed")
+    log_verbose("Decompression succeed")
     return True
 
 #-------------------------------------------------------------------------------
 def _decompress_zip(file_name, destination_directory, before_decompress_file_callback = None):
-    log_verbose(log_prefix() + "Decompressing {0} in {1}", file_name, destination_directory)
+    log_verbose("Decompressing {0} in {1}", file_name, destination_directory)
     try:
         zip_file = zipfile.ZipFile(file_name, "r")
         file_names = zip_file.namelist()
@@ -92,13 +92,13 @@ def _decompress_zip(file_name, destination_directory, before_decompress_file_cal
         end_progress()
 
     except zipfile.BadZipfile as zip_error:
-        log_error(log_prefix() + "Error while opening zip {0}: {1}", file_name, zip_error)
+        log_error("Error while opening zip {0}: {1}", file_name, zip_error)
         return False
     except IOError as io_error:
-        log_error(log_prefix() + "Unable to open zip {0}: {1}", file_name, io_error)
+        log_error("Unable to open zip {0}: {1}", file_name, io_error)
         return False
 
-    log_verbose(log_prefix() + "Decompression succeed")
+    log_verbose("Decompression succeed")
     return True
 
 #-------------------------------------------------------------------------------
