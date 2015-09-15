@@ -4,6 +4,7 @@ from nimp.commands._command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
 from nimp.utilities.deployment import *
+from nimp.utilities.symbols import *
 from nimp.utilities.file_mapper import *
 
 #-------------------------------------------------------------------------------
