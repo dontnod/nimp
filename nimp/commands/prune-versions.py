@@ -17,6 +17,10 @@ class PruneVersionsCommand(Command):
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
+        parser.add_argument('directory',
+                            help     = 'Directory to clean',
+                            metavar  = '<DIRECTORY>')
+
         parser.add_argument('--dry',
                             help    = 'Only list operation, don\'t execute them.',
                             default = False,
@@ -110,6 +114,8 @@ def _should_keep_revision(policy, rev_id, rev_infos):
     if 'max_age' in policy and policy['max_age'] < revision_age:
         log_verbose("Deleting revision in {0} created on {1} because it's older than policy's max_age {2}", rev_infos['path'], rev_infos['creation_date'], policy['max_age'])
         return False
+
+    log_verbose("Keeping revision in {0} created on {1} because no rule applies", rev_infos['path'], rev_infos['creation_date'])
 
     return True
 
