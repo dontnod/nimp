@@ -123,13 +123,13 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
     for thread in worker_threads:
         thread.start()
 
-    process_return = process.wait()
-    process = None
-
-    debug_pipe.stop()
-
-    for thread in worker_threads:
-        thread.join()
+    try:
+        process_return = process.wait()
+    finally:
+        process = None
+        debug_pipe.stop()
+        for thread in worker_threads:
+            thread.join()
 
     if process_return == 0:
         log = log_verbose
