@@ -28,6 +28,18 @@ def list_all_revisions(env, version_directory_format, **override_args):
     format_args.update(vars(env).copy())
     format_args.update(override_args)
 
+    if format_args['revision'] is None:
+        format_args['revision'] = '*'
+
+    if format_args['platform'] is None:
+        format_args['platform'] = '*'
+
+    if format_args['dlc'] is None:
+        format_args['dlc'] = '*'
+
+    if format_args['configuration'] is None:
+        format_args['configuration'] = '*'
+
     version_directory_format = version_directory_format.replace('\\', '/')
     version_directories_glob = version_directory_format.format(**format_args)
 
