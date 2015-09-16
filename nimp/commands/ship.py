@@ -47,6 +47,10 @@ class ShipCommand(Command):
                                 help    = 'Packages destination Directory',
                                 metavar = '<PACKAGES_DIRECTORY>')
 
+        parser.add_argument('--no-cook',
+                            help = 'Do not cook, assume everything is in place',
+                            action = "store_true",
+                            default = False)
 
         return True
 
@@ -68,7 +72,7 @@ class ShipCommand(Command):
             ship_game = (env.dlc == 'main')
             ship_incremental = os.path.exists(env.format(env.publish_master))
 
-            if True:
+            if not env.no_cook:
                 log_notification("Performing UE3 ship… game:%d incremental:%d" % (ship_game, ship_incremental))
 
                 if ship_incremental and not ship_game:
@@ -108,14 +112,17 @@ class ShipCommand(Command):
 
                 # If necessary, overwrite files we didn’t want to patch from the master again
                 if ship_game and ship_incremental:
-                        log_notification("Redeploying master cook ignoring patched files…")
-                        patch_files = env.map_files()
-                        patch_files.src(env.publish_master).override(step = 'patching').load_set("patch")
-                        files_to_exclude = [src for src, *args in patch_files()]
-                        log_notification("Excluding files %s" % (files_to_exclude))
-                        master_files_source.exclude_ignore_case(*files_to_exclude)
-                        if not all_map(robocopy, master_files()):
-                            return False
+                    log_notification("Redeploying master cook ignoring patched files…")
+                    patch_files = env.map_files()
+                    patch_files.src(env.publish_master).override(step = 'patching').load_set("patch")
+                    files_to_exclude = [src for src, *args in patch_files()]
+
+                    for f in files_to_exclude:
+                        log_notification("Will exclude: %s" % (f))
+
+                    master_files_source.exclude_ignore_case(*files_to_exclude)
+                    if not all_map(robocopy, master_files()):
+                        return False
 
             if True:
                 # Publish cooked directory to env.publish_cook
