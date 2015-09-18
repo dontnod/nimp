@@ -182,5 +182,8 @@ def ps4_generate_pkgs(env, loose_files_dir, destination):
                         heartbeat = 30) != 0:
             return False
 
+        # Verify package but do not fail job if the verification fails
+        call_process(dest_dir, [ "orbis-pub-cmd", "img_verify", "--passcode", package['passcode'], pkg_file ])
+
     return True
 
