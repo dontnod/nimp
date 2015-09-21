@@ -96,7 +96,7 @@ def generate_gp4(env, dest_dir):
         pkg_files.load_set(env.packages_config_file)
 
         # Remember all directories to which we stored files
-        known_dirs = {}
+        known_paths = {}
         gp4_contents = None
 
         for src, dst in pkg_files():
@@ -114,16 +114,18 @@ def generate_gp4(env, dest_dir):
             file_is_renamed = os.path.basename(src) != os.path.basename(dst)
             shortcut = False
 
-            if not file_is_renamed and key in known_dirs:
+            if not file_is_renamed and key in known_paths:
                 if gp4_contents is None:
                     gp4_contents = open(gp4_file).readlines()
-                pattern = known_dirs[key]
+                pattern = known_paths[key]
 
                 for n in range(len(gp4_contents)):
                     line = gp4_contents[n]
-                    if pattern not in line:
+                    # Check for the whole path…
+                    if pattern not in line.replace('\\', '/'):
                         continue
-                    line = line.replace(pattern, dst)
+                    # … but only replace the filename
+                    line = line.replace(os.path.basename(pattern), os.path.basename(dst))
                     if line != gp4_contents[n]:
                         log_notification("Directly adding {0} → {1} to {2}", src, dst, gp4_file)
                         gp4_contents = gp4_contents[:n] + [ line ] + gp4_contents[n:]
@@ -149,7 +151,7 @@ def generate_gp4(env, dest_dir):
                     return False
 
             if not file_is_renamed:
-                known_dirs[key] = dst
+                known_paths[key] = dst
 
         if gp4_contents is not None:
             with open(gp4_file, 'w') as f:
