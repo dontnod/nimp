@@ -7,6 +7,7 @@ sys.dont_write_bytecode = 1
 
 import inspect
 import time
+import traceback
 
 from nimp import modules
 from nimp.modules.module import *
@@ -23,7 +24,7 @@ def main():
         module_instances = get_dependency_sorted_instances(modules, Module)
 
         if module_instances is None:
-            log_error("Unable to satisfy modules dependencies.")
+            log_error("Unable to satisfy module dependencies.")
             return 1
 
         env = Environment()
@@ -35,7 +36,8 @@ def main():
                 break
 
     except KeyboardInterrupt:
-        log_notification("Interrupted.")
+        log_notification("Program interrupted. (Ctrl-C)")
+        traceback.print_exc()
         result = 1
     except SystemExit:
         result = 1

@@ -75,7 +75,7 @@ class FileMapper(object):
                     found = True
                     glob_source = str(glob_source)
                     # This is merely equivalent to os.path.relpath(src, self._source_path)
-                    # excepted it will handle globs pattern in the base path.
+                    # except it will handle globs pattern in the base path.
                     glob_source = os.path.normpath(glob_source)
                     if dest is not None:
                         new_dest = split_path(glob_source)[source_path_len:]
@@ -90,6 +90,14 @@ class FileMapper(object):
                     log_error("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
                     #raise Exception("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
         return self.append(_glob_mapper)
+
+
+    #
+    # More user-friendly glob... TODO
+    #
+    def xglob(self, src = '.', dst = '.', pattern = '**'):
+        return self.src(src).to(dst).glob(pattern)
+
 
     #--------------------------------------------------------------------------
     def append(self, mapper = _default_mapper, format_args = None):
@@ -145,10 +153,9 @@ class FileMapper(object):
         def _exclude_mapper(src, dest):
             for pattern in patterns:
                 pattern = self._format(pattern)
-                if ignore_case:
-                    src = src.lower()
-                    pattern = pattern.lower()
-                if fnmatch.fnmatch(src, pattern):
+                real_src = src.lower() if ignore_case else src
+                real_pattern = pattern.lower() if ignore_case else pattern
+                if fnmatch.fnmatch(real_src, real_pattern):
                     log_verbose("Excluding file {0}", src)
                     raise StopIteration()
             yield (src, dest)
