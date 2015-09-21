@@ -83,7 +83,7 @@ def _prune(env, policy, sym_transactions):
 
             if not _should_keep_revision(policy, rev_ids[rev_type], rev_infos):
                 if not env.dry:
-                    shutil.rmtree(path, onerror = _on_shutil_error)
+                    shutil.rmtree(rev_infos['path'], onerror = _on_shutil_error)
             else:
                 rev_ids[rev_type] += 1
                 if 'sym_comment_pattern' in policy:
