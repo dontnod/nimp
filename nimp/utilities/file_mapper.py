@@ -44,16 +44,13 @@ class FileMapper(object):
     #---------------------------------------------------------------------------
     def __call__(self, src = None, dest = None):
         results = self._mapper(src, dest)
-        if len(self._next) == 0:
-            for result in results:
-                # Only test the first element because some filemappers only worry about source
-                if result[0] is not None:
-                    yield result
-        else:
-            for result in results:
-                for next in self._next:
-                    for next_result in next(*result):
-                        yield next_result
+        for result in sorted(results, key = lambda t: t[1] or t[0] or ""):
+            for next in self._next:
+                for next_result in next(*result):
+                    yield next_result
+            # Only test the left element because some filemappers only worry about source
+            if not self._next and result[0] is not None:
+                yield result
 
     #---------------------------------------------------------------------------
     def glob(self, *patterns):
