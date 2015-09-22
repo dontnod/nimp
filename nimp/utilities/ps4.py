@@ -128,7 +128,7 @@ def generate_gp4(env, dest_dir):
                     line = line.replace(os.path.basename(pattern), os.path.basename(dst))
                     if line != gp4_contents[n]:
                         log_notification("Directly adding {0} → {1} to {2}", src, dst, gp4_file)
-                        gp4_contents = gp4_contents[:n] + [ line ] + gp4_contents[n:]
+                        gp4_contents = gp4_contents[:n + 1] + [ line ] + gp4_contents[n + 1:]
                         shortcut = True
                         break
 
