@@ -126,7 +126,18 @@ class FileMapper(object):
 
         locals['map'](self)
 
-        return self
+        return self._get_leaves()
+
+
+    #---------------------------------------------------------------------------
+    def _get_leaves(self):
+        """ Return all terminal leaves of the tree. """
+        for n in self._next:
+            for l in n._get_leaves():
+                yield l
+        if not self._next:
+            yield self
+
 
     #---------------------------------------------------------------------------
     def override(self, **format):
