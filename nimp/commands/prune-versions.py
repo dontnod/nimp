@@ -56,7 +56,7 @@ class PruneVersionsCommand(Command):
                 if not 'used' in sym_trans or not sym_trans['used']:
                     log_notification("Deleting unused symbol transaction {0}...", sym_trans['comment'])
                     if not env.dry:
-                        success &= delete_symbol_transaction(prune_policy_conf['symsrv'], id)
+                        success &= delete_symbol_transaction(prune_policy_conf['symsrv'], sym_trans['id'])
 
         return success
 

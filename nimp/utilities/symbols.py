@@ -69,9 +69,9 @@ def get_symbol_transactions(symsrv):
     return transaction_infos
 
 #------------------------------------------------------------------------------
-def delete_symbol_transaction(symsrv, id):
+def delete_symbol_transaction(symsrv, transaction_id):
     if call_process(".",
-                    [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe", "del", "/i", id, "/s", symsrv]) != 0:
+                    [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe", "del", "/i", transaction_id, "/s", symsrv]) != 0:
         log_error("Oops! An error occurred while deleting symbols.")
         return False
     return True
