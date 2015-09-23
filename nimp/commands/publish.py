@@ -55,13 +55,15 @@ class PublishCommand(Command):
     def run(self, env):
         if not hasattr(env, 'mode') or env.mode == 'binaries':
             log_notification("Publishing binaries…")
-            files_to_publish = env.map_files().to(env.publish_binaries).load_set("binaries")
+            files_to_publish = env.map_files().to(env.publish_binaries)
+            files_to_publish.load_set("binaries")
             if not all_map(robocopy, files_to_publish()):
                 return False
 
         elif env.mode == 'symbols':
             log_notification("Publishing symbols…")
-            symbols_to_publish = env.map_files().load_set("symbols")
+            symbols_to_publish = env.map_files()
+            symbols_to_publish.load_set("symbols")
             if not upload_symbols(env, symbols_to_publish()):
                 return False
 
