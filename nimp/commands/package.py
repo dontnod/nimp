@@ -4,6 +4,7 @@ from nimp.commands._command import *
 from nimp.utilities.processes import *
 from nimp.utilities.ps3 import *
 from nimp.utilities.ps4 import *
+from nimp.utilities.xboxone import *
 
 #-------------------------------------------------------------------------------
 class PackageCommand(Command):
@@ -76,6 +77,9 @@ class PackageCommand(Command):
             if env.is_ps4:
                 if not generate_gp4(env, loose_dir):
                     return False
+            elif env.is_xone:
+                if not generate_chunk_xml(env, loose_dir):
+                    return False
 
         # Generate the packages themselves
         if not env.no_packages:
@@ -90,6 +94,9 @@ class PackageCommand(Command):
                     return False
             elif env.is_ps4:
                 if not ps4_generate_pkgs(env, loose_dir, pkg_dir):
+                    return False
+            elif env.is_xone:
+                if not xboxone_generate_pkgs(env, loose_dir, pkg_dir):
                     return False
 
         return True
