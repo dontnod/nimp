@@ -80,30 +80,6 @@ def get_latest_available_revision(env, version_directory_format, max_revision, *
 
     raise Exception('No revision <= %s in %s. Candidates are: %s' % (max_revision, version_directories_glob, ' '.join(revisions)))
 
-#------------------------------------------------------------------------------
-def upload_symbols(env, symbols):
-    result = True
-
-    if env.is_microsoft_platform:
-        with open("symbols_index.txt", "w") as symbols_index:
-            for src, dest in symbols:
-                symbols_index.write(src + "\n")
-
-        if call_process(".",
-                        [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
-                          "add",
-                          "/r", "/f", "@symbols_index.txt",
-                          "/s", env.format(env.publish_symbols),
-                          "/o",
-                          "/t", "{0}_{1}_{2}".format(env.project, env.platform, env.configuration),
-                          "/v", env.revision ]) != 0:
-            result = False
-            log_error("Oops! An error occurred while uploading symbols.")
-
-        os.remove("symbols_index.txt")
-
-    return result
-
 #-------------------------------------------------------------------------------
 def robocopy(src, dest):
     """ 'Robust' copy. """

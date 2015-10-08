@@ -36,7 +36,8 @@ def upload_symbols(env, symbols):
                           "/s", env.format(env.publish_symbols),
                           "/o",
                           "/t", env.project_name,
-                          "/v", "{0}_{1}_{2}".format(env.platform, env.configuration, env.revision) ]) != 0:
+                          "/c", "{0}_{1}_{2}_{3}".format(env.project, env.platform, env.configuration, env.revision),
+                          "/v", env.revision ]) != 0:
             result = False
             log_error(log_prefix() + "Oops! An error occurred while uploading symbols.")
 
@@ -56,8 +57,8 @@ def get_symbol_transactions(symsrv):
                          "(?P<creation_date>\d{2}\/\d{2}\/\d{4}),"
                          "(?P<creation_time>\d{2}:\d{2}:\d{2}),"
                          "\"(?P<product_name>[^\"]*)\","
-                         "\"(?P<comment>[^\"]*)\","
-                         "\"\",$")
+                         "\"(?P<version>[^\"]*)\","
+                         "\"(?P<comment>[^\"]*)\",$")
     transaction_infos = []
     with open(server_txt_path, "r") as server_txt:
         for line in server_txt.readlines():

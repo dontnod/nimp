@@ -123,7 +123,6 @@ def _should_keep_revision(policy, rev_id, rev_infos):
 def _mark_used_symbols(rev_infos, sym_comment_pattern, sym_transactions):
     sym_comment_pattern = sym_comment_pattern.format(**rev_infos)
     sym_comment_re = re.compile(sym_comment_pattern)
-
     for transaction in sym_transactions:
         if sym_comment_re.match(transaction['comment']):
             log_verbose("Marking symbol transaction {0} as used due to revision {1} referencing it.", transaction['comment'], rev_infos['path'])
