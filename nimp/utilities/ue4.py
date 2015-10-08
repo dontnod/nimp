@@ -38,82 +38,83 @@ def ue4_build(env):
     except:
         pass
 
-    # For some reason nothing copies this file on OS X
-    if platform.system() == 'Darwin':
-        robocopy('../Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
-                 '../Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
+    if not hasattr(env, 'no_prerequisites') or not env.no_prerequisites:
 
-    # Build tools from the UE4 solution if necessary
-    tools = []
+        # For some reason nothing copies this file on OS X
+        if platform.system() == 'Darwin':
+            robocopy('../Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
+                     '../Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
 
-    if env.platform == 'win64' and env.configuration == 'devel':
-        tools += [ 'DotNETUtilities',
-                   'AutomationTool',
-                   'UnrealFrontend',
-                   'UnrealLightmass',
-                   'UnrealFileServer',
-                   'ShaderCompileWorker',
-                   'SymbolDebugger',
-                   'PS4DevKitUtil',
-                   'PS4MapFileUtil',
-                   'XboxOnePDBFileUtil', ]
+        # Build tools from the UE4 solution if necessary
+        tools = []
 
-        tools += [ 'AutomationScripts.Automation',
-                   'Desktop.Automation',
-                   'Linux.Automation',
-                   'Mac.Automation',
-                   'PS4.Automation',
-                   'Win.Automation',
-                   'XboxOne.Automation', ]
+        if env.platform == 'win64' and env.configuration == 'devel':
+            tools += [ 'DotNETUtilities',
+                       'AutomationTool',
+                       'UnrealFrontend',
+                       'UnrealLightmass',
+                       'UnrealFileServer',
+                       'ShaderCompileWorker',
+                       'SymbolDebugger',
+                       'PS4DevKitUtil',
+                       'PS4MapFileUtil',
+                       'XboxOnePDBFileUtil', ]
 
-    if env.platform == 'ps4':
-        if 'PS4MapFileUtil' not in tools: tools += [ 'PS4MapFileUtil' ]
+            tools += [ 'AutomationScripts.Automation',
+                       'Desktop.Automation',
+                       'Linux.Automation',
+                       'Mac.Automation',
+                       'PS4.Automation',
+                       'Win.Automation',
+                       'XboxOne.Automation', ]
 
-    if env.platform == 'xboxone':
-        if 'XboxOnePDBFileUtil' not in tools: tools += [ 'XboxOnePDBFileUtil' ]
+        if env.platform == 'ps4':
+            if 'PS4MapFileUtil' not in tools: tools += [ 'PS4MapFileUtil' ]
 
-    for tool in tools:
-        if not _ue4_build_project(env.solution, tool,
-                                  'Win64', 'Development', vs_version, 'Build'):
-            log_error("Could not build %s" % (tool, ))
-            return False
+        if env.platform == 'xboxone':
+            if 'XboxOnePDBFileUtil' not in tools: tools += [ 'XboxOnePDBFileUtil' ]
 
-    # Build tools from other solutions or with other flags
-    if env.platform == 'win64' and env.configuration == 'devel':
+        for tool in tools:
+            if not _ue4_build_project(env.solution, tool,
+                                      'Win64', 'Development', vs_version, 'Build'):
+                log_error("Could not build %s" % (tool, ))
+                return False
 
-        if not _ue4_build_project(env.solution, 'BootstrapPackagedGame',
-                                  'Win64', 'Shipping', vs_version, 'Build'):
-            log_error("Could not build BootstrapPackagedGame")
-            return False
+        # Build tools from other solutions or with other flags
+        if env.platform == 'win64' and env.configuration == 'devel':
 
-        # This also builds AgentInterface.dll, needed by SwarmInterface.sln
-        if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
-                       'Any CPU', 'Development', None, '11', 'Build'):
-            log_error("Could not build UnrealSwarm")
-            return False
+            if not _ue4_build_project(env.solution, 'BootstrapPackagedGame',
+                                      'Win64', 'Shipping', vs_version, 'Build'):
+                log_error("Could not build BootstrapPackagedGame")
+                return False
 
-        if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
-                       'Any CPU', 'Development', None, '11', 'Build'):
-            log_error("Could not build SwarmInterface")
-            return False
+            # This also builds AgentInterface.dll, needed by SwarmInterface.sln
+            if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
+                           'Any CPU', 'Development', None, '11', 'Build'):
+                log_error("Could not build UnrealSwarm")
+                return False
 
-        if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
-                       'Any CPU', 'Development', None, '11', 'Build'):
-            log_error("Could not build NetworkProfiler")
-            return False
+            if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
+                           'Any CPU', 'Development', None, '11', 'Build'):
+                log_error("Could not build SwarmInterface")
+                return False
 
-        if not vsbuild('../Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
-                       'x64', 'Development', None, '11', 'Build'):
-            log_error("Could not build XboxOnePackageNameUtil")
-            return False
+            if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
+                           'Any CPU', 'Development', None, '11', 'Build'):
+                log_error("Could not build NetworkProfiler")
+                return False
 
-    # If we only wanted prerequisites, bail out
-    if hasattr(env, 'only_prerequisites') and env.only_prerequisites:
-        return True
+            if not vsbuild('../Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
+                           'x64', 'Development', None, '11', 'Build'):
+                log_error("Could not build XboxOnePackageNameUtil")
+                return False
 
-    # Build the main binaries
-    result = _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
-                                env.ue4_build_configuration, vs_version, 'Build')
+    # If we didn’t want only prerequisites, build UE4
+    if not hasattr(env, 'only_prerequisites') or not env.only_prerequisites:
+
+        # Build the main binaries
+        result = _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
+                                    env.ue4_build_configuration, vs_version, 'Build')
 
     return result
 
