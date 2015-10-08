@@ -35,7 +35,7 @@ def upload_symbols(env, symbols):
                           "/r", "/f", "@symbols_index.txt",
                           "/s", env.format(env.publish_symbols),
                           "/o",
-                          "/t", env.project_name,
+                          "/t", env.project,
                           "/c", "{0}_{1}_{2}_{3}".format(env.project, env.platform, env.configuration, env.revision),
                           "/v", env.revision ]) != 0:
             result = False
