@@ -136,7 +136,7 @@ def _ue4_generate_project():
 
 def get_ue4_build_config(config, platform):
     d = { "debug"    : "Debug",
-          "devel"    : "Development Editor" if platform is "win64" else "Development",
+          "devel"    : "Development Editor" if platform in ["win64", "linux", "mac"] else "Development",
           "test"     : "Test",
           "shipping" : "Shipping", }
     if config not in d:
