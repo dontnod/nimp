@@ -109,6 +109,7 @@ def ue4_build(env):
                 log_error("Could not build XboxOnePackageNameUtil")
                 return False
 
+    result = True
     # If we didn’t want only prerequisites, build UE4
     if not hasattr(env, 'only_prerequisites') or not env.only_prerequisites:
 
