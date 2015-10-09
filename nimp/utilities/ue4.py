@@ -184,6 +184,8 @@ def _ue4_build_project(sln_file, project, build_platform,
         project_name = project
         if configuration not in ['Development', 'Development Editor']:
             project_name += '-Linux-' + configuration
+        elif configuration is 'Development Editor':
+            project_name += 'Editor'
         return call_process('..', ['make', project_name]) == 0
 
 
