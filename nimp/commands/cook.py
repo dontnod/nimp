@@ -50,7 +50,7 @@ class CookCommand(Command):
             return ue3_cook(env.game,
                             maps,
                             env.languages,
-                            None if env.dlc == 'main' else env.dlc,
+                            env.dlc,
                             env.ue3_cook_platform,
                             env.configuration,
                             env.noexpansion,
