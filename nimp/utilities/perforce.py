@@ -74,7 +74,7 @@ def p4_get_files_status(*files):
         if os.path.isdir(files[i]):
             files[i] = files[i] + "/..."
 
-    result, output, error = capture_process_output(".", ["p4", "-x", "-", "-z", "tag","fstat"], '\n'.join(files), 'cp347')
+    result, output, error = capture_process_output(".", ["p4", "-x", "-", "-z", "tag","fstat"], '\n'.join(files), 'cp437')
     files_infos = output.strip().replace('\r', '').split('\n\n')
     edit_input = ""
 
