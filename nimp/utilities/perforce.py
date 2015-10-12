@@ -74,7 +74,7 @@ def p4_get_files_status(*files):
         if os.path.isdir(files[i]):
             files[i] = files[i] + "/..."
 
-    result, output, error = capture_process_output(".", ["p4", "-x", "-", "-z", "tag","fstat"], '\n'.join(files))
+    result, output, error = capture_process_output(".", ["p4", "-x", "-", "-z", "tag","fstat"], '\n'.join(files), 'cp347')
     files_infos = output.strip().replace('\r', '').split('\n\n')
     edit_input = ""
 
@@ -194,7 +194,7 @@ def p4_get_workspace():
 
 #-------------------------------------------------------------------------------
 def p4_is_file_versioned(file_path):
-    result, output, error = capture_process_output(".", ["p4", "-z", "tag", "fstat", file_path])
+    result, output, error = capture_process_output(".", ["p4", "-z", "tag", "fstat", file_path], None, 'cp437')
     # Il faut checker que le fichier a pas été ajouté puis delete
     if re.search(r"\.\.\.\s*headAction\s*delete", output) is not None:
         return False
@@ -213,7 +213,7 @@ def p4_revert_unchanged(cl_number):
 #-------------------------------------------------------------------------------
 def p4_submit(cl_number):
     log_notification("Submiting changelist {0}...", cl_number)
-    result, output, error = capture_process_output(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number])
+    result, output, error = capture_process_output(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number], None, 'cp437')
 
     if error is not None and error != "":
         if "No files to submit." in error:
@@ -238,7 +238,7 @@ def p4_sync(file = None, cl_number = None):
     if len(file_spec) > 0:
         p4_command += [file_spec]
 
-    result, output, error = capture_process_output('.', p4_command, None)
+    result, output, error = capture_process_output('.', p4_command, None, 'cp437')
     if (result != 0 or error != '') and 'file(s) up-to-date' not in error:
             log_error("Error syncing : {0}", error)
             return False
@@ -326,7 +326,7 @@ class _PerforceTransaction:
 
 #-------------------------------------------------------------------------------
 def _p4_run_command(directory, command, input = None, log_errors = True):
-    result, output, error = capture_process_output(directory, command, input)
+    result, output, error = capture_process_output(directory, command, input, 'cp437')
     if result != 0 or error != '':
         if log_errors:
             log_error("Perforce error: {1}", input, error.rstrip('\r\n'))

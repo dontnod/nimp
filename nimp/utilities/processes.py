@@ -34,7 +34,7 @@ def _sanitize_command(command):
     return command
 
 #-------------------------------------------------------------------------------
-def capture_process_output(directory, command, input = None):
+def capture_process_output(directory, command, input = None, encoding = 'utf-8'):
     command = _sanitize_command(command)
     log_verbose("Running “{0}” in “{1}”", " ".join(command), directory)
 
@@ -43,18 +43,9 @@ def capture_process_output(directory, command, input = None):
                                stdout = subprocess.PIPE,
                                stderr = subprocess.PIPE,
                                stdin  = subprocess.PIPE)
-    if input is not None:
-        input = input.encode("cp437")
-    output, error = process.communicate(input)
+    output, error = process.communicate(input.encode(encoding) if input else None)
 
-    # Bonjour toi qui te tappe un bug parce que j'ai fait le connard et mis
-    # l'encodage en dur.
-    try:
-        output, error = output.decode("utf-8"), error.decode("utf-8")
-    except:
-        output, error = output.decode("cp437"), error.decode("cp437")
-
-    return process.wait(), output, error
+    return process.wait(), output.decode(encoding), error.decode(encoding)
 
 #-------------------------------------------------------------------------------
 def call_process(directory, command, stdout_callback = _default_log_callback,
