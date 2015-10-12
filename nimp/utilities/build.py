@@ -28,3 +28,41 @@ def _find_devenv_path(vs_version):
             log_verbose("Found Visual Studio at {0}", devenv_path)
     return devenv_path
 
+
+def install_distcc_and_ccache():
+    """ Install environment variables suitable for distcc and ccache usage
+        if relevant.
+    """
+    distcc_dir = '/usr/lib/distcc'
+    ccache_dir = '/usr/lib/ccache'
+
+    # Make sure distcc will be called if we use ccache
+    if os.path.exists(distcc_dir):
+        log_verbose('Found distcc, so setting CCACHE_PREFIX=distcc')
+        os.environ['CCACHE_PREFIX'] = 'distcc'
+
+    # Add ccache to PATH if it exists, otherwise add distcc
+    if os.path.exists(ccache_dir):
+        extra_path = ccache_dir
+    elif os.path.exists(distcc_dir):
+        extra_path = distcc_dir
+    else:
+        return
+    log_verbose('Adding {0} to PATH', extra_path)
+    os.environ['PATH'] = extra_path + ':' + os.getenv('PATH')
+
+    if os.path.exists(distcc_dir):
+        # Set DISTCC_HOSTS if necessary
+        if not os.getenv('DISTCC_HOSTS'):
+            hosts = subprocess.Popen(['lsdistcc'], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
+            hosts = ' '.join(hosts.split())
+            log_verbose('Setting DISTCC_HOSTS={0}', hosts)
+            os.environ['DISTCC_HOSTS'] = hosts
+
+        # Compute a reasonable number of workers for UBT
+        if not os.getenv('UBT_PARALLEL'):
+            workers = subprocess.Popen(['distcc', '-j'], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
+            workers = str(2 * int(workers))
+            log_verbose('Setting UBT_PARALLEL={0}', workers)
+            os.environ['UBT_PARALLEL'] = workers
+

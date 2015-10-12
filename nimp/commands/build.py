@@ -3,6 +3,7 @@
 from nimp.commands._command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
+from nimp.utilities.build import *
 
 #-------------------------------------------------------------------------------
 class BuildCommand(Command):
@@ -43,6 +44,9 @@ class BuildCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
+
+        # Use distcc and/or ccache if available
+        install_distcc_and_ccache()
 
         # Unreal Engine 4
         if env.is_ue4:
