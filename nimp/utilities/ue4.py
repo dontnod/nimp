@@ -22,6 +22,9 @@ def ue4_build(env):
         log_error("Invalid empty value for configuration")
         return False
 
+    if env.disable_unity:
+        os.environ['UBT_bUseUnityBuild'] = 'false'
+
     if _ue4_generate_project() != 0:
         log_error("Error generating UE4 project files")
         return False

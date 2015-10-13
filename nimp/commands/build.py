@@ -39,8 +39,12 @@ class BuildCommand(Command):
                             action = "store_true",
                             default = False)
 
-        return True
+        parser.add_argument('--disable-unity',
+                            help = 'Disable unity build',
+                            action = "store_true",
+                            default = False)
 
+        return True
 
     #---------------------------------------------------------------------------
     def run(self, env):
