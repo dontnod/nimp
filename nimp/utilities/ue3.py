@@ -30,7 +30,7 @@ def ue3_build(env):
     # Shortcut for Linux builds
     if not is_msys():
         platform = env.ue3_build_platform
-        return call_process('./Development/Src', ['make', 'all', 'CONFIGURATION=' + configuration, 'PLATFORM=' + platform]) == 0
+        return call_process('./Development/Src', ['make', 'all', 'CONFIGURATION=' + configuration, 'PLATFORM=' + platform, 'UBTFLAGS=-VERBOSE']) == 0
 
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
         log_error("Error building UBT")
