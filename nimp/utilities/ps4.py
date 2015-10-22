@@ -7,6 +7,7 @@ import string
 import time
 import contextlib
 import shutil
+import fnmatch
 import os
 import os.path
 
@@ -102,6 +103,13 @@ def generate_gp4(env, dest_dir):
         for src, dst in pkg_files():
             dst = dst.replace('\\', '/')
 
+            chunk_id = ''
+            if 'chunks' in package:
+                for chunk in package['chunks']:
+                    if 'files' not in chunk or True in [fnmatch.fnmatch(dst, g) for g in chunk['files']]:
+                        chunk_id = chunk['id']
+                        break
+
             # Speed optimisation: if we have already stored a file in this directory,
             # directly edit the GP4 file and copy the relevant line. This is orders of
             # magnitude faster than running orbis-pub-cmd.exe.
@@ -109,7 +117,7 @@ def generate_gp4(env, dest_dir):
             # The GP4 line we copy must have same source and target dir _and_ same
             # extension (because we handle compression differently).
 
-            key = '%s|%s|%s' % (os.path.dirname(src), os.path.dirname(dst), os.path.splitext(dst)[1].lower())
+            key = '%s|%s|%s|%s' % (os.path.dirname(src), os.path.dirname(dst), os.path.splitext(dst)[1].lower(), chunk_id)
 
             file_is_renamed = os.path.basename(src) != os.path.basename(dst)
             shortcut = False
@@ -144,6 +152,9 @@ def generate_gp4(env, dest_dir):
 
                 if os.path.splitext(dst)[1].lower() in [ '.bin', '.bnk', '.pck', '.xxx' ]:
                     add_file_command += [ '--pfs_compression', 'enable' ]
+
+                if chunk_id:
+                    add_file_command += [ '--chunks', chunk_id ]
 
                 add_file_command += [src, dst, gp4_file]
 
