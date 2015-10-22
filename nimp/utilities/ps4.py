@@ -78,7 +78,10 @@ def generate_gp4(env, dest_dir):
                 mandatory_keys_error_format = "{key} should be defined in chunk."
                 if not check_keys(chunk, mandatory_keys_error_format, 'id'):
                     return False
-                add_chunk_command = ["orbis-pub-cmd.exe", "gp4_chunk_add", "--id", chunk['id'] ]
+
+                add_chunk_command = [ 'orbis-pub-cmd.exe',
+                                      'gp4_chunk_update' if chunk['id'] == '0' else 'gp4_chunk_add',
+                                      '--id', chunk['id'] ]
 
                 if 'label' in chunk:
                     add_chunk_command += ["--label", chunk['label']]
