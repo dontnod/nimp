@@ -42,7 +42,9 @@ def ps3_generate_pkgs(env, source, destination):
         if is_msys():
             pkg_conf_file = pkg_conf_file.replace('/', '\\')
 
-        if 0 != call_process(pkg_destination, ["make_package_npdrm", pkg_conf_file, pkg_source]):
+        if call_process(pkg_destination,
+                        [ "make_package_npdrm", pkg_conf_file, pkg_source ],
+                        heartbeat = 30) != 0:
             log_error("Error running make_package_npdrm")
             return False
 
