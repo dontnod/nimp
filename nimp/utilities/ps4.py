@@ -74,10 +74,14 @@ def generate_gp4(env, dest_dir):
             return False
 
         if 'chunks' in package:
+
             for chunk in package['chunks']:
                 mandatory_keys_error_format = "{key} should be defined in chunk."
                 if not check_keys(chunk, mandatory_keys_error_format, 'id'):
                     return False
+
+            # Iterate over chunks by increasing ID
+            for ignored, chunk in sorted([(int(chunk['id']), chunk) for chunk in package['chunks']]):
 
                 add_chunk_command = [ 'orbis-pub-cmd.exe',
                                       'gp4_chunk_update' if chunk['id'] == '0' else 'gp4_chunk_add',
