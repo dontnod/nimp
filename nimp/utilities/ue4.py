@@ -41,6 +41,9 @@ def ue4_build(env):
     except:
         pass
 
+    # We’ll try to build all tools even in case of failure
+    result = True
+
     if not hasattr(env, 'no_prerequisites') or not env.no_prerequisites:
 
         # For some reason nothing copies this file on OS X
@@ -73,7 +76,7 @@ def ue4_build(env):
             if not _ue4_build_project(env.solution, tool,
                                       'Win64', 'Development', vs_version, 'Build'):
                 log_error("Could not build %s" % (tool, ))
-                return False
+                result = False
 
         # Build tools from other solutions or with other flags
         if env.platform == 'win64' and env.configuration == 'devel':
@@ -81,30 +84,32 @@ def ue4_build(env):
             if not _ue4_build_project(env.solution, 'BootstrapPackagedGame',
                                       'Win64', 'Shipping', vs_version, 'Build'):
                 log_error("Could not build BootstrapPackagedGame")
-                return False
+                result = False
 
             # This also builds AgentInterface.dll, needed by SwarmInterface.sln
             if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
                            'Any CPU', 'Development', None, '11', 'Build'):
                 log_error("Could not build UnrealSwarm")
-                return False
+                result = False
 
             if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
                            'Any CPU', 'Development', None, '11', 'Build'):
                 log_error("Could not build SwarmInterface")
-                return False
+                result = False
 
             if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
                            'Any CPU', 'Development', None, '11', 'Build'):
                 log_error("Could not build NetworkProfiler")
-                return False
+                result = False
 
             if not vsbuild('../Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
                            'x64', 'Development', None, '11', 'Build'):
                 log_error("Could not build XboxOnePackageNameUtil")
-                return False
+                result = False
 
-    result = True
+    if not result:
+        return result
+
     # If we didn’t want only prerequisites, build UE4
     if not hasattr(env, 'only_prerequisites') or not env.only_prerequisites:
 
