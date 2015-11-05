@@ -63,14 +63,6 @@ def ue4_build(env):
                        'PS4MapFileUtil',
                        'XboxOnePDBFileUtil', ]
 
-            tools += [ 'AutomationScripts.Automation',
-                       'Desktop.Automation',
-                       'Linux.Automation',
-                       'Mac.Automation',
-                       'PS4.Automation',
-                       'Win.Automation',
-                       'XboxOne.Automation', ]
-
         if env.platform == 'ps4':
             if 'PS4MapFileUtil' not in tools: tools += [ 'PS4MapFileUtil' ]
 
