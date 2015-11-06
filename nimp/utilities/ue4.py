@@ -61,6 +61,9 @@ def ue4_build(env):
                        'UnrealFileServer',
                        'ShaderCompileWorker', ]
 
+            if env.platform == 'linux':
+                tools += [ 'CrossCompilerTool', ]
+
             if env.platform == 'win64':
                 tools += [ 'DotNETUtilities',
                            'AutomationTool',
