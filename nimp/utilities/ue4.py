@@ -54,17 +54,20 @@ def ue4_build(env):
         # Build tools from the UE4 solution if necessary
         tools = []
 
-        if env.platform == 'win64' and env.configuration == 'devel':
-            tools += [ 'DotNETUtilities',
-                       'AutomationTool',
-                       'UnrealFrontend',
+        if env.configuration == 'devel' and env.platform in [ 'win64', 'linux' ]:
+
+            tools += [ 'UnrealFrontend',
                        'UnrealLightmass',
                        'UnrealFileServer',
-                       'ShaderCompileWorker',
-                       'SymbolDebugger',
-                       'PS4DevKitUtil',
-                       'PS4MapFileUtil',
-                       'XboxOnePDBFileUtil', ]
+                       'ShaderCompileWorker', ]
+
+            if env.platform == 'win64':
+                tools += [ 'DotNETUtilities',
+                           'AutomationTool',
+                           'PS4DevKitUtil',
+                           'PS4MapFileUtil',
+                           'XboxOnePDBFileUtil',
+                           'SymbolDebugger', ]
 
         if env.platform == 'ps4':
             if 'PS4MapFileUtil' not in tools: tools += [ 'PS4MapFileUtil' ]
