@@ -14,33 +14,25 @@ class BuildCommand(Command):
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
 
-        parser.add_argument('-c',
-                            '--configuration',
-                            help    = 'configuration to build',
+        parser.add_argument('-c', '--configuration',
+                            help = 'configuration to build',
                             metavar = '<configuration>')
 
-        parser.add_argument('-p',
-                            '--platform',
-                            help    = 'platform to build',
+        parser.add_argument('-p', '--platform',
+                            help = 'platform to build',
                             metavar = '<platform>')
 
+        parser.add_argument('-t', '--target',
+                            help = 'target to build (game, editor, tools)',
+                            metavar = '<target>')
+
         parser.add_argument('--generate-version-file',
-                            help    = 'Generates a C++ file with build information',
-                            action  = "store_true",
-                            default = False)
-
-        parser.add_argument('--no-prerequisites',
-                            help = 'Do not build prerequisite tools',
-                            action = "store_true",
-                            default = False)
-
-        parser.add_argument('--only-prerequisites',
-                            help = 'Only build prerequisite tools',
+                            help = 'generate a C++ file with build information',
                             action = "store_true",
                             default = False)
 
         parser.add_argument('--disable-unity',
-                            help = 'Disable unity build',
+                            help = 'disable unity build',
                             action = "store_true",
                             default = False)
 

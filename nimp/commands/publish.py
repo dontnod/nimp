@@ -16,20 +16,21 @@ class PublishCommand(Command):
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        parser.add_argument('-m',
-                            '--mode',
+        parser.add_argument('-m', '--mode',
                             help = 'operating mode (binaries, symbols, version)',
                             metavar = '<mode>')
 
-        parser.add_argument('-p',
-                            '--platform',
-                            help = 'platforms to build',
+        parser.add_argument('-p', '--platform',
+                            help = 'platforms to publish',
                             metavar = '<platform>')
 
-        parser.add_argument('-c',
-                            '--configuration',
-                            help = 'configuration to build',
+        parser.add_argument('-c', '--configuration',
+                            help = 'configuration to publish',
                             metavar = '<configuration>')
+
+        parser.add_argument('-t', '--target',
+                            help = 'target to publish (game, editor, tools)',
+                            metavar = '<target>')
 
         # FIXME: could we avoid this argument? right now we need it for upload_symbols
         parser.add_argument('-r',
@@ -45,7 +46,7 @@ class PublishCommand(Command):
         # FIXME: this looks too much like --configuration! do something about it
         parser.add_argument('-l',
                             '--configurations',
-                            help    = 'Configurations to deploy',
+                            help    = 'Configurations and targets to deploy',
                             metavar = '<configurations>',
                             nargs = '+')
 
@@ -80,7 +81,7 @@ class PublishCommand(Command):
                                                    ue3_build_configuration = get_ue3_build_config(configuration))
                 elif env.is_ue4:
                     tmp = files_to_deploy.override(configuration = configuration,
-                                                   ue4_build_configuration = get_ue4_build_config(configuration, env.platform))
+                                                   ue4_build_configuration = get_ue4_build_config(configuration))
 
                 tmp = tmp.src(env.publish_binaries)
 

@@ -113,7 +113,19 @@ class Environment:
                 else:
                     self.platform = 'linux'
 
-        # Now properly normalise configuration and platform name
+        if not hasattr(self, 'target') or self.target == None:
+            if self.is_ue4:
+                if self.platform in ['win64', 'mac', 'linux']:
+                    self.target = 'editor'
+                else:
+                    self.target = 'game'
+            elif self.is_ue3:
+                if self.platform == 'win64':
+                    self.target = 'editor'
+                else:
+                    self.target = 'game'
+
+        # Now properly normalise configuration and platform names
 
         if hasattr(self, 'configuration'):
             std_configs = { 'debug'    : 'debug',
@@ -151,9 +163,7 @@ class Environment:
 
             if hasattr(self, "configuration"):
                 self.ue3_build_configuration = get_ue3_build_config(self.configuration)
-
-                self.ue4_build_configuration = get_ue4_build_config(self.configuration,
-                                                                    self.platform)
+                self.ue4_build_configuration = get_ue4_build_config(self.configuration)
 
             cook_cfg = self.configuration if hasattr(self, 'configuration') else None
             cook_suffix = 'Final' if cook_cfg in ['test', 'shipping', None] else ''

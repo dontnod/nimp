@@ -15,27 +15,29 @@ class DeployCommand(Command):
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        parser.add_argument('-m',
-                            '--mode',
+        parser.add_argument('-m', '--mode',
                             help = 'operating mode (binaries, version, cook)',
                             metavar = '<mode>')
 
-        parser.add_argument('-r',
-                            '--revision',
+        parser.add_argument('-r', '--revision',
                             help = 'revision',
                             metavar = '<revision>')
 
-        parser.add_argument('--platform',
-                   help = 'Platform to deploy',
-                   metavar = '<platform>')
+        parser.add_argument('-p', '--platform',
+                            help = 'platform to deploy',
+                            metavar = '<platform>')
 
-        parser.add_argument('--configuration',
-                   help = 'Configuration to deploy',
-                   metavar = '<config>')
+        parser.add_argument('-c', '--configuration',
+                            help = 'configuration to deploy',
+                            metavar = '<config>')
+
+        parser.add_argument('-t', '--target',
+                            help = 'target to deploy (game, editor, tools)',
+                            metavar = '<platform>')
 
         parser.add_argument('--max-revision',
-                   help = 'Find a revision <= to this',
-                   metavar = '<revision>')
+                            help = 'Find a revision <= to this',
+                            metavar = '<revision>')
 
         return True
 
