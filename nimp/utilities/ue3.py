@@ -38,8 +38,7 @@ def ue3_build(env):
 
     # Build tools
     if env.target == 'tools':
-        if not _ue3_build_tools():
-            return False
+        return _ue3_build_tools()
 
     def _build(solution, vs_version):
         if env.is_win64:
@@ -59,6 +58,9 @@ def ue3_build(env):
                 return _build(solution, vs_version)
         else:
             return _build(solution, vs_version)
+
+    # We should not get here
+    return True
 
 
 #
