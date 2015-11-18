@@ -37,15 +37,9 @@ def ue3_build(env):
         return False
 
     # Build tools
-    if env.platform == 'win64' and env.configuration == 'release':
-        if hasattr(env, 'no_prerequisites') and env.no_prerequisites:
-            pass
-        elif not _ue3_build_tools():
+    if env.target == 'tools':
+        if not _ue3_build_tools():
             return False
-
-    # If we only wanted prerequisites, bail out
-    if hasattr(env, 'only_prerequisites') and env.only_prerequisites:
-        return True
 
     def _build(solution, vs_version):
         if env.is_win64:
@@ -58,11 +52,13 @@ def ue3_build(env):
 
         return _ue3_build_game(solution, env.ue3_build_platform, configuration, vs_version)
 
-    if env.generate_version_file:
-        with _ue3_generate_version_file():
+    # Build editor or game
+    if env.target in ['game', 'editor']:
+        if env.generate_version_file:
+            with _ue3_generate_version_file():
+                return _build(solution, vs_version)
+        else:
             return _build(solution, vs_version)
-    else:
-        return _build(solution, vs_version)
 
 
 #
