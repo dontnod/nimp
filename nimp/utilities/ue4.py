@@ -65,6 +65,7 @@ def ue4_build(env):
         if env.platform == 'win64':
             tools += [ 'DotNETUtilities',
                        'AutomationTool',
+                       'RPCUtility',
                        'PS4DevKitUtil',
                        'PS4MapFileUtil',
                        'XboxOnePDBFileUtil',
