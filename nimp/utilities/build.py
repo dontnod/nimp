@@ -1,22 +1,32 @@
 # -*- coding: utf-8 -*-
 
+import platform
+
 from nimp.utilities.processes import *
 
 #---------------------------------------------------------------------------
-def vsbuild(solution, platform, configuration, project = None, vs_version = '12', target = 'Build'):
+def vsbuild(solution, platform_name, configuration, project = None, vs_version = '12', target = 'Build'):
     build_directory = '.'
 
-    devenv_path = _find_devenv_path(vs_version)
-    if devenv_path is None:
-        log_error("Unable to find Visual Studio {0}", vs_version)
+    if is_msys():
+        devenv_path = _find_devenv_path(vs_version)
+        if devenv_path is None:
+            log_error("Unable to find Visual Studio {0}", vs_version)
+            return False
+        command = [ devenv_path, solution ]
+        command = command + [ '/' + target, configuration + '|' + platform_name ]
+        if project is not None:
+            command = command + [ '/project', project ]
+
+        return call_process(build_directory, command) == 0
+
+    elif platform.system() == 'Darwin':
         return False
 
-    command = [devenv_path, solution]
-    command = command + [ '/' + target, configuration + '|' + platform ]
-    if project is not None:
-        command = command + [ '/project', project ]
+    else:
+        command = [ 'xbuild', solution, '/verbosity:quiet', '/nologo' ]
+        return call_process(build_directory, command) == 0
 
-    return call_process(build_directory, command) == 0
 
 #-------------------------------------------------------------------------------
 def _find_devenv_path(vs_version):
