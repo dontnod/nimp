@@ -58,12 +58,14 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
 
     debug_pipe = OutputDebugStringLogger()
 
+    # The bufsize = 1 is important; if we don’t bufferise the
+    # output, we’re going to make the callee lag a lot.
     process = subprocess.Popen(command,
                                cwd     = directory,
                                stdout  = subprocess.PIPE,
                                stderr  = subprocess.PIPE,
                                stdin   = None,
-                               bufsize = 0)
+                               bufsize = 1)
     debug_pipe.attach(process.pid)
     debug_pipe.start()
 
@@ -88,15 +90,17 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
                         line = line.decode("cp850")
 
                     if line == '':
-                        # Sleep for 5 milliseconds if there was no data,
-                        # or we’ll hog the CPU.
-                        time.sleep(0.005)
                         break
 
                     line = line.replace("{", "{{").replace("}", "}}")
                     line = line.rstrip('\r\n')
 
                     user_callback(line, log_function)
+
+                # Sleep for 10 milliseconds if there was no data,
+                # or we’ll hog the CPU.
+                time.sleep(0.010)
+
             except ValueError:
                 return
 

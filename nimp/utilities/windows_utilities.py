@@ -158,20 +158,25 @@ class OutputDebugStringLogger(threading.Thread):
         pid_length = 4
         data_length = self._bufsize - pid_length
 
+        # Signal that the buffer is available
+        windll.SetEvent(self._buffer_ev)
+
         events = [self._data_ev, self._stop_ev]
         while True:
-            windll.SetEvent(self._buffer_ev)
             result = windll.WaitForMultipleObjects(len(events),
                                                    (my_void_p * len(events))(*events),
                                                    0,
                                                    windll.INFINITE)
             if result == windll.WAIT_OBJECT_0:
                 pid, = struct.unpack('I', ctypes.string_at(self._buffer.value, pid_length))
+                data = ctypes.string_at(self._buffer.value + pid_length, data_length)
+
+                # Signal that the buffer is available
+                windll.SetEvent(self._buffer_ev)
 
                 if pid != self._pid:
                     continue
 
-                data = ctypes.string_at(self._buffer.value + pid_length, data_length)
                 self._pipe_in.write(data[:data.index(0)])
                 self._pipe_in.flush()
 
@@ -179,7 +184,7 @@ class OutputDebugStringLogger(threading.Thread):
                 break
 
             else:
-                time.sleep(1)
+                time.sleep(0.100)
 
     def stop(self):
         if not windll:
