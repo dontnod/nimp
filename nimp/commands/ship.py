@@ -4,6 +4,7 @@ from nimp.commands._command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
 from nimp.utilities.file_mapper import *
+from nimp.utilities.ps3 import *
 
 #-------------------------------------------------------------------------------
 class ShipCommand(Command):
@@ -160,6 +161,8 @@ class ShipCommand(Command):
                     if not all_map(robocopy, dlc_files()):
                         return False
 
+                if env.is_ps3:
+                    ps3_generate_edata(env, loose_dir)
             return True
 
         # Error!
