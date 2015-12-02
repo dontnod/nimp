@@ -196,7 +196,7 @@ def _ue4_build_project(sln_file, project, build_platform,
 
     elif platform.system() == 'Darwin':
         return call_process('..', ['/bin/sh', 'Engine/Build/BatchFiles/Mac/Build.sh',
-                                   project, build_platform, configuration]) == 0
+                                   project, 'Mac', configuration]) == 0
 
     else:
         project_name = project
