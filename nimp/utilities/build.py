@@ -69,7 +69,6 @@ def install_distcc_and_ccache():
         # Compute a reasonable number of workers for UBT
         if not os.getenv('UBT_PARALLEL'):
             workers = subprocess.Popen(['distcc', '-j'], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
-            workers = str(2 * int(workers))
             log_verbose('Setting UBT_PARALLEL={0}', workers)
             os.environ['UBT_PARALLEL'] = workers
 
