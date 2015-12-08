@@ -92,13 +92,8 @@ def ue4_build(env):
             log_error("Could not build %s" % (tool, ))
             result = False
 
-    # Build tools from other solutions or with other flags (Windows only for now)
-    if env.target == 'tools' and env.platform == 'win64':
-
-        if not _ue4_build_project(env.solution, 'BootstrapPackagedGame',
-                                  'Win64', 'Shipping', vs_version, 'Build'):
-            log_error("Could not build BootstrapPackagedGame")
-            result = False
+    # Build tools from other solutions or with other flags
+    if env.target == 'tools':
 
         # This also builds AgentInterface.dll, needed by SwarmInterface.sln
         if not vsbuild('Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
@@ -116,10 +111,18 @@ def ue4_build(env):
             log_error("Could not build NetworkProfiler")
             result = False
 
-        if not vsbuild('Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
-                       'x64', 'Development', None, '11', 'Build'):
-            log_error("Could not build XboxOnePackageNameUtil")
-            result = False
+        # These tools seem to be Windows only for now
+        if env.platform == 'win64':
+
+            if not _ue4_build_project(env.solution, 'BootstrapPackagedGame',
+                                      'Win64', 'Shipping', vs_version, 'Build'):
+                log_error("Could not build BootstrapPackagedGame")
+                result = False
+
+            if not vsbuild('Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
+                           'x64', 'Development', None, '11', 'Build'):
+                log_error("Could not build XboxOnePackageNameUtil")
+                result = False
 
     if not result:
         return result
