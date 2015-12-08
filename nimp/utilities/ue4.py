@@ -28,15 +28,15 @@ def ue4_build(env):
     vs_version = '12'
 
     # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
-    if not vsbuild('../Engine/Source/Programs/RPCUtility/RPCUtility.sln',
+    if not vsbuild('Engine/Source/Programs/RPCUtility/RPCUtility.sln',
                    'Any CPU', 'Development', None, '12', 'Build'):
         log_error("Could not build RPCUtility")
         return False
 
     # HACK: For some reason nothing copies this file on OS X
     if platform.system() == 'Darwin':
-        robocopy('../Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
-                 '../Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
+        robocopy('Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
+                 'Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
 
     # Now generate project files
     if _ue4_generate_project() != 0:
@@ -101,22 +101,22 @@ def ue4_build(env):
             result = False
 
         # This also builds AgentInterface.dll, needed by SwarmInterface.sln
-        if not vsbuild('../Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
+        if not vsbuild('Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
                        'Any CPU', 'Development', None, vs_version, 'Build'):
             log_error("Could not build UnrealSwarm")
             result = False
 
-        if not vsbuild('../Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
+        if not vsbuild('Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
                        'Any CPU', 'Development', None, vs_version, 'Build'):
             log_error("Could not build SwarmInterface")
             result = False
 
-        if not vsbuild('../Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
+        if not vsbuild('Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
                        'Any CPU', 'Development', None, vs_version, 'Build'):
             log_error("Could not build NetworkProfiler")
             result = False
 
-        if not vsbuild('../Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
+        if not vsbuild('Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
                        'x64', 'Development', None, '11', 'Build'):
             log_error("Could not build XboxOnePackageNameUtil")
             result = False
@@ -143,9 +143,9 @@ def ue4_build(env):
 
 def _ue4_generate_project():
     if is_msys():
-        return call_process('.', ['../GenerateProjectFiles.bat'])
+        return call_process('.', ['./GenerateProjectFiles.bat'])
     else:
-        return call_process('..', ['/bin/sh', 'GenerateProjectFiles.sh'])
+        return call_process('.', ['/bin/sh', 'GenerateProjectFiles.sh'])
 
 
 #
@@ -195,7 +195,7 @@ def _ue4_build_project(sln_file, project, build_platform,
                        project, vs_version, target)
 
     elif platform.system() == 'Darwin':
-        return call_process('..', ['/bin/sh', 'Engine/Build/BatchFiles/Mac/Build.sh',
+        return call_process('.', ['/bin/sh', 'Engine/Build/BatchFiles/Mac/Build.sh',
                                    project, 'Mac', configuration]) == 0
 
     else:
@@ -204,12 +204,12 @@ def _ue4_build_project(sln_file, project, build_platform,
             project_name += '-Linux-' + configuration
         elif configuration == 'Development Editor':
             project_name += 'Editor'
-        return call_process('..', ['make', project_name]) == 0
+        return call_process('.', ['make', project_name]) == 0
 
 
 #---------------------------------------------------------------------------
 def ue4_commandlet(env, commandlet, *args):
-    cmdline = [ "../Engine/Binaries/Win64/UE4Editor.exe",
+    cmdline = [ "Engine/Binaries/Win64/UE4Editor.exe",
                 env.game,
                 "-run=%s" % commandlet]
 
