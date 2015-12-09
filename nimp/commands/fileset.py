@@ -66,6 +66,7 @@ class MapCommand(Command):
         elif env.action == 'delete':
             for source, destination in files():
                 if os.path.isfile(source):
+                    log_notification("Removing file {0}", source)
                     force_delete(source)
 
         elif env.action == 'list':
