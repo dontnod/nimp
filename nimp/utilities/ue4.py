@@ -63,9 +63,11 @@ def ue4_build(env):
     if env.target == 'tools':
 
         tools += [ 'UnrealFrontend',
-                   'UnrealLightmass',
                    'UnrealFileServer',
                    'ShaderCompileWorker', ]
+
+        if env.platform != 'mac':
+            tools += [ 'UnrealLightmass', ] # doesn’t build (yet?)
 
         if env.platform == 'linux':
             tools += [ 'CrossCompilerTool', ]
