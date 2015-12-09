@@ -23,9 +23,9 @@ class MapCommand(Command):
                             metavar = '<SET_FILE>')
 
         parser.add_argument('action',
-                            help    = 'Action to execute on listed files (one of: robocopy, checkout, toc, reconcile, reconcile_and_submit, list)',
+                            help    = 'Action to execute on listed files (one of: robocopy, delete, checkout, reconcile, reconcile_and_submit, list)',
                             metavar = '<ACTION>',
-                            choices = ['robocopy', 'checkout', 'toc', 'reconcile', 'reconcile_and_submit', 'list'])
+                            choices = ['robocopy', 'delete', 'checkout', 'reconcile', 'reconcile_and_submit', 'list'])
 
         parser.add_argument('--src',
                             help    = 'Source directory',
@@ -58,13 +58,19 @@ class MapCommand(Command):
         if env.action == 'robocopy':
             for source, destination in files():
                 robocopy(source, destination)
+
         elif env.action == 'checkout':
             with p4_transaction('Checkout') as trans:
                 map(trans.add, files)
+
+        elif env.action == 'delete':
+            for source, destination in files():
+                if os.path.isfile(source):
+                    force_delete(source)
+
         elif env.action == 'list':
             for source, destination in files():
                 log_notification("{0} => {1}", source, destination)
-        elif env.action == 'toc':
-            log_error("Not implemented yet")
 
         return True
+
