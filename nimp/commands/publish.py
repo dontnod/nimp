@@ -72,8 +72,6 @@ class PublishCommand(Command):
             log_notification("Publishing version…")
 
             files_to_deploy = env.map_files().to('.')
-            if env.is_ue4:
-                files_to_deploy = files_to_deploy.to('..')
 
             for configuration in env.configurations:
                 if env.is_ue3:
