@@ -97,21 +97,22 @@ def ue4_build(env):
     # Build tools from other solutions or with other flags
     if env.target == 'tools':
 
-        # This also builds AgentInterface.dll, needed by SwarmInterface.sln
-        if not vsbuild('Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
-                       'Any CPU', 'Development', None, vs_version, 'Build'):
-            log_error("Could not build UnrealSwarm")
-            result = False
-
-        if not vsbuild('Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
-                       'Any CPU', 'Development', None, vs_version, 'Build'):
-            log_error("Could not build SwarmInterface")
-            result = False
-
         if not vsbuild('Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
                        'Any CPU', 'Development', None, vs_version, 'Build'):
             log_error("Could not build NetworkProfiler")
             result = False
+
+        if env.platform != 'mac':
+            # This also builds AgentInterface.dll, needed by SwarmInterface.sln
+            if not vsbuild('Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
+                           'Any CPU', 'Development', None, vs_version, 'Build'):
+                log_error("Could not build UnrealSwarm")
+                result = False
+
+            if not vsbuild('Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
+                           'Any CPU', 'Development', None, vs_version, 'Build'):
+                log_error("Could not build SwarmInterface")
+                result = False
 
         # These tools seem to be Windows only for now
         if env.platform == 'win64':
