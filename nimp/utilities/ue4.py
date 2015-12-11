@@ -25,19 +25,22 @@ def ue4_build(env):
     if env.disable_unity:
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
+    # We know what we are doing, more or less, so allow parallel invocations
+    os.environ['UBT_NO_MUTEX'] = 'true'
+
+    # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
+    if not vsbuild('Engine/Source/Programs/RPCUtility/RPCUtility.sln',
+                   'Any CPU', 'Development', None, '11', 'Build'):
+        log_error("Could not build RPCUtility")
+        return False
+
+    # HACK: For some reason nothing copies this file on OS X
+    if platform.system() == 'Darwin':
+        robocopy('Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
+                 'Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
+
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
-        # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
-        if not vsbuild('Engine/Source/Programs/RPCUtility/RPCUtility.sln',
-                       'Any CPU', 'Development', None, '11', 'Build'):
-            log_error("Could not build RPCUtility")
-            return False
-
-        # HACK: For some reason nothing copies this file on OS X
-        if platform.system() == 'Darwin':
-            robocopy('Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
-                     'Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
-
         # Now generate project files
         if _ue4_generate_project() != 0:
             log_error("Error generating UE4 project files")
