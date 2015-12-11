@@ -26,6 +26,11 @@ class BuildCommand(Command):
                             help = 'target to build (game, editor, tools)',
                             metavar = '<target>')
 
+        parser.add_argument('--bootstrap',
+                            help = 'bootstrap or regenerate project files, if applicable',
+                            action = "store_true",
+                            default = False)
+
         parser.add_argument('--generate-version-file',
                             help = 'generate a C++ file with build information',
                             action = "store_true",

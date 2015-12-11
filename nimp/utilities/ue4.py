@@ -25,27 +25,28 @@ def ue4_build(env):
     if env.disable_unity:
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
-    vs_version = '12'
+    # Bootstrap if necessary
+    if hasattr(env, 'bootstrap') and env.bootstrap:
+        # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
+        if not vsbuild('Engine/Source/Programs/RPCUtility/RPCUtility.sln',
+                       'Any CPU', 'Development', None, '11', 'Build'):
+            log_error("Could not build RPCUtility")
+            return False
 
-    # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
-    if not vsbuild('Engine/Source/Programs/RPCUtility/RPCUtility.sln',
-                   'Any CPU', 'Development', None, '12', 'Build'):
-        log_error("Could not build RPCUtility")
-        return False
+        # HACK: For some reason nothing copies this file on OS X
+        if platform.system() == 'Darwin':
+            robocopy('Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
+                     'Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
 
-    # HACK: For some reason nothing copies this file on OS X
-    if platform.system() == 'Darwin':
-        robocopy('Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
-                 'Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
-
-    # Now generate project files
-    if _ue4_generate_project() != 0:
-        log_error("Error generating UE4 project files")
-        return False
+        # Now generate project files
+        if _ue4_generate_project() != 0:
+            log_error("Error generating UE4 project files")
+            return False
 
     # The Durango XDK does not support Visual Studio 2013 yet, so if UE4
     # detected it, it created VS 2012 project files and we have to use that
     # version to build the tools instead.
+    vs_version = '12'
     try:
         for line in open(env.solution):
             if '# Visual Studio 2012' in line:
