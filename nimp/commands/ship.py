@@ -152,7 +152,7 @@ class ShipCommand(Command):
 
                         # Win32-specific step
                         if env.is_win32:
-                            ue3_fix_pc_ini(env, loose_dir)
+                            ue3_fix_pc_ini(env, os.path.join(loose_dir, "Episode01"))
                 else:
                     log_notification("Copying DLC to output directory…")
                     dlc_files = env.map_files()
