@@ -185,11 +185,11 @@ def get_ue4_build_platform(platform):
     return d[platform]
 
 def get_ue4_cook_platform(platform):
-    d = { "ps4"     : "FIXME",
-          "xboxone" : "FIXME",
-          "win64"   : "FIXME",
-          "win32"   : "FIXME",
-          "linux"   : "FIXME", }
+    d = { "ps4"     : "PS4",
+          "xboxone" : "XBoxOne",
+          "win64"   : "Win64",
+          "win32"   : "Win32",
+          "linux"   : "Linux", }
     if platform not in d:
         log_warning('Unsupported UE4 cook platform “%s”' % (platform))
         return None

@@ -35,7 +35,7 @@ class ShipCommand(Command):
 
         # FIXME: env.is_ue4 is not present at this time, but we want it
         if hasattr(env, 'project_type') and env.project_type is 'UE4':
-            parser.add_argument('destination',
+            parser.add_argument('--destination',
                                 help    = 'Destination Directory',
                                 metavar = '<DIR>')
 
@@ -61,8 +61,22 @@ class ShipCommand(Command):
 
         # Unreal Engine 4
         if env.is_ue4:
-            return ue4_ship(env, env.destination)
-
+            loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
+            if 0 != call_process(".", ["./Engine/Binaries/DotNET/AutomationTool.exe",
+                                       "BuildCookRun",
+                                       "-nocompileeditor", "-nop4",
+                                       env.format("-project={game}/{game}.uproject"),
+                                       "-cook", "-stage", "-archive",
+                                       "-archivedirectory=%s" % loose_dir,
+                                       "-package",
+                                       "-clientconfig=Shipping",
+                                       "-ue4exe=UE4Editor-Cmd.exe",
+                                       "-pak",
+                                       "-prereqs",
+                                       "-nodebuginfo",
+                                       env.format("-targetplatform={ue4_cook_platform}"),
+                                       "-utf8output"]):
+                return False
         # Unreal Engine 3
         if env.is_ue3:
 
