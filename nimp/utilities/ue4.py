@@ -82,7 +82,8 @@ def ue4_build(env):
                        'PS4DevKitUtil',
                        'PS4MapFileUtil',
                        'XboxOnePDBFileUtil',
-                       'SymbolDebugger', ]
+                       'SymbolDebugger',
+                       'UnrealPak', ]
 
     # Some tools are necessary even when not building tools...
     if env.platform == 'ps4':
