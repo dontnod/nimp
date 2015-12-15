@@ -35,6 +35,8 @@ def _load_settings(env):
             break
         nimp_conf_dir = os.path.join("..", nimp_conf_dir)
 
+    env.root_dir = nimp_conf_dir
+
     if not os.path.isfile(os.path.join(nimp_conf_dir, nimp_conf_file)):
         return True
 
@@ -42,7 +44,6 @@ def _load_settings(env):
         log_error("Error loading %s" % (nimp_conf_file))
         return False
 
-    env.root_dir = nimp_conf_dir
 
     return True
 
