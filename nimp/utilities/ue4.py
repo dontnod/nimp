@@ -42,7 +42,7 @@ def ue4_build(env):
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
         # Now generate project files
-        if _ue4_generate_project() != 0:
+        if _ue4_generate_project(env) != 0:
             log_error("Error generating UE4 project files")
             return False
 
@@ -152,11 +152,11 @@ def ue4_build(env):
 # Generate UE4 project files
 #
 
-def _ue4_generate_project():
+def _ue4_generate_project(env):
     if is_msys():
-        return call_process('.', ['./GenerateProjectFiles.bat'])
+        return call_process(env.root_dir, ['./GenerateProjectFiles.bat'])
     else:
-        return call_process('.', ['/bin/sh', 'GenerateProjectFiles.sh'])
+        return call_process(env.root_dir, ['/bin/sh', 'GenerateProjectFiles.sh'])
 
 
 #
