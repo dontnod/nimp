@@ -44,27 +44,32 @@ class DeployCommand(Command):
     #---------------------------------------------------------------------------
     def run(self, env):
         files_to_deploy = mapper = env.map_files()
+
         if hasattr(env, 'deploy_version_root'):
             mapper = mapper.to(env.deploy_version_root)
         else:
             mapper = mapper.to('.')
 
-        if not hasattr(env, 'mode') or env.mode == 'binaries':
+        if not hasattr(env, 'mode'):
+            env.mode = 'binaries'
+
+        if env.mode == 'binaries':
             log_notification("Deploying Binaries…")
             mapper = mapper.src(env.publish_binaries)
+            mapper.load_set('binaries')
 
-        elif env.mode == 'version':
+        if env.mode == 'version':
+            log_notification("Deploying version…")
             src = env.publish_version
             if env.revision is None:
                 revision = get_latest_available_revision(env, src, **vars(env))
                 if revision is None:
                     return False
                 env.revision = revision
-            log_notification("Deploying version…")
             mapper = mapper.src(src)
 
-        elif env.mode == 'cook':
-            log_error("Not implemented yet...")
+        if env.mode == 'cook':
+            log_error("Cook deployment not implemented yet...")
             return False
 
         mapper.glob("**").files()
