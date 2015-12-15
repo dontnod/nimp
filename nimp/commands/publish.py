@@ -59,8 +59,7 @@ class PublishCommand(Command):
 
         if not hasattr(env, 'mode') or env.mode == 'binaries':
             log_notification("Publishing binaries…")
-            files_to_publish = files_to_publish.to(env.publish_binaries)
-            files_to_publish.load_set("binaries")
+            files_to_publish.to(env.publish_binaries).load_set("binaries")
             if not all_map(robocopy, files_to_publish()):
                 return False
 

@@ -40,7 +40,7 @@ class Environment:
     #---------------------------------------------------------------------------
     def map_files(self):
         def default_mapper(src, dest):
-            yield (self.root_dir, self.root_dir)
+            yield (self.root_dir, dest)
         return FileMapper(default_mapper, format_args = vars(self))
 
     def check_keys(self, *args):
