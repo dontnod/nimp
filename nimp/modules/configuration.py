@@ -42,7 +42,7 @@ def _load_settings(env):
         log_error("Error loading %s" % (nimp_conf_file))
         return False
 
-    os.chdir(nimp_conf_dir)
+    env.root_dir = nimp_conf_dir
 
     return True
 

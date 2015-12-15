@@ -26,16 +26,15 @@ def all_map(mapper, fileset):
             return False
     return True
 
-#-------------------------------------------------------------------------------
-def _default_mapper(src, dest):
-    yield (src, dest)
+def _identity_mapper(src, dest):
+    yield src, dest
 
 class FileMapper(object):
     """ TODO : Eventuellement utiliser les PurePath, de python 3.4, qui simplifieraient
         quelque trucs, nottament dans les globs.
     """
     #---------------------------------------------------------------------------
-    def __init__(self, mapper = _default_mapper, format_args = {}):
+    def __init__(self, mapper, format_args = {}):
         super(FileMapper, self).__init__()
         self._mapper = mapper
         self._next = []
@@ -97,7 +96,7 @@ class FileMapper(object):
 
 
     #--------------------------------------------------------------------------
-    def append(self, mapper = _default_mapper, format_args = None):
+    def append(self, mapper, format_args = None):
         next = FileMapper(mapper, format_args or self._format_args)
         self._next.append(next)
         return next
@@ -107,7 +106,7 @@ class FileMapper(object):
         file_name = self._format(set_name)
         if not os.path.exists(file_name) or not os.path.isfile(file_name):
             # Always hardcode this directory to avoid bloating .nimp.conf.
-            file_name = os.path.join(".nimp/filesets", set_name + ".txt")
+            file_name = os.path.join(self.root_dir, ".nimp/filesets", set_name + ".txt")
             file_name = self._format(file_name)
         locals = {}
         try:
@@ -144,7 +143,7 @@ class FileMapper(object):
         """ Inserts a node adding or overriding given format arguments. """
         format_args = self._format_args.copy()
         format_args.update(format)
-        return self.append(format_args = format_args)
+        return self.append(_identity_mapper, format_args = format_args)
 
     #---------------------------------------------------------------------------
     def exclude(self, *patterns):

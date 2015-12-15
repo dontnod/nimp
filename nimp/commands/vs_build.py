@@ -45,4 +45,4 @@ class VsBuildCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        return vsbuild(env.solution, env.vs_platform, env.vs_configuration, env.project, env.vs_version, env.target)
+        return vsbuild(env.format(env.solution), env.vs_platform, env.vs_configuration, env.project, env.vs_version, env.target)

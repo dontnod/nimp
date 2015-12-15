@@ -29,15 +29,15 @@ def ue4_build(env):
     os.environ['UBT_NO_MUTEX'] = 'true'
 
     # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
-    if not vsbuild('Engine/Source/Programs/RPCUtility/RPCUtility.sln',
+    if not vsbuild(os.path.join(env.root_dir,'Engine/Source/Programs/RPCUtility/RPCUtility.sln'),
                    'Any CPU', 'Development', None, '11', 'Build'):
         log_error("Could not build RPCUtility")
         return False
 
     # HACK: For some reason nothing copies this file on OS X
     if platform.system() == 'Darwin':
-        robocopy('Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll',
-                 'Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll')
+        robocopy(os.path.join(env.root_dir,'Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll'),
+                 os.path.join(env.root_dir, 'Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll'))
 
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
@@ -51,7 +51,7 @@ def ue4_build(env):
     # version to build the tools instead.
     vs_version = '12'
     try:
-        for line in open(env.solution):
+        for line in open(env.format(env.solution)):
             if '# Visual Studio 2012' in line:
                 vs_version = '11'
                 break
@@ -91,10 +91,10 @@ def ue4_build(env):
 
     if env.platform == 'xboxone':
         if 'XboxOnePDBFileUtil' not in tools: tools += [ 'XboxOnePDBFileUtil' ]
-
+    solution = env.format(env.solution)
     # Build tools from the main solution
     for tool in tools:
-        if not _ue4_build_project(env.solution, tool,
+        if not _ue4_build_project(solution, tool,
                                   'Win64', 'Development', vs_version, 'Build'):
             log_error("Could not build %s" % (tool, ))
             result = False
@@ -102,19 +102,19 @@ def ue4_build(env):
     # Build tools from other solutions or with other flags
     if env.target == 'tools':
 
-        if not vsbuild('Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln',
+        if not vsbuild(os.path.join(env.root_dir, 'Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln'),
                        'Any CPU', 'Development', None, vs_version, 'Build'):
             log_error("Could not build NetworkProfiler")
             result = False
 
         if env.platform != 'mac':
             # This also builds AgentInterface.dll, needed by SwarmInterface.sln
-            if not vsbuild('Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln',
+            if not vsbuild(os.path.join(env.root_dir,'Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
                            'Any CPU', 'Development', None, vs_version, 'Build'):
                 log_error("Could not build UnrealSwarm")
                 result = False
 
-            if not vsbuild('Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln',
+            if not vsbuild(os.path.join(env.root_dir,'Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
                            'Any CPU', 'Development', None, vs_version, 'Build'):
                 log_error("Could not build SwarmInterface")
                 result = False
@@ -122,12 +122,12 @@ def ue4_build(env):
         # These tools seem to be Windows only for now
         if env.platform == 'win64':
 
-            if not _ue4_build_project(env.solution, 'BootstrapPackagedGame',
+            if not _ue4_build_project(solution, 'BootstrapPackagedGame',
                                       'Win64', 'Shipping', vs_version, 'Build'):
                 log_error("Could not build BootstrapPackagedGame")
                 result = False
 
-            if not vsbuild('Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln',
+            if not vsbuild(os.path.join(env.root_dir,'Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln'),
                            'x64', 'Development', None, '11', 'Build'):
                 log_error("Could not build XboxOnePackageNameUtil")
                 result = False
@@ -136,12 +136,12 @@ def ue4_build(env):
         return result
 
     if env.target == 'game':
-        if not _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
+        if not _ue4_build_project(solution, env.game, env.ue4_build_platform,
                                   env.ue4_build_configuration, vs_version, 'Build'):
             return False
 
     if env.target == 'editor':
-        if not _ue4_build_project(env.solution, env.game, env.ue4_build_platform,
+        if not _ue4_build_project(solution, env.game, env.ue4_build_platform,
                                   env.ue4_build_configuration + ' Editor', vs_version, 'Build'):
             return False
 
@@ -206,7 +206,7 @@ def _ue4_build_project(sln_file, project, build_platform,
                        project, vs_version, target)
 
     elif platform.system() == 'Darwin':
-        return call_process('.', ['/bin/sh', 'Engine/Build/BatchFiles/Mac/Build.sh',
+        return call_process(os.path.dirname(sln_file), ['/bin/sh', 'Engine/Build/BatchFiles/Mac/Build.sh',
                                    project, 'Mac', configuration]) == 0
 
     else:
@@ -215,7 +215,7 @@ def _ue4_build_project(sln_file, project, build_platform,
             project_name += '-Linux-' + configuration
         elif configuration == 'Development Editor':
             project_name += 'Editor'
-        return call_process('.', ['make', project_name]) == 0
+        return call_process(os.path.dirname(sln_file), ['make', project_name]) == 0
 
 
 #---------------------------------------------------------------------------
@@ -227,5 +227,5 @@ def ue4_commandlet(env, commandlet, *args):
     cmdline += list(args)
     cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
 
-    return call_process(".", cmdline) == 0
+    return call_process(env.root_dir, cmdline) == 0
 

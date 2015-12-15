@@ -39,7 +39,9 @@ class Environment:
 
     #---------------------------------------------------------------------------
     def map_files(self):
-        return FileMapper(format_args = vars(self))
+        def default_mapper(src, dest):
+            yield (self.root_dir, self.root_dir)
+        return FileMapper(default_mapper, format_args = vars(self))
 
     def check_keys(self, *args):
         error_format = "{key} should be defined, either in settings or in command line arguments. Check those."
@@ -189,13 +191,20 @@ class Environment:
                     self.dlc = 'main'
 
             dlc = self.dlc if hasattr(self, 'dlc') else 'main'
-
-            banks_platforms = { "win32"   : "PC",
-                                "win64"   : "PC",
-                                "xbox360" : "X360",
-                                "xboxone" : "XboxOne",
-                                "ps3"     : "PS3",
-                                "ps4"     : "PS4" }
+            if self.is_ue3:
+                banks_platforms = { "win32"   : "PC",
+                                    "win64"   : "PC",
+                                    "xbox360" : "X360",
+                                    "xboxone" : "XboxOne",
+                                    "ps3"     : "PS3",
+                                    "ps4"     : "PS4" }
+            else:
+                banks_platforms = { "win32"   : "Windows",
+                                    "win64"   : "Windows",
+                                    "xbox360" : "X360",
+                                    "xboxone" : "XboxOne",
+                                    "ps3"     : "PS3",
+                                    "ps4"     : "PS4" }
 
             if self.platform in banks_platforms:
                 self.wwise_banks_platform = banks_platforms[self.platform]

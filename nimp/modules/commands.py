@@ -23,7 +23,7 @@ class CommandsModule(Module):
     def configure_arguments(self, env, parser):
 
         # Import project-local commands from .nimp/commands
-        localpath = os.path.abspath('.nimp')
+        localpath = os.path.abspath(os.path.join(env.root_dir, '.nimp'))
         if localpath not in sys.path:
             sys.path.append(localpath)
         try:

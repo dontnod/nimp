@@ -18,7 +18,7 @@ from nimp.utilities.perforce import *
 #---------------------------------------------------------------------------
 def ue3_build(env):
     vs_version      = '11'
-    solution        = env.solution
+    solution        = env.format(env.solution)
     configuration   = env.ue3_build_configuration
     result          = True
     version_file_cl = None
@@ -30,7 +30,7 @@ def ue3_build(env):
     # Shortcut for Linux builds
     if not is_msys():
         platform = env.ue3_build_platform
-        return call_process('./Development/Src', ['make', 'all', 'CONFIGURATION=' + configuration, 'PLATFORM=' + platform, 'UBTFLAGS=-VERBOSE']) == 0
+        return call_process(os.path.join(env.root_dir, './Development/Src'), ['make', 'all', 'CONFIGURATION=' + configuration, 'PLATFORM=' + platform, 'UBTFLAGS=-VERBOSE']) == 0
 
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
         log_error("Error building UBT")
@@ -47,7 +47,7 @@ def ue3_build(env):
 
         if env.is_x360:
             vs_version = "10"
-            solution = "whatif_vs2010.sln"
+            solution = os.path.join(env.root_dir, "whatif_vs2010.sln")
 
         return _ue3_build_game(solution, env.ue3_build_platform, configuration, vs_version)
 
@@ -160,7 +160,7 @@ def get_ue3_shader_platform(platform):
 #---------------------------------------------------------------------------
 def ue3_fix_pc_ini(env, destination):
     destination = env.format(destination)
-    base_game_ini_path = os.path.join(destination, "Engine/Config/BaseGame.ini")
+    base_game_ini_path = os.path.join(env.root_dir, destination, "Engine/Config/BaseGame.ini")
     os.chmod(base_game_ini_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
     with open(base_game_ini_path, "r") as base_game_ini:
         ini_content = base_game_ini.read()

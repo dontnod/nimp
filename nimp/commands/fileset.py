@@ -45,7 +45,7 @@ class MapCommand(Command):
                 setattr(env, key, value)
         env.standardize_names()
 
-        files = FileMapper(format_args = vars(env))
+        files = env.map_files()
         files_chain = files
         if env.src is not None:
             files_chain = files_chain.src(env.src)

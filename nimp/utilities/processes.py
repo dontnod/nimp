@@ -36,8 +36,7 @@ def _sanitize_command(command):
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None, encoding = 'utf-8'):
     command = _sanitize_command(command)
-    log_verbose("Running “{0}” in “{1}”", " ".join(command), directory)
-
+    log_verbose("Running “{0}” in “{1}”", " ".join(command), os.path.abspath(directory))
     process = subprocess.Popen(command,
                                cwd    = directory,
                                stdout = subprocess.PIPE,
@@ -52,7 +51,7 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
                                      stderr_callback = None,
                                      heartbeat = 0):
     command = _sanitize_command(command)
-    log_verbose("Running “{0}” in “{1}”", " ".join(command), directory)
+    log_verbose("Running “{0}” in “{1}”", " ".join(command), os.path.abspath(directory))
 
     disable_win32_dialogs()
 
