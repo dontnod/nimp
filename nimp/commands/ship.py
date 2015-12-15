@@ -77,6 +77,7 @@ class ShipCommand(Command):
                                        env.format("-targetplatform={ue4_cook_platform}"),
                                        "-utf8output"]):
                 return False
+            return True
         # Unreal Engine 3
         if env.is_ue3:
 
