@@ -41,6 +41,11 @@ class BuildCommand(Command):
                             action = "store_true",
                             default = False)
 
+        parser.add_argument('--fastbuild',
+                            help = 'activate FASTBuild.',
+                            action = 'store_true',
+                            default = False)
+
         return True
 
     #---------------------------------------------------------------------------

@@ -25,8 +25,9 @@ def ue4_build(env):
     if env.disable_unity:
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
-    # We know what we are doing, more or less, so allow parallel invocations
-    os.environ['UBT_NO_MUTEX'] = 'true'
+    if env.fastbuild:
+        os.environ['UBT_bAllowFastBuild'] = 'true'
+        os.environ['UBT_bFastBuildExport'] = 'true'
 
     # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
     if not vsbuild(env.format('{root_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln'),
