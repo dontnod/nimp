@@ -23,7 +23,10 @@ from nimp.utilities.paths import *
 #---------------------------------------------------------------------------
 def list_all_revisions(env, version_directory_format, **override_args):
     revisions = []
-    format_args = { 'revision' : '*', 'platform' : '*', 'dlc' : '*', 'configuration' : '*' }
+    format_args = { 'revision' : '*',
+                    'platform' : '*',
+                    'dlc' : '*',
+                    'configuration' : '*' }
 
     format_args.update(vars(env).copy())
     format_args.update(override_args)
@@ -47,6 +50,8 @@ def list_all_revisions(env, version_directory_format, **override_args):
                         'platform'  : '(?P<platform>\w+)',
                         'dlc' : '(?P<dlc>\w+)',
                         'configuration' : '(?P<configuration>\w+)'})
+
+    log_verbose('Looking for latest version in {0}…', version_directory_format)
 
     for version_directory in glob.glob(version_directories_glob):
         version_directory = version_directory.replace('\\', '/')
@@ -73,12 +78,14 @@ def list_all_revisions(env, version_directory_format, **override_args):
 
 #---------------------------------------------------------------------------
 def get_latest_available_revision(env, version_directory_format, max_revision, **override_args):
+
     for version_info in list_all_revisions(env, version_directory_format, **override_args):
         revision = version_info['revision']
         if max_revision is None or int(revision) <= int(max_revision):
+            log_verbose('Found version %s' % (revision))
             return revision
 
-    raise Exception('No revision <= %s in %s. Candidates are: %s' % (max_revision, version_directories_glob, ' '.join(revisions)))
+    raise Exception('No version <= %s found. Candidates were: %s' % (max_revision, ' '.join(revisions)))
 
 #-------------------------------------------------------------------------------
 def robocopy(src, dest):
