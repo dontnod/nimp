@@ -62,20 +62,21 @@ class ShipCommand(Command):
         # Unreal Engine 4
         if env.is_ue4:
             loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
-            if 0 != call_process(".", ["./Engine/Binaries/DotNET/AutomationTool.exe",
-                                       "BuildCookRun",
-                                       "-nocompileeditor", "-nop4",
-                                       env.format("-project={game}/{game}.uproject"),
-                                       "-cook", "-stage", "-archive",
-                                       "-archivedirectory=%s" % loose_dir,
-                                       "-package",
-                                       "-clientconfig=Shipping",
-                                       "-ue4exe=UE4Editor-Cmd.exe",
-                                       "-pak",
-                                       "-prereqs",
-                                       "-nodebuginfo",
-                                       env.format("-targetplatform={ue4_cook_platform}"),
-                                       "-utf8output"]):
+            if 0 != call_process(env.root_dir,
+                                 ["./Engine/Binaries/DotNET/AutomationTool.exe",
+                                  "BuildCookRun",
+                                  "-nocompileeditor", "-nop4",
+                                  env.format("-project={game}/{game}.uproject"),
+                                  "-cook", "-stage", "-archive",
+                                  "-archivedirectory=%s" % loose_dir,
+                                  "-package",
+                                  "-clientconfig=Shipping",
+                                  "-ue4exe=UE4Editor-Cmd.exe",
+                                  "-pak",
+                                  "-prereqs",
+                                  "-nodebuginfo",
+                                  env.format("-targetplatform={ue4_cook_platform}"),
+                                  "-utf8output"]):
                 return False
             return True
         # Unreal Engine 3
