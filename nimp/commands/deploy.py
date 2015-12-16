@@ -48,7 +48,7 @@ class DeployCommand(Command):
         if hasattr(env, 'deploy_version_root'):
             mapper = mapper.to(env.deploy_version_root)
         else:
-            mapper = mapper.to('.')
+            mapper = mapper.to(env.root_dir)
 
         if not hasattr(env, 'mode'):
             env.mode = 'binaries'
