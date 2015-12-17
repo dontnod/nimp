@@ -109,7 +109,7 @@ class PublishCommand(Command):
                     return False
 
             publish_version_path = env.format(env.publish_version)
-            log_notification("Publishing version {0}…", configuration)
+            log_notification("Publishing version {0}…", env.publish_version)
             files_to_publish = files_to_publish.to(publish_version_path)
             files_to_publish.load_set("version")
             if not all_map(robocopy, files_to_publish()):
@@ -127,7 +127,7 @@ class PublishCommand(Command):
 
                 # Patoune wants this file
                 cl_name = 'CL.txt'
-                log_notification("Writing changelist file {0} for {1}…", cl_name, configuration)
+                log_notification("Writing changelist file {0} for {1}…", cl_name, env.publish_version)
                 cl_path = os.path.join(unreal_prop_path, cl_name)
                 with open(cl_path, "w") as cl_fd:
                     cl_fd.write('%s\n' % env.revision)
