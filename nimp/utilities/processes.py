@@ -25,10 +25,16 @@ def _sanitize_command(command):
     if is_msys():
         tmp = []
         for x in command:
-            if len(x) > 5 and (os.path.isfile(x) or os.path.isdir(x)):
-                tmp.append(x)
-            else:
-                tmp.append(re.sub('^/', '//', x))
+            if x[0] == '/':
+                # If the argument starts with /, we may wish to rewrite it
+                if len(x) >= 2 and x[1].isalpha() and x[2] == '/':
+                    # Looks like a path with a drive letter, keep it that way
+                    pass
+                elif len(x) > 5 and (os.path.isfile(x) or os.path.isdir(x)):
+                    pass
+                else:
+                    x = '/' + x
+            tmp.append(x)
         command = tmp
 
     return command
