@@ -54,7 +54,7 @@ class FileMapper(object):
     #---------------------------------------------------------------------------
     def glob(self, *patterns):
         def _glob_mapper(src, dest):
-            if src is None:
+            if src is None or src == '.':
                 source_path_len = 0
             else:
                 source_path_len = len(split_path(src))
