@@ -30,6 +30,9 @@ def _find_devenv_path(vs_version):
     devenv_path = None
     vstools_path = os.getenv('VS' + vs_version + '0COMNTOOLS')
     if vstools_path is not None:
+        # Sanitize this because os.path.join sometimes gets confused
+        if vstools_path[-1] in [ '/', '\\' ]:
+            vstools_path = vstools_path[:-1]
         devenv_path = os.path.join(vstools_path, '../../Common7/IDE/devenv.com')
         if os.path.exists(devenv_path):
             log_verbose("Found Visual Studio at {0}", devenv_path)
