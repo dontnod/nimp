@@ -27,7 +27,7 @@ def _sanitize_command(command):
         for x in command:
             if x[0] == '/':
                 # If the argument starts with /, we may wish to rewrite it
-                if len(x) >= 2 and x[1].isalpha() and x[2] == '/':
+                if len(x) > 2 and x[1].isalpha() and x[2] == '/':
                     # Looks like a path with a drive letter, keep it that way
                     pass
                 elif len(x) > 5 and (os.path.isfile(x) or os.path.isdir(x)):
