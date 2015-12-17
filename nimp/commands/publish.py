@@ -75,13 +75,19 @@ class PublishCommand(Command):
 
             files_to_deploy = env.map_files().to('.')
 
-            for configuration in env.configurations:
+            for config_or_target in env.configurations:
+
+                c = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
+                t = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
+
                 if env.is_ue3:
-                    tmp = files_to_deploy.override(configuration = configuration,
-                                                   ue3_build_configuration = get_ue3_build_config(configuration))
+                    tmp = files_to_deploy.override(configuration = c,
+                                                   target = t,
+                                                   ue3_build_configuration = get_ue3_build_config(c))
                 elif env.is_ue4:
-                    tmp = files_to_deploy.override(configuration = configuration,
-                                                   ue4_build_configuration = get_ue4_build_config(configuration))
+                    tmp = files_to_deploy.override(configuration = c,
+                                                   target = t,
+                                                   ue4_build_configuration = get_ue4_build_config(c))
 
                 tmp = tmp.src(env.publish_binaries)
 
@@ -148,9 +154,15 @@ class PublishCommand(Command):
 
             # If everything went well, remove temporary binaries
             if not env.keep_temp_binaries:
-                for configuration in env.configurations:
+                for config_or_target in env.configurations:
+
+                    c = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
+                    t = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
+
                     try:
-                        shutil.rmtree(env.format(env.publish_binaries, configuration = configuration))
+                        shutil.rmtree(env.format(env.publish_binaries,
+                                                 configuration = c,
+                                                 target = t))
                     except Exception as ex:
                         log_error("Error while cleaning binaries: {0}", ex)
 
