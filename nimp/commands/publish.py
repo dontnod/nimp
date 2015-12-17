@@ -110,7 +110,7 @@ class PublishCommand(Command):
                 return False
 
             # Support UnrealProp if necessary
-            if hasattr(env, 'unreal_prop_path'):
+            if hasattr(env, 'unreal_prop_path') and hasattr(env, 'upms_platform'):
                 unreal_prop_path = env.format(env.unreal_prop_path)
                 publish_to_unreal_prop = env.map_files().override(is_unreal_prop_version = True).to(unreal_prop_path)
                 log_notification("Copying files to unreal prop…")
@@ -129,7 +129,7 @@ class PublishCommand(Command):
                 # Many Epic tools only consider the build valid if they find a *TOC.txt file
                 # See for instance GetLatestBuildFromUnrealProp() in CIS Build Controller
                 # Also, Patoune insists on having a specific TOC name, hence the toc_name part
-                if hasattr(env, 'game') and hasattr(env, 'upms_platform'):
+                if hasattr(env, 'game'):
                     if env.is_ue3:
                         toc_name = '%s%sTOC.txt' % (env.upms_platform, 'FINAL' if env.is_win32 else '')
                         toc_content = ''
