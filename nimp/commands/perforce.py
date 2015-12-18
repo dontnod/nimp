@@ -114,6 +114,7 @@ class PerforceCommand(Command):
         parser = subparsers.add_parser("submit",
                                        help = "Reconciles a fileset")
         parser.add_argument('cl_name', metavar = '<FORMAT>', type = str, default = None)
+        parser.add_argument('--arg', help = 'DEPRECATED, DO NOT USE', nargs = 2, action = 'append', default = [])
         parser.set_defaults(p4_command_to_run = _execute)
 
 #---------------------------------------------------------------------------
