@@ -27,7 +27,8 @@ def ue4_build(env):
 
     if env.fastbuild:
         os.environ['UBT_bAllowFastBuild'] = 'true'
-        os.environ['UBT_bFastBuildExport'] = 'true'
+        # FIXME: it should not be our job to set this
+        os.environ['UBT_bUseUnityBuild'] = 'false'
 
     # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
     if not vsbuild(env.format('{root_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln'),

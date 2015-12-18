@@ -42,7 +42,7 @@ class BuildCommand(Command):
                             default = False)
 
         parser.add_argument('--fastbuild',
-                            help = 'activate FASTBuild.',
+                            help = 'activate FASTBuild (implies --disable-unity for now)',
                             action = 'store_true',
                             default = False)
 

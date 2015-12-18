@@ -17,11 +17,10 @@ from nimp.utilities.perforce import *
 
 #---------------------------------------------------------------------------
 def ue3_build(env):
-    vs_version      = '11'
-    solution        = env.format(env.solution)
-    configuration   = env.ue3_build_configuration
-    result          = True
-    version_file_cl = None
+    vs_version = '11'
+    solution = env.format(env.solution)
+    configuration = env.ue3_build_configuration
+    result = True
 
     if not configuration:
         log_error("Invalid empty value for configuration")
