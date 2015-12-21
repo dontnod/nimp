@@ -131,49 +131,6 @@ def robocopy(src, dest):
 
     return True
 
-#-------------------------------------------------------------------------------
-def robodelete(path):
-    """ 'Robust' copy. """
-
-    # Retry up to 5 times after I/O errors
-    max_retries = 5
-
-    # If these look like a Windows path, get rid of all "/" path separators
-    if os.sep is '\\':
-        src = src.replace('/', '\\')
-        dest = dest.replace('/', '\\')
-    elif os.sep is '/':
-        src = src.replace('\\', '/')
-        dest = dest.replace('\\', '/')
-
-    log_verbose('Copying “{0}” to “{1}”', src, dest)
-
-    if os.path.isdir(src):
-        safe_makedirs(dest)
-    elif os.path.isfile(src):
-        dest_dir = os.path.dirname(dest)
-        safe_makedirs(dest_dir)
-        while True:
-            try:
-                if os.path.exists(dest):
-                    os.chmod(dest, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-                shutil.copy2(src, dest)
-                break
-            except IOError as e:
-                log_error('I/O error {0}: {1}', e.errno, e.strerror)
-                max_retries -= 1
-                if max_retries <= 0:
-                    return False
-                log_error('Retrying after 1 second ({0} retries left)', max_retries)
-                time.sleep(1)
-            except Exception as e:
-                log_error('Copy error: {0}', e)
-                return False
-    else:
-        log_error('Error: not such file or directory “{0}”', src)
-        return False
-
-    return True
 
 #-------------------------------------------------------------------------------
 def force_delete(file):
