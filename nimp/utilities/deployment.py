@@ -94,13 +94,8 @@ def robocopy(src, dest):
     # Retry up to 5 times after I/O errors
     max_retries = 10
 
-    # If these look like a Windows path, get rid of all "/" path separators
-    if os.sep is '\\':
-        src = src.replace('/', '\\')
-        dest = dest.replace('/', '\\')
-    elif os.sep is '/':
-        src = src.replace('\\', '/')
-        dest = dest.replace('\\', '/')
+    src = sanitize_path(src)
+    dest = sanitize_path(dest)
 
     log_verbose('Copying “{0}” to “{1}”', src, dest)
 
@@ -133,11 +128,14 @@ def robocopy(src, dest):
 
 
 #-------------------------------------------------------------------------------
-def force_delete(file):
+def force_delete(path):
     """ 'Robust' delete. """
-    if os.path.exists(file):
-        os.chmod(file, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-    os.remove(file)
+
+    path = sanitize_path(path)
+
+    if os.path.exists(path):
+        os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+    os.remove(path)
 
 #-------------------------------------------------------------------------------
 def checkout(transaction):

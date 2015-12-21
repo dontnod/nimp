@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import shutil
+
 from nimp.commands._command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
@@ -128,7 +130,7 @@ class PublishCommand(Command):
                 # Patoune wants this file
                 cl_name = 'CL.txt'
                 log_notification("Writing changelist file {0} for {1}…", cl_name, env.publish_version)
-                cl_path = os.path.join(unreal_prop_path, cl_name)
+                cl_path = sanitize_path(os.path.join(unreal_prop_path, cl_name))
                 with open(cl_path, "w") as cl_fd:
                     cl_fd.write('%s\n' % env.revision)
 
@@ -148,7 +150,7 @@ class PublishCommand(Command):
                     toc_dir = os.path.join(unreal_prop_path, env.game)
                     safe_makedirs(toc_dir)
 
-                    toc_path = os.path.join(toc_dir, toc_name)
+                    toc_path = sanitize_path(os.path.join(toc_dir, toc_name))
                     with open(toc_path, "w") as toc_fd:
                         toc_fd.write(toc_content)
 
@@ -160,9 +162,10 @@ class PublishCommand(Command):
                     t = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
 
                     try:
-                        shutil.rmtree(env.format(env.publish_binaries,
-                                                 configuration = c,
-                                                 target = t))
+                        path = env.format(env.publish_binaries,
+                                          configuration = c,
+                                          target = t)
+                        shutil.rmtree(sanitize_path(path))
                     except Exception as ex:
                         log_error("Error while cleaning binaries: {0}", ex)
 

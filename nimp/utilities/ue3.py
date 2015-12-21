@@ -159,7 +159,7 @@ def get_ue3_shader_platform(platform):
 
 #---------------------------------------------------------------------------
 def ue3_fix_pc_ini(env, destination):
-    destination = env.format(destination)
+    destination = sanitize_path(env.format(destination))
     base_game_ini_path = os.path.join(destination, "Engine/Config/BaseGame.ini")
     os.chmod(base_game_ini_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
     with open(base_game_ini_path, "r") as base_game_ini:

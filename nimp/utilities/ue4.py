@@ -6,7 +6,6 @@ import random
 import string
 import time
 import contextlib
-import shutil
 import os
 
 from nimp.utilities.build import *
