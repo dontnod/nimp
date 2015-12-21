@@ -8,6 +8,7 @@ import time
 import contextlib
 import shutil
 import os
+import platform
 
 from nimp.utilities.build import *
 from nimp.utilities.deployment import *
@@ -26,8 +27,8 @@ def ue3_build(env):
         log_error("Invalid empty value for configuration")
         return False
 
-    # Shortcut for Linux builds
-    if not is_msys():
+    # Shortcut for Unix builds
+    if not is_windows():
         platform = env.ue3_build_platform
         return call_process(os.path.join(env.root_dir, './Development/Src'), ['make', 'all', 'CONFIGURATION=' + configuration, 'PLATFORM=' + platform, 'UBTFLAGS=-VERBOSE']) == 0
 

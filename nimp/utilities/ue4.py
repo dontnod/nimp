@@ -155,7 +155,7 @@ def ue4_build(env):
 #
 
 def _ue4_generate_project(env):
-    if is_msys():
+    if is_windows():
         return call_process(env.root_dir, ['./GenerateProjectFiles.bat'])
     else:
         return call_process(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
@@ -203,22 +203,13 @@ def get_ue4_cook_platform(platform):
 def _ue4_build_project(env, sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
 
-    if is_msys():
+    if is_windows():
         return vsbuild(sln_file, build_platform, configuration,
                        project, vs_version, target)
 
-    elif platform.system() == 'Darwin':
-        return call_process(env.root_dir,
-                            ['/bin/sh', './Engine/Build/BatchFiles/Mac/Build.sh',
-                             project, 'Mac', configuration]) == 0
-
-    else:
-        project_name = project
-        if configuration not in ['Development', 'Development Editor']:
-            project_name += '-Linux-' + configuration
-        elif configuration == 'Development Editor':
-            project_name += 'Editor'
-        return call_process(env.root_dir, ['make', project_name]) == 0
+    return call_process(env.root_dir,
+                        ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (build_platform),
+                         project, build_platform, configuration]) == 0
 
 
 #---------------------------------------------------------------------------

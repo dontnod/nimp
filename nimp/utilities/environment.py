@@ -108,7 +108,7 @@ class Environment:
 
         if not hasattr(self, 'platform') or self.platform == None:
             if self.is_ue4 or self.is_ue3:
-                if is_msys():
+                if is_windows():
                     self.platform = 'win64'
                 elif platform.system() == 'Darwin':
                     self.platform = 'mac'

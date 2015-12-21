@@ -19,14 +19,14 @@ def _default_log_callback(line, log_level):
 
 #-------------------------------------------------------------------------------
 def _sanitize_command(command):
-    # If we’re running under MSYS, leading slashes in command line arguments
-    # will be treated as a path, so we need to escape them, except if the given
-    # argument is indeed a file
-    if is_msys():
-        tmp = []
-        for x in command:
-            # If the argument starts with /, we may wish to rewrite it
-            if x[0:1] == '/':
+    new_command = []
+    for x in command:
+        # If we’re running under MSYS, leading slashes in command line arguments
+        # will be treated as a path, so we need to escape them, except if the given
+        # argument is indeed a file.
+        if x[0:1] == '/':
+            if is_msys():
+                # If the argument starts with /, we may wish to rewrite it
                 if x[1:2].isalpha() and x[2:3] == '/':
                     # Stuff like /c/... looks like a path with a drive letter, keep it that way
                     # XXX: but /c is most probably a flag, so that one needs to be escaped
@@ -35,10 +35,8 @@ def _sanitize_command(command):
                     pass
                 else:
                     x = '/' + x
-            tmp.append(x)
-        command = tmp
-
-    return command
+        new_command.append(x)
+    return new_command
 
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None, encoding = 'utf-8'):
