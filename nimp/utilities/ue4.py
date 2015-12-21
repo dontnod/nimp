@@ -155,7 +155,7 @@ def ue4_build(env):
 
 def _ue4_generate_project(env):
     if is_windows():
-        return call_process(env.root_dir, ['./GenerateProjectFiles.bat'])
+        return call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat'])
     else:
         return call_process(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
 

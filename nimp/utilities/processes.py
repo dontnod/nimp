@@ -43,10 +43,11 @@ def capture_process_output(directory, command, input = None, encoding = 'utf-8')
     command = _sanitize_command(command)
     log_verbose("Running “{0}” in “{1}”", " ".join(command), os.path.abspath(directory))
     process = subprocess.Popen(command,
-                               cwd    = directory,
-                               stdout = subprocess.PIPE,
-                               stderr = subprocess.PIPE,
-                               stdin  = subprocess.PIPE)
+                               cwd     = directory,
+                               stdout  = subprocess.PIPE,
+                               stderr  = subprocess.PIPE,
+                               stdin   = subprocess.PIPE,
+                               bufsize = 1)
     output, error = process.communicate(input.encode(encoding) if input else None)
 
     return process.wait(), output.decode(encoding), error.decode(encoding)
