@@ -9,7 +9,7 @@ class Command:
     def __init__(self,
                  name,
                  help,
-                 dependencies = []):
+                 dependencies=[]):
         self._name = name
         self._help = help
         self._dependencies = dependencies
