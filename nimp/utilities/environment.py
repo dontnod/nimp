@@ -22,6 +22,13 @@ class Environment:
             log_warning("Fixing duplicate environment variable: " + '/'.join(dupelist))
             for d in dupelist[1:]:
                 del os.environ[d]
+        # … But in some cases (Windows Python) the duplicate variables are masked
+        # by the os.environ wrapper, so we do it another way to make sure there
+        # are no dupes:
+        for x in sorted(os.environ.keys()):
+            val = os.environ[x]
+            del os.environ[x]
+            os.environ[x] = val
 
     #---------------------------------------------------------------------------
     def format(self, str, **override_kwargs):
