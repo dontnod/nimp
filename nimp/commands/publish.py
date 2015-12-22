@@ -75,7 +75,7 @@ class PublishCommand(Command):
         elif env.mode == 'version':
             log_notification("Publishing version…")
 
-            files_to_deploy = env.map_files().to('.')
+            files_to_deploy = env.map_files().to(env.format(env.root_dir))
 
             for config_or_target in env.configurations:
 
