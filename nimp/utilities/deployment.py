@@ -22,6 +22,7 @@ from nimp.utilities.paths import *
 
 #---------------------------------------------------------------------------
 def list_all_revisions(env, version_directory_format, **override_args):
+    version_directory_format = sanitize_path(version_directory_format)
     revisions = []
     format_args = { 'revision' : '*',
                     'platform' : '*',

@@ -119,9 +119,9 @@ class PublishCommand(Command):
             # Support UnrealProp if necessary
             if hasattr(env, 'unreal_prop_path') and hasattr(env, 'upms_platform'):
                 unreal_prop_path = env.format(env.unreal_prop_path)
-                publish_to_unreal_prop = env.map_files().override(is_unreal_prop_version = True).to(unreal_prop_path)
+                publish_to_unreal_prop = env.map_files()
+                publish_to_unreal_prop.override(is_unreal_prop_version = True).to(unreal_prop_path).load_set("version")
                 log_notification("Copying files to unreal prop…")
-                publish_to_unreal_prop.load_set("version")
 
                 if not all_map(robocopy, publish_to_unreal_prop()):
                     return False
