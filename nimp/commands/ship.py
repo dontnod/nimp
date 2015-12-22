@@ -68,7 +68,7 @@ class ShipCommand(Command):
                                   "-nocompileeditor", "-nop4",
                                   env.format("-project={game}/{game}.uproject"),
                                   "-cook", "-stage", "-archive",
-                                  "-archivedirectory=%s" % loose_dir,
+                                  "-archivedirectory=%s" % sanitize_path(loose_dir),
                                   "-package",
                                   "-clientconfig=Shipping",
                                   "-ue4exe=UE4Editor-Cmd.exe",
