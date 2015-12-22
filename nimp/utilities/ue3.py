@@ -195,7 +195,7 @@ def ue3_commandlet(game, commandlet_name, args):
               '-forcelogflush',
               '-unattended',
               '-noscriptcheck' ]
-    cmdline = [ os.path.join('.', game_binary), commandlet_name ] + args
+    cmdline = [ os.path.join(game_directory, game_binary), commandlet_name ] + args
 
     return call_process(game_directory, cmdline) == 0
 
