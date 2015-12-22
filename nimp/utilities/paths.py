@@ -26,6 +26,9 @@ def split_path(path):
 
 
 def sanitize_path(path):
+    if path is None:
+        return None
+
     if is_windows() and not is_msys():
         if path[0:1] == '/' and path[1:2].isalpha() and path[2:3] == '/':
             return '%s:\\%s' % (path[1], path[3:].replace('/', '\\'))
