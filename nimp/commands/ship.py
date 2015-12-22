@@ -66,7 +66,7 @@ class ShipCommand(Command):
                                  ["./Engine/Binaries/DotNET/AutomationTool.exe",
                                   "BuildCookRun",
                                   "-nocompileeditor", "-nop4",
-                                  env.format("-project={game}/{game}.uproject"),
+                                  sanitize_path(env.format("-project={game}/{game}.uproject")),
                                   "-cook", "-stage", "-archive",
                                   "-archivedirectory=%s" % sanitize_path(loose_dir),
                                   "-package",
