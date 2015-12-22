@@ -62,8 +62,8 @@ class ShipCommand(Command):
         # Unreal Engine 4
         if env.is_ue4:
             loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
-            if 0 != call_process(env.root_dir,
-                                 ["./Engine/Binaries/DotNET/AutomationTool.exe",
+            if 0 != call_process('.',
+                                 [sanitize_path(os.path.join(env.format(env.root_dir), "Engine/Binaries/DotNET/AutomationTool.exe")),
                                   "BuildCookRun",
                                   "-nocompileeditor", "-nop4",
                                   sanitize_path(env.format("-project={game}/{game}.uproject")),

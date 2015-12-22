@@ -213,12 +213,12 @@ def _ue4_build_project(env, sln_file, project, build_platform,
 
 #---------------------------------------------------------------------------
 def ue4_commandlet(env, commandlet, *args):
-    cmdline = [ "./Engine/Binaries/Win64/UE4Editor.exe",
+    cmdline = [sanitize_path(os.path.join(env.format(env.root_dir), "Engine/Binaries/Win64/UE4Editor.exe")),
                 env.game,
                 "-run=%s" % commandlet]
 
     cmdline += list(args)
     cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
 
-    return call_process(env.root_dir, cmdline) == 0
+    return call_process('.', cmdline) == 0
 
