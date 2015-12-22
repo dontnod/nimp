@@ -83,11 +83,11 @@ class ShipCommand(Command):
         if env.is_ue3:
 
             loose_dir = env.format(env.loose_files_directory) if env.loose_files_directory else env.publish_ship
-
-            log_notification("Looking for master in %s" % (env.format(env.publish_master)))
+            loose_dir = sanitize_path(loose_dir)
+            log_notification("Looking for master in %s" % (sanitize_path(env.format(env.publish_master))))
 
             ship_game = (env.dlc == 'main')
-            ship_incremental = os.path.exists(env.format(env.publish_master))
+            ship_incremental = os.path.exists(sanitize_path(env.format(env.publish_master)))
 
             if not env.no_cook:
                 log_notification("Performing UE3 ship… game:%d incremental:%d" % (ship_game, ship_incremental))
@@ -103,12 +103,12 @@ class ShipCommand(Command):
                     log_notification("Deploying original cook…")
                     master_files = env.map_files()
                     if ship_game:
-                        master_files_source = master_files.src(env.publish_master) \
+                        master_files_source = master_files.src(sanitize_path(env.publish_master)) \
                                                           .recursive() \
                                                           .files()
                     else:
                         master_files_source = master_files.override(dlc = 'main', revision = 'HEAD') \
-                                                          .src(env.publish_cook) \
+                                                          .src(sanitize_path(env.publish_cook)) \
                                                           .recursive() \
                                                           .files()
                     if not all_map(robocopy, master_files()):
@@ -131,7 +131,7 @@ class ShipCommand(Command):
                 if ship_game and ship_incremental:
                     log_notification("Redeploying master cook ignoring patched files…")
                     patch_files = env.map_files()
-                    patch_files.src(env.publish_master).override(step = 'patching').load_set("patch")
+                    patch_files.src(sanitize_path(env.publish_master)).override(step = 'patching').load_set("patch")
                     files_to_exclude = [src for src, *args in patch_files()]
 
                     for f in files_to_exclude:
@@ -145,7 +145,7 @@ class ShipCommand(Command):
                 # Publish cooked directory to env.publish_cook
                 if ship_game and hasattr(env, 'revision'):
                     cook_files = env.map_files()
-                    cook_files.to(env.publish_cook).load_set("cook")
+                    cook_files.to(sanitize_path(env.publish_cook)).load_set("cook")
                     if not all_map(robocopy, cook_files()):
                         return False
 
