@@ -6,8 +6,8 @@ from nimp.utilities.logging import *
 class Logger:
     #---------------------------------------------------------------------------
     def __init__(self, format, verbose):
-        self._stdout = codecs.getwriter('cp437')(sys.stdout)
-        self._stderr = codecs.getwriter('cp437')(sys.stderr)
+        self._stdout = sys.stdout
+        self._stderr = sys.stderr
         self._format = format
         self._verbose = verbose
 
@@ -16,11 +16,11 @@ class Logger:
         formatted_message = self._format.format_message(log_level, message_format, *args)
         if log_level != LOG_LEVEL_VERBOSE or self._verbose:
             if log_level == LOG_LEVEL_ERROR or log_level == LOG_LEVEL_WARNING:
-                sys.stderr.write(formatted_message)
-                sys.stderr.flush()
+                self._stderr.buffer.write(formatted_message.encode('cp850', errors='ignore')) #FIXME : I imagine it's gonna break on Linux
+                self._stderr.flush()
             else:
-                sys.stdout.write(formatted_message)
-                sys.stdout.flush()
+                self._stdout.buffer.write(formatted_message.encode('cp850', errors='ignore')) #FIXME : I imagine it's gonna break on Linux
+                self._stdout.flush()
 
     #---------------------------------------------------------------------------
     def start_progress(self,

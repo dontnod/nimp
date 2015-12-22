@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
-
+import sys
 
 #-------------------------------------------------------------------------------
 DEFAULT_BAR_TEMPLATE = "{label}[{filled_chars}{empty_chars}] {position}/{total} - {time_left} - {step_name}"
@@ -34,7 +34,8 @@ def log_message(log_level, add_prefix, message_format, *args):
     if(g_logger is not None):
         g_logger.log_message(log_level, message_format, *args)
     elif log_level == LOG_LEVEL_WARNING or log_level == LOG_LEVEL_ERROR:
-        print(message_format.format(*args))
+        sys.stdout.buffer.write(message_format.format(*args).encode('cp850', errors='ignore'))
+        sys.stdout.flush()
 
 #-------------------------------------------------------------------------------
 def log_verbose(message_format, *args, **kwargs):

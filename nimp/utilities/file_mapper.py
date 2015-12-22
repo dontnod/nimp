@@ -53,6 +53,8 @@ class FileMapper(object):
     #---------------------------------------------------------------------------
     def glob(self, *patterns):
         def _glob_mapper(src, dest):
+            src = sanitize_path(src)
+            dest = sanitize_path(dest)
             if src is None or src == '.':
                 source_path_len = 0
             else:
@@ -186,7 +188,7 @@ class FileMapper(object):
                 src = from_src
             else:
                 src = os.path.join(self._format(src), from_src)
-            src = os.path.normpath(src)
+            src = os.path.normpath(sanitize_path(src))
             yield (src, dest)
         return self.append(_src_mapper)
 
@@ -262,6 +264,7 @@ class FileMapper(object):
                 dest = to_destination
             else:
                 dest = os.path.join(dest, to_destination)
+            dest = sanitize_path(dest)
             yield (src, dest)
         return self.append(_to_mapper)
 
