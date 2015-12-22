@@ -22,6 +22,13 @@ class Environment:
             log_warning("Fixing duplicate environment variable: " + '/'.join(dupelist))
             for d in dupelist[1:]:
                 del os.environ[d]
+        # … But in some cases (Windows Python) the duplicate variables are masked
+        # by the os.environ wrapper, so we do it another way to make sure there
+        # are no dupes:
+        for x in sorted(os.environ.keys()):
+            val = os.environ[x]
+            del os.environ[x]
+            os.environ[x] = val
 
     #---------------------------------------------------------------------------
     def format(self, str, **override_kwargs):
@@ -108,7 +115,7 @@ class Environment:
 
         if not hasattr(self, 'platform') or self.platform == None:
             if self.is_ue4 or self.is_ue3:
-                if is_msys():
+                if is_windows():
                     self.platform = 'win64'
                 elif platform.system() == 'Darwin':
                     self.platform = 'mac'

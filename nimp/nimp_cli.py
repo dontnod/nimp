@@ -8,13 +8,17 @@ sys.dont_write_bytecode = 1
 import inspect
 import time
 import traceback
+import platform
 
 from nimp import modules
 from nimp.modules.module import *
 from nimp.utilities.inspection import *
 from nimp.utilities.environment import *
 
-#-------------------------------------------------------------------------------
+if 'MSYS_NT' in platform.system():
+    raise NotImplementedError('MSYS Python is not supported; please use MimGW Python instead')
+
+
 def main():
 
     t0 = time.time()

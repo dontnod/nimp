@@ -6,7 +6,6 @@ import random
 import string
 import time
 import contextlib
-import shutil
 
 from nimp.utilities.build import *
 from nimp.utilities.deployment import *
@@ -43,7 +42,7 @@ def ps3_generate_edata(env, source):
                 drm_dest = os.path.join(pkg_source, drm_dest)
 
                 # make_edata_npdrm doesn’t handle Unix path separators properly
-                if is_msys() and pkg_source[:1] != '/':
+                if is_windows() and pkg_source[:1] != '/':
                     drm_source = drm_source.replace('/', '\\')
                     drm_dest = drm_dest.replace('/', '\\')
 
@@ -67,7 +66,7 @@ def ps3_generate_pkgs(env, source, destination):
         safe_makedirs(pkg_destination)
 
         # make_package_npdrm doesn’t handle Unix path separators properly
-        if is_msys() and pkg_conf_file[:1] != '/':
+        if is_windows() and pkg_conf_file[:1] != '/':
             pkg_conf_file = pkg_conf_file.replace('/', '\\')
 
         if call_process(pkg_destination,

@@ -6,7 +6,6 @@ import os
 import stat
 import os.path
 import tempfile;
-import shutil
 import stat
 import glob
 import fnmatch

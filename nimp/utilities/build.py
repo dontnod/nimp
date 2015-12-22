@@ -8,7 +8,7 @@ from nimp.utilities.processes import *
 def vsbuild(solution, platform_name, configuration, project = None, vs_version = '12', target = 'Build'):
     build_directory = '.'
 
-    if is_msys():
+    if is_windows():
         devenv_path = _find_devenv_path(vs_version)
         if devenv_path is None:
             log_error("Unable to find Visual Studio {0}", vs_version)

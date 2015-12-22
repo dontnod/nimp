@@ -3,7 +3,6 @@
 import os
 import os.path
 import fnmatch
-import shutil
 import time
 import functools
 import glob2

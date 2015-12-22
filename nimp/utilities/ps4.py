@@ -6,7 +6,6 @@ import random
 import string
 import time
 import contextlib
-import shutil
 import fnmatch
 import os
 import os.path
