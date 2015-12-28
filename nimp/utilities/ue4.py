@@ -59,6 +59,9 @@ def ue4_build(env):
     except:
         pass
 
+    # The main solution file
+    solution = env.format(env.solution)
+
     # We’ll try to build all tools even in case of failure
     result = True
 
@@ -92,11 +95,14 @@ def ue4_build(env):
 
     if env.platform == 'xboxone':
         if 'XboxOnePDBFileUtil' not in tools: tools += [ 'XboxOnePDBFileUtil' ]
-    solution = env.format(env.solution)
+
     # Build tools from the main solution
     for tool in tools:
         if not _ue4_build_project(env, solution, tool,
-                                  'Win64', 'Development', vs_version, 'Build'):
+                                  'Mac' if env.platform == 'mac'
+                                  else 'Linux' if env.platform == 'linux'
+                                  else 'Win64',
+                                  'Development', vs_version, 'Build'):
             log_error("Could not build %s" % (tool, ))
             result = False
 
