@@ -3,9 +3,12 @@
 import sys
 import platform
 import os
+import unittest
 
-from nimp.utilities.processes import *
 from nimp.commands._command import *
+
+from nimp.tests.utilities import file_mapper_tests
+from nimp.utilities.processes import *
 
 
 class CheckCommand(Command):
@@ -17,18 +20,24 @@ class CheckCommand(Command):
     def configure_arguments(self, env, parser):
 
         parser.add_argument('mode',
-                            help = 'Check mode (status)',
+                            help = 'Check mode (status, nimp)',
                             metavar = '<mode>')
 
         return True
 
 
     def run(self, env):
+
+        # Print information about the current environment
         if env.mode == 'status':
             self.info_project(env)
             self.info_python(env)
             self.info_env(env)
             return True;
+
+        # Check nimp itself using pylint and run the unit tests
+        if env.mode == 'nimp':
+            return unittest.main(module = file_mapper_tests, argv = ["."])
 
         log_error('Unsupported check mode “{0}”', env.mode)
         return False

@@ -3,7 +3,6 @@ __all__ = [
     "commandlet",
     "deploy",
     "fileset",
-    "nimp_qa",
     "check",
     "package",
     "perforce",
