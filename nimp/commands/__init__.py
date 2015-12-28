@@ -4,6 +4,7 @@ __all__ = [
     "deploy",
     "fileset",
     "nimp_qa",
+    "check",
     "package",
     "perforce",
     "run",
