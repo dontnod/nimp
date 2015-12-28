@@ -11,7 +11,7 @@ import time
 
 from nimp.utilities.logging import *
 
-kernel32 = ctypes.windll.kernel32
+kernel32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None
 
 INVALID_HANDLE_VALUE = -1 # Should be c_void_p(-1).value but doesn’t work
 

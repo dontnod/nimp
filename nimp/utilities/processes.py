@@ -59,9 +59,9 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
     command = _sanitize_command(command)
     log_verbose("Running “{0}” in “{1}”", " ".join(command), os.path.abspath(directory))
 
-    disable_win32_dialogs()
-
-    debug_pipe = OutputDebugStringLogger()
+    if is_windows():
+        disable_win32_dialogs()
+        debug_pipe = OutputDebugStringLogger()
 
     # The bufsize = 1 is important; if we don’t bufferise the
     # output, we’re going to make the callee lag a lot.
@@ -71,8 +71,9 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
                                stderr  = subprocess.PIPE,
                                stdin   = None,
                                bufsize = 1)
-    debug_pipe.attach(process.pid)
-    debug_pipe.start()
+    if is_windows():
+        debug_pipe.attach(process.pid)
+        debug_pipe.start()
 
     def heartbeat_worker(heartbeat):
         t = time.monotonic()
@@ -113,8 +114,10 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
         stderr_callback = stdout_callback
 
     log_thread_args = [ (stdout_callback, LOG_LEVEL_VERBOSE, process.stdout),
-                        (stderr_callback, LOG_LEVEL_ERROR,   process.stderr),
-                        (stderr_callback, LOG_LEVEL_VERBOSE, debug_pipe.output)]
+                        (stderr_callback, LOG_LEVEL_ERROR,   process.stderr) ]
+    if is_windows():
+        log_thread_args += [ (stderr_callback, LOG_LEVEL_VERBOSE, debug_pipe.output) ]
+
     worker_threads = [ threading.Thread(target = output_worker, args = args) for args in log_thread_args ]
     # Send keepalive to stderr if requested
     if heartbeat > 0:
@@ -127,7 +130,8 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
         process_return = process.wait()
     finally:
         process = None
-        debug_pipe.stop()
+        if is_windows():
+            debug_pipe.stop()
         for thread in worker_threads:
             thread.join()
 
