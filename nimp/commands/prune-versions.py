@@ -44,9 +44,6 @@ class PruneVersionsCommand(Command):
         if 'symsrv' in prune_policy_conf:
             sym_transactions = get_symbol_transactions(prune_policy_conf['symsrv'])
 
-            if not sym_transactions:
-                return False
-
         success = True
         for policy in prune_policy_conf['policies']:
             success &= _prune(env, policy, sym_transactions)
@@ -93,30 +90,37 @@ def _prune(env, policy, sym_transactions):
 
 #---------------------------------------------------------------------------
 def _should_keep_revision(policy, rev_id, rev_infos):
+
+    rev_path = rev_infos['path']
+    rev_date = rev_infos['creation_date']
+
     if 'min_revisions' in policy and policy['min_revisions'] >= rev_id:
-        log_notification("Keeping {0}th revision {1} due to min_revisions ({2})", rev_id, rev_infos['path'], policy['min_revisions'])
+        log_notification('Keeping {0} (rev_id = {1}, min_revisions = {2})',
+                         rev_path, rev_id, policy['min_revisions'])
         return True
 
-    revision_age = datetime.now() - rev_infos['creation_date']
+    revision_age = datetime.now() - rev_date
     if 'min_age' in policy and policy['min_age'] >= revision_age:
-        log_verbose("Keeping revision in {0} created on {1} because it's newer than policy's min_age {2}", rev_infos['path'], rev_infos['creation_date'], policy['min_age'])
+        log_verbose('Keeping {0} (created = {1}, min_age = {2})',
+                    rev_path, rev_date, policy['min_age'])
         return True
 
-    keep_file_path = os.path.join(rev_infos['path'], 'dont_prune_me')
+    keep_file_path = os.path.join(rev_path, 'dont_prune_me')
     if os.path.exists(keep_file_path):
-        log_verbose("Keeping revision in {0} because it's marked as to be kept", rev_infos['path'])
+        log_verbose('Keeping {0} (found “dont_prune_me” file)', rev_path)
         return True
 
     if 'max_revisions' in policy and policy['max_revisions'] < rev_id:
-        log_verbose("Deleting {0}th revision {1} due to max_revisions ({2}).",  rev_id, rev_infos['path'], policy['max_revisions'])
+        log_verbose('Deleting {0} (rev_id = {1}, max_revisions = {2}).',
+                    rev_path, rev_id, policy['max_revisions'])
         return False
 
     if 'max_age' in policy and policy['max_age'] < revision_age:
-        log_verbose("Deleting revision in {0} created on {1} because it's older than policy's max_age {2}", rev_infos['path'], rev_infos['creation_date'], policy['max_age'])
+        log_verbose('Deleting {0} (created = {1}, max_age = {2})',
+                    rev_path, rev_date, policy['max_age'])
         return False
 
-    log_verbose("Keeping revision in {0} created on {1} because no rule applies", rev_infos['path'], rev_infos['creation_date'])
-
+    log_verbose('Keeping {0} (no rule applies)', rev_path)
     return True
 
 #---------------------------------------------------------------------------
