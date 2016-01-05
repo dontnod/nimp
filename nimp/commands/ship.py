@@ -62,8 +62,10 @@ class ShipCommand(Command):
         # Unreal Engine 4
         if env.is_ue4:
             loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
+            exe_path = sanitize_path(os.path.join(env.format(env.root_dir), "Engine/Binaries/DotNET/AutomationTool.exe"))
+            # Use heartbeat because this sometimes compiles shaders in the background
             if 0 != call_process('.',
-                                 [sanitize_path(os.path.join(env.format(env.root_dir), "Engine/Binaries/DotNET/AutomationTool.exe")),
+                                 [exe_path,
                                   "BuildCookRun",
                                   "-nocompileeditor", "-nop4",
                                   sanitize_path(env.format("-project={game}/{game}.uproject")),
@@ -76,9 +78,11 @@ class ShipCommand(Command):
                                   "-prereqs",
                                   "-nodebuginfo",
                                   env.format("-targetplatform={ue4_cook_platform}"),
-                                  "-utf8output"]):
+                                  "-utf8output"],
+                                 heartbeat = 30):
                 return False
             return True
+
         # Unreal Engine 3
         if env.is_ue3:
 
