@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 from nimp.commands._command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
@@ -61,6 +63,11 @@ class BuildCommand(Command):
         # Unreal Engine 3
         if env.is_ue3:
             return ue3_build(env)
+
+        # Visual Studio maybe?
+        for f in os.listdir('.'):
+            if os.path.splitext(f)[1] == '.sln' and os.path.isfile(f):
+                return vsbuild(f, 'Any CPU', 'Release', env.target, '12', 'Build')
 
         # Error!
         log_error("Invalid project type {0}" % (env.project_type))
