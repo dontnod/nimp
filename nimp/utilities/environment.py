@@ -136,7 +136,7 @@ class Environment:
 
         # Now properly normalise configuration and platform names
 
-        if hasattr(self, 'configuration'):
+        if hasattr(self, 'configuration') and self.configuration is not None:
             std_configs = { 'debug'    : 'debug',
                             'devel'    : 'devel',
                             'release'  : 'release',
@@ -150,7 +150,7 @@ class Environment:
                 self.configuration = ""
 
 
-        if hasattr(self, "platform"):
+        if hasattr(self, "platform") and self.platform is not None:
             self.platform = self.normalize_platform_string(self.platform)
 
             self.is_win32 = self.platform == "win32"
