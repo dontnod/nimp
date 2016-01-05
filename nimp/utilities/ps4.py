@@ -44,7 +44,7 @@ def generate_gp4(env, dest_dir):
                               '--passcode',    package['passcode'] ]
 
         volume_type = package['volume_type']
-        if volume_type == 'pkg_ps4_app' or volume_type == 'pkg_ps4_patch':
+        if volume_type in ['pkg_ps4_app', 'pkg_ps4_patch']:
             if not check_keys(package, mandatory_keys_error_format, 'storage_type'):
                 return False
             if 'app_type' in package:
@@ -56,14 +56,14 @@ def generate_gp4(env, dest_dir):
         if volume_type == 'pkg_ps4_patch':
             if not check_keys(package, mandatory_keys_error_format, 'app_path'):
                 return False
-            create_gp4_command += ["--app_path", package['app_path'] ]
+            create_gp4_command += ["--app_path", sanitize_path(env.format(package['app_path']))]
 
             if 'latest_patch_path' in package:
                 create_gp4_command += ["--latest_patch_path", package['latest_patch_path'] ]
             if 'patch_type' in package:
                 create_gp4_command += ["--patch_type", package['patch_type'] ]
 
-        if volume_type == 'pkg_ps4_ac_data' or volume_type == 'pkg_ps4_ac_nodata':
+        if volume_type in ['pkg_ps4_ac_data', 'pkg_ps4_ac_nodata']:
             if 'entitlement_key' in package:
                 create_gp4_command += ["--entitlement_key", package['entitlement_key'] ]
 
