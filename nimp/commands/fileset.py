@@ -4,8 +4,33 @@ from nimp.commands._command     import *
 from nimp.utilities.ue3         import *
 from nimp.utilities.file_mapper import *
 
-#-------------------------------------------------------------------------------
-class MapCommand(Command):
+from BitTornado.Meta.Info import Info, MetaInfo
+from BitTornado.Meta.BTTree import BTTree
+
+def make_torrent(name, files, url, params=None, flag=None,
+                 progress=lambda x: None, progress_percent=True):
+    """Make a single .torrent file for a given list of items"""
+
+    def splitpath(path):
+        d, f = os.path.split(path)
+        return splitpath(d) + [f] if d else [f]
+
+    tree_list = [BTTree(f, splitpath(f)) for f, ignored in files() if os.path.isfile(f)]
+
+    info = Info(name, sum(tree.size for tree in tree_list),
+                flag=flag, progress=progress,
+                progress_percent=progress_percent, **params)
+    for tree in tree_list:
+        tree.addFileToInfos((info,))
+
+    newparams = { key:val for key, val in params.items() \
+                  if key in MetaInfo.typemap }
+
+    metainfo = MetaInfo(announce=url, info=info, **newparams)
+    metainfo.write(params['target'])
+
+
+class FileSetCommand(Command):
     def __init__(self):
         Command.__init__(self, 'fileset', 'Do stuff on a list of files')
 
@@ -23,9 +48,9 @@ class MapCommand(Command):
                             metavar = '<SET_FILE>')
 
         parser.add_argument('action',
-                            help    = 'Action to execute on listed files (one of: robocopy, delete, checkout, reconcile, reconcile_and_submit, list)',
+                            help    = 'Action to execute on listed files (one of: robocopy, delete, checkout, reconcile, reconcile_and_submit, list, torrent)',
                             metavar = '<ACTION>',
-                            choices = ['robocopy', 'delete', 'checkout', 'reconcile', 'reconcile_and_submit', 'list'])
+                            choices = ['robocopy', 'delete', 'checkout', 'reconcile', 'reconcile_and_submit', 'list', 'torrent'])
 
         parser.add_argument('--src',
                             help    = 'Source directory',
@@ -72,6 +97,11 @@ class MapCommand(Command):
         elif env.action == 'list':
             for source, destination in files():
                 log_notification("{0} => {1}", source, destination)
+
+        elif env.action == 'torrent':
+            # FIXME: also add 'private':True once BitTornado supports it
+            params = { 'target': 'torrentname.torrent', }
+            make_torrent('torrentname', files, url='http://tracker:8020/announce', params=params)
 
         return True
 
