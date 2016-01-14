@@ -75,11 +75,12 @@ class FileSetCommand(Command):
                 log_notification("{0} => {1}", source, destination)
 
         elif env.action == 'torrent':
-            filename = 'torrentname.torrent'
-            dirname = 'torrentname'
-            tracker = 'http://tracker:8020/announce'
-            data = make_torrent(dirname, tracker, files)
-            with open(filename, 'wb') as fd:
+            torrent_file = env.torrent_file if hasattr(env, 'torrent_file') else 'torrent.torrent'
+            torrent_dir = env.torrent_dir if hasattr(env, 'torrent_dir') else 'torrent'
+            torrent_tracker = env.torrent_tracker if hasattr(env, 'torrent_tracker') else 'http://tracker/announce'
+
+            data = make_torrent(torrent_dir, torrent_tracker, files)
+            with open(torrent_file, 'wb') as fd:
                 fd.write(data)
 
         return True
