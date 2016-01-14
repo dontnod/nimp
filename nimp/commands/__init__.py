@@ -15,6 +15,5 @@ __all__ = [
     "publish",
     "ship",
     "upgrade",
-    "vs_build",
 ]
 
