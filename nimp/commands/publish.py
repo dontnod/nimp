@@ -118,16 +118,18 @@ class PublishCommand(Command):
                 return False
 
             # Create a Torrent
-            torrent = env.format('/b/dist/{project}-bin-{revision}-{platform}.torrent')
-            subdir = env.format('{project}/bin/{revision}-{platform}')
-            tracker = 'http://tracker:8020/announce'
-            filelist = (f for f, ignored in files_to_publish() if os.path.isfile(f))
+            if True:
+                torrent = env.format('/b/dist/{project}-bin-{revision}-{platform}.torrent')
+                tracker = 'http://tracker:8020/announce'
 
-            log_notification("Creating torrent {0}…", torrent)
+                log_notification("Creating torrent {0}…", torrent)
 
-            data = make_torrent(subdir, tracker, filelist)
-            with open(sanitize_path(torrent), 'wb') as fd:
-                fd.write(data)
+                publish_torrent = env.map_files()
+                publish_torrent.to('bin/{revision}-{platform}').load_set("version")
+
+                data = make_torrent(env.format('{project}'), tracker, publish_torrent)
+                with open(sanitize_path(torrent), 'wb') as fd:
+                    fd.write(data)
 
             # Support UnrealProp if necessary
             if hasattr(env, 'unreal_prop_path') and hasattr(env, 'upms_platform'):
