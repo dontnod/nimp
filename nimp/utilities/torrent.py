@@ -15,9 +15,14 @@ def _splitpath(path):
 def make_torrent(name, tracker, files):
     """Make a single .torrent file for a given list of items"""
 
-    # Build a list of everything we want in the torrent; only files for
-    # now but the code below would work with directories, too.
-    tree_list = [BTTree(f, _splitpath(f)) for f, ignored in files() if os.path.isfile(f)]
+    # If name is e.g. "foo/bar" then BitTornado will consider it an illegal
+    # name for security reasons. We simply replace it with "foo" and prepend
+    # "bar" to the actual paths inside the torrent.
+    subdir = _splitpath(name)
+    name = subdir[0]
+    subdir = subdir[1:]
+
+    tree_list = [BTTree(f, subdir + _splitpath(f)) for f in files]
 
     # XXX: BitTornado doesn’t support this yet
     params = { 'private': True }
@@ -26,6 +31,7 @@ def make_torrent(name, tracker, files):
                 flag=None, progress=lambda x: None,
                 progress_percent=True, **params)
     for tree in tree_list:
+        log_verbose('Adding “{0}”', tree.loc)
         tree.addFileToInfos((info,))
 
     infoparams = { key:val for key, val in params.items() \

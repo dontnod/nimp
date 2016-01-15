@@ -79,7 +79,10 @@ class FileSetCommand(Command):
             torrent_dir = env.torrent_dir if hasattr(env, 'torrent_dir') else 'torrent'
             torrent_tracker = env.torrent_tracker if hasattr(env, 'torrent_tracker') else 'http://tracker/announce'
 
-            data = make_torrent(torrent_dir, torrent_tracker, files)
+            # Build a list of everything we want in the torrent; only files for
+            # now but the code below would work with directories, too.
+            data = make_torrent(torrent_dir, torrent_tracker,
+                                (f for f, ignored in files() if os.path.isfile(f)))
             with open(torrent_file, 'wb') as fd:
                 fd.write(data)
 

@@ -8,6 +8,7 @@ from nimp.utilities.ue4 import *
 from nimp.utilities.deployment import *
 from nimp.utilities.symbols import *
 from nimp.utilities.file_mapper import *
+from nimp.utilities.torrent import *
 
 #-------------------------------------------------------------------------------
 class PublishCommand(Command):
@@ -115,6 +116,18 @@ class PublishCommand(Command):
             files_to_publish.to(publish_version_path).load_set("version")
             if not all_map(robocopy, files_to_publish()):
                 return False
+
+            # Create a Torrent
+            torrent = env.format('/b/dist/{project}-bin-{revision}-{platform}.torrent')
+            subdir = env.format('{project}/bin/{revision}-{platform}')
+            tracker = 'http://tracker:8020/announce'
+            filelist = (f for f, ignored in files_to_publish() if os.path.isfile(f))
+
+            log_notification("Creating torrent {0}…", torrent)
+
+            data = make_torrent(subdir, tracker, filelist)
+            with open(sanitize_path(torrent), 'wb') as fd:
+                fd.write(data)
 
             # Support UnrealProp if necessary
             if hasattr(env, 'unreal_prop_path') and hasattr(env, 'upms_platform'):
