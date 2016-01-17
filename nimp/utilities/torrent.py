@@ -16,7 +16,7 @@ def make_torrent(name, tracker, publish):
     """Make a single .torrent file for a given list of items"""
 
     # Only publish files
-    tree_list = [BTTree(src, _splitpath(dst)) for src, dst in publish() if os.path.isfile(src)]
+    tree_list = [BTTree(src, _splitpath(dst)) for src, dst in sorted(set(publish())) if os.path.isfile(src)]
 
     # XXX: BitTornado doesn’t support this yet
     params = { 'private': True }
