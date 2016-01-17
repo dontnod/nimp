@@ -15,8 +15,10 @@ def _splitpath(path):
 def make_torrent(name, tracker, publish):
     """Make a single .torrent file for a given list of items"""
 
-    # Only publish files
+    # Only publish files, and can’t create an empty torrent
     tree_list = [BTTree(src, _splitpath(dst)) for src, dst in sorted(set(publish())) if os.path.isfile(src)]
+    if not tree_list:
+        return None
 
     # XXX: BitTornado doesn’t support this yet
     params = { 'private': True }

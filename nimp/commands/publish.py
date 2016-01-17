@@ -128,6 +128,10 @@ class PublishCommand(Command):
                 publish_torrent.to('bin/{revision}-{platform}').load_set("version")
 
                 data = make_torrent(env.format('{project}'), tracker, publish_torrent)
+                if not data:
+                    log_error("Torrent is empty")
+                    return False
+
                 with open(sanitize_path(torrent), 'wb') as fd:
                     fd.write(data)
 
