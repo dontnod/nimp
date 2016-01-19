@@ -67,13 +67,20 @@ class BuildCommand(Command):
         # Visual Studio maybe?
         for f in os.listdir('.'):
             if os.path.splitext(f)[1] == '.sln' and os.path.isfile(f):
+                platform, config = 'Any CPU', 'Release'
+                if hasattr(env, 'platform') and env.platform is not None:
+                    platform = env.platform
+                if hasattr(env, 'configuration') and env.configuration is not None:
+                    config = env.configuration
+
                 sln = open(f).read()
                 vsver = '11'
                 if '# Visual Studio 2012' in sln:
                     vsver = '11'
                 elif '# Visual Studio 2013' in sln:
                     vsver = '12'
-                return vsbuild(f, 'Any CPU', 'Release', env.target, vsver, 'Build')
+
+                return vsbuild(f, platform, config, env.target, vsver, 'Build')
 
         # Error!
         log_error("Invalid project type {0}" % (env.project_type))
