@@ -4,25 +4,28 @@ import codecs
 from nimp.utilities.logging import *
 
 class Logger:
-    #---------------------------------------------------------------------------
+
     def __init__(self, format, verbose):
         self._stdout = sys.stdout
         self._stderr = sys.stderr
         self._format = format
         self._verbose = verbose
 
-    #---------------------------------------------------------------------------
-    def log_message(self, log_level, message_format, *args):
-        formatted_message = self._format.format_message(log_level, message_format, *args)
-        if log_level != LOG_LEVEL_VERBOSE or self._verbose:
-            if log_level == LOG_LEVEL_ERROR or log_level == LOG_LEVEL_WARNING:
-                self._stderr.buffer.write(formatted_message.encode('cp850', errors='ignore')) #FIXME : I imagine it's gonna break on Linux
-                self._stderr.flush()
-            else:
-                self._stdout.buffer.write(formatted_message.encode('cp850', errors='ignore')) #FIXME : I imagine it's gonna break on Linux
-                self._stdout.flush()
 
-    #---------------------------------------------------------------------------
+    def log_message(self, log_level, message_format, *args):
+        line = self._format.format_message(log_level, message_format, *args)
+        if line[-1:] != '\n':
+            line += '\n'
+
+        if log_level != LOG_LEVEL_VERBOSE or self._verbose:
+            stream = self._stdout
+            if log_level in [LOG_LEVEL_ERROR, LOG_LEVEL_WARNING]:
+                stream = self._stderr
+
+            stream.buffer.write(line.encode('utf-8', errors='ignore'))
+            stream.flush()
+
+
     def start_progress(self,
                        total,
                        position_formatter,
