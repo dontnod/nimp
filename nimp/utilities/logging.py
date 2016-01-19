@@ -31,10 +31,16 @@ def log_prefix():
 def log_message(log_level, add_prefix, message_format, *args):
     if add_prefix:
         message_format = log_prefix() + message_format
-    if(g_logger is not None):
+
+    if g_logger is not None:
         g_logger.log_message(log_level, message_format, *args)
-    elif log_level == LOG_LEVEL_WARNING or log_level == LOG_LEVEL_ERROR:
-        sys.stdout.buffer.write(message_format.format(*args).encode('cp850', errors='ignore'))
+        return
+
+    if log_level in [LOG_LEVEL_WARNING, LOG_LEVEL_ERROR]:
+        line = message_format.format(*args)
+        if line[-1:] != '\n':
+            line += '\n'
+        sys.stdout.buffer.write(line.encode('utf-8', errors='ignore'))
         sys.stdout.flush()
 
 #-------------------------------------------------------------------------------
