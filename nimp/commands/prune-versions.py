@@ -17,9 +17,9 @@ class PruneVersionsCommand(Command):
 
     #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        parser.add_argument('directory',
-                            help     = 'Directory to clean',
-                            metavar  = '<DIRECTORY>')
+        parser.add_argument('file',
+                            help     = 'Configuration file ',
+                            metavar  = '<FILE>')
 
         parser.add_argument('--dry',
                             help    = 'Only list operation, don\'t execute them.',
@@ -29,9 +29,9 @@ class PruneVersionsCommand(Command):
 
     #---------------------------------------------------------------------------
     def run(self, env):
-        prune_policy_path = os.path.join(env.directory, 'prune_policy.conf')
+        prune_policy_path = env.file
         prune_policy_conf = read_config_file(prune_policy_path)
-
+        prune_directory = os.path.dirname(prune_policy_path)
         if not prune_policy_conf:
             log_error("Error while loading prune policy configuration %s" % prune_policy_path)
             return False
@@ -46,7 +46,7 @@ class PruneVersionsCommand(Command):
 
         success = True
         for policy in prune_policy_conf['policies']:
-            success &= _prune(env, policy, sym_transactions)
+            success &= _prune(env, prune_directory, policy, sym_transactions)
 
         if sym_transactions is not None:
             for sym_trans in sym_transactions:
@@ -58,7 +58,7 @@ class PruneVersionsCommand(Command):
         return success
 
 #---------------------------------------------------------------------------
-def _prune(env, policy, sym_transactions):
+def _prune(env, prune_directory, policy, sym_transactions):
     shutil_error = False
     def _on_shutil_error(function, path, excinfo):
         os.chmod(path, stat.S_IWRITE)
@@ -69,9 +69,9 @@ def _prune(env, policy, sym_transactions):
             shutil_error = True
 
     for pattern in policy['patterns']:
-        log_notification("Pruning revisions matching %s" % os.path.join(env.directory, pattern.replace("{", "{{").replace("}", "}}")))
+        log_notification("Pruning revisions matching %s" % os.path.join(prune_directory, pattern.replace("{", "{{").replace("}", "}}")))
         # FIXME : Better than overriding the platform here, we maybe could give arguments here to filter the revisions to delete
-        revs_infos = list_all_revisions(env, os.path.join(env.directory, pattern), platform = '*')
+        revs_infos = list_all_revisions(env, os.path.join(prune_directory, pattern), platform = '*')
         rev_ids = {}
         for rev_infos in revs_infos:
             rev_type = rev_infos['rev_type']

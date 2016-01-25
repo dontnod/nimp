@@ -48,7 +48,7 @@ def upload_symbols(env, symbols):
 def get_symbol_transactions(symsrv):
     server_txt_path =  os.path.join(symsrv, "000Admin", "server.txt")
     if not os.path.exists(server_txt_path):
-        log_error("Unable to find the file {0}, aborting.", server_txt)
+        log_error("Unable to find the file {0}, aborting.", server_txt_path)
         return None
     line_re = re.compile("^(?P<id>\d*),"
                          "(?P<operation>(add|del)),"
