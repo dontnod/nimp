@@ -40,6 +40,11 @@ def ue4_build(env):
         robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll'),
                  env.format('{root_dir}/Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll'))
 
+    # HACK: We also need this on Windows
+    if is_windows():
+        robocopy(env.format('{root_dir}/Engine/Source/ThirdParty/FBX/2014.2.1/lib/vs2012/x64/release/libfbxsdk.dll'),
+                 env.format('{root_dir}/Engine/Binaries/Win64/libfbxsdk.dll'))
+
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
         # Now generate project files
