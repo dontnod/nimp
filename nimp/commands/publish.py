@@ -135,43 +135,6 @@ class PublishCommand(Command):
                 with open(sanitize_path(torrent), 'wb') as fd:
                     fd.write(data)
 
-            # Support UnrealProp if necessary
-            if hasattr(env, 'unreal_prop_path') and hasattr(env, 'upms_platform'):
-                unreal_prop_path = env.format(env.unreal_prop_path)
-                publish_to_unreal_prop = env.map_files()
-                publish_to_unreal_prop.override(is_unreal_prop_version = True).to(unreal_prop_path).load_set("version")
-                log_notification("Copying files to unreal prop…")
-
-                if not all_map(robocopy, publish_to_unreal_prop()):
-                    return False
-
-                # Patoune wants this file
-                cl_name = 'CL.txt'
-                log_notification("Writing changelist file {0} for {1}…", cl_name, env.publish_version)
-                cl_path = sanitize_path(os.path.join(unreal_prop_path, cl_name))
-                with open(cl_path, "w") as cl_fd:
-                    cl_fd.write('%s\n' % env.revision)
-
-                # Many Epic tools only consider the build valid if they find a *TOC.txt file
-                # See for instance GetLatestBuildFromUnrealProp() in CIS Build Controller
-                # Also, Patoune insists on having a specific TOC name, hence the toc_name part
-                if hasattr(env, 'game'):
-                    if env.is_ue3:
-                        toc_name = '%s%sTOC.txt' % (env.upms_platform, 'FINAL' if env.is_win32 else '')
-                        toc_content = ''
-                    elif env.is_ue4:
-                        toc_name = 'TOC.xml'
-                        toc_content = '<lol></lol>\n'
-
-                    log_notification("Writing fake TOC {0} for UnrealProp", toc_name)
-
-                    toc_dir = os.path.join(unreal_prop_path, env.game)
-                    safe_makedirs(toc_dir)
-
-                    toc_path = sanitize_path(os.path.join(toc_dir, toc_name))
-                    with open(toc_path, "w") as toc_fd:
-                        toc_fd.write(toc_content)
-
             # If everything went well, remove temporary binaries
             if not env.keep_temp_binaries:
                 for config_or_target in env.configurations:

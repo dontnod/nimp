@@ -182,17 +182,6 @@ class Environment:
             self.ue4_build_platform = get_ue4_build_platform(self.platform)
             self.ue4_cook_platform  = get_ue4_cook_platform(self.platform)
 
-            # Other stuff
-            upms_platforms = { "ps4"     : "PS4",
-                               "xboxone" : "XboxOne",
-                               "win64"   : "PC",
-                               "win32"   : "PCConsole",
-                               "xbox360" : "Xbox360",
-                               "ps3"     : "PS3" }
-
-            if self.platform in upms_platforms:
-                self.upms_platform = upms_platforms[self.platform]
-
             if hasattr(self, 'dlc'):
                 if self.dlc is None:
                     self.dlc = 'main'
