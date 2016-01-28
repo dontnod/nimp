@@ -32,7 +32,7 @@ def upload_symbols(env, symbols):
                         [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
                           "add",
                           "/r", "/f", "@symbols_index.txt",
-                          "/s", env.format(env.publish_symbols),
+                          "/s", sanitize_path(env.format(env.publish_symbols)),
                           "/o",
                           "/t", env.project,
                           "/c", "{0}_{1}_{2}_{3}".format(env.project, env.platform, env.configuration, env.revision),
@@ -75,3 +75,4 @@ def delete_symbol_transaction(symsrv, transaction_id):
         log_error("Oops! An error occurred while deleting symbols.")
         return False
     return True
+
