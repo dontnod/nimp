@@ -1,22 +1,18 @@
 # -*- coding: utf-8 -*-
 
 from nimp.utilities.file_mapper import *
+from nimp.utilities.paths import *
 
 from BitTornado.Meta.Info import Info, MetaInfo
 from BitTornado.Meta.BTTree import BTTree
 from BitTornado.Meta.bencode import bencode
 
 
-def _splitpath(path):
-    d, f = os.path.split(path)
-    return _splitpath(d) + [f] if d else [f]
-
-
 def make_torrent(name, tracker, publish):
     """Make a single .torrent file for a given list of items"""
 
     # Only publish files, and can’t create an empty torrent
-    tree_list = [BTTree(src, _splitpath(dst)) for src, dst in sorted(set(publish())) if os.path.isfile(src)]
+    tree_list = [BTTree(src, path_to_array(dst)) for src, dst in sorted(set(publish())) if os.path.isfile(src)]
     if not tree_list:
         return None
 

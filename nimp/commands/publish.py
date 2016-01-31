@@ -8,6 +8,7 @@ from nimp.utilities.ue4 import *
 from nimp.utilities.deployment import *
 from nimp.utilities.symbols import *
 from nimp.utilities.file_mapper import *
+from nimp.utilities.paths import *
 from nimp.utilities.torrent import *
 
 #-------------------------------------------------------------------------------
@@ -124,7 +125,7 @@ class PublishCommand(Command):
                 log_notification("Creating torrent {0}…", torrent)
 
                 # If torrent root is “a/b/c”, publish it to “b/c” with root dir “a”
-                tree = os.path.split(env.format(env.torrent_root))
+                tree = path_to_array(env.format(env.torrent_root))
                 publish_torrent = env.map_files()
                 publish_torrent.to('/'.join(tree[1:])).load_set("version")
 

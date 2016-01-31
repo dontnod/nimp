@@ -25,6 +25,11 @@ def split_path(path):
     return splitted_path
 
 
+def path_to_array(path):
+    d, f = os.path.split(path)
+    return path_to_array(d) + [f] if d else [f]
+
+
 def sanitize_path(path):
     if path is None:
         return None
