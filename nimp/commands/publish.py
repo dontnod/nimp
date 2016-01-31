@@ -111,23 +111,24 @@ class PublishCommand(Command):
                     log_error("Error while building script")
                     return False
 
-            publish_version_path = env.format(env.publish_version)
             log_notification("Publishing version {0}…", env.publish_version)
-            files_to_publish.to(publish_version_path).load_set("version")
+            files_to_publish.to(env.format(env.publish_version)).load_set("version")
             if not all_map(robocopy, files_to_publish()):
                 return False
 
             # Create a Torrent
-            if True:
-                torrent = env.format('/b/dist/{project}-bin-{revision}-{platform}.torrent')
-                tracker = 'http://tracker:8020/announce'
+            if hasattr(env, 'torrent_path'):
+                torrent = env.format(env.torrent_path)
+                env.torrent_tracker = 'http://tracker:8020/announce'
 
                 log_notification("Creating torrent {0}…", torrent)
 
+                # If torrent root is “a/b/c”, publish it to “b/c” with root dir “a”
+                tree = os.path.split(env.format(env.torrent_root))
                 publish_torrent = env.map_files()
-                publish_torrent.to('bin/{revision}-{platform}').load_set("version")
+                publish_torrent.to('/'.join(tree[1:])).load_set("version")
 
-                data = make_torrent(env.format('{project}'), tracker, publish_torrent)
+                data = make_torrent(tree[0], env.torrent_tracker, publish_torrent)
                 if not data:
                     log_error("Torrent is empty")
                     return False
