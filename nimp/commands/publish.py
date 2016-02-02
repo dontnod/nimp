@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import shutil
+import zipfile
 
 from nimp.commands._command import *
 from nimp.utilities.ue3 import *
@@ -41,11 +42,6 @@ class PublishCommand(Command):
                             '--revision',
                             help = 'revision',
                             metavar = '<revision>')
-
-        parser.add_argument('--keep-temp-binaries',
-                            help    = 'Don’t delete temporary binaries directory',
-                            action  = "store_true",
-                            default = False)
 
         # FIXME: this looks too much like --configuration! do something about it
         parser.add_argument('-l',
@@ -120,7 +116,6 @@ class PublishCommand(Command):
             # Create a Torrent
             if hasattr(env, 'torrent_path'):
                 torrent = env.format(env.torrent_path)
-                env.torrent_tracker = 'http://tracker:8020/announce'
 
                 log_notification("Creating torrent {0}…", torrent)
 
@@ -137,20 +132,20 @@ class PublishCommand(Command):
                 with open(sanitize_path(torrent), 'wb') as fd:
                     fd.write(data)
 
-            # If everything went well, remove temporary binaries
-            if not env.keep_temp_binaries:
-                for config_or_target in env.configurations:
+            # Create a Zip file
+            if hasattr(env, 'torrent_root'):
+                zipf = env.format(env.publish_version + '.zip')
 
-                    c = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
-                    t = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
+                log_notification('Creating Zip file {0}…', zipf)
 
-                    try:
-                        path = env.format(env.publish_binaries,
-                                          configuration = c,
-                                          target = t)
-                        shutil.rmtree(sanitize_path(path))
-                    except Exception as ex:
-                        log_error("Error while cleaning binaries: {0}", ex)
+                zfd = zipfile.ZipFile(sanitize_path(zipf), 'w')
+                publish_torrent = env.map_files()
+                publish_torrent.to('.').load_set('version')
+                for src, dst in publish_torrent():
+                    if os.path.isfile(src):
+                         log_notification('Adding {0} as {1}', src, dst)
+                         zfd.write(src, dst)
+                zfd.close()
 
         return True
 
