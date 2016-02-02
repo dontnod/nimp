@@ -138,7 +138,7 @@ class PublishCommand(Command):
 
                 log_notification('Creating Zip file {0}…', zipf)
 
-                zfd = zipfile.ZipFile(sanitize_path(zipf), 'w')
+                zfd = zipfile.ZipFile(sanitize_path(zipf), 'w', zipfile.ZIP_DEFLATED)
                 publish_torrent = env.map_files()
                 publish_torrent.to('.').load_set('version')
                 for src, dst in publish_torrent():
