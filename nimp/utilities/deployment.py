@@ -80,7 +80,8 @@ def list_all_revisions(env, version_directory_format, **override_args):
 #---------------------------------------------------------------------------
 def get_latest_available_revision(env, version_directory_format, max_revision, **override_args):
 
-    for version_info in list_all_revisions(env, version_directory_format, **override_args):
+    revisions = list_all_revisions(env, version_directory_format, **override_args)
+    for version_info in revisions:
         revision = version_info['revision']
         if max_revision is None or int(revision) <= int(max_revision):
             log_verbose('Found version %s' % (revision))

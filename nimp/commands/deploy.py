@@ -60,7 +60,7 @@ class DeployCommand(Command):
 
         if env.mode == 'version':
             log_notification("Deploying version…")
-            src = env.publish_version
+            src = env.binaries_archive
             if env.revision is None:
                 revision = get_latest_available_revision(env, src, **vars(env))
                 if revision is None:
