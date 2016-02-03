@@ -8,7 +8,7 @@ from BitTornado.Meta.BTTree import BTTree
 from BitTornado.Meta.bencode import bencode
 
 
-def make_torrent(name, tracker, publish):
+def make_torrent(root, tracker, publish):
     """Make a single .torrent file for a given list of items"""
 
     # Only publish files, and can’t create an empty torrent
@@ -16,10 +16,15 @@ def make_torrent(name, tracker, publish):
     if not tree_list:
         return None
 
+    # If there is only one file in the list, the torrent will not have any
+    # subdirectories so the root name should be the file name.
+    if len(tree_list) == 1:
+        root = tree_list[0].path[-1]
+
     # XXX: BitTornado doesn’t support this yet
     params = { 'private': True }
 
-    info = Info(name, sum(tree.size for tree in tree_list),
+    info = Info(root, sum(tree.size for tree in tree_list),
                 flag=None, progress=lambda x: None,
                 progress_percent=True, **params)
     for tree in tree_list:
