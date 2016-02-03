@@ -54,16 +54,16 @@ def list_all_revisions(env, version_directory_format, **override_args):
 
     log_verbose('Looking for latest version in {0}…', version_directory_format)
 
-    for version_directory in glob.glob(version_directories_glob):
-        version_directory = version_directory.replace('\\', '/')
+    for version_file in glob.glob(version_directories_glob):
+        version_file = version_file.replace('\\', '/')
         version_regex = version_directory_format.format(**format_args)
 
-        rev_match = re.match(version_regex, version_directory)
+        rev_match = re.match(version_regex, version_file)
 
         if rev_match is not None:
             rev_infos = rev_match.groupdict()
-            rev_infos['path'] = version_directory
-            rev_infos['creation_date'] = datetime.fromtimestamp(os.path.getctime(version_directory))
+            rev_infos['path'] = version_file
+            rev_infos['creation_date'] = datetime.fromtimestamp(os.path.getctime(version_file))
 
             if not 'platform' in rev_infos:
                 rev_infos['platform'] = "*"
