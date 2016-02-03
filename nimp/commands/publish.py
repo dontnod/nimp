@@ -134,11 +134,10 @@ class PublishCommand(Command):
                 os.rename(torrent + '.tmp', torrent)
 
             # Create a Zip file
-            if hasattr(env, 'torrent_root'):
-                zipf = sanitize_path(env.format(env.publish_version + '.zip'))
+            if hasattr(env, 'binaries_archive'):
+                zipf = sanitize_path(env.format(env.binaries_archive))
 
                 log_notification('Creating Zip file {0}…', zipf + '.tmp')
-
                 fd = zipfile.ZipFile(zipf, 'w', zipfile.ZIP_DEFLATED)
                 publish_torrent = env.map_files()
                 publish_torrent.to('.').load_set('version')
@@ -148,6 +147,20 @@ class PublishCommand(Command):
                          fd.write(src, dst)
                 fd.close()
                 os.rename(zipf + '.tmp', zipf)
+
+                torrent = sanitize_path(env.format(env.binaries_torrent))
+                log_notification("Creating torrent {0}…", torrent)
+                publish_torrent = env.map_files()
+                publish_torrent.to('.').glob(env.binaries_archive)
+
+                data = make_torrent('.', env.torrent_tracker, publish_torrent)
+                if not data:
+                    log_error("Torrent is empty")
+                    return False
+
+                with open(torrent + '.tmp', 'wb') as fd:
+                    fd.write(data)
+                os.rename(torrent + '.tmp', torrent)
 
         return True
 
