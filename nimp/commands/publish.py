@@ -59,7 +59,7 @@ class PublishCommand(Command):
 
         if not hasattr(env, 'mode') or env.mode == 'binaries':
             log_notification("Publishing binaries…")
-            files_to_publish.to(env.publish_binaries).load_set("binaries")
+            files_to_publish.to(env.binaries_tmp).load_set("binaries")
             if not all_map(robocopy, files_to_publish()):
                 return False
 
@@ -97,7 +97,7 @@ class PublishCommand(Command):
                                                    target = t,
                                                    ue4_build_configuration = get_ue4_build_config(c))
 
-                tmp = tmp.src(env.publish_binaries)
+                tmp = tmp.src(env.binaries_tmp)
 
                 # UE4 only? FIXME: the logic here doesn’t seem sane to me…
                 #if hasattr(env, 'deploy_version_root'):
