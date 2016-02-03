@@ -71,6 +71,14 @@ class PublishCommand(Command):
                 return False
 
         elif env.mode == 'version':
+            if not hasattr(env, 'binaries_archive'):
+                log_error('missing binaries_archive in config')
+                return False
+
+            if not hasattr(env, 'binaries_torrent'):
+                log_error('missing binaries_torrent in config')
+                return False
+
             log_notification("Publishing version…")
 
             files_to_deploy = env.map_files().to(env.format(env.root_dir))
@@ -108,57 +116,43 @@ class PublishCommand(Command):
                     log_error("Error while building script")
                     return False
 
-            log_notification("Publishing version {0}…", env.publish_version)
-            files_to_publish.to(env.format(env.publish_version)).load_set("version")
-            if not all_map(robocopy, files_to_publish()):
-                return False
-
-            # Create a Torrent
-            if hasattr(env, 'torrent_path'):
-                torrent = sanitize_path(env.format(env.torrent_path))
-
-                log_notification("Creating torrent {0}…", torrent)
-
-                # If torrent root is “a/b/c”, publish it to “b/c” with root dir “a”
-                tree = path_to_array(env.format(env.torrent_root))
-                publish_torrent = env.map_files()
-                publish_torrent.to('/'.join(tree[1:])).load_set("version")
-
-                data = make_torrent(tree[0], env.torrent_tracker, publish_torrent)
-                if not data:
-                    log_error("Torrent is empty")
-                    return False
-
-                with open(torrent + '.tmp', 'wb') as fd:
-                    fd.write(data)
-                shutil.move(torrent + '.tmp', torrent)
-
             # Create a Zip file
-            if hasattr(env, 'binaries_archive'):
-                archive = sanitize_path(env.format(env.binaries_archive))
-                torrent = sanitize_path(env.format(env.binaries_torrent))
+            archive = sanitize_path(env.format(env.binaries_archive))
+            archive_tmp = archive + '.tmp'
 
-                log_notification('Creating Zip file {0}…', archive)
-                fd = zipfile.ZipFile(archive + '.tmp', 'w', zipfile.ZIP_DEFLATED)
-                publish_torrent = env.map_files()
-                publish_torrent.to('.').load_set('version')
-                for src, dst in publish_torrent():
-                    if os.path.isfile(src):
-                         log_notification('Adding {0} as {1}', src, dst)
-                         fd.write(src, dst)
-                fd.close()
-                shutil.move(archive + '.tmp', archive)
+            log_notification('Creating Zip file {0}…', archive)
 
-                log_notification("Creating torrent {0}…", torrent)
-                publish_torrent = env.map_files()
-                publish_torrent.to('.').glob(env.binaries_archive)
-                data = make_torrent('.', env.torrent_tracker, publish_torrent)
-                if not data:
-                    log_error("Torrent is empty")
-                    return False
-                with open(torrent + '.tmp', 'wb') as fd:
-                    fd.write(data)
-                shutil.move(torrent + '.tmp', torrent)
+            if not os.path.isdir(os.path.dirname(archive)):
+                safe_makedirs(os.path.isdir(os.path.dirname(archive)))
+
+            fd = zipfile.ZipFile(archive_tmp, 'w', zipfile.ZIP_DEFLATED)
+            publish = env.map_files()
+            publish.to('.').load_set('version')
+            for src, dst in publish():
+                if os.path.isfile(src):
+                     log_notification('Adding {0} as {1}', src, dst)
+                     fd.write(src, dst)
+            fd.close()
+            shutil.move(archive_tmp, archive)
+
+            # Create a torrent
+            torrent = sanitize_path(env.format(env.binaries_torrent))
+            torrent_tmp = torrent + '.tmp'
+
+            log_notification('Creating torrent {0}…', torrent)
+
+            if not os.path.isdir(os.path.dirname(torrent)):
+                safe_makedirs(os.path.isdir(os.path.dirname(torrent)))
+
+            publish = env.map_files()
+            publish.src(env.binaries_archive).to(os.path.basename(archive))
+            data = make_torrent(None, env.torrent_tracker, publish)
+            if not data:
+                log_error('Torrent is empty (no files?)')
+                return False
+            with open(torrent_tmp, 'wb') as fd:
+                fd.write(data)
+            shutil.move(torrent_tmp, torrent)
 
         return True
 
