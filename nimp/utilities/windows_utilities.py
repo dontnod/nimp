@@ -27,6 +27,9 @@ SEM_FAILCRITICALERRORS = 0x0001
 SEM_NOGPFAULTERRORBOX  = 0x0002
 SEM_NOOPENFILEERRORBOX = 0x8000
 
+PROCESS_TERMINATE = 0x0001
+PROCESS_STILL_ACTIVE = 0x0103
+PROCESS_QUERY_INFORMATION = 0x0400
 
 #
 # Disable “Entry Point Not Found” and “Application Error” dialogs for child processes
@@ -36,6 +39,19 @@ def disable_win32_dialogs():
                         | SEM_NOGPFAULTERRORBOX \
                         | SEM_NOOPENFILEERRORBOX)
 
+#-------------------------------------------------------------------------------
+def is_process_alive(pid):
+    import ctypes.wintypes
+    is_alive = True
+    exit_code = ctypes.wintypes.DWORD()
+    handle = kernel32.OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION, False, pid)
+    if handle == 0:
+        is_alive = False
+    else:
+        ret = kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code))
+        kernel32.CloseHandle(handle)
+        is_alive = (ret == 0 or exit_code.value == PROCESS_STILL_ACTIVE)
+    return is_alive
 
 #-------------------------------------------------------------------------------
 class OutputDebugStringLogger(threading.Thread):
