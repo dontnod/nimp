@@ -40,18 +40,27 @@ def disable_win32_dialogs():
                         | SEM_NOOPENFILEERRORBOX)
 
 #-------------------------------------------------------------------------------
-def is_process_alive(pid):
-    import ctypes.wintypes
-    is_alive = True
-    exit_code = ctypes.wintypes.DWORD()
-    handle = kernel32.OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION, False, pid)
-    if handle == 0:
-        is_alive = False
-    else:
-        ret = kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code))
-        kernel32.CloseHandle(handle)
-        is_alive = (ret == 0 or exit_code.value == PROCESS_STILL_ACTIVE)
-    return is_alive
+def monitor_parent_process():
+
+    def is_nimp_alive():
+
+        import ctypes.wintypes
+        import nimp.utilities.processes
+
+        exit_code = ctypes.wintypes.DWORD()
+        handle = kernel32.OpenProcess(PROCESS_TERMINATE | PROCESS_QUERY_INFORMATION, False, os.getppid())
+        if handle != 0:
+            is_alive = True
+            while is_alive:
+                ret = kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code))
+                is_alive = (ret == 0 or exit_code.value == PROCESS_STILL_ACTIVE)
+                time.sleep(0.33)
+            kernel32.CloseHandle(handle)
+        log_notification("Parent nimp.exe is not running anymore: current python process and its subprocesses are going to be killed")
+        nimp.utilities.processes.call_process('.', ['taskkill', '/F', '/T', '/PID', str(os.getpid())])
+
+    check_nimp_process = threading.Thread(None, is_nimp_alive, None)
+    check_nimp_process.start()
 
 #-------------------------------------------------------------------------------
 class OutputDebugStringLogger(threading.Thread):

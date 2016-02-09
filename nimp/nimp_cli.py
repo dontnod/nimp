@@ -10,9 +10,6 @@ import time
 import traceback
 import platform
 import codecs
-import threading
-import time
-import os
 
 from nimp import modules
 from nimp.modules.module import *
@@ -23,23 +20,13 @@ if 'MSYS_NT' in platform.system():
     raise NotImplementedError('MSYS Python is not supported; please use MimGW Python instead')
 
 
-def is_nimp_alive():
-    nimp_pid = os.getppid()
-    while True:
-        if is_process_alive(nimp_pid) == False:
-            log_notification("Parent nimp.exe is not running anymore: current python process and its subprocesses are going to be killed")
-            call_process('.', ['taskkill', '/F', '/T', '/PID', str(os.getpid())])
-        time.sleep(1)
-
-
 def main():
     t0 = time.time()
 
     result = 0
     try:
         if is_windows():
-            check_nimp_process = threading.Thread(None, is_nimp_alive, None)
-            check_nimp_process.start()
+            monitor_parent_process()
 
         module_instances = get_dependency_sorted_instances(modules, Module)
 
