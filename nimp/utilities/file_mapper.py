@@ -7,7 +7,6 @@ import time
 import functools
 import glob2
 import itertools
-import pathlib
 import stat
 import re
 

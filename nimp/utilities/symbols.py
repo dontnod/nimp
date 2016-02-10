@@ -11,7 +11,6 @@ import glob
 import fnmatch
 import re
 import contextlib
-import pathlib
 
 from nimp.utilities.perforce import *
 from nimp.utilities.file_mapper import *
