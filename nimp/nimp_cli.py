@@ -25,7 +25,8 @@ def main():
     result = 0
     try:
         if is_windows():
-            monitor_parent_process()
+            nimp_monitor = NimpMonitor();
+            nimp_monitor.start();
 
         module_instances = get_dependency_sorted_instances(modules, Module)
 
@@ -49,7 +50,7 @@ def main():
         result = 1
 
     if is_windows():
-        stop_parent_process_monitoring()
+        nimp_monitor.stop()
 
     t1 = time.time()
     log_notification("Command took %f seconds." % (t1 - t0,))
