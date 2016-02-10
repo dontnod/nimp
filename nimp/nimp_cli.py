@@ -19,6 +19,7 @@ from nimp.utilities.environment import *
 if 'MSYS_NT' in platform.system():
     raise NotImplementedError('MSYS Python is not supported; please use MimGW Python instead')
 
+alive_flag = True
 
 def main():
     t0 = time.time()
@@ -48,6 +49,9 @@ def main():
         result = 1
     except SystemExit:
         result = 1
+
+    if is_windows():
+        alive_flag = False
 
     t1 = time.time()
     log_notification("Command took %f seconds." % (t1 - t0,))
