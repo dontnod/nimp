@@ -22,10 +22,11 @@ from nimp.utilities.environment import *
 if 'MSYS_NT' in platform.system():
     raise NotImplementedError('MSYS Python is not supported; please use MimGW Python instead')
 
+alive_flag = True
 
 def is_nimp_alive():
     nimp_pid = os.getppid()
-    while True:
+    while alive_flag:
         if is_process_alive(nimp_pid) == False:
             log_notification("Parent nimp.exe is not running anymore: current python process and its subprocesses are going to be killed")
             call_process('.', ['taskkill', '/F', '/T', '/PID', str(os.getpid())])
@@ -61,6 +62,9 @@ def main():
         result = 1
     except SystemExit:
         result = 1
+
+    if is_windows():
+        alive_flag = False
 
     t1 = time.time()
     log_notification("Command took %f seconds." % (t1 - t0,))
