@@ -153,7 +153,7 @@ def ue4_build(env):
             return False
 
     if env.target == 'editor':
-        if not _ue4_build_project(env, solution, env.game, env.ue4_build_platform,
+        if not _ue4_build_project(env, solution, 'UE4Editor', env.ue4_build_platform,
                                   env.ue4_build_configuration + ' Editor', vs_version, 'Build'):
             return False
 
