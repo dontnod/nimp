@@ -224,9 +224,16 @@ def _ue4_build_project(env, sln_file, project, build_platform,
 
 #---------------------------------------------------------------------------
 def ue4_commandlet(env, commandlet, *args):
-    cmdline = [sanitize_path(os.path.join(env.format(env.root_dir), "Engine/Binaries/Win64/UE4Editor.exe")),
-                env.game,
-                "-run=%s" % commandlet]
+    if is_windows():
+        exe = 'Engine/Binaries/Win64/UE4Editor.exe'
+    elif platform.system() == 'Darwin':
+        exe = 'Engine/Binaries/Mac/UE4Editor'
+    else:
+        exe = 'Engine/Binaries/Linux/UE4Editor'
+
+    cmdline = [sanitize_path(os.path.join(env.format(env.root_dir), exe)),
+               env.game,
+               '-run=%s' % commandlet]
 
     cmdline += list(args)
     cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
