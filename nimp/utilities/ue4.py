@@ -42,8 +42,13 @@ def ue4_build(env):
 
     # HACK: We also need this on Windows
     if is_windows():
-        robocopy(env.format('{root_dir}/Engine/Source/ThirdParty/FBX/2014.2.1/lib/vs2012/x64/release/libfbxsdk.dll'),
-                 env.format('{root_dir}/Engine/Binaries/Win64/libfbxsdk.dll'))
+        for path in [ '2016.1.1/lib/vs2015',
+                      '2014.2.1/lib/vs2012', ]:
+            src = env.format('{root_dir}/Engine/Source/ThirdParty/FBX/' + path + '/x64/release/libfbxsdk.dll')
+            dst = env.format('{root_dir}/Engine/Binaries/Win64/libfbxsdk.dll')
+            if os.path.exists(sanitize_path(src)):
+                robocopy(src, dst)
+                break
 
     # HACK: We need this on Linux...
     if platform.system() == 'Linux':
@@ -57,14 +62,20 @@ def ue4_build(env):
             log_error("Error generating UE4 project files")
             return False
 
-    # The Durango XDK does not support Visual Studio 2013 yet, so if UE4
+    # Default to VS 2015, The Durango XDK does not support Visual Studio 2013 yet, so if UE4
     # detected it, it created VS 2012 project files and we have to use that
     # version to build the tools instead.
-    vs_version = '12'
+    vs_version = '14'
     try:
         for line in open(env.format(env.solution)):
             if '# Visual Studio 2012' in line:
                 vs_version = '11'
+                break
+            if '# Visual Studio 2013' in line:
+                vs_version = '12'
+                break
+            if '# Visual Studio 2015' in line:
+                vs_version = '14'
                 break
     except:
         pass
@@ -77,6 +88,11 @@ def ue4_build(env):
 
     # List of tools to build
     tools = []
+
+    # Some tools are necessary even when not building tools...
+    need_ps4devkitutil = False
+    need_ps4mapfileutil = env.platform == 'ps4'
+    need_xboxonepdbfileutil = env.platform == 'xboxone'
 
     if env.target == 'tools':
 
@@ -93,18 +109,21 @@ def ue4_build(env):
         if env.platform == 'win64':
             tools += [ 'DotNETUtilities',
                        'AutomationTool',
-                       'PS4DevKitUtil',
-                       'PS4MapFileUtil',
-                       'XboxOnePDBFileUtil',
                        'SymbolDebugger',
                        'UnrealPak', ]
+            need_ps4devkitutil = True
+            need_ps4mapfileutil = True
+            need_xboxonepdbfileutil = True
 
     # Some tools are necessary even when not building tools...
-    if env.platform == 'ps4':
-        if 'PS4MapFileUtil' not in tools: tools += [ 'PS4MapFileUtil' ]
+    if need_ps4devkitutil and os.path.exists(sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
+        tools += [ 'PS4DevKitUtil' ]
 
-    if env.platform == 'xboxone':
-        if 'XboxOnePDBFileUtil' not in tools: tools += [ 'XboxOnePDBFileUtil' ]
+    if need_ps4mapfileutil and os.path.exists(sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
+        tools += [ 'PS4MapFileUtil' ]
+
+    if need_xboxonepdbfileutil and os.path.exists(sanitize_path(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
+        tools += [ 'XboxOnePDBFileUtil' ]
 
     # Build tools from the main solution
     for tool in tools:
