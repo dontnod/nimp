@@ -41,7 +41,7 @@ class SynchronizeJiraCommand(Command):
             #Create a new temp file and close it in order that the command let writes in that file
             temp = tempfile.NamedTemporaryFile(delete = False)
             temp.close()
-            if ue4_commandlet(env,'DNEAssetMiningCommandlet', 'path=/Game/Maps', 'json=%s' % temp.name):
+            if ue4_commandlet(env,'DNEAssetMiningCommandlet', 'path=/Game', 'json=%s' % temp.name):
                 try:
                     json_file = open(temp.name, encoding='utf-8',errors='replace')
                     json_data = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
