@@ -15,5 +15,6 @@ __all__ = [
     "publish",
     "ship",
     "upgrade",
+	"sync_jira"
 ]
 

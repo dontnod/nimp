@@ -5,4 +5,6 @@
 dist/
 nimp.egg-info/
 nimp/__pycache__/
+.vs/*
+
 
