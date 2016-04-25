@@ -21,7 +21,7 @@ def vsbuild(solution, platform_name, configuration, project = None, vs_version =
         return call_process(build_directory, command) == 0
 
     else: # Mac and Linux alike
-        command = [ 'xbuild', solution, '/verbosity:quiet', '/nologo' ]
+        command = [ 'xbuild', solution, '/verbosity:quiet', '/p:TargetFrameworkVersion=v4.5', '/p:TargetFrameworkProfile=', '/nologo' ]
         return call_process(build_directory, command) == 0
 
 
