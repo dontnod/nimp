@@ -8,14 +8,16 @@ from collections import OrderedDict
 import tempfile
 from tempfile import mkstemp
 import os
-
+import re
 
 from jira import JIRA
 
 from nimp.commands._command import Command
 from nimp.utilities.ue4 import ue4_commandlet
 from nimp.utilities.logging import log_error
+from nimp.utilities.logging import log_warning
 from nimp.utilities.logging import log_notification
+from nimp.utilities.perforce import p4_get_modified_files
 
 #-------------------------------------------------------------------------------
 class SynchronizeJiraCommand(Command):
@@ -26,6 +28,10 @@ class SynchronizeJiraCommand(Command):
 
     def configure_arguments(self, env, parser):
         '''configure_arguments'''
+        parser.add_argument('--changelists',
+                            help    = 'changelists to mine',
+                            metavar = 'N',
+                            nargs    = '+')
         return True
     #---------------------------------------------------------------------------
     def run(self, env):
@@ -38,14 +44,32 @@ class SynchronizeJiraCommand(Command):
             options = { 'server': env.jira_server }
             jira = JIRA(options,basic_auth=(env.jira_id, env.jira_password))
 
-            #Create a new temp file and close it in order that the command let writes in that file
+            #Filter modified files to get only the edited or added ones
+            #packages = [filename for (filename, action) in packages if action == 'add' or action == 'edit']
+            packages = p4_get_modified_files(*env.changelists)
+            filtered_packages = []
+            for (filename, action) in packages:
+                if filename.lower().startswith(os.getcwd().lower()) and re.search(env.game, filename, re.IGNORECASE):#check if filename is subpath of the current project
+                    if action == 'edit' or action == 'add':
+                        if filename.find('Content') != -1 and (filename.find('.uasset') != -1 or filename.find('.umap') != -1):
+                            filename = filename.replace('\\','/')
+                            filename = filename.split('/Content/')[1]
+                            filename = '/Game/' + filename
+                            filename = filename.replace('.uasset','')
+                            filename = filename.replace('.umap','')
+                            filtered_packages.append(filename)
+
+            #Create a new temp file and close it in order that the commandlet writes in that file
             temp = tempfile.NamedTemporaryFile(delete = False)
             temp.close()
-            if ue4_commandlet(env,'DNEAssetMiningCommandlet', 'path=/Game', 'json=%s' % temp.name):
+            if ue4_commandlet(env,'DNEAssetMiningCommandlet', 'packages=%s' % ','.join(filtered_packages), "json=%s" % temp.name):
                 try:
                     json_file = open(temp.name, encoding='utf-8',errors='replace')
-                    json_data = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
-                    SynchronizeJiraCommand.parse_json_and_create_jira_task(json_data, jira)
+                    if os.stat(temp.name).st_size > 0:
+                        json_data = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
+                        SynchronizeJiraCommand.parse_json_and_create_jira_task(env, json_data, jira)
+                    else:
+                        log_notification('No Metadata found in the mined packages, the file is empty.')
                     json_file.close()
                     os.remove(temp.name)
                 except ValueError as error:
@@ -56,20 +80,23 @@ class SynchronizeJiraCommand(Command):
 
     #---------------------------------------------------------------------------
     @staticmethod
-    def parse_json_and_create_jira_task( json_data, jira_object):
+    def parse_json_and_create_jira_task(env, json_data, jira_object):
         '''Method that parses json_data and then creates the corresponding jira task'''
-        for ue_object in json_data:
-            summary = ue_object
-            description = ''
-            for metadata in json_data[ue_object]['Metadata']:
-                for key in json_data[ue_object]['Metadata'][metadata]:
-                    description += str(json_data[ue_object]['Metadata'][metadata][key]) + ' '
-            SynchronizeJiraCommand.create_jira_task(jira_object,'FOR', summary, description, 'Task', None )
+        if len(json_data) > 0:
+            for ue_object in json_data:
+                summary = ue_object
+                description = ''
+                for metadata in json_data[ue_object]['Metadata']:
+                    for key in json_data[ue_object]['Metadata'][metadata]:
+                        description += key + ' : ' + str(json_data[ue_object]['Metadata'][metadata][key]) + ', '
+                SynchronizeJiraCommand.create_jira_task(jira_object, env.jira_project_key, summary, description, 'Task', None )
+        else:
+            log_notification('Json file is not empty but no data was found.')
         return
     #---------------------------------------------------------------------------
     @staticmethod
     def create_jira_task(jira_object, project, summary, description, issue_type, assignee=None):
-        '''Method that creates a jira task with the given paramters, if it already exists, do nothing'''
+        '''Method that creates a jira task with the given paramters'''
         #search if issue already exists
         search_str = 'project=\''+project+'\' and summary ~ \'' + summary +'\''
         my_issues = jira_object.search_issues(search_str)
@@ -84,5 +111,10 @@ class SynchronizeJiraCommand(Command):
             }
             jira_object.create_issue(fields=issue_dict)
         else:
-            log_notification('Issue ' + summary + ' already exists.')
+            permissions =  jira_object.my_permissions(project, None,  my_issues[0])
+            if permissions['permissions']['EDIT_ISSUES']['havePermission']:
+                log_notification('Issue ' + summary + ' already exists. Updating description.')
+                my_issues[0].update(description = description)
+            else:
+                log_warning('Permission Insufficient to edit description on ' + summary + '.')
         return

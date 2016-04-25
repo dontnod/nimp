@@ -245,6 +245,18 @@ def p4_sync(file = None, cl_number = None):
 
     return True
 
+#---------------------------------------------------------------
+def p4_get_modified_files(*cl_numbers):
+    for cl_number in cl_numbers:
+        actions = _p4_parse_command_output_list(".", ["p4", "-z", "tag", "describe", cl_number], r"^\.\.\. action[\w]*(.*)$")
+        assets = _p4_parse_command_output_list(".", ["p4", "-z", "tag", "describe", cl_number], r"^\.\.\. depotFile[\w]*(.*)$")
+        for i in range(0,len(assets)):
+            assets[i] = _p4_parse_command_output(".", ["p4", "-z", "tag", "fstat", assets[i]], r"^\.\.\. clientFile(.*)$")
+            if assets[i] != None:
+                assets[i] = os.path.normpath(assets[i])
+            else:
+                assets[i] = ''
+            yield (assets[i], actions[i])
 
 #-------------------------------------------------------------------------------
 def p4_transaction(cl_description, submit_on_success = False, revert_unchanged = True, add_not_versioned_files = True):

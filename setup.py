@@ -26,6 +26,7 @@ setup_info = dict(
     install_requires = [
         'glob2',
         'bittornado',
+		'jira',
     ],
 
     entry_points = {
