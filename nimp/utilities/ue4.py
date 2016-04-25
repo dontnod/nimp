@@ -45,6 +45,11 @@ def ue4_build(env):
         robocopy(env.format('{root_dir}/Engine/Source/ThirdParty/FBX/2014.2.1/lib/vs2012/x64/release/libfbxsdk.dll'),
                  env.format('{root_dir}/Engine/Binaries/Win64/libfbxsdk.dll'))
 
+    # HACK: We need this on Linux...
+    if platform.system() == 'Linux':
+        robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Steamworks/Steamv132/Linux/libsteam_api.so'),
+                 env.format('{root_dir}/Engine/Binaries/Linux/libsteam_api.so'))
+
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
         # Now generate project files
