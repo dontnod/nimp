@@ -49,7 +49,7 @@ class SynchronizeJiraCommand(Command):
             packages = p4_get_modified_files(*env.changelists)
             filtered_packages = []
             for (filename, action) in packages:
-                if filename.lower().startswith(os.getcwd().lower()) and re.search(env.game, filename, re.IGNORECASE):#check if filename is subpath of the current project
+                if filename.lower().startswith(os.getcwd().lower()):#check if filename is subpath of the current project
                     if action == 'edit' or action == 'add':
                         if filename.find('Content') != -1 and (filename.find('.uasset') != -1 or filename.find('.umap') != -1):
                             filename = filename.replace('\\','/')
