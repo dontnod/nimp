@@ -153,8 +153,15 @@ def ue4_build(env):
             return False
 
     if env.target == 'editor':
-        if not _ue4_build_project(env, solution, env.game, env.ue4_build_platform,
-                                  env.ue4_build_configuration + ' Editor', vs_version, 'Build'):
+        if env.platform in ['linux', 'mac']:
+            project = env.game + 'Editor'
+            config = env.ue4_build_configuration
+        else:
+            project = env.game
+            config = env.ue4_build_configuration + ' Editor'
+
+        if not _ue4_build_project(env, solution, project, env.ue4_build_platform,
+                                  config, vs_version, 'Build'):
             return False
 
     return True
