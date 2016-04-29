@@ -30,8 +30,10 @@ def ue4_build(env):
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
     # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
-    if not vsbuild(env.format('{root_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln'),
-                   'Any CPU', 'Development', None, '11', 'Build'):
+    tmp = env.format('{root_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln')
+    if not vsbuild(tmp, 'Any CPU', 'Development', None, '11', 'Build') \
+       and not vsbuild(tmp, 'Any CPU', 'Development', None, '12', 'Build') \
+       and not vsbuild(tmp, 'Any CPU', 'Development', None, '14', 'Build'):
         log_error("Could not build RPCUtility")
         return False
 
@@ -87,7 +89,7 @@ def ue4_build(env):
     result = True
 
     # List of tools to build
-    tools = []
+    tools = [ 'UnrealHeaderTool' ]
 
     # Some tools are necessary even when not building tools...
     need_ps4devkitutil = False
@@ -163,10 +165,12 @@ def ue4_build(env):
                 log_error("Could not build BootstrapPackagedGame")
                 result = False
 
-            if not vsbuild(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln'),
-                           'x64', 'Development', None, '11', 'Build'):
-                log_error("Could not build XboxOnePackageNameUtil")
-                result = False
+            tmp = env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
+            if os.path.exists(sanitize_path(tmp)):
+                if not vsbuild(tmp, 'x64', 'Development', None, '11', 'Build') \
+                   and not vsbuild(tmp, 'x64', 'Development', None, '14', 'Build'):
+                    log_error("Could not build XboxOnePackageNameUtil")
+                    result = False
 
     if not result:
         return result
