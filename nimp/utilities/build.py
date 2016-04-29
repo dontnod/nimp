@@ -28,14 +28,36 @@ def vsbuild(solution, platform_name, configuration, project = None, vs_version =
 #-------------------------------------------------------------------------------
 def _find_devenv_path(vs_version):
     devenv_path = None
-    vstools_path = os.getenv('VS' + vs_version + '0COMNTOOLS')
-    if vstools_path is not None:
-        # Sanitize this because os.path.join sometimes gets confused
-        if vstools_path[-1] in [ '/', '\\' ]:
-            vstools_path = vstools_path[:-1]
-        devenv_path = os.path.join(vstools_path, '../../Common7/IDE/devenv.com')
-        if os.path.exists(devenv_path):
-            log_verbose("Found Visual Studio at {0}", devenv_path)
+
+    # First try the registry, because the environment variable is unreliable
+    # (case of Visual Studio installed on a different drive; it still sets
+    # the envvar to point to C:\Program Files even if devenv.com is on D:\)
+    from winreg import OpenKey, QueryValue, HKEY_LOCAL_MACHINE
+    key_path = 'SOFTWARE\\Classes\\VisualStudio.accessor.' + vs_version + '.0\\shell\\Open'
+    try:
+        with OpenKey(HKEY_LOCAL_MACHINE, key_path) as key:
+            cmdline = QueryValue(key, 'Command')
+            if cmdline[:1] == '"':
+                cmdline = cmdline.split('"')[1]
+            elif ' ' in cmdline:
+                cmdline = cmdline.split(' ')[0]
+            devenv_path = cmdline.replace('devenv.exe', 'devenv.com')
+    except:
+        pass
+
+    # If the registry key is unhelpful, try the environment variable
+    if not devenv_path:
+        vstools_path = os.getenv('VS' + vs_version + '0COMNTOOLS')
+        if vstools_path is not None:
+            # Sanitize this because os.path.join sometimes gets confused
+            if vstools_path[-1] in [ '/', '\\' ]:
+                vstools_path = vstools_path[:-1]
+            devenv_path = os.path.join(vstools_path, '../../Common7/IDE/devenv.com')
+
+    if not os.path.exists(devenv_path):
+        return None
+
+    log_verbose("Found Visual Studio at {0}", devenv_path)
     return devenv_path
 
 
