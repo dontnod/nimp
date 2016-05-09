@@ -44,13 +44,15 @@ def ue4_build(env):
 
     # HACK: We also need this on Windows
     if is_windows():
-        for path in [ '2016.1.1/lib/vs2015',
-                      '2014.2.1/lib/vs2012', ]:
-            src = env.format('{root_dir}/Engine/Source/ThirdParty/FBX/' + path + '/x64/release/libfbxsdk.dll')
-            dst = env.format('{root_dir}/Engine/Binaries/Win64/libfbxsdk.dll')
+        for dll in [ 'FBX/2014.2.1/lib/vs2012/x64/release/libfbxsdk.dll',
+                     'FBX/2016.1.1/lib/vs2015/x64/release/libfbxsdk.dll',
+                     'IntelEmbree/Embree270/Win64/lib/embree.dll',
+                     'IntelEmbree/Embree270/Win64/lib/tbb.dll',
+                     'IntelEmbree/Embree270/Win64/lib/tbbmalloc.dll' ]:
+            src = env.format('{root_dir}/Engine/Source/ThirdParty/' + dll)
+            dst = env.format('{root_dir}/Engine/Binaries/Win64/' + os.path.basename(dll))
             if os.path.exists(sanitize_path(src)):
                 robocopy(src, dst)
-                break
 
     # HACK: We need this on Linux...
     if platform.system() == 'Linux':
