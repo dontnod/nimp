@@ -37,10 +37,12 @@ def ue4_build(env):
         log_error("Could not build RPCUtility")
         return False
 
-    # HACK: For some reason nothing copies this file on OS X
     if platform.system() == 'Darwin':
+        # HACK: For some reason nothing copies this file on OS X
         robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll'),
                  env.format('{root_dir}/Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll'))
+        # HACK: and nothing creates this directory
+        safe_makedirs(env.format('{root_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
 
     # HACK: We also need this on Windows
     if is_windows():
