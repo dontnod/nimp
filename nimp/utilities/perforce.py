@@ -248,15 +248,18 @@ def p4_sync(file = None, cl_number = None):
 #---------------------------------------------------------------
 def p4_get_modified_files(*cl_numbers):
     for cl_number in cl_numbers:
-        actions = _p4_parse_command_output_list(".", ["p4", "-z", "tag", "describe", cl_number], r"^\.\.\. action[\w]*(.*)$")
-        assets = _p4_parse_command_output_list(".", ["p4", "-z", "tag", "describe", cl_number], r"^\.\.\. depotFile[\w]*(.*)$")
-        for i in range(0,len(assets)):
-            assets[i] = _p4_parse_command_output(".", ["p4", "-z", "tag", "fstat", assets[i]], r"^\.\.\. clientFile(.*)$")
-            if assets[i] != None:
-                assets[i] = os.path.normpath(assets[i])
-            else:
-                assets[i] = ''
-            yield (assets[i], actions[i])
+        outputs = _p4_parse_command_output_list_multiple_patterns(".", ["p4", "-z", "tag", "fstat", "-e", cl_number ,"//..."],r"^\.\.\. clientFile(.*)$", r"^\.\.\. headAction(.*)")
+        if len(outputs) == 2:
+            assets = outputs[0]
+            actions = outputs[1]
+            for i in range(0,len(assets)):
+                if assets[i] != None:
+                    assets[i] = os.path.normpath(assets[i])
+                else:
+                    assets[i] = ''
+                yield (assets[i], actions[i])
+        else:
+            yield ('', '')
 
 #-------------------------------------------------------------------------------
 def p4_transaction(cl_description, submit_on_success = False, revert_unchanged = True, add_not_versioned_files = True):
@@ -378,3 +381,22 @@ def _p4_parse_command_output_list(directory, command, pattern, input = None, log
         match_string = match_string.strip()
         result.append(match_string)
     return result
+
+def _p4_parse_command_output_list_multiple_patterns(directory, command, *patterns, input = None, log_errors = True):
+    output = _p4_run_command(directory, command, input, log_errors)
+
+    if output is None:
+        return None
+
+    outputs = []
+
+    for pattern in patterns:
+        matches = list(re.finditer(pattern, output, re.MULTILINE))
+        result = []
+        for match in matches:
+            match_string = match.group(1)
+            match_string = match_string.strip()
+            result.append(match_string)
+        outputs.append(result)
+
+    return outputs
