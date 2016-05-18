@@ -72,7 +72,7 @@ class ShipCommand(Command):
                                   "-cook", "-stage", "-archive",
                                   "-archivedirectory=%s" % sanitize_path(loose_dir),
                                   "-package",
-                                  "-clientconfig=Shipping",
+                                  "-clientconfig=%s" % env.configuration,
                                   "-ue4exe=UE4Editor-Cmd.exe",
                                   "-pak",
                                   "-prereqs",
