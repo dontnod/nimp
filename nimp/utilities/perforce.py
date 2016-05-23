@@ -246,10 +246,12 @@ def p4_sync(file = None, cl_number = None):
     return True
 
 #---------------------------------------------------------------
-def p4_get_modified_files(*cl_numbers):
+def p4_get_modified_files(*cl_numbers, root = '//...'):
     for cl_number in cl_numbers:
-        outputs = _p4_parse_command_output_list_multiple_patterns(".", ["p4", "-z", "tag", "fstat", "-e", cl_number ,"//..."],r"^\.\.\. clientFile(.*)$", r"^\.\.\. headAction(.*)")
-        if len(outputs) == 2:
+        outputs = _p4_parse_command_output_list_multiple_patterns(".", ["p4", "-z", "tag", "fstat", "-e", cl_number ,root], r"^\.\.\. depotFile(.*)$", r"^\.\.\. headAction(.*)")
+
+        #outputs length must be 2 because we must only have the clientFile and the headAction in this list
+        if outputs is not None and len(outputs) == 2:
             assets = outputs[0]
             actions = outputs[1]
             for i in range(0,len(assets)):
@@ -259,6 +261,8 @@ def p4_get_modified_files(*cl_numbers):
                     assets[i] = ''
                 yield (assets[i], actions[i])
         else:
+            if outputs is None:
+                log_warning('Error when executing command fstat -e on Changelist ' + str(cl_number) + '. Please check that the changelist exists or that you are in the good working directory.')
             yield ('', '')
 
 #-------------------------------------------------------------------------------

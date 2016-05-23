@@ -51,19 +51,22 @@ class SynchronizeJiraCommand(Command):
                 jira = JIRA(options,basic_auth=(env.jira_id, env.jira_password))
 
                 #Filter modified files to get only the edited or added ones
-                #packages = [filename for (filename, action) in packages if action == 'add' or action == 'edit']
-                packages = p4_get_modified_files(*env.changelists)
+                #Only Check in the Content/... p4 folder of the current working directory. It remplaces the condition filename.startswith(os.getcwd()) == true
+                packages = p4_get_modified_files(*env.changelists, root='Content/...')
                 filtered_packages = []
                 for (filename, action) in packages:
-                    if filename.lower().startswith(os.getcwd().lower()):#check if filename is subpath of the current project
-                        if action == 'edit' or action == 'add':
-                            if filename.find('Content') != -1 and (filename.find('.uasset') != -1 or filename.find('.umap') != -1):
-                                filename = filename.replace('\\','/')
-                                filename = filename.split('/Content/')[1]
-                                filename = '/Game/' + filename
-                                filename = filename.replace('.uasset','')
-                                filename = filename.replace('.umap','')
-                                filtered_packages.append(filename)
+                    if action == 'edit' or action == 'add':
+                        if filename.find('Content') != -1 and (filename.find('.uasset') != -1 or filename.find('.umap') != -1):
+                            filename = filename.replace('\\','/')
+                            filename = filename.split('/Content/')[1]
+                            filename = '/Game/' + filename
+                            filename = filename.replace('.uasset','')
+                            filename = filename.replace('.umap','')
+                            filtered_packages.append(filename)
+
+                if len(filtered_packages) == 0:
+                    log_warning('No Packages to mine found in changelists ' + str(env.changelists) +'.')
+                    return True;
 
                 #Create a new temp file and close it in order that the commandlet writes in that file
                 temp = tempfile.NamedTemporaryFile(delete = False)
