@@ -2,8 +2,10 @@
 
 import sys
 
+import argparse
+
 from nimp.utilities.processes import *
-from nimp.commands._command import *
+from nimp.commands.command import *
 
 #-------------------------------------------------------------------------------
 class RunCommand(Command):

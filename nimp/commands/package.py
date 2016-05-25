@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._command import *
+from nimp.commands.command import *
 from nimp.utilities.processes import *
 from nimp.utilities.ps3 import *
 from nimp.utilities.ps4 import *

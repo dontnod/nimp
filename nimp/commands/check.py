@@ -5,7 +5,7 @@ import platform
 import os
 import unittest
 
-from nimp.commands._command import *
+from nimp.commands.command import *
 
 from nimp.tests.utilities import file_mapper_tests
 from nimp.utilities.processes import *

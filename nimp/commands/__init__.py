@@ -1,5 +1,5 @@
 __all__ = [
-    "_command",
+    "command",
     "commandlet",
     "deploy",
     "fileset",

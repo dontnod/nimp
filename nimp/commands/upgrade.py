@@ -3,7 +3,7 @@
 import sys
 
 from nimp.utilities.processes import *
-from nimp.commands._command import *
+from nimp.commands.command import *
 
 class UpgradeCommand(Command):
     def __init__(self):

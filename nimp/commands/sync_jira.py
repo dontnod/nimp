@@ -17,7 +17,7 @@ jira_imported = importlib.util.find_spec("jira") is not None
 if jira_imported:
     from jira import JIRA
 
-from nimp.commands._command import Command
+from nimp.commands.command import Command
 from nimp.utilities.ue4 import ue4_commandlet
 from nimp.utilities.logging import log_error
 from nimp.utilities.logging import log_warning

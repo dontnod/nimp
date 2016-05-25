@@ -3,7 +3,7 @@
 import shutil
 import zipfile
 
-from nimp.commands._command import *
+from nimp.commands.command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
 from nimp.utilities.deployment import *

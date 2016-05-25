@@ -1,63 +1,164 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
 
-#-------------------------------------------------------------------------------
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''' Nimp entry point '''
+
+import argparse
+import logging
+import os
+import platform
 import sys
-sys.dont_write_bytecode = 1
-
-import inspect
 import time
 import traceback
-import platform
-import codecs
 
-from nimp import modules
-from nimp.modules.module import *
-from nimp.utilities.inspection import *
-from nimp.utilities.environment import *
+import nimp.commands.command
+import nimp.utilities.inspection
+import nimp.utilities.environment
+import nimp.utilities.system
+
+if nimp.utilities.system.is_windows():
+    import nimp.utilities.windows_utilities
+
+sys.dont_write_bytecode = 1
+
 
 if 'MSYS_NT' in platform.system():
     raise NotImplementedError('MSYS Python is not supported; please use MimGW Python instead')
 
+def _load_logging():
+    pass
+
+def _load_environment():
+    pass
+
+def _load_config(env):
+    nimp_conf_dir = "."
+    nimp_conf_file = ".nimp.conf"
+    while os.path.abspath(os.sep) != os.path.abspath(nimp_conf_dir):
+        if os.path.exists(os.path.join(nimp_conf_dir, nimp_conf_file)):
+            break
+        nimp_conf_dir = os.path.join("..", nimp_conf_dir)
+
+    env.root_dir = nimp_conf_dir
+
+    if not os.path.isfile(os.path.join(nimp_conf_dir, nimp_conf_file)):
+        return True
+
+    if not env.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
+        logging.error("Error loading %s", nimp_conf_file)
+        return False
+
+    return True
+
+def _load_commands(env):
+    # Import project-local commands from .nimp/commands
+    result = nimp.utilities.inspection.get_instances(nimp.commands, nimp.commands.command.Command)
+    localpath = os.path.abspath(os.path.join(env.root_dir, '.nimp'))
+    if localpath not in sys.path:
+        sys.path.append(localpath)
+    try:
+        #pylint: disable=import-error
+        import commands
+        result += nimp.utilities.inspection.get_instances(commands, nimp.commands.command.Command)
+    except ImportError:
+        pass
+
+    return result
+
+def _load_arguments(env, commands):
+    parser = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter)
+    log_group = parser.add_argument_group("Logging")
+
+    log_group.add_argument('--log-format',
+                           help='Set log format',
+                           metavar = "FORMAT_NAME",
+                           type=str,
+                           default="standard",
+                           choices   = [])
+
+    log_group.add_argument('-v',
+                           '--verbose',
+                           help='Enable verbose mode',
+                           default=False,
+                           action="store_true")
+
+    subparsers  = parser.add_subparsers(title='Commands')
+    for command_it in commands:
+        command_parser = subparsers.add_parser(command_it.name,
+                                               help = command_it.help)
+        if not command_it.configure_arguments(env, command_parser):
+            return False
+        command_parser.set_defaults(command_to_run = command_it)
+
+    arguments = parser.parse_args()
+    for key, value in vars(arguments).items():
+        setattr(env, key, value)
+
+    for command in commands:
+        command.sanitize(env)
+
+    env.setup_envvars()
+    return True
+
 def main():
-    t0 = time.time()
+    ''' Nimp entry point '''
+    start = time.time()
 
     result = 0
     try:
-        if is_windows():
-            nimp_monitor = NimpMonitor();
-            nimp_monitor.start();
+        if nimp.utilities.system.is_windows():
+            nimp_monitor = nimp.utilities.windows_utilities.NimpMonitor()
+            nimp_monitor.start()
 
-        module_instances = get_dependency_sorted_instances(modules, Module)
-
-        if module_instances is None:
-            log_error("Unable to satisfy module dependencies.")
+        env = nimp.utilities.environment.Environment()
+        if not  _load_config(env):
             return 1
 
-        env = Environment()
-        setattr(env, 'modules', module_instances)
+        commands = _load_commands(env)
 
-        for module_it in module_instances:
-            if not module_it.load(env):
-                result = -1
-                break
+        if not _load_arguments(env, commands):
+            return 1
+
+        if env.command_to_run is None:
+            logging.error("No command specified. Please try nimp -h to get a list of available commands")
+            return 1
+
+        command_to_run = env.command_to_run
+        return command_to_run.run(env)
 
     except KeyboardInterrupt:
-        log_notification("Program interrupted. (Ctrl-C)")
+        logging.info("Program interrupted. (Ctrl-C)")
         traceback.print_exc()
         result = 1
     except SystemExit:
         result = 1
 
-    if is_windows():
+    if nimp.utilities.system.is_windows():
         nimp_monitor.stop()
 
-    t1 = time.time()
-    log_notification("Command took %f seconds." % (t1 - t0,))
+    end = time.time()
+    logging.info("Command took %f seconds.", end - start)
 
     return result
 
 if __name__ == "__main__":
-    return_code = main()
-    sys.exit(return_code)
+    sys.exit(main())
 

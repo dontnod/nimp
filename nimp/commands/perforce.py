@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands._command     import *
+from nimp.commands.command     import *
 from nimp.utilities.perforce    import *
 from nimp.utilities.file_mapper import *
 
