@@ -8,12 +8,38 @@ import time
 import contextlib
 import os
 
-from nimp.utilities.build import *
-from nimp.utilities.deployment import *
+import nimp.utilities.build
+import nimp.utilities.deployment
 from nimp.utilities.file_mapper import *
 from nimp.utilities.perforce import *
 from nimp.utilities.system import *
 
+
+def sanitize(env):
+    def _get_ue4_build_config(config):
+        d = { "debug"    : "Debug",
+              "devel"    : "Development",
+              "test"     : "Test",
+              "shipping" : "Shipping", }
+        if config not in d:
+            log_warning('Unsupported UE4 build config “%s”' % (config))
+            return None
+        return d[config]
+
+    def _get_ue4_build_platform(platform):
+        d = { "ps4"     : "PS4",
+              "xboxone" : "XboxOne",
+              "win64"   : "Win64",
+              "win32"   : "Win32",
+              "linux"   : "Linux",
+              "mac"     : "Mac", }
+        if platform not in d:
+            log_warning('Unsupported UE4 build platform “%s”' % (platform))
+            return None
+        return d[platform]
+
+    env.ue4_build_platform = _get_ue4_build_platform(env.platform)
+    env.ue4_cook_platform  = _get_ue4_cook_platform(env.platform)
 
 #---------------------------------------------------------------------------
 def ue4_build(env):
@@ -214,38 +240,6 @@ def _ue4_generate_project(env):
 # Helper commands for configuration sanitising
 #
 
-def get_ue4_build_config(config):
-    d = { "debug"    : "Debug",
-          "devel"    : "Development",
-          "test"     : "Test",
-          "shipping" : "Shipping", }
-    if config not in d:
-        log_warning('Unsupported UE4 build config “%s”' % (config))
-        return None
-    return d[config]
-
-def get_ue4_build_platform(platform):
-    d = { "ps4"     : "PS4",
-          "xboxone" : "XboxOne",
-          "win64"   : "Win64",
-          "win32"   : "Win32",
-          "linux"   : "Linux",
-          "mac"     : "Mac", }
-    if platform not in d:
-        log_warning('Unsupported UE4 build platform “%s”' % (platform))
-        return None
-    return d[platform]
-
-def get_ue4_cook_platform(platform):
-    d = { "ps4"     : "PS4",
-          "xboxone" : "XBoxOne",
-          "win64"   : "Win64",
-          "win32"   : "Win32",
-          "linux"   : "Linux", }
-    if platform not in d:
-        log_warning('Unsupported UE4 cook platform “%s”' % (platform))
-        return None
-    return d[platform]
 
 
 #---------------------------------------------------------------------------

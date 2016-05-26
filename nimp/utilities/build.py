@@ -4,6 +4,22 @@ import platform
 
 from nimp.utilities.processes import *
 
+
+def sanitize_config(env):
+    ''' Cleans config related env variables '''
+    if hasattr(env, 'configuration') and env.configuration is not None:
+        std_configs = { 'debug'    : 'debug',
+                        'devel'    : 'devel',
+                        'release'  : 'release',
+                        'test'     : 'test',
+                        'shipping' : 'shipping',
+                      }
+
+        if env.configuration.lower() in std_configs:
+            env.configuration = std_configs[env.configuration.lower()]
+        else:
+            env.configuration = ""
+
 #---------------------------------------------------------------------------
 def vsbuild(solution, platform_name, configuration, project = None, vs_version = '12', target = 'Build'):
     build_directory = '.'

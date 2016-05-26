@@ -1,30 +1,99 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
 
-#-------------------------------------------------------------------------------
-import socket
-import random
-import string
-import time
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''' Unreal Engine 3 utilities '''
+
 import contextlib
-import shutil
+import logging
 import os
 import platform
+import random
+import shutil
+import socket
+import string
+import time
 
-from nimp.utilities.build import *
-from nimp.utilities.deployment import *
-from nimp.utilities.file_mapper import *
-from nimp.utilities.perforce import *
+def sanitize(env):
+    ''' Cleans and defines helper variable on environment when dealing with
+        Unreal 3 '''
+    env.is_ue3 = hasattr(env, 'project_type') and env.project_type is 'UE3'
+    if env.is_ue3:
+        if hasattr(env, 'platform'):
+            build_platforms  = { "ps4"     : "ORBIS",
+                                 "xboxone" : "Dingo",
+                                 "win64"   : "Win64",
+                                 "win32"   : "Win32",
+                                 "xbox360" : "Xbox360",
+                                 "ps3"     : "PS3",
+                                 "linux"   : "Linux32",
+                                 "mac"     : "Mac", }
+            if platform not in build_platforms:
+                logging.warning('Unsupported UE3 build platform “%s”', platform)
+            env.ue3_build_platform = build_platforms[env.platform]
 
+            cook_platforms=  { "ps4"     : "ORBIS",
+                               "xboxone" : "Dingo",
+                               "win64"   : "PC",
+                               "win32"   : "PCConsole",
+                               "xbox360" : "Xbox360",
+                               "ps3"     : "PS3",
+                               "linux"   : "MacOSX",
+                               "mac"     : "MacOSX", }
+            if env.platform not in cook_platforms:
+                logging.warning('Unsupported UE3 cook platform “%s”', platform)
+            env.ue3_cook_platform = cook_platforms[env.platform]
 
-#---------------------------------------------------------------------------
+            shader_platforms = { "ps4"     : "ORBIS",
+                                 "xboxone" : "Dingo",
+                                 "win64"   : "PC",
+                                 "win32"   : "PC",
+                                 "xbox360" : "Xbox360",
+                                 "ps3"     : "PS3",
+                                 "linux"   : "Linux",
+                                 "mac"     : "Mac", }
+            if env.platform not in shader_platforms:
+                logging.warning('Unsupported UE3 shader platform “%s”', env.platform)
+            env.ue3_shader_platform = shader_platforms[env.platform]
+
+        if hasattr(env, "configuration"):
+            ue3_configs = { "debug"    : "Debug",
+                            "release"  : "Release",
+                            "test"     : "Test",
+                            "shipping" : "Shipping", }
+            if env.config not in ue3_configs:
+                logging.warning('Unsupported UE3 build configuration “%s”', env.config)
+            env.ue3_build_configuration = ue3_configs[env.config]
+
+        if hasattr(env, 'platform'):
+            cook_cfg = env.configuration if hasattr(env, 'configuration') else None
+            cook_suffix = 'Final' if cook_cfg in ['test', 'shipping', None] else ''
+            env.ue3_cook_directory = 'Cooked{0}{1}'.format(env.ue3_cook_platform, cook_suffix)
+
 def ue3_build(env):
     vs_version = '11'
     solution = env.format(env.solution)
     configuration = env.ue3_build_configuration
-    result = True
 
     if not configuration:
-        log_error("Invalid empty value for configuration")
+        logging.error("Invalid empty value for configuration")
         return False
 
     # Shortcut for Unix builds
@@ -33,7 +102,7 @@ def ue3_build(env):
         return call_process(os.path.join(env.root_dir, './Development/Src'), ['make', 'all', 'CONFIGURATION=' + configuration, 'PLATFORM=' + platform, 'UBTFLAGS=-VERBOSE']) == 0
 
     if not _ue3_build_project(solution, "Development/Src/UnrealBuildTool/UnrealBuildTool.csproj", 'Release', vs_version):
-        log_error("Error building UBT")
+        logging.error("Error building UBT")
         return False
 
     # Build tools
@@ -51,7 +120,6 @@ def ue3_build(env):
 
         return _ue3_build_game(solution, env.ue3_build_platform, configuration, vs_version)
 
-    # Build editor or game
     if env.target in ['game', 'editor']:
         if env.generate_version_file:
             with _ue3_generate_version_file():
@@ -59,13 +127,7 @@ def ue3_build(env):
         else:
             return _build(solution, vs_version)
 
-    # We should not get here
     return True
-
-
-#
-# Rebuild shaders
-#
 
 def ue3_shaders(env):
     args = [ '-platform=' + env.ue3_shader_platform,
@@ -96,64 +158,6 @@ def ue3_lights(env, map_list):
             return False
 
     return True
-
-#
-# Helper commands for configuration sanitising
-#
-
-def get_ue3_build_config(config):
-    d = { "debug"    : "Debug",
-          "release"  : "Release",
-          "test"     : "Test",
-          "shipping" : "Shipping", }
-    if config not in d:
-        log_warning('Unsupported UE3 build configuration “%s”' % (config))
-        return None
-    return d[config]
-
-def get_ue3_build_platform(platform):
-    # Try to guess the Unreal platform name; the return
-    # value should match UE3’s appGetPlatformString().
-    d = { "ps4"     : "ORBIS",
-          "xboxone" : "Dingo",
-          "win64"   : "Win64",
-          "win32"   : "Win32",
-          "xbox360" : "Xbox360",
-          "ps3"     : "PS3",
-          "linux"   : "Linux32",
-          "mac"     : "Mac", }
-    if platform not in d:
-        log_warning('Unsupported UE3 build platform “%s”' % (platform))
-        return None
-    return d[platform]
-
-def get_ue3_cook_platform(platform):
-    d = { "ps4"     : "ORBIS",
-          "xboxone" : "Dingo",
-          "win64"   : "PC",
-          "win32"   : "PCConsole",
-          "xbox360" : "Xbox360",
-          "ps3"     : "PS3",
-          "linux"   : "MacOSX",
-          "mac"     : "MacOSX", }
-    if platform not in d:
-        log_warning('Unsupported UE3 cook platform “%s”' % (platform))
-        return None
-    return d[platform]
-
-def get_ue3_shader_platform(platform):
-    d = { "ps4"     : "ORBIS",
-          "xboxone" : "Dingo",
-          "win64"   : "PC",
-          "win32"   : "PC",
-          "xbox360" : "Xbox360",
-          "ps3"     : "PS3",
-          "linux"   : "Linux",
-          "mac"     : "Mac", }
-    if platform not in d:
-        log_warning('Unsupported UE3 shader platform “%s”' % (platform))
-        return None
-    return d[platform]
 
 
 

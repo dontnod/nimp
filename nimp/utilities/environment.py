@@ -34,34 +34,6 @@ class Environment:
             os.environ[key] = val
 
         self.command_to_run = None
-        self.configuration           = None
-        self.dlc                     = None
-        self.environment             = {}
-        self.is_linux                = False
-        self.is_mac                  = False
-        self.is_microsoft_platform   = False
-        self.is_ps3                  = False
-        self.is_ps4                  = False
-        self.is_sony_platform        = False
-        self.is_ue3                  = False
-        self.is_ue4                  = False
-        self.is_win32                = False
-        self.is_win64                = False
-        self.is_x360                 = False
-        self.is_xone                 = False
-        self.platform                = None
-        self.project_type            = None
-        self.root_dir                = None
-        self.target                  = None
-        self.ue3_build_configuration = None
-        self.ue3_build_platform      = None
-        self.ue3_cook_directory      = None
-        self.ue3_cook_platform       = None
-        self.ue3_shader_platform     = None
-        self.ue4_build_configuration = None
-        self.ue4_build_platform      = None
-        self.ue4_cook_platform       = None
-        self.wwise_banks_platform    = None
 
     def format(self, fmt, **override_kwargs):
         ''' Interpolates given string with config values & command line para-
@@ -103,91 +75,11 @@ class Environment:
 
         return True
 
-
-    @staticmethod
-    def _normalize_platform_string(in_platform):
-        std_platforms = { "ps4"       : "ps4",
-                          "orbis"     : "ps4",
-                          "xboxone"   : "xboxone",
-                          "dingo"     : "xboxone",
-                          "win32"     : "win32",
-                          "pcconsole" : "win32",
-                          "win64"     : "win64",
-                          "pc"        : "win64",
-                          "windows"   : "win64",
-                          "xbox360"   : "xbox360",
-                          "x360"      : "xbox360",
-                          "ps3"       : "ps3",
-                          "linux"     : "linux",
-                          "mac"       : "mac",
-                          "macos"     : "mac" }
-
-        if in_platform.lower() in std_platforms:
-            return std_platforms[in_platform.lower()]
-        else:
-            return ""
-
-    def _standardize_configuration(self):
-        if not hasattr(self, 'configuration') or self.configuration is None:
-            if self.is_ue4:
-                self.configuration = 'devel'
-            elif self.is_ue3:
-                self.configuration = 'release'
-
-        if hasattr(self, 'configuration') and self.configuration is not None:
-            std_configs = { 'debug'    : 'debug',
-                            'devel'    : 'devel',
-                            'release'  : 'release',
-                            'test'     : 'test',
-                            'shipping' : 'shipping',
-                          }
-
-            if self.configuration.lower() in std_configs:
-                self.configuration = std_configs[self.configuration.lower()]
-            else:
-                self.configuration = ""
-
     def _standardize_platform(self):
-        if not hasattr(self, 'platform') or self.platform is None:
-            if self.is_ue4 or self.is_ue3:
-                if nimp.utilities.system.is_windows():
-                    self.platform = 'win64'
-                elif platform.system() == 'Darwin':
-                    self.platform = 'mac'
-                else:
-                    self.platform = 'linux'
-
-        if hasattr(self, "platform") and self.platform is not None:
-            self.platform = Environment._normalize_platform_string(self.platform)
-
-            self.is_win32 = self.platform == "win32"
-            self.is_win64 = self.platform == "win64"
-            self.is_ps3   = self.platform == "ps3"
-            self.is_ps4   = self.platform == "ps4"
-            self.is_x360  = self.platform == "xbox360"
-            self.is_xone  = self.platform == "xboxone"
-            self.is_linux = self.platform == "linux"
-            self.is_mac   = self.platform == "mac"
-
-            self.is_microsoft_platform = self.is_win32 or self.is_win64 or self.is_x360 or self.is_xone
-            self.is_sony_platform      = self.is_ps3 or self.is_ps4
 
             # UE3 stuff
-            self.ue3_build_platform =  nimp.utilities.ue3.get_ue3_build_platform(self.platform)
-            self.ue3_cook_platform =   nimp.utilities.ue3.get_ue3_cook_platform(self.platform)
-            self.ue3_shader_platform = nimp.utilities.ue3.get_ue3_shader_platform(self.platform)
-
-            if hasattr(self, "configuration"):
-                self.ue3_build_configuration = nimp.utilities.ue3.get_ue3_build_config(self.configuration)
-                self.ue4_build_configuration = nimp.utilities.ue4.get_ue4_build_config(self.configuration)
-
-            cook_cfg = self.configuration if hasattr(self, 'configuration') else None
-            cook_suffix = 'Final' if cook_cfg in ['test', 'shipping', None] else ''
-            self.ue3_cook_directory = 'Cooked{0}{1}'.format(self.ue3_cook_platform, cook_suffix)
 
             # UE4 stuff
-            self.ue4_build_platform = nimp.utilities.ue4.get_ue4_build_platform(self.platform)
-            self.ue4_cook_platform  = nimp.utilities.ue4.get_ue4_cook_platform(self.platform)
 
             if hasattr(self, 'dlc'):
                 if self.dlc is None:
@@ -276,3 +168,43 @@ def read_config_file(filename):
 
     return {}
 
+def sanitize_platform(env):
+    ''' Standardizes platform names and sets helpers booleans '''
+    std_platforms = { "ps4"       : "ps4",
+                      "orbis"     : "ps4",
+                      "xboxone"   : "xboxone",
+                      "dingo"     : "xboxone",
+                      "win32"     : "win32",
+                      "pcconsole" : "win32",
+                      "win64"     : "win64",
+                      "pc"        : "win64",
+                      "windows"   : "win64",
+                      "xbox360"   : "xbox360",
+                      "x360"      : "xbox360",
+                      "ps3"       : "ps3",
+                      "linux"     : "linux",
+                      "mac"       : "mac",
+                      "macos"     : "mac" }
+
+    if nimp.utilities.system.is_windows():
+        env.platform = 'win64'
+    elif platform.system() == 'Darwin':
+        env.platform = 'mac'
+    else:
+        env.platform = 'linux'
+
+    if hasattr(env, "platform") and env.platform is not None:
+        if env.platform.lower() in std_platforms:
+            env.platform =  std_platforms[env.platform.lower()]
+
+        env.is_win32 = env.platform == "win32"
+        env.is_win64 = env.platform == "win64"
+        env.is_ps3   = env.platform == "ps3"
+        env.is_ps4   = env.platform == "ps4"
+        env.is_x360  = env.platform == "xbox360"
+        env.is_xone  = env.platform == "xboxone"
+        env.is_linux = env.platform == "linux"
+        env.is_mac   = env.platform == "mac"
+
+        env.is_microsoft_platform = env.is_win32 or env.is_win64 or env.is_x360 or env.is_xone
+        env.is_sony_platform      = env.is_ps3 or env.is_ps4
