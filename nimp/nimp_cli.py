@@ -39,15 +39,12 @@ if nimp.utilities.system.is_windows():
 
 sys.dont_write_bytecode = 1
 
+_LOG_FORMATS = {
+    'standard': '%(asctime)s [%(levelname)s] %(message)s'
+}
 
 if 'MSYS_NT' in platform.system():
     raise NotImplementedError('MSYS Python is not supported; please use MimGW Python instead')
-
-def _load_logging():
-    pass
-
-def _load_environment():
-    pass
 
 def _load_config(env):
     nimp_conf_dir = "."
@@ -92,7 +89,7 @@ def _load_arguments(env, commands):
                            metavar = "FORMAT_NAME",
                            type=str,
                            default="standard",
-                           choices   = [])
+                           choices   = _LOG_FORMATS)
 
     log_group.add_argument('-v',
                            '--verbose',
@@ -112,11 +109,12 @@ def _load_arguments(env, commands):
     for key, value in vars(arguments).items():
         setattr(env, key, value)
 
-    for command in commands:
-        command.sanitize(env)
-
     env.setup_envvars()
     return True
+
+def _init_logging(env):
+    log_level = logging.DEBUG if env.verbose else logging.INFO
+    logging.basicConfig(format=_LOG_FORMATS[env.log_format], level=log_level)
 
 def main():
     ''' Nimp entry point '''
@@ -141,8 +139,10 @@ def main():
             logging.error("No command specified. Please try nimp -h to get a list of available commands")
             return 1
 
-        command_to_run = env.command_to_run
-        return command_to_run.run(env)
+        _init_logging(env)
+
+        env.command_to_run.sanitize(env)
+        return env.command_to_run.run(env)
 
     except KeyboardInterrupt:
         logging.info("Program interrupted. (Ctrl-C)")

@@ -75,59 +75,6 @@ class Environment:
 
         return True
 
-    def _standardize_platform(self):
-
-            # UE3 stuff
-
-            # UE4 stuff
-
-            if hasattr(self, 'dlc'):
-                if self.dlc is None:
-                    self.dlc = 'main'
-
-            if self.is_ue3:
-                banks_platforms = { "win32"   : "PC",
-                                    "win64"   : "PC",
-                                    "xbox360" : "X360",
-                                    "xboxone" : "XboxOne",
-                                    "ps3"     : "PS3",
-                                    "ps4"     : "PS4" }
-            else:
-                banks_platforms = { "win32"   : "Windows",
-                                    "win64"   : "Windows",
-                                    "xbox360" : "X360",
-                                    "xboxone" : "XboxOne",
-                                    "ps3"     : "PS3",
-                                    "ps4"     : "PS4" }
-
-            if self.platform in banks_platforms:
-                self.wwise_banks_platform = banks_platforms[self.platform]
-
-    def _standardize_target(self):
-        if not hasattr(self, 'target') or self.target is None:
-            if self.is_ue4:
-                if self.platform in ['win64', 'mac', 'linux']:
-                    self.target = 'editor'
-                else:
-                    self.target = 'game'
-            elif self.is_ue3:
-                if self.platform == 'win64':
-                    self.target = 'editor'
-                else:
-                    self.target = 'game'
-
-
-
-    def standardize_names(self):
-        ''' Standardize some environment values (ex: Durango -> XboxOne) '''
-        # Detect Unreal Engine 3 or Unreal Engine 4
-        self.is_ue3 = hasattr(self, 'project_type') and self.project_type is 'UE3'
-        self.is_ue4 = hasattr(self, 'project_type') and self.project_type is 'UE4'
-
-        self._standardize_configuration()
-        self._standardize_platform()
-        self._standardize_target()
-
     def setup_envvars(self):
         ''' Applies environment variables from .nimp.conf '''
         if hasattr(self, 'environment'):

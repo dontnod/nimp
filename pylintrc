@@ -352,23 +352,23 @@ exclude-protected=_asdict,_fields,_replace,_source,_make
 [DESIGN]
 
 # Maximum number of arguments for function / method
-max-args=5
+max-args=8
 
 # Argument names that match this expression will be ignored. Default to name
 # with leading underscore
 ignored-argument-names=_.*
 
 # Maximum number of locals for function / method body
-max-locals=15
+max-locals=20
 
 # Maximum number of return / yield for function / method body
 max-returns=6
 
 # Maximum number of branch for function / method body
-max-branches=25
+max-branches=40
 
 # Maximum number of statements in function / method body
-max-statements=70
+max-statements=100
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7

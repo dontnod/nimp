@@ -74,6 +74,8 @@ def sanitize(env):
             env.ue3_shader_platform = shader_platforms[env.platform]
 
         if hasattr(env, "configuration"):
+            if env.configuration is None:
+                env.configuration = 'release'
             ue3_configs = { "debug"    : "Debug",
                             "release"  : "Release",
                             "test"     : "Test",

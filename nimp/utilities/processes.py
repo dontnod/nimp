@@ -2,14 +2,11 @@
 
 import os
 import os.path
-import re
 import subprocess
-import sys
 import threading
 import time
-import tempfile
+import logging
 
-from nimp.utilities.logging import *
 from nimp.utilities.system import *
 from nimp.utilities.windows_utilities import *
 
@@ -41,7 +38,7 @@ def _sanitize_command(command):
 #-------------------------------------------------------------------------------
 def capture_process_output(directory, command, input = None, encoding = 'utf-8'):
     command = _sanitize_command(command)
-    log_verbose("Running “{0}” in “{1}”", " ".join(command), os.path.abspath(directory))
+    logging.debug("Running “%s” in “%s”", " ".join(command), os.path.abspath(directory))
     process = subprocess.Popen(command,
                                cwd     = directory,
                                stdout  = subprocess.PIPE,
@@ -53,11 +50,9 @@ def capture_process_output(directory, command, input = None, encoding = 'utf-8')
     return process.wait(), output.decode(encoding), error.decode(encoding)
 
 #-------------------------------------------------------------------------------
-def call_process(directory, command, stdout_callback = _default_log_callback,
-                                     stderr_callback = None,
-                                     heartbeat = 0):
+def call_process(directory, command, heartbeat = 0):
     command = _sanitize_command(command)
-    log_verbose("Running “{0}” in “{1}”", " ".join(command), os.path.abspath(directory))
+    logging.debug("Running “%s” in “%s”", " ".join(command), os.path.abspath(directory))
 
     if is_windows():
         disable_win32_dialogs()
@@ -79,11 +74,11 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
         t = time.monotonic()
         while process:
             if heartbeat > 0 and time.monotonic() > t + heartbeat:
-                log_verbose("Keepalive for {0}", command[0])
+                logging.info("Keepalive for %s", command[0])
                 t += heartbeat
             time.sleep(0.050)
 
-    def output_worker(user_callback, log_function, pipe):
+    def output_worker(log_function, pipe):
         output_buffer = ""
         # FIXME: it would be better to use while process.poll() == None
         # here, but thread safety issues in Python < 3.4 prevent it.
@@ -101,7 +96,7 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
                     line = line.replace("{", "{{").replace("}", "}}")
                     line = line.rstrip('\r\n')
 
-                    user_callback(line, log_function)
+                    log_function(line)
 
                 # Sleep for 10 milliseconds if there was no data,
                 # or we’ll hog the CPU.
@@ -110,13 +105,10 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
             except ValueError:
                 return
 
-    if not stderr_callback:
-        stderr_callback = stdout_callback
-
-    log_thread_args = [ (stdout_callback, LOG_LEVEL_VERBOSE, process.stdout),
-                        (stderr_callback, LOG_LEVEL_ERROR,   process.stderr) ]
+    log_thread_args = [ (logging.debug, process.stdout),
+                        (logging.error, process.stderr) ]
     if is_windows():
-        log_thread_args += [ (stderr_callback, LOG_LEVEL_VERBOSE, debug_pipe.output) ]
+        log_thread_args += [ (logging.debug, debug_pipe.output) ]
 
     worker_threads = [ threading.Thread(target = output_worker, args = args) for args in log_thread_args ]
     # Send keepalive to stderr if requested
@@ -139,7 +131,7 @@ def call_process(directory, command, stdout_callback = _default_log_callback,
         log = log_verbose
     else:
         log = log_error
-    log("Program “{0}” finished with exit code {1}", command[0], process_return)
+    logging.info("Program “%s” finished with exit code %s", command[0], process_return)
 
     return process_return
 
