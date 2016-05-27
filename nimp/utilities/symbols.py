@@ -14,8 +14,7 @@ import contextlib
 
 from nimp.utilities.perforce import *
 from nimp.utilities.file_mapper import *
-from nimp.utilities.hashing import *
-from nimp.utilities.paths import *
+from nimp.utilities.system import *
 
 #------------------------------------------------------------------------------
 def upload_symbols(env, symbols):

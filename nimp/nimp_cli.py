@@ -22,6 +22,7 @@
 ''' Nimp entry point '''
 
 import argparse
+import inspect
 import logging
 import os
 import platform
@@ -30,7 +31,6 @@ import time
 import traceback
 
 import nimp.commands.command
-import nimp.utilities.inspection
 import nimp.utilities.environment
 import nimp.utilities.system
 
@@ -65,16 +65,45 @@ def _load_config(env):
 
     return True
 
+def _get_instances(module, instance_type):
+    result = _recursive_get_instances(module, instance_type)
+    return list(result.values())
+
+def _recursive_get_instances(module, instance_type):
+    result = {}
+    module_dict = module.__dict__
+    if "__all__" in module_dict:
+        module_name = module_dict["__name__"]
+        sub_modules_names = module_dict["__all__"]
+        for sub_module_name_it in sub_modules_names:
+            sub_module_complete_name = module_name + "." + sub_module_name_it
+            sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
+            sub_instances = _recursive_get_instances(sub_module_it, instance_type)
+            for (klass, instance) in sub_instances.items():
+                result[klass] = instance
+
+
+    module_attributes = dir(module)
+    for attribute_name in module_attributes:
+        attribute_value = getattr(module, attribute_name)
+        is_valid = attribute_value != instance_type
+        is_valid = is_valid and inspect.isclass(attribute_value)
+        is_valid = is_valid and (not hasattr(attribute_value, 'abstract') or not getattr(attribute_value, 'abstract'))
+        is_valid = is_valid and issubclass(attribute_value, instance_type)
+        if is_valid:
+            result[attribute_value.__name__] = attribute_value()
+    return result
+
 def _load_commands(env):
     # Import project-local commands from .nimp/commands
-    result = nimp.utilities.inspection.get_instances(nimp.commands, nimp.commands.command.Command)
+    result = _get_instances(nimp.commands, nimp.commands.command.Command)
     localpath = os.path.abspath(os.path.join(env.root_dir, '.nimp'))
     if localpath not in sys.path:
         sys.path.append(localpath)
     try:
         #pylint: disable=import-error
         import commands
-        result += nimp.utilities.inspection.get_instances(commands, nimp.commands.command.Command)
+        result += _get_instances(commands, nimp.commands.command.Command)
     except ImportError:
         pass
 

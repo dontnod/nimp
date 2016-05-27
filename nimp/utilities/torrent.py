@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from nimp.utilities.file_mapper import *
-from nimp.utilities.paths import *
+from nimp.utilities.system import *
 
 from BitTornado.Meta.Info import Info, MetaInfo
 from BitTornado.Meta.BTTree import BTTree

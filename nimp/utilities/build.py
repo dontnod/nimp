@@ -1,9 +1,31 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
 
-import platform
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
 
-from nimp.utilities.processes import *
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''' Utilities related to compilation '''
+
+import subprocess
+import logging
+import os
+
+import nimp.utilities.system
 
 def sanitize_config(env):
     ''' Cleans config related env variables '''
@@ -20,34 +42,35 @@ def sanitize_config(env):
         else:
             env.configuration = ""
 
-#---------------------------------------------------------------------------
 def vsbuild(solution, platform_name, configuration, project = None, vs_version = '12', target = 'Build'):
+    ''' Builds a project with Visual Studio '''
     build_directory = '.'
 
-    if is_windows():
+    if nimp.utilities.system.is_windows():
         devenv_path = _find_devenv_path(vs_version)
         if devenv_path is None:
-            log_error("Unable to find Visual Studio {0}", vs_version)
+            logging.error("Unable to find Visual Studio %s", vs_version)
             return False
         command = [ devenv_path, solution ]
         command = command + [ '/' + target, configuration + '|' + platform_name ]
         if project is not None:
             command = command + [ '/project', project ]
 
-        return call_process(build_directory, command) == 0
+        return nimp.utilities.system.call_process(build_directory, command) == 0
 
     else: # Mac and Linux alike
         command = [ 'xbuild', solution, '/verbosity:quiet', '/p:TargetFrameworkVersion=v4.5', '/p:TargetFrameworkProfile=', '/nologo' ]
-        return call_process(build_directory, command) == 0
+        return nimp.utilities.system.call_process(build_directory, command) == 0
 
 
-#-------------------------------------------------------------------------------
 def _find_devenv_path(vs_version):
     devenv_path = None
 
     # First try the registry, because the environment variable is unreliable
     # (case of Visual Studio installed on a different drive; it still sets
     # the envvar to point to C:\Program Files even if devenv.com is on D:\)
+    # pylinnt
+    #pylint: disable=import-error
     from winreg import OpenKey, QueryValue, HKEY_LOCAL_MACHINE
     key_path = 'SOFTWARE\\Classes\\VisualStudio.accessor.' + vs_version + '.0\\shell\\Open'
     try:
@@ -58,7 +81,8 @@ def _find_devenv_path(vs_version):
             elif ' ' in cmdline:
                 cmdline = cmdline.split(' ')[0]
             devenv_path = cmdline.replace('devenv.exe', 'devenv.com')
-    except:
+    #pylint: disable=broad-except
+    except Exception:
         pass
 
     # If the registry key is unhelpful, try the environment variable
@@ -73,7 +97,7 @@ def _find_devenv_path(vs_version):
     if not os.path.exists(devenv_path):
         return None
 
-    log_verbose("Found Visual Studio at {0}", devenv_path)
+    logging.error("Found Visual Studio at %s", devenv_path)
     return devenv_path
 
 
@@ -86,7 +110,7 @@ def install_distcc_and_ccache():
 
     # Make sure distcc will be called if we use ccache
     if os.path.exists(distcc_dir):
-        log_verbose('Found distcc, so setting CCACHE_PREFIX=distcc')
+        logging.error('Found distcc, so setting CCACHE_PREFIX=distcc')
         os.environ['CCACHE_PREFIX'] = 'distcc'
 
     # Add ccache to PATH if it exists, otherwise add distcc
@@ -96,7 +120,7 @@ def install_distcc_and_ccache():
         extra_path = distcc_dir
     else:
         return
-    log_verbose('Adding {0} to PATH', extra_path)
+    logging.error('Adding %s to PATH', extra_path)
     os.environ['PATH'] = extra_path + ':' + os.getenv('PATH')
 
     if os.path.exists(distcc_dir):
@@ -104,12 +128,12 @@ def install_distcc_and_ccache():
         if not os.getenv('DISTCC_HOSTS'):
             hosts = subprocess.Popen(['lsdistcc'], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
             hosts = ' '.join(hosts.split())
-            log_verbose('Setting DISTCC_HOSTS={0}', hosts)
+            logging.debug('Setting DISTCC_HOSTS=%s', hosts)
             os.environ['DISTCC_HOSTS'] = hosts
 
         # Compute a reasonable number of workers for UBT
         if not os.getenv('UBT_PARALLEL'):
             workers = subprocess.Popen(['distcc', '-j'], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
-            log_verbose('Setting UBT_PARALLEL={0}', workers)
+            logging.debug('Setting UBT_PARALLEL=%s', workers)
             os.environ['UBT_PARALLEL'] = workers
 

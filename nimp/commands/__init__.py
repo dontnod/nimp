@@ -14,7 +14,6 @@ __all__ = [
     "prune-versions",
     "publish",
     "ship",
-    "upgrade",
-	"sync_jira"
+    "sync_jira"
 ]
 

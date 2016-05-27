@@ -27,8 +27,6 @@ import logging
 
 import nimp.utilities.build
 import nimp.utilities.deployment
-import nimp.utilities.paths
-import nimp.utilities.processes
 import nimp.utilities.system
 
 def sanitize(env):
@@ -112,7 +110,7 @@ def ue4_build(env):
                      'IntelEmbree/Embree270/Win64/lib/tbbmalloc.dll' ]:
             src = env.format('{root_dir}/Engine/Source/ThirdParty/' + dll)
             dst = env.format('{root_dir}/Engine/Binaries/Win64/' + os.path.basename(dll))
-            if os.path.exists(nimp.utilities.paths.sanitize_path(src)):
+            if os.path.exists(nimp.utilities.system.sanitize_path(src)):
                 nimp.utilities.deployment.robocopy(src, dst)
 
     # HACK: We need this on Linux...
@@ -181,13 +179,13 @@ def ue4_build(env):
             need_xboxonepdbfileutil = True
 
     # Some tools are necessary even when not building tools...
-    if need_ps4devkitutil and os.path.exists(nimp.utilities.paths.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
+    if need_ps4devkitutil and os.path.exists(nimp.utilities.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
         tools += [ 'PS4DevKitUtil' ]
 
-    if need_ps4mapfileutil and os.path.exists(nimp.utilities.paths.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
+    if need_ps4mapfileutil and os.path.exists(nimp.utilities.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
         tools += [ 'PS4MapFileUtil' ]
 
-    if need_xboxonepdbfileutil and os.path.exists(nimp.utilities.paths.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
+    if need_xboxonepdbfileutil and os.path.exists(nimp.utilities.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
         tools += [ 'XboxOnePDBFileUtil' ]
 
     # Build tools from the main solution
@@ -229,7 +227,7 @@ def ue4_build(env):
                 result = False
 
             tmp = env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
-            if os.path.exists(nimp.utilities.paths.sanitize_path(tmp)):
+            if os.path.exists(nimp.utilities.system.sanitize_path(tmp)):
                 if not nimp.utilities.build.vsbuild(tmp, 'x64', 'Development', None, '11', 'Build') \
                    and not nimp.utilities.build.vsbuild(tmp, 'x64', 'Development', None, '14', 'Build'):
                     logging.error("Could not build XboxOnePackageNameUtil")
@@ -259,9 +257,9 @@ def ue4_build(env):
 
 def _ue4_generate_project(env):
     if nimp.utilities.system.is_windows():
-        return nimp.utilities.processes.call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat'])
+        return nimp.utilities.system.call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat'])
     else:
-        return nimp.utilities.processes.call_process(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
+        return nimp.utilities.system.call_process(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
 
 def _ue4_build_project(env, sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
@@ -270,9 +268,9 @@ def _ue4_build_project(env, sln_file, project, build_platform,
         return nimp.utilities.build.vsbuild(sln_file, build_platform, configuration,
                                             project, vs_version, target)
 
-    return nimp.utilities.processes.call_process(env.root_dir,
-                                                 ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (build_platform),
-                                                  project, build_platform, configuration]) == 0
+    return nimp.utilities.system.call_process(env.root_dir,
+                                              ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (build_platform),
+                                               project, build_platform, configuration]) == 0
 
 def ue4_commandlet(env, commandlet, *args):
     ''' Runs an UE4 commandlet '''
@@ -283,12 +281,12 @@ def ue4_commandlet(env, commandlet, *args):
     else:
         exe = 'Engine/Binaries/Linux/UE4Editor'
 
-    cmdline = [nimp.utilities.paths.sanitize_path(os.path.join(env.format(env.root_dir), exe)),
+    cmdline = [nimp.utilities.system.sanitize_path(os.path.join(env.format(env.root_dir), exe)),
                env.game,
                '-run=%s' % commandlet]
 
     cmdline += list(args)
     cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
 
-    return nimp.utilities.processes.call_process('.', cmdline) == 0
+    return nimp.utilities.system.call_process('.', cmdline) == 0
 

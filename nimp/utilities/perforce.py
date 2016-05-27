@@ -9,9 +9,7 @@ import threading
 import time
 import tempfile
 
-from nimp.utilities.processes import *
-from nimp.utilities.paths import *
-
+from nimp.utilities.system import *
 
 CREATE_CHANGELIST_FORM_TEMPLATE = "\
 Change: new\n\

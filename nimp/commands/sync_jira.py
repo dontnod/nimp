@@ -1,30 +1,43 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
 
-'''Module doc string'''
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
 
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
 
-import argparse
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''' Declares sync-jira command '''
+
 import json
 from collections import OrderedDict
 import tempfile
-from tempfile import mkstemp
 import os
-import re
 import importlib
-
-#Jira import. That way, if jira module isn't installed for a user, nimp will not crash
-jira_imported = importlib.util.find_spec("jira") is not None
-if jira_imported:
-    from jira import JIRA
+import logging
 
 from nimp.commands.command import Command
 from nimp.utilities.ue4 import ue4_commandlet
-from nimp.utilities.logging import log_error
-from nimp.utilities.logging import log_warning
-from nimp.utilities.logging import log_notification
 from nimp.utilities.perforce import p4_get_modified_files
 
-#-------------------------------------------------------------------------------
+#Jira import. That way, if jira module isn't installed for a user, nimp will not crash
+_JIRA_IMPORTED = importlib.util.find_spec("jira") is not None
+if _JIRA_IMPORTED:
+    #pylint: disable=wrong-import-position,wrong-import-order
+    from jira import JIRA
+
 class SynchronizeJiraCommand(Command):
     '''Data mining class. It will retreive all the objects with metadata then create the corresponding jira tasks'''
     def __init__(self):
@@ -38,14 +51,17 @@ class SynchronizeJiraCommand(Command):
                             metavar = 'N',
                             nargs    = '+')
         return True
-    #---------------------------------------------------------------------------
+
+    def sanitize(self, env):
+        return True
+
     def run(self, env):
         '''
             Method that run the sync-jira nimp command
             Run the DNEAssetMining commandlet that will outpout a json with the ue objects with metadata
             then, it creates the corresponding Jira tasks associated to these objects
         '''
-        if jira_imported :
+        if _JIRA_IMPORTED :
             if env.is_ue4:
                 options = { 'server': env.jira_server }
                 jira = JIRA(options,basic_auth=(env.jira_id, env.jira_password))
@@ -65,8 +81,8 @@ class SynchronizeJiraCommand(Command):
                             filtered_packages.append(filename)
 
                 if len(filtered_packages) == 0:
-                    log_warning('No Packages to mine found in changelists ' + str(env.changelists) +'.')
-                    return True;
+                    logging.warning('No Packages to mine found in changelists ' + str(env.changelists) +'.')
+                    return True
 
                 #Create a new temp file and close it in order that the commandlet writes in that file
                 temp = tempfile.NamedTemporaryFile(delete = False)
@@ -78,19 +94,18 @@ class SynchronizeJiraCommand(Command):
                             json_data = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
                             SynchronizeJiraCommand.parse_json_and_create_jira_task(env, json_data, jira)
                         else:
-                            log_notification('No Metadata found in the mined packages, the file is empty.')
+                            logging.info('No Metadata found in the mined packages, the file is empty.')
                         json_file.close()
                         os.remove(temp.name)
-                    except ValueError as error:
-                        log_error('ValueError : Invalid characters in Metadata ({0})', temp.name)
+                    except ValueError:
+                        logging.error('ValueError : Invalid characters in Metadata (%s)', temp.name)
             else:
-                log_error('This command is only supported on UE4')
+                logging.error('This command is only supported on UE4')
             return True
         else:
-            log_error('Jira Python library is not install. Use "pip3 install jira" to fix this error.')
+            logging.error('Jira Python library is not install. Use "pip3 install jira" to fix this error.')
             return False
 
-    #---------------------------------------------------------------------------
     @staticmethod
     def parse_json_and_create_jira_task(env, json_data, jira_object):
         '''Method that parses json_data and then creates the corresponding jira task'''
@@ -103,9 +118,9 @@ class SynchronizeJiraCommand(Command):
                         description += key + ' : ' + str(json_data[ue_object]['Metadata'][metadata][key]) + ', '
                 SynchronizeJiraCommand.create_jira_task(jira_object, env.jira_project_key, summary, description, 'Task', None )
         else:
-            log_notification('Json file is not empty but no data was found.')
+            logging.info('Json file is not empty but no data was found.')
         return
-    #---------------------------------------------------------------------------
+
     @staticmethod
     def create_jira_task(jira_object, project, summary, description, issue_type, assignee=None):
         '''Method that creates a jira task with the given paramters'''
@@ -113,7 +128,7 @@ class SynchronizeJiraCommand(Command):
         search_str = 'project=\''+project+'\' and summary ~ \'' + summary +'\''
         my_issues = jira_object.search_issues(search_str)
         if len(my_issues) == 0:
-            log_notification('Issue ' + summary + ' not found, creating a new one.')
+            logging.info('Issue ' + summary + ' not found, creating a new one.')
             issue_dict = {
                 'project':  { 'key': project },
                 'summary': summary,
@@ -125,8 +140,8 @@ class SynchronizeJiraCommand(Command):
         else:
             permissions =  jira_object.my_permissions(project, None,  my_issues[0])
             if permissions['permissions']['EDIT_ISSUES']['havePermission']:
-                log_notification('Issue ' + summary + ' already exists. Updating description.')
+                logging.info('Issue ' + summary + ' already exists. Updating description.')
                 my_issues[0].update(description = description)
             else:
-                log_warning('Permission Insufficient to edit description on ' + summary + '.')
+                logging.warning('Permission Insufficient to edit description on ' + summary + '.')
         return

@@ -8,7 +8,7 @@ import unittest
 from nimp.commands.command import *
 
 from nimp.tests.utilities import file_mapper_tests
-from nimp.utilities.processes import *
+from nimp.utilities.system import *
 
 
 class CheckCommand(Command):

@@ -1,13 +1,33 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
+
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Class and function relative to the nimp environment, i.e. configuration
 values and command line parameters set for this nimp execution '''
 
-import time
-import platform
+import logging
 import os
+import platform
+import time
 
 import nimp.utilities.file_mapper
-import nimp.utilities.logging
 import nimp.utilities.system
 import nimp.utilities.ue3
 import nimp.utilities.ue4
@@ -22,7 +42,7 @@ class Environment:
         env_vars = [x.lower() for x in os.environ.keys()]
         for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
             dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
-            nimp.utilities.logging.log_warning("Fixing duplicate environment variable: " + '/'.join(dupelist))
+            logging.warning("Fixing duplicate environment variable: " + '/'.join(dupelist))
             for duplicated in dupelist[1:]:
                 del os.environ[duplicated]
         # … But in some cases (Windows Python) the duplicate variables are masked
@@ -34,6 +54,8 @@ class Environment:
             os.environ[key] = val
 
         self.command_to_run = None
+        self.root_dir = None
+        self.environment = {}
 
     def format(self, fmt, **override_kwargs):
         ''' Interpolates given string with config values & command line para-
@@ -57,12 +79,6 @@ class Environment:
             yield (self.root_dir, dest)
         return nimp.utilities.file_mapper.FileMapper(_default_mapper, format_args = vars(self))
 
-    def check_keys(self, *args):
-        ''' Checks if a given key is set on this environment '''
-        error_format = "{key} should be defined, either in settings or in command line arguments. Check those."
-        return check_keys(vars(self), error_format, *args)
-
-    #---------------------------------------------------------------------------
     def load_config_file(self, filename):
         ''' Loads a config file and adds its values to this environment '''
         settings_content = read_config_file(filename)
@@ -85,32 +101,24 @@ class Environment:
         ''' Executes a hook in the .nimp/hooks directory '''
         pass
 
-
-#---------------------------------------------------------------------------
-def check_keys(dictionary, error_format, *args):
-    ''' Checks a key is defined on environment '''
-    result = True
-    for in_key in args:
-        if in_key not in dictionary:
-            result = False
-    return result
-
-#---------------------------------------------------------------------------
 def read_config_file(filename):
+    ''' Reads a config file and returns a dictionary with values defined in it '''
     try:
         conf = open(filename, "rb").read()
-    except Exception as exception:
-        log_error("Unable to open configuration file : {0}", exception)
+    except IOError as exception:
+        logging.error("Unable to open configuration file : %s", exception)
         return None
     # Parse configuration file
     try:
-        locals = {}
-        exec(compile(conf, filename, 'exec'), None, locals)
-        if "config" in locals:
-            return locals["config"]
-        log_error("Configuration file {0} has no 'config' section.", filename)
-    except Exception as e:
-        log_error("Unable to load configuration file {0}: {1}", filename, str(e))
+        local_vars = {}
+        #pylint: disable=exec-used
+        exec(compile(conf, filename, 'exec'), None, local_vars)
+        if "config" in local_vars:
+            return local_vars["config"]
+        logging.error("Configuration file %s has no 'config' section.", filename)
+    #pylint: disable=broad-except
+    except Exception as ex:
+        logging.error("Unable to load configuration file %s : %s", filename, str(ex))
         return None
 
     return {}
