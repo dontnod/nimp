@@ -29,8 +29,8 @@ import importlib
 import logging
 
 import nimp.commands.command
-import nimp.utilities.ue4
-import nimp.utilities.p4
+import nimp.ue4
+import nimp.p4
 
 #Jira import. That way, if jira module isn't installed for a user, nimp will not crash
 _JIRA_IMPORTED = importlib.util.find_spec("jira") is not None
@@ -68,7 +68,7 @@ class SyncJira(nimp.commands.command.Command):
 
                 #Filter modified files to get only the edited or added ones
                 #Only Check in the Content/... p4 folder of the current working directory. It remplaces the condition filename.startswith(os.getcwd()) == true
-                packages = nimp.utilities.p4.get_modified_files(*env.changelists, root='Content/...')
+                packages = nimp.p4.get_modified_files(*env.changelists, root='Content/...')
                 filtered_packages = []
                 for (filename, action) in packages:
                     if action == 'edit' or action == 'add':
@@ -87,7 +87,7 @@ class SyncJira(nimp.commands.command.Command):
                 #Create a new temp file and close it in order that the commandlet writes in that file
                 temp = tempfile.NamedTemporaryFile(delete = False)
                 temp.close()
-                if nimp.utilities.ue4.ue4_commandlet(env,'DNEAssetMiningCommandlet', 'packages=%s' % ','.join(filtered_packages), "json=%s" % temp.name):
+                if nimp.ue4.ue4_commandlet(env,'DNEAssetMiningCommandlet', 'packages=%s' % ','.join(filtered_packages), "json=%s" % temp.name):
                     try:
                         json_file = open(temp.name, encoding='utf-8',errors='replace')
                         if os.stat(temp.name).st_size > 0:

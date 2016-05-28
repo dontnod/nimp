@@ -37,7 +37,7 @@ import time
 
 import glob2
 
-import nimp.utilities.windows
+import nimp.windows
 
 def is_windows():
     ''' Return True if the runtime platform is Windows, including MSYS '''
@@ -118,8 +118,8 @@ def call_process(directory, command, heartbeat = 0):
     logging.debug("Running “%s” in “%s”", " ".join(command), os.path.abspath(directory))
 
     if is_windows():
-        nimp.utilities.windows.disable_win32_dialogs()
-        debug_pipe = nimp.utilities.windows.OutputDebugStringLogger()
+        nimp.windows.disable_win32_dialogs()
+        debug_pipe = nimp.windows.OutputDebugStringLogger()
 
     # The bufsize = 1 is important; if we don’t bufferise the
     # output, we’re going to make the callee lag a lot.
@@ -200,16 +200,16 @@ def robocopy(src, dest):
     # Retry up to 5 times after I/O errors
     max_retries = 10
 
-    src = nimp.utilities.system.sanitize_path(src)
-    dest = nimp.utilities.system.sanitize_path(dest)
+    src = nimp.system.sanitize_path(src)
+    dest = nimp.system.sanitize_path(dest)
 
     logging.debug('Copying “%s” to “%s”', src, dest)
 
     if os.path.isdir(src):
-        nimp.utilities.system.safe_makedirs(dest)
+        nimp.system.safe_makedirs(dest)
     elif os.path.isfile(src):
         dest_dir = os.path.dirname(dest)
-        nimp.utilities.system.safe_makedirs(dest_dir)
+        nimp.system.safe_makedirs(dest_dir)
         while True:
             try:
                 if os.path.exists(dest):
@@ -236,7 +236,7 @@ def robocopy(src, dest):
 def force_delete(path):
     ''' 'Robust' delete. '''
 
-    path = nimp.utilities.system.sanitize_path(path)
+    path = nimp.system.sanitize_path(path)
 
     if os.path.exists(path):
         os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
@@ -300,12 +300,12 @@ class FileMapper(object):
     def glob(self, *patterns):
         ''' Globs given patterns, feedding the resulting files '''
         def _glob_mapper(src, dest):
-            src = nimp.utilities.system.sanitize_path(src)
-            dest = nimp.utilities.system.sanitize_path(dest)
+            src = nimp.system.sanitize_path(src)
+            dest = nimp.system.sanitize_path(dest)
             if src is None or src == '.':
                 source_path_len = 0
             else:
-                source_path_len = len(nimp.utilities.system.split_path(src))
+                source_path_len = len(nimp.system.split_path(src))
 
             for pattern in patterns:
                 found = False
@@ -322,7 +322,7 @@ class FileMapper(object):
                     # except it will handle globs pattern in the base path.
                     glob_source = os.path.normpath(glob_source)
                     if dest is not None:
-                        new_dest = nimp.utilities.system.split_path(glob_source)[source_path_len:]
+                        new_dest = nimp.system.split_path(glob_source)[source_path_len:]
                         new_dest = '/'.join(new_dest)
                         new_dest = os.path.join(dest, new_dest)
                         new_dest = os.path.normpath(new_dest)
@@ -425,7 +425,7 @@ class FileMapper(object):
                 src = from_src
             else:
                 src = os.path.join(self._format(src), from_src)
-            src = os.path.normpath(nimp.utilities.system.sanitize_path(src))
+            src = os.path.normpath(nimp.system.sanitize_path(src))
             yield (src, dest)
         return self.append(_src_mapper)
 
@@ -497,7 +497,7 @@ class FileMapper(object):
                 dest = to_destination
             else:
                 dest = os.path.join(dest, to_destination)
-            dest = nimp.utilities.system.sanitize_path(dest)
+            dest = nimp.system.sanitize_path(dest)
             yield (src, dest)
         return self.append(_to_mapper)
 
@@ -528,7 +528,7 @@ class FileMapper(object):
 
 def list_all_revisions(env, version_directory_format, **override_args):
     ''' Lists all revisions based on directory pattern '''
-    version_directory_format = nimp.utilities.system.sanitize_path(version_directory_format)
+    version_directory_format = nimp.system.sanitize_path(version_directory_format)
     revisions = []
     format_args = { 'revision' : '*',
                     'platform' : '*',

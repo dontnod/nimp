@@ -25,8 +25,8 @@ import os
 import platform
 import logging
 
-import nimp.utilities.build
-import nimp.utilities.system
+import nimp.build
+import nimp.system
 
 def sanitize(env):
     ''' Sets some variables for use with unreal 4 '''
@@ -87,21 +87,21 @@ def ue4_build(env):
 
     # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
     tmp = env.format('{root_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln')
-    if not nimp.utilities.build.vsbuild(tmp, 'Any CPU', 'Development', None, '11', 'Build') \
-       and not nimp.utilities.build.vsbuild(tmp, 'Any CPU', 'Development', None, '12', 'Build') \
-       and not nimp.utilities.build.vsbuild(tmp, 'Any CPU', 'Development', None, '14', 'Build'):
+    if not nimp.build.vsbuild(tmp, 'Any CPU', 'Development', None, '11', 'Build') \
+       and not nimp.build.vsbuild(tmp, 'Any CPU', 'Development', None, '12', 'Build') \
+       and not nimp.build.vsbuild(tmp, 'Any CPU', 'Development', None, '14', 'Build'):
         logging.error("Could not build RPCUtility")
         return False
 
     if platform.system() == 'Darwin':
         # HACK: For some reason nothing copies this file on OS X
-        nimp.utilities.system.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll'),
-                                       env.format('{root_dir}/Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll'))
+        nimp.system.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll'),
+                             env.format('{root_dir}/Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll'))
         # HACK: and nothing creates this directory
-        nimp.utilities.system.safe_makedirs(env.format('{root_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
+        nimp.system.safe_makedirs(env.format('{root_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
 
     # HACK: We also need this on Windows
-    if nimp.utilities.system.is_windows():
+    if nimp.system.is_windows():
         for dll in [ 'FBX/2014.2.1/lib/vs2012/x64/release/libfbxsdk.dll',
                      'FBX/2016.1.1/lib/vs2015/x64/release/libfbxsdk.dll',
                      'IntelEmbree/Embree270/Win64/lib/embree.dll',
@@ -109,13 +109,13 @@ def ue4_build(env):
                      'IntelEmbree/Embree270/Win64/lib/tbbmalloc.dll' ]:
             src = env.format('{root_dir}/Engine/Source/ThirdParty/' + dll)
             dst = env.format('{root_dir}/Engine/Binaries/Win64/' + os.path.basename(dll))
-            if os.path.exists(nimp.utilities.system.sanitize_path(src)):
-                nimp.utilities.system.robocopy(src, dst)
+            if os.path.exists(nimp.system.sanitize_path(src)):
+                nimp.system.robocopy(src, dst)
 
     # HACK: We need this on Linux...
     if platform.system() == 'Linux':
-        nimp.utilities.system.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Steamworks/Steamv132/Linux/libsteam_api.so'),
-                                       env.format('{root_dir}/Engine/Binaries/Linux/libsteam_api.so'))
+        nimp.system.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Steamworks/Steamv132/Linux/libsteam_api.so'),
+                             env.format('{root_dir}/Engine/Binaries/Linux/libsteam_api.so'))
 
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
@@ -178,13 +178,13 @@ def ue4_build(env):
             need_xboxonepdbfileutil = True
 
     # Some tools are necessary even when not building tools...
-    if need_ps4devkitutil and os.path.exists(nimp.utilities.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
+    if need_ps4devkitutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
         tools += [ 'PS4DevKitUtil' ]
 
-    if need_ps4mapfileutil and os.path.exists(nimp.utilities.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
+    if need_ps4mapfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
         tools += [ 'PS4MapFileUtil' ]
 
-    if need_xboxonepdbfileutil and os.path.exists(nimp.utilities.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
+    if need_xboxonepdbfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
         tools += [ 'XboxOnePDBFileUtil' ]
 
     # Build tools from the main solution
@@ -200,20 +200,20 @@ def ue4_build(env):
     # Build tools from other solutions or with other flags
     if env.target == 'tools':
 
-        if not nimp.utilities.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln'),
-                                            'Any CPU', 'Development', None, vs_version, 'Build'):
+        if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln'),
+                                  'Any CPU', 'Development', None, vs_version, 'Build'):
             logging.error("Could not build NetworkProfiler")
             result = False
 
         if env.platform != 'mac':
             # This also builds AgentInterface.dll, needed by SwarmInterface.sln
-            if not nimp.utilities.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
-                                                'Any CPU', 'Development', None, vs_version, 'Build'):
+            if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
+                                      'Any CPU', 'Development', None, vs_version, 'Build'):
                 logging.error("Could not build UnrealSwarm")
                 result = False
 
-            if not nimp.utilities.build.vsbuild(env.format('{root_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
-                                                'Any CPU', 'Development', None, vs_version, 'Build'):
+            if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
+                                      'Any CPU', 'Development', None, vs_version, 'Build'):
                 logging.error("Could not build SwarmInterface")
                 result = False
 
@@ -226,9 +226,9 @@ def ue4_build(env):
                 result = False
 
             tmp = env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
-            if os.path.exists(nimp.utilities.system.sanitize_path(tmp)):
-                if not nimp.utilities.build.vsbuild(tmp, 'x64', 'Development', None, '11', 'Build') \
-                   and not nimp.utilities.build.vsbuild(tmp, 'x64', 'Development', None, '14', 'Build'):
+            if os.path.exists(nimp.system.sanitize_path(tmp)):
+                if not nimp.build.vsbuild(tmp, 'x64', 'Development', None, '11', 'Build') \
+                   and not nimp.build.vsbuild(tmp, 'x64', 'Development', None, '14', 'Build'):
                     logging.error("Could not build XboxOnePackageNameUtil")
                     result = False
 
@@ -255,37 +255,37 @@ def ue4_build(env):
     return True
 
 def _ue4_generate_project(env):
-    if nimp.utilities.system.is_windows():
-        return nimp.utilities.system.call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat'])
+    if nimp.system.is_windows():
+        return nimp.system.call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat'])
     else:
-        return nimp.utilities.system.call_process(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
+        return nimp.system.call_process(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
 
 def _ue4_build_project(env, sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
 
-    if nimp.utilities.system.is_windows():
-        return nimp.utilities.build.vsbuild(sln_file, build_platform, configuration,
-                                            project, vs_version, target)
+    if nimp.system.is_windows():
+        return nimp.build.vsbuild(sln_file, build_platform, configuration,
+                                  project, vs_version, target)
 
-    return nimp.utilities.system.call_process(env.root_dir,
-                                              ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (build_platform),
-                                               project, build_platform, configuration]) == 0
+    return nimp.system.call_process(env.root_dir,
+                                    ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (build_platform),
+                                     project, build_platform, configuration]) == 0
 
 def ue4_commandlet(env, commandlet, *args):
     ''' Runs an UE4 commandlet '''
-    if nimp.utilities.system.is_windows():
+    if nimp.system.is_windows():
         exe = 'Engine/Binaries/Win64/UE4Editor.exe'
     elif platform.system() == 'Darwin':
         exe = 'Engine/Binaries/Mac/UE4Editor'
     else:
         exe = 'Engine/Binaries/Linux/UE4Editor'
 
-    cmdline = [nimp.utilities.system.sanitize_path(os.path.join(env.format(env.root_dir), exe)),
+    cmdline = [nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), exe)),
                env.game,
                '-run=%s' % commandlet]
 
     cmdline += list(args)
     cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
 
-    return nimp.utilities.system.call_process('.', cmdline) == 0
+    return nimp.system.call_process('.', cmdline) == 0
 

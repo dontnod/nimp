@@ -5,7 +5,7 @@ import os
 import itertools
 import tempfile
 
-from nimp.utilities.system import *
+from nimp.system import *
 
 def _yield_mapper(src, destination):
     yield os.path.normpath(src), os.path.normpath(destination)

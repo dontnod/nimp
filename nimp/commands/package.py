@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from nimp.commands.command import *
-from nimp.utilities.system import *
-from nimp.utilities.ps3 import *
-from nimp.utilities.ps4 import *
-from nimp.utilities.xboxone import *
+from nimp.system import *
+from nimp.ps3 import *
+from nimp.ps4 import *
+from nimp.xboxone import *
 
 #-------------------------------------------------------------------------------
 class PackageCommand(Command):

@@ -20,7 +20,7 @@ setup_info = dict(
         'nimp/modules/log_formats',
         'nimp/tests',
         'nimp/tests/utilities',
-        'nimp/utilities',
+        'nimp',
     ],
 
     install_requires = [

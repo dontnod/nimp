@@ -24,7 +24,7 @@
 import abc
 
 import nimp.commands.command
-import nimp.utilities.p4
+import nimp.p4
 
 class P4Command(nimp.commands.command.Command):
     ''' Perforce command base class '''
@@ -48,7 +48,6 @@ class P4Command(nimp.commands.command.Command):
                             type = str)
 
         parser.add_argument('--p4client',
-                            metavar = '<CLIENT_NAME>',
                             help = 'Perforce workspace',
                             type = str)
 
@@ -77,12 +76,12 @@ class P4CleanWorkspace(P4Command):
         return True
 
     def run(self, env):
-        if not nimp.utilities.p4.clean_workspace():
+        if not nimp.p4.clean_workspace():
             return False
 
 #   def _register_prepare_workspace(subparsers):
 #       def _execute(env):
-#           if not nimp.utilities.p4.create_config_file(env.p4port, env.p4user, env.p4pass, env.p4client):
+#           if not nimp.p4.create_config_file(env.p4port, env.p4user, env.p4pass, env.p4client):
 #               return False
 #
 #           if env.patch_config is not None and env.patch_config != "None":

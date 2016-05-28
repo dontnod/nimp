@@ -25,10 +25,10 @@ import logging
 import os
 
 import nimp.commands.command
-import nimp.utilities.build
-import nimp.utilities.environment
-import nimp.utilities.ue3
-import nimp.utilities.ue4
+import nimp.build
+import nimp.environment
+import nimp.ue3
+import nimp.ue4
 
 class Build(nimp.commands.command.Command):
     ''' Compile an ue3 or ue4 projects '''
@@ -71,10 +71,10 @@ class Build(nimp.commands.command.Command):
         return True
 
     def sanitize(self, env):
-        nimp.utilities.environment.sanitize_platform(env)
-        nimp.utilities.build.sanitize_config(env)
-        nimp.utilities.ue3.sanitize(env)
-        nimp.utilities.ue4.sanitize(env)
+        nimp.environment.sanitize_platform(env)
+        nimp.build.sanitize_config(env)
+        nimp.ue3.sanitize(env)
+        nimp.ue4.sanitize(env)
         if not hasattr(env, 'target') or env.target is None:
             if env.is_ue4:
                 if env.platform in ['win64', 'mac', 'linux']:
@@ -90,15 +90,15 @@ class Build(nimp.commands.command.Command):
     def run(self, env):
 
         # Use distcc and/or ccache if available
-        nimp.utilities.build.install_distcc_and_ccache()
+        nimp.build.install_distcc_and_ccache()
 
         # Unreal Engine 4
         if env.is_ue4:
-            return nimp.utilities.ue4.ue4_build(env)
+            return nimp.ue4.ue4_build(env)
 
         # Unreal Engine 3
         if env.is_ue3:
-            return nimp.utilities.ue3.ue3_build(env)
+            return nimp.ue3.ue3_build(env)
 
         # Visual Studio maybe?
         for file in os.listdir('.'):
@@ -116,7 +116,7 @@ class Build(nimp.commands.command.Command):
                 elif '# Visual Studio 2013' in sln:
                     vsver = '12'
 
-                return nimp.utilities.build.vsbuild(file, platform, config, env.target, vsver, 'Build')
+                return nimp.build.vsbuild(file, platform, config, env.target, vsver, 'Build')
 
         # Error! <- Are you f****g kidding me ?!!11
         logging.error("Invalid project type %s", env.project_type)

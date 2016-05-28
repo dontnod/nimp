@@ -32,11 +32,11 @@ import time
 import traceback
 
 import nimp.commands.command
-import nimp.utilities.environment
-import nimp.utilities.system
+import nimp.environment
+import nimp.system
 
-if nimp.utilities.system.is_windows():
-    import nimp.utilities.windows
+if nimp.system.is_windows():
+    import nimp.windows
 
 sys.dont_write_bytecode = 1
 
@@ -155,11 +155,11 @@ def main():
 
     result = 0
     try:
-        if nimp.utilities.system.is_windows():
-            nimp_monitor = nimp.utilities.windows.NimpMonitor()
+        if nimp.system.is_windows():
+            nimp_monitor = nimp.windows.NimpMonitor()
             nimp_monitor.start()
 
-        env = nimp.utilities.environment.Environment()
+        env = nimp.environment.Environment()
         if not  _load_config(env):
             return 1
 
@@ -184,7 +184,7 @@ def main():
     except SystemExit:
         result = 1
 
-    if nimp.utilities.system.is_windows():
+    if nimp.system.is_windows():
         nimp_monitor.stop()
 
     end = time.time()

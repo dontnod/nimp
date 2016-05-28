@@ -3,9 +3,9 @@
 import zipfile
 
 from nimp.commands.command import *
-from nimp.utilities.ue3 import *
-from nimp.utilities.ue4 import *
-from nimp.utilities.system import *
+from nimp.ue3 import *
+from nimp.ue4 import *
+from nimp.system import *
 
 #-------------------------------------------------------------------------------
 class DeployCommand(Command):

@@ -26,7 +26,7 @@ import os
 import os.path
 import re
 
-import nimp.utilities.system
+import nimp.system
 
 _CREATE_CHANGELIST_FORM_TEMPLATE = "\
 Change: new\n\
@@ -71,7 +71,7 @@ def get_files_status(*files):
         if os.path.isdir(files[i]):
             files[i] = files[i] + "/..."
 
-    _, output, _ = nimp.utilities.system.capture_process_output(".", ["p4", "-x", "-", "-z", "tag","fstat"], '\n'.join(files), 'cp437')
+    _, output, _ = nimp.system.capture_process_output(".", ["p4", "-x", "-", "-z", "tag","fstat"], '\n'.join(files), 'cp437')
     files_infos = output.strip().replace('\r', '').split('\n\n')
 
     for file_info in files_infos:
@@ -190,7 +190,7 @@ def get_workspace():
 
 def is_file_versioned(file_path):
     ''' Checks if a file is known by the source control '''
-    _, output, error = nimp.utilities.system.capture_process_output(".", ["p4", "-z", "tag", "fstat", file_path], None, 'cp437')
+    _, output, error = nimp.system.capture_process_output(".", ["p4", "-z", "tag", "fstat", file_path], None, 'cp437')
     # Checks if the file was not added then deleted
     if re.search(r"\.\.\.\s*headAction\s*delete", output) is not None:
         return False
@@ -209,7 +209,7 @@ def revert_unchanged(cl_number):
 def submit(cl_number):
     ''' Submits given changelist '''
     logging.info("Submiting changelist %s...", cl_number)
-    _, _, error = nimp.utilities.system.capture_process_output(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number], None, 'cp437')
+    _, _, error = nimp.system.capture_process_output(".", ["p4", "-z", "tag", "submit", "-f", "revertunchanged", "-c", cl_number], None, 'cp437')
 
     if error is not None and error != "":
         if "No files to submit." in error:
@@ -234,7 +234,7 @@ def sync(file = None, cl_number = None):
     if len(file_spec) > 0:
         command += [file_spec]
 
-    result, _, error = nimp.utilities.system.capture_process_output('.', command, None, 'cp437')
+    result, _, error = nimp.system.capture_process_output('.', command, None, 'cp437')
     if (result != 0 or error != '') and 'file(s) up-to-date' not in error:
         logging.error("Error syncing : %s", error)
         return False
@@ -262,7 +262,7 @@ def get_modified_files(*cl_numbers, root = '//...'):
             yield ('', '')
 
 def _run_command(directory, command, stdin = None, log_errors = True):
-    result, output, error = nimp.utilities.system.capture_process_output(directory, command, stdin, 'cp437')
+    result, output, error = nimp.system.capture_process_output(directory, command, stdin, 'cp437')
     if result != 0 or error != '':
         if log_errors:
             logging.error("Perforce error: %s", error.rstrip('\r\n'))

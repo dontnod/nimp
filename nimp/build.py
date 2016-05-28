@@ -26,7 +26,7 @@ import os
 import re
 import subprocess
 
-import nimp.utilities.system
+import nimp.system
 
 def sanitize_config(env):
     ''' Cleans config related env variables '''
@@ -47,7 +47,7 @@ def vsbuild(solution, platform_name, configuration, project = None, vs_version =
     ''' Builds a project with Visual Studio '''
     build_directory = '.'
 
-    if nimp.utilities.system.is_windows():
+    if nimp.system.is_windows():
         devenv_path = _find_devenv_path(vs_version)
         if devenv_path is None:
             logging.error("Unable to find Visual Studio %s", vs_version)
@@ -57,11 +57,11 @@ def vsbuild(solution, platform_name, configuration, project = None, vs_version =
         if project is not None:
             command = command + [ '/project', project ]
 
-        return nimp.utilities.system.call_process(build_directory, command) == 0
+        return nimp.system.call_process(build_directory, command) == 0
 
     else: # Mac and Linux alike
         command = [ 'xbuild', solution, '/verbosity:quiet', '/p:TargetFrameworkVersion=v4.5', '/p:TargetFrameworkProfile=', '/nologo' ]
-        return nimp.utilities.system.call_process(build_directory, command) == 0
+        return nimp.system.call_process(build_directory, command) == 0
 
 
 def _find_devenv_path(vs_version):
@@ -145,19 +145,19 @@ def upload_symbols(env, symbols):
             for src, _ in symbols:
                 symbols_index.write(src + "\n")
 
-        store_root = nimp.utilities.system.sanitize_path(env.format(env.publish_symbols))
+        store_root = nimp.system.sanitize_path(env.format(env.publish_symbols))
         transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, env.configuration, env.revision)
-        if nimp.utilities.system.call_process(".",
-                                              [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
-                                                "add",
-                                                "/compress",
-                                                "/r", # Recursive
-                                                "/f", "@" + index_file,
-                                                "/s", store_root,
-                                                "/o", # Verbose output
-                                                "/t", env.project, # Product name
-                                                "/c", transaction_comment,
-                                                "/v", env.revision ]) != 0:
+        if nimp.system.call_process(".",
+                                    [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+                                      "add",
+                                      "/compress",
+                                      "/r", # Recursive
+                                      "/f", "@" + index_file,
+                                      "/s", store_root,
+                                      "/o", # Verbose output
+                                      "/t", env.project, # Product name
+                                      "/c", transaction_comment,
+                                      "/v", env.revision ]) != 0:
             logging.error("Oops! An error occurred while uploading symbols.")
             # Do not remove symbol index; keep it for later debugging
             return False
@@ -198,7 +198,7 @@ def delete_symbol_transaction(symsrv, transaction_id):
                  transaction_id,
                  "/s",
                  symsrv]
-    if nimp.utilities.system.call_process(".", command) != 0:
+    if nimp.system.call_process(".", command) != 0:
         logging.error("Oops! An error occurred while deleting symbols.")
         return False
     return True

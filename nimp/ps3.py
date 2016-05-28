@@ -7,8 +7,8 @@ import string
 import time
 import contextlib
 
-from nimp.utilities.build import *
-from nimp.utilities.system import *
+from nimp.build import *
+from nimp.system import *
 
 
 #-------------------------------------------------------------------------------

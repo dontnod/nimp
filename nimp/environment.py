@@ -27,9 +27,9 @@ import os
 import platform
 import time
 
-import nimp.utilities.system
-import nimp.utilities.ue3
-import nimp.utilities.ue4
+import nimp.system
+import nimp.ue3
+import nimp.ue4
 
 class Environment:
     ''' Environment '''
@@ -76,7 +76,7 @@ class Environment:
         ''' Returns a file mapper to list / copy files. '''
         def _default_mapper(_, dest):
             yield (self.root_dir, dest)
-        return nimp.utilities.system.FileMapper(_default_mapper, format_args = vars(self))
+        return nimp.system.FileMapper(_default_mapper, format_args = vars(self))
 
     def load_config_file(self, filename):
         ''' Loads a config file and adds its values to this environment '''
@@ -140,7 +140,7 @@ def sanitize_platform(env):
                       "mac"       : "mac",
                       "macos"     : "mac" }
 
-    if nimp.utilities.system.is_windows():
+    if nimp.system.is_windows():
         env.platform = 'win64'
     elif platform.system() == 'Darwin':
         env.platform = 'mac'

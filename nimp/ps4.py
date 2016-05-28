@@ -10,8 +10,8 @@ import fnmatch
 import os
 import os.path
 
-from nimp.utilities.environment import *
-from nimp.utilities.build import *
+from nimp.environment import *
+from nimp.build import *
 
 def generate_gp4(env, dest_dir):
     packages_config = env.packages_config

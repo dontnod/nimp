@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from nimp.commands.command import *
-from nimp.utilities.ue3 import *
-from nimp.utilities.ue4 import *
-from nimp.utilities.ps3 import *
+from nimp.ue3 import *
+from nimp.ue4 import *
+from nimp.ps3 import *
 
 #-------------------------------------------------------------------------------
 class ShipCommand(Command):

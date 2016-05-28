@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from nimp.utilities.system import *
+from nimp.system import *
 
 from BitTornado.Meta.Info import Info, MetaInfo
 from BitTornado.Meta.BTTree import BTTree

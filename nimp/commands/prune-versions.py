@@ -3,10 +3,10 @@
 import datetime
 
 import nimp.commands.command
-from nimp.utilities.ue3 import *
-from nimp.utilities.ue4 import *
-from nimp.utilities.build import *
-from nimp.utilities.environment import *
+from nimp.ue3 import *
+from nimp.ue4 import *
+from nimp.build import *
+from nimp.environment import *
 
 #-------------------------------------------------------------------------------
 class PruneVersionsCommand(nimp.commands.command.Command):

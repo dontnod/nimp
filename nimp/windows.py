@@ -28,7 +28,7 @@ import struct
 import threading
 import time
 
-import nimp.utilities.system
+import nimp.system
 
 _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None
 
@@ -74,7 +74,7 @@ class NimpMonitor(threading.Thread):
             result = _KERNEL32.WaitForMultipleObjects(len(events), (ctypes.c_void_p * len(events))(*events), 0, INFINITE)
             if result == WAIT_OBJECT_0:
                 logging.debug("Parent nimp.exe is not running anymore: current python process and its subprocesses are going to be killed")
-                nimp.utilities.system.call_process('.', ['taskkill', '/F', '/T', '/PID', str(os.getpid())])
+                nimp.system.call_process('.', ['taskkill', '/F', '/T', '/PID', str(os.getpid())])
                 break
             elif result == WAIT_OBJECT_1:
                 break
