@@ -21,9 +21,10 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Utilities related to compilation '''
 
-import subprocess
 import logging
 import os
+import re
+import subprocess
 
 import nimp.utilities.system
 
@@ -100,7 +101,6 @@ def _find_devenv_path(vs_version):
     logging.error("Found Visual Studio at %s", devenv_path)
     return devenv_path
 
-
 def install_distcc_and_ccache():
     """ Install environment variables suitable for distcc and ccache usage
         if relevant.
@@ -136,4 +136,70 @@ def install_distcc_and_ccache():
             workers = subprocess.Popen(['distcc', '-j'], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
             logging.debug('Setting UBT_PARALLEL=%s', workers)
             os.environ['UBT_PARALLEL'] = workers
+
+def upload_symbols(env, symbols):
+    ''' Uploads build symbols to a symbol server '''
+    if env.is_microsoft_platform:
+        index_file = "symbols_index.txt"
+        with open(index_file, "w") as symbols_index:
+            for src, _ in symbols:
+                symbols_index.write(src + "\n")
+
+        store_root = nimp.utilities.system.sanitize_path(env.format(env.publish_symbols))
+        transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, env.configuration, env.revision)
+        if nimp.utilities.system.call_process(".",
+                                              [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+                                                "add",
+                                                "/compress",
+                                                "/r", # Recursive
+                                                "/f", "@" + index_file,
+                                                "/s", store_root,
+                                                "/o", # Verbose output
+                                                "/t", env.project, # Product name
+                                                "/c", transaction_comment,
+                                                "/v", env.revision ]) != 0:
+            logging.error("Oops! An error occurred while uploading symbols.")
+            # Do not remove symbol index; keep it for later debugging
+            return False
+
+        os.remove(index_file)
+
+    return True
+
+def get_symbol_transactions(symsrv):
+    ''' Retrieves all symbol transactions from a symbol server '''
+    server_txt_path =  os.path.join(symsrv, "000Admin", "server.txt")
+    if not os.path.exists(server_txt_path):
+        logging.error("Unable to find the file %s, aborting.", server_txt_path)
+        return None
+    line_re = re.compile(r"^(?P<id>\d*),"
+                         r"(?P<operation>(add|del)),"
+                         r"(?P<type>(file|ptr)),"
+                         r"(?P<creation_date>\d{2}\/\d{2}\/\d{4}),"
+                         r"(?P<creation_time>\d{2}:\d{2}:\d{2}),"
+                         r"\"(?P<product_name>[^\"]*)\","
+                         r"\"(?P<version>[^\"]*)\","
+                         r"\"(?P<comment>[^\"]*)\",$")
+    transaction_infos = []
+    with open(server_txt_path, "r") as server_txt:
+        for line in server_txt.readlines():
+            match = line_re.match(line)
+            if not match:
+                logging.error("%s is not recognized as a server.txt transaction entry", line)
+                return None
+            transaction_infos += [match.groupdict()]
+    return transaction_infos
+
+def delete_symbol_transaction(symsrv, transaction_id):
+    ''' Deletes a symbol transaction from a Microsoft symbol repository '''
+    command  = [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+                 "del",
+                 "/i",
+                 transaction_id,
+                 "/s",
+                 symsrv]
+    if nimp.utilities.system.call_process(".", command) != 0:
+        logging.error("Oops! An error occurred while deleting symbols.")
+        return False
+    return True
 

@@ -27,7 +27,6 @@ import os
 import platform
 import time
 
-import nimp.utilities.file_mapper
 import nimp.utilities.system
 import nimp.utilities.ue3
 import nimp.utilities.ue4
@@ -77,7 +76,7 @@ class Environment:
         ''' Returns a file mapper to list / copy files. '''
         def _default_mapper(_, dest):
             yield (self.root_dir, dest)
-        return nimp.utilities.file_mapper.FileMapper(_default_mapper, format_args = vars(self))
+        return nimp.utilities.system.FileMapper(_default_mapper, format_args = vars(self))
 
     def load_config_file(self, filename):
         ''' Loads a config file and adds its values to this environment '''

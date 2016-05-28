@@ -11,7 +11,7 @@ from nimp.tests.utilities import file_mapper_tests
 from nimp.utilities.system import *
 
 
-class CheckCommand(Command):
+class Check(Command):
 
     def __init__(self):
         Command.__init__(self, 'check', 'Various checks about the environment')

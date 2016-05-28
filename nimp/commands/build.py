@@ -19,7 +19,7 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Command for building '''
+''' Build commands '''
 
 import logging
 import os
@@ -30,9 +30,10 @@ import nimp.utilities.environment
 import nimp.utilities.ue3
 import nimp.utilities.ue4
 
-class _BuildCommand(nimp.commands.command.Command):
+class Build(nimp.commands.command.Command):
+    ''' Compile an ue3 or ue4 projects '''
     def __init__(self):
-        super(_BuildCommand, self).__init__('build', 'Build UE3 or UE4 executable')
+        super(Build, self).__init__()
 
     def configure_arguments(self, env, parser):
         parser.add_argument('-c', '--configuration',

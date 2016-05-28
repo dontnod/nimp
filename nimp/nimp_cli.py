@@ -26,6 +26,7 @@ import inspect
 import logging
 import os
 import platform
+import re
 import sys
 import time
 import traceback
@@ -35,7 +36,7 @@ import nimp.utilities.environment
 import nimp.utilities.system
 
 if nimp.utilities.system.is_windows():
-    import nimp.utilities.windows_utilities
+    import nimp.utilities.windows
 
 sys.dont_write_bytecode = 1
 
@@ -88,8 +89,8 @@ def _recursive_get_instances(module, instance_type):
         attribute_value = getattr(module, attribute_name)
         is_valid = attribute_value != instance_type
         is_valid = is_valid and inspect.isclass(attribute_value)
-        is_valid = is_valid and (not hasattr(attribute_value, 'abstract') or not getattr(attribute_value, 'abstract'))
         is_valid = is_valid and issubclass(attribute_value, instance_type)
+        is_valid = is_valid and not inspect.isabstract(attribute_value)
         if is_valid:
             result[attribute_value.__name__] = attribute_value()
     return result
@@ -128,8 +129,11 @@ def _load_arguments(env, commands):
 
     subparsers  = parser.add_subparsers(title='Commands')
     for command_it in commands:
-        command_parser = subparsers.add_parser(command_it.name,
-                                               help = command_it.help)
+        command_class = type(command_it)
+        name_array = re.findall('[A-Z][^A-Z]*', command_class.__name__)
+        command_name = '-'.join([it.lower() for it in name_array])
+        command_parser = subparsers.add_parser(command_name,
+                                               help = command_class.__doc__)
         if not command_it.configure_arguments(env, command_parser):
             return False
         command_parser.set_defaults(command_to_run = command_it)
@@ -152,7 +156,7 @@ def main():
     result = 0
     try:
         if nimp.utilities.system.is_windows():
-            nimp_monitor = nimp.utilities.windows_utilities.NimpMonitor()
+            nimp_monitor = nimp.utilities.windows.NimpMonitor()
             nimp_monitor.start()
 
         env = nimp.utilities.environment.Environment()

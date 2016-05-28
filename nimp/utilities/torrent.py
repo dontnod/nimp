@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from nimp.utilities.file_mapper import *
 from nimp.utilities.system import *
 
 from BitTornado.Meta.Info import Info, MetaInfo

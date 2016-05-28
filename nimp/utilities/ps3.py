@@ -8,7 +8,6 @@ import time
 import contextlib
 
 from nimp.utilities.build import *
-from nimp.utilities.deployment import *
 from nimp.utilities.system import *
 
 

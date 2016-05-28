@@ -26,7 +26,6 @@ import platform
 import logging
 
 import nimp.utilities.build
-import nimp.utilities.deployment
 import nimp.utilities.system
 
 def sanitize(env):
@@ -96,10 +95,10 @@ def ue4_build(env):
 
     if platform.system() == 'Darwin':
         # HACK: For some reason nothing copies this file on OS X
-        nimp.utilities.deployment.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll'),
-                                           env.format('{root_dir}/Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll'))
+        nimp.utilities.system.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll'),
+                                       env.format('{root_dir}/Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll'))
         # HACK: and nothing creates this directory
-        nimp.utilities.deployment.safe_makedirs(env.format('{root_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
+        nimp.utilities.system.safe_makedirs(env.format('{root_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
 
     # HACK: We also need this on Windows
     if nimp.utilities.system.is_windows():
@@ -111,12 +110,12 @@ def ue4_build(env):
             src = env.format('{root_dir}/Engine/Source/ThirdParty/' + dll)
             dst = env.format('{root_dir}/Engine/Binaries/Win64/' + os.path.basename(dll))
             if os.path.exists(nimp.utilities.system.sanitize_path(src)):
-                nimp.utilities.deployment.robocopy(src, dst)
+                nimp.utilities.system.robocopy(src, dst)
 
     # HACK: We need this on Linux...
     if platform.system() == 'Linux':
-        nimp.utilities.deployment.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Steamworks/Steamv132/Linux/libsteam_api.so'),
-                                           env.format('{root_dir}/Engine/Binaries/Linux/libsteam_api.so'))
+        nimp.utilities.system.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Steamworks/Steamv132/Linux/libsteam_api.so'),
+                                       env.format('{root_dir}/Engine/Binaries/Linux/libsteam_api.so'))
 
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:

@@ -28,9 +28,9 @@ import os
 import importlib
 import logging
 
-from nimp.commands.command import Command
-from nimp.utilities.ue4 import ue4_commandlet
-from nimp.utilities.perforce import p4_get_modified_files
+import nimp.commands.command
+import nimp.utilities.ue4
+import nimp.utilities.p4
 
 #Jira import. That way, if jira module isn't installed for a user, nimp will not crash
 _JIRA_IMPORTED = importlib.util.find_spec("jira") is not None
@@ -38,11 +38,11 @@ if _JIRA_IMPORTED:
     #pylint: disable=wrong-import-position,wrong-import-order
     from jira import JIRA
 
-class SynchronizeJiraCommand(Command):
-    '''Data mining class. It will retreive all the objects with metadata then create the corresponding jira tasks'''
+class SyncJira(nimp.commands.command.Command):
+    '''Retreive all uassets  with metadata then create the corresponding jira tasks'''
     def __init__(self):
         '''__init__'''
-        Command.__init__(self, 'sync-jira', 'Synchronize Jira')
+        super(SyncJira, self).__init__()
 
     def configure_arguments(self, env, parser):
         '''configure_arguments'''
@@ -68,7 +68,7 @@ class SynchronizeJiraCommand(Command):
 
                 #Filter modified files to get only the edited or added ones
                 #Only Check in the Content/... p4 folder of the current working directory. It remplaces the condition filename.startswith(os.getcwd()) == true
-                packages = p4_get_modified_files(*env.changelists, root='Content/...')
+                packages = nimp.utilities.p4.get_modified_files(*env.changelists, root='Content/...')
                 filtered_packages = []
                 for (filename, action) in packages:
                     if action == 'edit' or action == 'add':
@@ -87,12 +87,12 @@ class SynchronizeJiraCommand(Command):
                 #Create a new temp file and close it in order that the commandlet writes in that file
                 temp = tempfile.NamedTemporaryFile(delete = False)
                 temp.close()
-                if ue4_commandlet(env,'DNEAssetMiningCommandlet', 'packages=%s' % ','.join(filtered_packages), "json=%s" % temp.name):
+                if nimp.utilities.ue4.ue4_commandlet(env,'DNEAssetMiningCommandlet', 'packages=%s' % ','.join(filtered_packages), "json=%s" % temp.name):
                     try:
                         json_file = open(temp.name, encoding='utf-8',errors='replace')
                         if os.stat(temp.name).st_size > 0:
                             json_data = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
-                            SynchronizeJiraCommand.parse_json_and_create_jira_task(env, json_data, jira)
+                            SyncJira.parse_json_and_create_jira_task(env, json_data, jira)
                         else:
                             logging.info('No Metadata found in the mined packages, the file is empty.')
                         json_file.close()
@@ -116,7 +116,7 @@ class SynchronizeJiraCommand(Command):
                 for metadata in json_data[ue_object]['Metadata']:
                     for key in json_data[ue_object]['Metadata'][metadata]:
                         description += key + ' : ' + str(json_data[ue_object]['Metadata'][metadata][key]) + ', '
-                SynchronizeJiraCommand.create_jira_task(jira_object, env.jira_project_key, summary, description, 'Task', None )
+                SyncJira.create_jira_task(jira_object, env.jira_project_key, summary, description, 'Task', None )
         else:
             logging.info('Json file is not empty but no data was found.')
         return

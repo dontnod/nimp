@@ -12,7 +12,6 @@ import os.path
 
 from nimp.utilities.environment import *
 from nimp.utilities.build import *
-from nimp.utilities.deployment import *
 
 def generate_gp4(env, dest_dir):
     packages_config = env.packages_config

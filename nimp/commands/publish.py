@@ -6,9 +6,7 @@ import zipfile
 from nimp.commands.command import *
 from nimp.utilities.ue3 import *
 from nimp.utilities.ue4 import *
-from nimp.utilities.deployment import *
-from nimp.utilities.symbols import *
-from nimp.utilities.file_mapper import *
+from nimp.utilities.build import *
 from nimp.utilities.system import *
 from nimp.utilities.torrent import *
 

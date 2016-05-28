@@ -23,12 +23,11 @@
 
 import abc
 
-class Command:
+class Command(metaclass=abc.ABCMeta):
     ''' Abstract class for commands '''
-    def __init__(self, name, help_text, dependencies=None):
-        self.name = name
-        self.help = help_text
-        self.dependencies = [] if dependencies is None else dependencies
+
+    def __init__(self):
+        pass
 
     @abc.abstractmethod
     def configure_arguments(self, env, parser):

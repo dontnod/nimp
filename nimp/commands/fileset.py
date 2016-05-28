@@ -2,7 +2,7 @@
 
 from nimp.commands.command import *
 from nimp.utilities.ue3 import *
-from nimp.utilities.file_mapper import *
+from nimp.utilities.system import *
 from nimp.utilities.torrent import *
 
 
