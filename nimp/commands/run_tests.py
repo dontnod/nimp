@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2016 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -19,4 +18,29 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Utilities & helper methods '''
+''' Nimp self-testing '''
+
+import logging
+import unittest
+import unittest.mock
+
+import nimp.tests
+
+import nimp.commands.command
+
+class RunTests(nimp.commands.command.Command):
+    ''' Perforce command base class '''
+
+    def __init__(self):
+        super(RunTests, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        return True
+
+    def sanitize(self, env):
+        pass
+
+    def run(self, env):
+        return unittest.main(module = nimp.tests, argv = [".", '-v'])
+
+

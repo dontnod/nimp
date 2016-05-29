@@ -1,10 +1,9 @@
-# Visual studio output
-/*.suo
-.idea/*
-# setuptools output
-dist/
-nimp.egg-info/
 **/__pycache__/
+*.pyc
+.coverage
+.idea/*
 .vs/*
-
-
+/*.suo
+dist/
+htmlcov
+nimp.egg-info/

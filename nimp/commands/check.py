@@ -39,9 +39,6 @@ class Check(Command):
             self.info_env(env)
             return True;
 
-        # Check nimp itself using pylint and run the unit tests
-        if env.mode == 'nimp':
-            return unittest.main(module = file_mapper_tests, argv = ["."])
 
         log_error('Unsupported check mode “{0}”', env.mode)
         return False
