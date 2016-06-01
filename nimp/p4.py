@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Utilities related to compilation '''
 
+import argparse
 import logging
 import os
 import os.path
@@ -36,6 +37,50 @@ Status: pending\n\
 Description:\n\
         {description}"
 
+def add_arguments(parser):
+    ''' Adds p4port, p4user, p4pass and p4client arguments to a command argument
+        parser. Then you can Use :func:`nimp.p4.sanitize` in your
+        :func:`Command.sanitize` override to report Perforce misconfiguration. '''
+    assert isinstance(parser, argparse.ArgumentParser)
+    parser.add_argument('--p4port',
+                        help = 'Perforce port',
+                        type = str)
+
+    parser.add_argument('--p4user',
+                        help = 'Perforce user',
+                        type = str)
+
+    parser.add_argument('--p4pass',
+                        help = 'Perforce pass',
+                        type = str)
+
+    parser.add_argument('--p4client',
+                        help = 'Perforce workspace',
+                        type = str)
+
+def get_client(env):
+    ''' Returns a p4 client initialized with parameters from the environment.
+        Use the :func:`nimp.p4.add_arguments` method to add needed arguments to
+        a command sub-parser '''
+    assert isinstance(env, nimp.environment.Environment)
+    port   = env.p4port   if hasattr(env, 'p4port') else None
+    user   = env.p4user   if hasattr(env, 'p4user') else None
+    pwd    = env.p4pass   if hasattr(env, 'p4pass') else None
+    client = env.p4client if hasattr(env, 'p4client') else None
+    return P4(port, user, pwd, client)
+
+def sanitize(env):
+    ''' Checks for perforce availability.
+        This will print an error message if perforce can't be used. '''
+    p4 = get_client(env)
+    if p4.get_workspace() is None:
+        logging.error(('An error occured while checking Perforce availability. '
+                       'Please check that p4 is in your path, and either you '
+                       'specified correct p4port, p4client, p4user and p4pass '
+                       'on the command line, either your p4 environment '
+                       'settings are correctily set'))
+        return False
+    return True
 class P4:
     ''' P4 Client '''
     def __init__(self, host = None, user = None, password = None, client = None):
@@ -91,6 +136,7 @@ class P4:
             if "no such file(s)" in file_info or "file(s) not in client" in file_info:
                 continue
 
+            print(file_info)
             file_name_match   = re.search(r"\.\.\.\s*clientFile\s*(.*)", file_info)
             head_action_match = re.search(r"\.\.\.\s*headAction\s*(\w*)", file_info)
             action_match      = re.search(r"\.\.\.\s*action\s*(\w*)", file_info)

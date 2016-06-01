@@ -276,6 +276,26 @@ def all_map(mapper, fileset):
 def _identity_mapper(src, dest):
     yield src, dest
 
+
+def add_fileset_parameters_arguments(parser):
+    ''' Adds arguments to declare fileset interpolation parameters on the
+        command line. Then use :func:`sanitize_fileset_parameters` in your
+        :func:`Command.sanitize` override to set those parameters on the
+        environment. '''
+    parser.add_argument('args',
+                        help    = 'Fileset interpolation values',
+                        metavar = '<key>=<value>',
+                        nargs   = '*',
+                        default = [])
+
+def sanitize_fileset_parameters(env):
+    ''' Sets fileset interpolation parameters given on the command line on the
+        environment. Call `add_fileset_parameters_arguments` method in your
+        `Command.configure_arguments` override before using this function. '''
+    if env.args is not None:
+        for key, value in [ x.split('=') for x in env.args]:
+            setattr(env, key, value)
+
 class FileMapper(object):
     ''' A file mapper is a tree of rules used to enumerate files.
         TODO : Eventuellement utiliser les PurePath, de python 3.4, qui simplifieraient
@@ -372,7 +392,7 @@ class FileMapper(object):
 
         locals_vars['map'](self)
 
-        return self._get_leaves()
+        return self.get_leaves()
 
 
     def get_leaves(self):

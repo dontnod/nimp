@@ -152,7 +152,7 @@ required-attributes=
 bad-functions=map,filter,input
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,ex,Run,_,it
+good-names=i,j,k,ex,Run,_,it,p4
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
@@ -165,7 +165,7 @@ name-group=
 include-naming-hint=no
 
 # Regular expression matching correct function names
-function-rgx=[a-z_][a-z0-9_]{2,30}$
+function-rgx=[a-z_][a-z0-9_]{2,40}$
 
 # Naming hint for function names
 function-name-hint=[a-z_][a-z0-9_]{2,30}$

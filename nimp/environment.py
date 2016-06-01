@@ -32,8 +32,7 @@ import nimp.ue3
 import nimp.ue4
 
 class Environment:
-    ''' Environment
-    \todo Test Todo'''
+    ''' Environment '''
 
     def __init__(self):
         # Some Windows tools don’t like “duplicate” environment variables, i.e.

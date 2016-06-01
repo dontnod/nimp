@@ -19,7 +19,7 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Perforce related commands '''
+''' Perforce related commands. '''
 
 import abc
 
@@ -33,30 +33,15 @@ class P4Command(nimp.commands.command.Command):
         super(P4Command, self).__init__()
 
     def configure_arguments(self, env, parser):
-        # These are not marked required=True because sometimes we don’t
-        # really need them.
-        parser.add_argument('--p4port',
-                            help = 'Perforce port',
-                            type = str)
-
-        parser.add_argument('--p4user',
-                            help = 'Perforce user',
-                            type = str)
-
-        parser.add_argument('--p4pass',
-                            help = 'Perforce pass',
-                            type = str)
-
-        parser.add_argument('--p4client',
-                            help = 'Perforce workspace',
-                            type = str)
-
+        nimp.p4.add_arguments(parser)
         return True
 
-    @abc.abstractmethod
     def sanitize(self, env):
         ''' Validates and sanitize environment before executing command'''
-        pass
+        if not nimp.p4.sanitize(env):
+            return False
+
+        return True
 
     @abc.abstractmethod
     def run(self, env):
@@ -64,21 +49,59 @@ class P4Command(nimp.commands.command.Command):
         pass
 
 class P4CleanWorkspace(P4Command):
-    ''' Reverts all files and deletes all pending changelists.'''
+    ''' Reverts all files and deletes all pending changelists in current
+        workspace. '''
     def __init__(self):
         super(P4CleanWorkspace, self).__init__()
 
-    def sanitize(self, env):
-        if hasattr(env, 'arg') and env.arg is not None:
-            for key_value in env.arg:
-                setattr(env, key_value[0], key_value[1])
-        env.standardize_names()
+    def run(self, env):
+        p4 = nimp.p4.get_client(env)
+        return p4.clean_workspace()
+
+class P4Fileset(P4Command):
+    ''' Runs perforce commands operation on a fileset. '''
+    def __init__(self):
+        super(P4Fileset, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        # These are not marked required=True because sometimes we don’t
+        # really need them.
+        super(P4Fileset, self).configure_arguments(env, parser)
+
+        parser.add_argument('p4_operation',
+                            help = 'Operation to perform on the fileset.',
+                            choices = ['checkout', 'reconcile'])
+
+        parser.add_argument('fileset',
+                            metavar = '<fileset>',
+                            help = 'Fileset to load.')
+
+        parser.add_argument('changelist_description',
+                            metavar = '<format>',
+                            help = 'Changelist description format, will be interpolated with environment value.')
+
+        nimp.system.add_fileset_parameters_arguments(parser)
         return True
 
-    def run(self, env):
-        if not nimp.p4.clean_workspace():
+    def sanitize(self, env):
+        if not super(P4Fileset, self).sanitize(env):
             return False
+        nimp.system.sanitize_fileset_parameters(env)
 
+    def run(self, env):
+        p4 = nimp.p4.get_client(env)
+
+        description = env.format(env.changelist_description)
+        changelist = p4.get_or_create_changelist(description)
+
+        files = env.map_files()
+        if files.load_set(env.fileset) is None:
+            return False
+        files = [file[0] for file in files()]
+
+        operations = { 'checkout' : p4.edit,
+                       'reconcile' : p4.reconcile }
+        return operations[env.p4_operation](changelist, *files)
 #   def _register_prepare_workspace(subparsers):
 #       def _execute(env):
 #           if not nimp.p4.create_config_file(env.p4port, env.p4user, env.p4pass, env.p4client):
