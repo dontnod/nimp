@@ -110,7 +110,7 @@ def _load_commands(env):
 
     return result
 
-def _load_arguments(env, commands):
+def _load_parser(env, commands):
     parser = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter)
     log_group = parser.add_argument_group("Logging")
 
@@ -138,12 +138,22 @@ def _load_arguments(env, commands):
             return False
         command_parser.set_defaults(command_to_run = command_it)
 
+    return parser
+
+def _load_arguments(env, commands):
+    parser = _load_parser(env, commands)
     arguments = parser.parse_args()
     for key, value in vars(arguments).items():
         setattr(env, key, value)
 
     env.setup_envvars()
     return True
+
+def _get_parser():
+    env = nimp.environment.Environment()
+    _load_config(env)
+    commands = _load_commands(env)
+    return _load_parser(env, commands)
 
 def _init_logging(env):
     log_level = logging.DEBUG if env.verbose else logging.INFO
