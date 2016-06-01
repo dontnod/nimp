@@ -102,6 +102,35 @@ class P4Fileset(P4Command):
         operations = { 'checkout' : p4.edit,
                        'reconcile' : p4.reconcile }
         return operations[env.p4_operation](changelist, *files)
+
+class P4Submit(P4Command):
+    ''' Submits a changelist identified by it's description  '''
+    def __init__(self):
+        super(P4Submit, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        # These are not marked required=True because sometimes we don’t
+        # really need them.
+        super(P4Submit, self).configure_arguments(env, parser)
+
+        parser.add_argument('changelist_description',
+                            metavar = '<format>',
+                            help = 'Changelist description format, will be interpolated with environment value.')
+
+        return True
+
+    def sanitize(self, env):
+        if not super(P4Submit, self).sanitize(env):
+            return False
+
+    def run(self, env):
+        p4 = nimp.p4.get_client(env)
+
+        description = env.format(env.changelist_description)
+        changelist = p4.get_or_create_changelist(description)
+
+        return p4.submit(changelist)
+
 #   def _register_prepare_workspace(subparsers):
 #       def _execute(env):
 #           if not nimp.p4.create_config_file(env.p4port, env.p4user, env.p4pass, env.p4client):

@@ -108,7 +108,7 @@ def _load_commands(env):
     except ImportError:
         pass
 
-    return result
+    return sorted(result, key = lambda command: command.__class__.__name__)
 
 def _load_parser(env, commands):
     parser = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter)
