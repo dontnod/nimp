@@ -128,15 +128,22 @@ class P4:
             if os.path.isdir(files[i]):
                 files[i] = files[i] + "/..."
 
-        command = self._get_p4_command('fstat')
+        command = self._get_p4_command('-x', '-', 'fstat')
         _, output, error = nimp.system.capture_process_output('.', command, '\n'.join(files))
         files_infos = (output .strip()+ '\n\n' + error.strip()).strip().replace('\r', '').split('\n\n')
 
         for file_info in files_infos:
+            file_info = file_info.strip()
+
+            if file_info is '':
+                continue
+
             if "no such file(s)" in file_info or "file(s) not in client" in file_info:
                 continue
 
-            print(file_info)
+            if 'is not under client\'s root' in file_info:
+                continue
+
             file_name_match   = re.search(r"\.\.\.\s*clientFile\s*(.*)", file_info)
             head_action_match = re.search(r"\.\.\.\s*headAction\s*(\w*)", file_info)
             action_match      = re.search(r"\.\.\.\s*action\s*(\w*)", file_info)
