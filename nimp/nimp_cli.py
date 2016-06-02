@@ -21,12 +21,9 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Nimp entry point '''
 
-import argparse
-import inspect
 import logging
 import os
 import platform
-import re
 import sys
 import time
 import traceback
@@ -35,130 +32,34 @@ import nimp.command
 import nimp.commands
 import nimp.environment
 import nimp.system
-
-if nimp.system.is_windows():
-    import nimp.windows
+import nimp.unreal
 
 sys.dont_write_bytecode = 1
-
-_LOG_FORMATS = {
-    'standard': '%(asctime)s [%(levelname)s] %(message)s'
-}
 
 if 'MSYS_NT' in platform.system():
     raise NotImplementedError('MSYS Python is not supported; please use MimGW Python instead')
 
-def _load_config(env):
-    nimp_conf_dir = "."
-    nimp_conf_file = ".nimp.conf"
-    while os.path.abspath(os.sep) != os.path.abspath(nimp_conf_dir):
-        if os.path.exists(os.path.join(nimp_conf_dir, nimp_conf_file)):
-            break
-        nimp_conf_dir = os.path.join("..", nimp_conf_dir)
-
-    env.root_dir = nimp_conf_dir
-
-    if not os.path.isfile(os.path.join(nimp_conf_dir, nimp_conf_file)):
-        return True
-
-    if not env.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
-        logging.error("Error loading %s", nimp_conf_file)
-        return False
-
-    return True
-
-def _get_instances(module, instance_type):
-    result = _recursive_get_instances(module, instance_type)
-    return list(result.values())
-
-def _recursive_get_instances(module, instance_type):
-    result = {}
-    module_dict = module.__dict__
-    if "__all__" in module_dict:
-        module_name = module_dict["__name__"]
-        sub_modules_names = module_dict["__all__"]
-        for sub_module_name_it in sub_modules_names:
-            sub_module_complete_name = module_name + "." + sub_module_name_it
-            sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
-            sub_instances = _recursive_get_instances(sub_module_it, instance_type)
-            for (klass, instance) in sub_instances.items():
-                result[klass] = instance
-
-
-    module_attributes = dir(module)
-    for attribute_name in module_attributes:
-        attribute_value = getattr(module, attribute_name)
-        is_valid = attribute_value != instance_type
-        is_valid = is_valid and inspect.isclass(attribute_value)
-        is_valid = is_valid and issubclass(attribute_value, instance_type)
-        is_valid = is_valid and not inspect.isabstract(attribute_value)
-        if is_valid:
-            result[attribute_value.__name__] = attribute_value()
-    return result
-
-def _load_commands(env):
-    # Import project-local commands from .nimp/commands
-    result = _get_instances(nimp.commands, nimp.command.Command)
-    localpath = os.path.abspath(os.path.join(env.root_dir, '.nimp'))
-    if localpath not in sys.path:
-        sys.path.append(localpath)
-    try:
-        #pylint: disable=import-error
-        import commands
-        result += _get_instances(commands, nimp.command.Command)
-    except ImportError:
-        pass
-
-    return sorted(result, key = lambda command: command.__class__.__name__)
-
-def _load_parser(env, commands):
-    parser = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter)
-    log_group = parser.add_argument_group("Logging")
-
-    log_group.add_argument('--log-format',
-                           help='Set log format',
-                           metavar = "FORMAT_NAME",
-                           type=str,
-                           default="standard",
-                           choices   = _LOG_FORMATS)
-
-    log_group.add_argument('-v',
-                           '--verbose',
-                           help='Enable verbose mode',
-                           default=False,
-                           action="store_true")
-
-    subparsers  = parser.add_subparsers(title='Commands')
-    for command_it in commands:
-        command_class = type(command_it)
-        name_array = re.findall('[A-Z][^A-Z]*', command_class.__name__)
-        command_name = '-'.join([it.lower() for it in name_array])
-        command_parser = subparsers.add_parser(command_name,
-                                               help = command_class.__doc__)
-        if not command_it.configure_arguments(env, command_parser):
-            return False
-        command_parser.set_defaults(command_to_run = command_it)
-
-    return parser
-
-def _load_arguments(env, commands):
-    parser = _load_parser(env, commands)
-    arguments = parser.parse_args()
-    for key, value in vars(arguments).items():
-        setattr(env, key, value)
-
-    env.setup_envvars()
-    return True
+def _clean_environment_variables():
+    # Some Windows tools don’t like “duplicate” environment variables, i.e.
+    # where only the case differs; we remove any lowercase version we find.
+    # The loop is O(n²) but we don’t have that many entries so it’s all right.
+    env_vars = [x.lower() for x in os.environ.keys()]
+    for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
+        dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
+        logging.warning("Fixing duplicate environment variable: " + '/'.join(dupelist))
+        for duplicated in dupelist[1:]:
+            del os.environ[duplicated]
+    # … But in some cases (Windows Python) the duplicate variables are masked
+    # by the os.environ wrapper, so we do it another way to make sure there
+    # are no dupes:
+    for key in sorted(os.environ.keys()):
+        val = os.environ[key]
+        del os.environ[key]
+        os.environ[key] = val
 
 def _get_parser():
     env = nimp.environment.Environment()
-    _load_config(env)
-    commands = _load_commands(env)
-    return _load_parser(env, commands)
-
-def _init_logging(env):
-    log_level = logging.DEBUG if env.verbose else logging.INFO
-    logging.basicConfig(format=_LOG_FORMATS[env.log_format], level=log_level)
+    return env.load_argument_parser()
 
 def main():
     ''' Nimp entry point '''
@@ -167,28 +68,20 @@ def main():
     result = 0
     try:
         if nimp.system.is_windows():
-            nimp_monitor = nimp.windows.NimpMonitor()
+            nimp_monitor = nimp.system.NimpMonitor()
             nimp_monitor.start()
 
-        env = nimp.environment.Environment()
-        if not  _load_config(env):
-            return 1
+        _clean_environment_variables()
 
-        commands = _load_commands(env)
+        nimp.environment.Environment.config_loaders += [nimp.system.load_config,
+                                                        nimp.unreal.load_config]
 
-        if not _load_arguments(env, commands):
-            return 1
+        argument_loaders = [nimp.command.load_arguments,
+                            nimp.unreal.load_arguments]
 
-        if env.command_to_run is None:
-            logging.error("No command specified. Please try nimp -h to get a list of available commands")
-            return 1
+        nimp.environment.Environment.argument_loaders += argument_loaders
 
-        _init_logging(env)
-
-        if not env.command_to_run.sanitize(env):
-            return 1
-
-        return env.command_to_run.run(env)
+        return nimp.environment.Environment().run(sys.argv)
 
     except KeyboardInterrupt:
         logging.info("Program interrupted. (Ctrl-C)")

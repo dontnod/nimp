@@ -1,46 +1,92 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
 
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''' Publishing related commands '''
+
+import logging
+import os
 import shutil
 import zipfile
 
-from nimp.command import *
-from nimp.unreal import *
-from nimp.build import *
-from nimp.system import *
-from nimp.torrent import *
+import nimp.command
+import nimp.torrent
 
-#-------------------------------------------------------------------------------
-class PublishCommand(Command):
+class PublishBinaries(nimp.command.Command):
+    ''' Publishes binaries fileset '''
     def __init__(self):
-        Command.__init__(self,
-                         'publish',
-                         'Publish binaries or symbols')
+        super(PublishBinaries, self).__init__()
 
-    #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
         parser.add_argument('-m', '--mode',
                             help = 'operating mode (binaries, symbols, version)',
-                            metavar = '<mode>')
+                            metavar = '<mode>',
+                            choices = ['binaries', 'symbols', 'version'])
+        nimp.command.add_common_arguments(parser,
+                                          'platform',
+                                          'configuration',
+                                          'target')
 
-        parser.add_argument('-p', '--platform',
-                            help = 'platforms to publish',
-                            metavar = '<platform>')
+        return True
 
-        parser.add_argument('-c', '--configuration',
-                            help = 'configuration to publish',
-                            metavar = '<configuration>')
+    def run(self, env):
+        if not env.check_config('binaries_tmp'):
+            return False
 
-        parser.add_argument('-t', '--target',
-                            help = 'target to publish (game, editor, tools)',
-                            metavar = '<target>')
+        files_to_publish = nimp.system.map_files(env)
+        files_to_publish.to(env.binaries_tmp).load_set("binaries")
+        return nimp.system.all_map(nimp.system.robocopy, files_to_publish())
 
-        # FIXME: could we avoid this argument? right now we need it for upload_symbols
-        parser.add_argument('-r',
-                            '--revision',
-                            help = 'revision',
-                            metavar = '<revision>')
+class PublishSymbols(nimp.command.Command):
+    ''' Publishes build symbols to a symbol server '''
+    def __init__(self):
+        super(PublishSymbols, self).__init__()
 
-        # FIXME: this looks too much like --configuration! do something about it
+    def configure_arguments(self, env, parser):
+        parser.add_argument('-m', '--mode',
+                            help = 'operating mode (binaries, symbols, version)',
+                            metavar = '<mode>',
+                            choices = ['binaries', 'symbols', 'version'])
+        nimp.command.add_common_arguments(parser,
+                                          'platform',
+                                          'configuration',
+                                          'target',
+                                          'revision')
+
+        return True
+
+    def run(self, env):
+        symbols_to_publish = nimp.system.map_files(env)
+        symbols_to_publish.load_set("symbols")
+        return nimp.build.upload_symbols(env, symbols_to_publish())
+
+class PublishVersion(nimp.command.Command):
+    ''' Makes a torrent out of compiled binaries '''
+    def __init__(self):
+        super(PublishVersion, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        nimp.command.add_common_arguments(parser,
+                                          'platform',
+                                          'target')
+
         parser.add_argument('-l',
                             '--configurations',
                             help    = 'Configurations and targets to deploy',
@@ -49,107 +95,62 @@ class PublishCommand(Command):
 
         return True
 
-    #---------------------------------------------------------------------------
     def run(self, env):
+        if not env.check_config('binaries_tmp', 'binaries_archive', 'binaries_torrent'):
+            return False
 
-        files_to_publish = env.map_files()
+        files_to_deploy = nimp.system.map_files(env).to(env.format(env.root_dir))
 
-        if not hasattr(env, 'mode') or env.mode == 'binaries':
-            log_notification("Publishing binaries…")
-            files_to_publish.to(env.binaries_tmp).load_set("binaries")
-            if not all_map(robocopy, files_to_publish()):
-                return False
+        for config_or_target in env.configurations:
 
-        elif env.mode == 'symbols':
-            log_notification("Publishing symbols…")
-            symbols_to_publish = env.map_files()
-            symbols_to_publish.load_set("symbols")
-            if not upload_symbols(env, symbols_to_publish()):
-                return False
+            config = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
+            target = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
 
-        elif env.mode == 'version':
-            if not hasattr(env, 'binaries_archive'):
-                log_error('missing binaries_archive in config')
-                return False
+            tmp = files_to_deploy.override(configuration = config, target = target)
+            tmp = tmp.src(env.binaries_tmp)
+            tmp.glob("**")
 
-            if not hasattr(env, 'binaries_torrent'):
-                log_error('missing binaries_torrent in config')
-                return False
+        logging.info("Deploying binaries…")
+        if not nimp.system.all_map(nimp.system.robocopy, files_to_deploy()):
+            return False
 
-            log_notification("Publishing version…")
+        # Create a Zip file
+        archive = nimp.system.sanitize_path(env.format(env.binaries_archive))
+        archive_tmp = archive + '.tmp'
 
-            files_to_deploy = env.map_files().to(env.format(env.root_dir))
+        logging.info('Creating Zip file %s…', archive)
 
-            for config_or_target in env.configurations:
+        if not os.path.isdir(os.path.dirname(archive)):
+            nimp.system.safe_makedirs(os.path.isdir(os.path.dirname(archive)))
 
-                c = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
-                t = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
+        fd = zipfile.ZipFile(archive_tmp, 'w', zipfile.ZIP_DEFLATED)
+        publish = nimp.system.map_files(env)
+        publish.to('.').load_set('version')
+        for src, dst in publish():
+            if os.path.isfile(src):
+                logging.info('Adding %s as %s', src, dst)
+                fd.write(src, dst)
+        fd.close()
+        shutil.move(archive_tmp, archive)
 
-                if env.is_ue3:
-                    tmp = files_to_deploy.override(configuration = c,
-                                                   target = t,
-                                                   ue3_build_configuration = get_ue3_build_config(c))
-                elif env.is_ue4:
-                    tmp = files_to_deploy.override(configuration = c,
-                                                   target = t,
-                                                   ue4_build_configuration = get_ue4_build_config(c))
+        # Create a torrent
+        torrent = nimp.system.sanitize_path(env.format(env.binaries_torrent))
+        torrent_tmp = torrent + '.tmp'
 
-                tmp = tmp.src(env.binaries_tmp)
+        logging.info('Creating torrent %s…', torrent)
 
-                # UE4 only? FIXME: the logic here doesn’t seem sane to me…
-                #if hasattr(env, 'deploy_version_root'):
-                #    tmp.to(env.deploy_version_root).glob("**")
+        if not os.path.isdir(os.path.dirname(torrent)):
+            nimp.system.safe_makedirs(os.path.isdir(os.path.dirname(torrent)))
 
-                tmp.glob("**")
-
-            log_notification("Deploying binaries…")
-            if not all_map(robocopy, files_to_deploy()):
-                return False
-
-            # Only for Unreal Engine 3: build scripts
-            if env.is_ue3 and env.is_win64:
-                log_notification("Building script…")
-                if not ue3_build_script(env.game):
-                    log_error("Error while building script")
-                    return False
-
-            # Create a Zip file
-            archive = sanitize_path(env.format(env.binaries_archive))
-            archive_tmp = archive + '.tmp'
-
-            log_notification('Creating Zip file {0}…', archive)
-
-            if not os.path.isdir(os.path.dirname(archive)):
-                safe_makedirs(os.path.isdir(os.path.dirname(archive)))
-
-            fd = zipfile.ZipFile(archive_tmp, 'w', zipfile.ZIP_DEFLATED)
-            publish = env.map_files()
-            publish.to('.').load_set('version')
-            for src, dst in publish():
-                if os.path.isfile(src):
-                     log_notification('Adding {0} as {1}', src, dst)
-                     fd.write(src, dst)
-            fd.close()
-            shutil.move(archive_tmp, archive)
-
-            # Create a torrent
-            torrent = sanitize_path(env.format(env.binaries_torrent))
-            torrent_tmp = torrent + '.tmp'
-
-            log_notification('Creating torrent {0}…', torrent)
-
-            if not os.path.isdir(os.path.dirname(torrent)):
-                safe_makedirs(os.path.isdir(os.path.dirname(torrent)))
-
-            publish = env.map_files()
-            publish.src(env.binaries_archive).to(os.path.basename(archive))
-            data = make_torrent(None, env.torrent_tracker, publish)
-            if not data:
-                log_error('Torrent is empty (no files?)')
-                return False
-            with open(torrent_tmp, 'wb') as fd:
-                fd.write(data)
-            shutil.move(torrent_tmp, torrent)
+        publish = nimp.system.map_files(env)
+        publish.src(env.binaries_archive).to(os.path.basename(archive))
+        data = nimp.torrent.make_torrent(None, env.torrent_tracker, publish)
+        if not data:
+            logging.error('Torrent is empty (no files?)')
+            return False
+        with open(torrent_tmp, 'wb') as fd:
+            fd.write(data)
+        shutil.move(torrent_tmp, torrent)
 
         return True
 

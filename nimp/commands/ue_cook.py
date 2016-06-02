@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -18,29 +19,36 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Nimp self-testing '''
-
-import logging
-import unittest
-import unittest.mock
-
-import nimp.tests
+''' Environment check command '''
 
 import nimp.command
 
-class RunTests(nimp.command.Command):
-    ''' Perforce command base class '''
-
+class UeCook(nimp.command.Command):
+    ''' Cooks content of an Unreal Engine project '''
     def __init__(self):
-        super(RunTests, self).__init__()
+        super(UeCook, self).__init__()
 
     def configure_arguments(self, env, parser):
+        parser.add_argument('-c',
+                            '--configuration',
+                            help    = 'configurations to cook',
+                            metavar = '<configuration>',
+                            choices = ['test', 'shipping'])
+
+        nimp.command.add_common_arguments('platform')
+
+        parser.add_argument('--incremental',
+                            help    = 'Perform an incremental cook',
+                            action  = "store_true",
+                            default = False)
+
+        parser.add_argument('--noexpansion',
+                            help    = 'Do not expand map dependencies',
+                            default = False,
+                            action  = "store_true")
         return True
 
-    def sanitize(self, env):
-        pass
-
     def run(self, env):
-        return unittest.main(module = nimp.tests, argv = [".", '-v'])
-
+        if env.is_ue4:
+            return nimp.unreal.cook(env)
 

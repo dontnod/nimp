@@ -52,9 +52,6 @@ class SyncJira(nimp.command.Command):
                             nargs    = '+')
         return True
 
-    def sanitize(self, env):
-        return True
-
     def run(self, env):
         '''
             Method that run the sync-jira nimp command

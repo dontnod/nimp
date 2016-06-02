@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' System utilities (paths, processes) '''
 
+import ctypes
 import datetime
 import fnmatch
 import glob
@@ -30,6 +31,7 @@ import os.path
 import platform
 import re
 import stat
+import struct
 import subprocess
 import sys
 import threading
@@ -37,13 +39,12 @@ import time
 
 import glob2
 
-import nimp.windows
+import nimp.environment
 
 def is_windows():
     ''' Return True if the runtime platform is Windows, including MSYS '''
     return is_msys() or platform.system() == 'Windows'
 
-# Return True if the runtime platform is MSYS
 def is_msys():
     ''' Returns True if the platform is msys. '''
     return platform.system()[0:7] == 'MSYS_NT'
@@ -118,8 +119,8 @@ def call_process(directory, command, heartbeat = 0):
     logging.debug("Running “%s” in “%s”", " ".join(command), os.path.abspath(directory))
 
     if is_windows():
-        nimp.windows.disable_win32_dialogs()
-        debug_pipe = nimp.windows.OutputDebugStringLogger()
+        _disable_win32_dialogs()
+        debug_pipe = _OutputDebugStringLogger()
 
     # The bufsize = 1 is important; if we don’t bufferise the
     # output, we’re going to make the callee lag a lot.
@@ -200,16 +201,16 @@ def robocopy(src, dest):
     # Retry up to 5 times after I/O errors
     max_retries = 10
 
-    src = nimp.system.sanitize_path(src)
-    dest = nimp.system.sanitize_path(dest)
+    src = sanitize_path(src)
+    dest = sanitize_path(dest)
 
     logging.debug('Copying “%s” to “%s”', src, dest)
 
     if os.path.isdir(src):
-        nimp.system.safe_makedirs(dest)
+        safe_makedirs(dest)
     elif os.path.isfile(src):
         dest_dir = os.path.dirname(dest)
-        nimp.system.safe_makedirs(dest_dir)
+        safe_makedirs(dest_dir)
         while True:
             try:
                 if os.path.exists(dest):
@@ -236,7 +237,7 @@ def robocopy(src, dest):
 def force_delete(path):
     ''' 'Robust' delete. '''
 
-    path = nimp.system.sanitize_path(path)
+    path = sanitize_path(path)
 
     if os.path.exists(path):
         os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
@@ -273,28 +274,23 @@ def all_map(mapper, fileset):
             return False
     return True
 
-def _identity_mapper(src, dest):
-    yield src, dest
+def load_config(env):
+    '''Sets default platform '''
+    if is_windows():
+        env.platform = 'win64'
+    elif platform.system() == 'Darwin':
+        env.platform = 'mac'
+    else:
+        env.platform = 'linux'
 
+    return True
 
-def add_fileset_parameters_arguments(parser):
-    ''' Adds arguments to declare fileset interpolation parameters on the
-        command line. Then use :func:`sanitize_fileset_parameters` in your
-        :func:`Command.sanitize` override to set those parameters on the
-        environment. '''
-    parser.add_argument('args',
-                        help    = 'Fileset interpolation values',
-                        metavar = '<key>=<value>',
-                        nargs   = '*',
-                        default = [])
+def map_files(env):
+    ''' Returns a file mapper using environment parameters '''
+    def _default_mapper(_, dest):
+        yield (env.root_dir, dest)
 
-def sanitize_fileset_parameters(env):
-    ''' Sets fileset interpolation parameters given on the command line on the
-        environment. Call `add_fileset_parameters_arguments` method in your
-        `Command.configure_arguments` override before using this function. '''
-    if env.args is not None:
-        for key, value in [ x.split('=') for x in env.args]:
-            setattr(env, key, value)
+    return FileMapper(_default_mapper, format_args = vars(env))
 
 class FileMapper(object):
     ''' A file mapper is a tree of rules used to enumerate files.
@@ -320,12 +316,12 @@ class FileMapper(object):
     def glob(self, *patterns):
         ''' Globs given patterns, feedding the resulting files '''
         def _glob_mapper(src, dest):
-            src = nimp.system.sanitize_path(src)
-            dest = nimp.system.sanitize_path(dest)
+            src = sanitize_path(src)
+            dest = sanitize_path(dest)
             if src is None or src == '.':
                 source_path_len = 0
             else:
-                source_path_len = len(nimp.system.split_path(src))
+                source_path_len = len(split_path(src))
 
             for pattern in patterns:
                 found = False
@@ -342,7 +338,7 @@ class FileMapper(object):
                     # except it will handle globs pattern in the base path.
                     glob_source = os.path.normpath(glob_source)
                     if dest is not None:
-                        new_dest = nimp.system.split_path(glob_source)[source_path_len:]
+                        new_dest = split_path(glob_source)[source_path_len:]
                         new_dest = '/'.join(new_dest)
                         new_dest = os.path.join(dest, new_dest)
                         new_dest = os.path.normpath(new_dest)
@@ -394,7 +390,6 @@ class FileMapper(object):
 
         return self.get_leaves()
 
-
     def get_leaves(self):
         ''' Return all terminal leaves of the tree. '''
         for mapper in self._next:
@@ -406,7 +401,15 @@ class FileMapper(object):
     def override(self, **fmt):
         ''' Inserts a node adding or overriding given format arguments. '''
         format_args = self._format_args.copy()
+        # Hackish : We construct a new Environment to load load_arguments so
+        # values computed from others parameters are correctly set
+        # (like ue4_build_configuration, for example
+        new_env = nimp.environment.Environment()
         format_args.update(fmt)
+        for key, value in format_args.items():
+            setattr(new_env, key, value)
+        new_env.load_arguments()
+        format_args = vars(new_env)
         return self.append(_identity_mapper, format_args = format_args)
 
     def exclude(self, *patterns):
@@ -445,7 +448,7 @@ class FileMapper(object):
                 src = from_src
             else:
                 src = os.path.join(self._format(src), from_src)
-            src = os.path.normpath(nimp.system.sanitize_path(src))
+            src = os.path.normpath(sanitize_path(src))
             yield (src, dest)
         return self.append(_src_mapper)
 
@@ -517,7 +520,7 @@ class FileMapper(object):
                 dest = to_destination
             else:
                 dest = os.path.join(dest, to_destination)
-            dest = nimp.system.sanitize_path(dest)
+            dest = sanitize_path(dest)
             yield (src, dest)
         return self.append(_to_mapper)
 
@@ -548,7 +551,7 @@ class FileMapper(object):
 
 def list_all_revisions(env, version_directory_format, **override_args):
     ''' Lists all revisions based on directory pattern '''
-    version_directory_format = nimp.system.sanitize_path(version_directory_format)
+    version_directory_format = sanitize_path(version_directory_format)
     revisions = []
     format_args = { 'revision' : '*',
                     'platform' : '*',
@@ -613,4 +616,146 @@ def get_latest_available_revision(env, version_directory_format, max_revision, *
             return revision
 
     raise Exception('No version <= %s found. Candidates were: %s' % (max_revision, ' '.join(revisions)))
+
+if is_windows():
+    _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None
+
+    INVALID_HANDLE_VALUE = -1 # Should be c_void_p(-1).value but doesn’t work
+
+    WAIT_OBJECT_0 = 0x00000000
+    WAIT_OBJECT_1 = 0x00000001
+    INFINITE      = 0xFFFFFFFF
+
+    PAGE_READWRITE = 0x4
+
+    FILE_MAP_READ = 0x0004
+
+    SEM_FAILCRITICALERRORS = 0x0001
+    SEM_NOGPFAULTERRORBOX  = 0x0002
+    SEM_NOOPENFILEERRORBOX = 0x8000
+
+    PROCESS_QUERY_INFORMATION = 0x0400
+    PROCESS_SYNCHRONIZE = 0x00100000
+
+    def _disable_win32_dialogs():
+        ''' Disable “Entry Point Not Found” and “Application Error” dialogs for
+            child processes '''
+
+        _KERNEL32.SetErrorMode(SEM_FAILCRITICALERRORS \
+                            | SEM_NOGPFAULTERRORBOX \
+                            | SEM_NOOPENFILEERRORBOX)
+
+    class _OutputDebugStringLogger(threading.Thread):
+        ''' Get output debug string from a process and writes it to a pipe '''
+        def __init__(self):
+            super().__init__()
+
+            fd_in, fd_out = os.pipe()
+            self.output = os.fdopen(fd_in, 'rb')
+            self._pipe_in = os.fdopen(fd_out, 'wb')
+
+            self._buffer_ev = _KERNEL32.CreateEventW(None, 0, 0, 'DBWIN_BUFFER_READY')
+            self._data_ev = _KERNEL32.CreateEventW(None, 0, 0, 'DBWIN_DATA_READY')
+            self._stop_ev = _KERNEL32.CreateEventW(None, 0, 0, None)
+            self._bufsize = 4096
+
+            self._mapping = _KERNEL32.CreateFileMappingW(INVALID_HANDLE_VALUE,
+                                                         None,
+                                                         PAGE_READWRITE,
+                                                         0,
+                                                         self._bufsize,
+                                                         'DBWIN_BUFFER')
+            self._buffer = _KERNEL32.MapViewOfFile(self._mapping,
+                                                   FILE_MAP_READ,
+                                                   0, 0,
+                                                   self._bufsize)
+            self._pid = None
+
+        @staticmethod
+        def _pid_to_winpid(pid):
+            # In case we’re running in MSYS2 Python, the PID we got is actually an
+            # internal MSYS2 PID, and the PID we want to watch is actually the WINPID,
+            # which we retrieve in /proc
+            try:
+                return int(open("/proc/%d/winpid" % (pid,)).read(10))
+            #pylint: disable=broad-except
+            except Exception:
+                return pid
+
+        def attach(self, pid):
+            ''' Sets the process pid from wich to capture output debug string '''
+            self._pid = _OutputDebugStringLogger._pid_to_winpid(pid)
+            logging.debug("Attached to process %d (winpid %d)", pid, self._pid)
+
+        def run(self):
+            pid_length = 4
+            data_length = self._bufsize - pid_length
+
+            # Signal that the buffer is available
+            _KERNEL32.SetEvent(self._buffer_ev)
+
+            events = [self._data_ev, self._stop_ev]
+            while True:
+                result = _KERNEL32.WaitForMultipleObjects(len(events),
+                                                          (ctypes.c_void_p * len(events))(*events),
+                                                          0,
+                                                          INFINITE)
+                if result == WAIT_OBJECT_0:
+                    pid, = struct.unpack('I', ctypes.string_at(self._buffer, pid_length))
+                    data = ctypes.string_at(self._buffer + pid_length, data_length)
+
+                    # Signal that the buffer is available
+                    _KERNEL32.SetEvent(self._buffer_ev)
+
+                    if pid != self._pid:
+                        continue
+
+                    self._pipe_in.write(data[:data.index(0)])
+                    self._pipe_in.flush()
+
+                elif result == WAIT_OBJECT_1:
+                    break
+
+                else:
+                    time.sleep(0.100)
+
+        def stop(self):
+            ''' Stops this OutputDebugStringLogger '''
+            _KERNEL32.SetEvent(self._stop_ev)
+            self.join()
+            _KERNEL32.UnmapViewOfFile(self._buffer)
+            _KERNEL32.CloseHandle(self._mapping)
+            self._pipe_in.close()
+
+            self.output.close()
+
+    class NimpMonitor(threading.Thread):
+        ''' Watchdog killing child processes when nimp ends '''
+        def __init__(self):
+            super().__init__()
+            self._watcher_event_handle = _KERNEL32.CreateEventW(None, 0, 0, None)
+            if self._watcher_event_handle == 0:
+                logging.error("cannot create event")
+            self._nimp_handle = _KERNEL32.OpenProcess(PROCESS_SYNCHRONIZE | PROCESS_QUERY_INFORMATION, False, os.getppid())
+            if self._nimp_handle == 0:
+                logging.error("cannot open nimp process")
+
+        def run(self):
+            events = [self._nimp_handle, self._watcher_event_handle]
+            while True:
+                result = _KERNEL32.WaitForMultipleObjects(len(events), (ctypes.c_void_p * len(events))(*events), 0, INFINITE)
+                if result == WAIT_OBJECT_0:
+                    logging.debug("Parent nimp.exe is not running anymore: current python process and its subprocesses are going to be killed")
+                    call_process('.', ['taskkill', '/F', '/T', '/PID', str(os.getpid())])
+                    break
+                elif result == WAIT_OBJECT_1:
+                    break
+
+        def stop(self):
+            ''' Stops this monitor '''
+            _KERNEL32.CloseHandle(self._nimp_handle)
+            _KERNEL32.SetEvent(self._watcher_event_handle)
+
+def _identity_mapper(src, dest):
+    yield src, dest
 

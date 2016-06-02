@@ -28,27 +28,6 @@ import subprocess
 
 import nimp.system
 
-def add_arguments(parser):
-    ''' Adds configuration parameters to parser '''
-    parser.add_argument('-c', '--configuration',
-                        help = 'Configuration to build',
-                        metavar = '<configuration>')
-
-def sanitize(env):
-    ''' Cleans config related env variables '''
-    if hasattr(env, 'configuration') and env.configuration is not None:
-        std_configs = { 'debug'    : 'debug',
-                        'devel'    : 'devel',
-                        'release'  : 'release',
-                        'test'     : 'test',
-                        'shipping' : 'shipping',
-                      }
-
-        if env.configuration.lower() in std_configs:
-            env.configuration = std_configs[env.configuration.lower()]
-        else:
-            env.configuration = ""
-
 def vsbuild(solution, platform_name, configuration, project = None, vs_version = '12', target = 'Build'):
     ''' Builds a project with Visual Studio '''
     build_directory = '.'

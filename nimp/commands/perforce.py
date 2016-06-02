@@ -36,13 +36,6 @@ class P4Command(nimp.command.Command):
         nimp.p4.add_arguments(parser)
         return True
 
-    def sanitize(self, env):
-        ''' Validates and sanitize environment before executing command'''
-        if not nimp.p4.sanitize(env):
-            return False
-
-        return True
-
     @abc.abstractmethod
     def run(self, env):
         ''' Executes the command '''
@@ -55,6 +48,9 @@ class P4CleanWorkspace(P4Command):
         super(P4CleanWorkspace, self).__init__()
 
     def run(self, env):
+        if not nimp.p4.check_for_p4(env):
+            return False
+
         p4 = nimp.p4.get_client(env)
         return p4.clean_workspace()
 
@@ -80,21 +76,19 @@ class P4Fileset(P4Command):
                             metavar = '<description>',
                             help = 'Changelist description format, will be interpolated with environment value.')
 
-        nimp.system.add_fileset_parameters_arguments(parser)
+        nimp.command.add_common_arguments(parser, 'free_parameters')
         return True
 
-    def sanitize(self, env):
-        if not super(P4Fileset, self).sanitize(env):
-            return False
-        nimp.system.sanitize_fileset_parameters(env)
-
     def run(self, env):
+        if not nimp.p4.check_for_p4(env):
+            return False
+
         p4 = nimp.p4.get_client(env)
 
         description = env.format(env.changelist_description)
         changelist = p4.get_or_create_changelist(description)
 
-        files = env.map_files()
+        files = nimp.system.map_files(env)
         if files.load_set(env.fileset) is None:
             return False
         files = [file[0] for file in files()]
@@ -119,11 +113,10 @@ class P4Submit(P4Command):
 
         return True
 
-    def sanitize(self, env):
-        if not super(P4Submit, self).sanitize(env):
+    def run(self, env):
+        if not nimp.p4.check_for_p4(env):
             return False
 
-    def run(self, env):
         p4 = nimp.p4.get_client(env)
 
         description = env.format(env.changelist_description)

@@ -19,22 +19,30 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Nimp subcommands declarations '''
+''' Unreal ligthing related commands '''
 
-__all__ = [
-    'check',
-    'deploy',
-    'fileset',
-    'perforce',
-    'prune',
-    'publish',
-    'run',
-    'sync_jira',
-    'ue_build',
-    'ue_commandlet',
-    'ue_cook',
-    'ue_lights',
-    'ue_ship',
-    'vs_build',
-]
+import logging
+
+import nimp.command
+
+class UeLights(nimp.command.Command):
+    ''' Builds lighting of an Unreal Engine project '''
+    def __init__(self):
+        super(UeLights, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        parser.add_argument('--context',
+                            help    = 'Map context to build',
+                            metavar = '<context>',
+                            required = True)
+        return True
+
+    def run(self, env):
+        if not env.check_config('lighting_maps'):
+            return False
+
+        logging.error('Not implemented yet')
+        # map_list = env.lighting_maps[env.context]
+        # return nimp.unreal.lights(env, map_list)
+        return True
 

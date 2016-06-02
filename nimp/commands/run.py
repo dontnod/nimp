@@ -19,38 +19,27 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Command for building '''
-
-import sys
-import argparse
+''' Command to wrap command execution '''
 
 import nimp.command
+import nimp.system
 
-class _RunCommand(nimp.command.Command):
+class Run(nimp.command.Command):
+    ''' Runs a command, interpolating arguments and command name with
+        environment parameters '''
     def __init__(self):
-        super(_RunCommand, self).__init__('run', 'Executes a shell command')
+        super(Run, self).__init__()
 
-    #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        parser.add_argument('command',
+        parser.add_argument('command_and_args',
                             help     = 'Command to run',
-                            nargs    = argparse.REMAINDER,
-                            metavar  = '<COMMAND> [<ARGUMENT>...]')
+                            nargs    = '+',
+                            metavar  = '<command> [<argument>...]')
         return True
 
-    #---------------------------------------------------------------------------
     def run(self, env):
         cmdline = []
-        for arg in env.command:
+        for arg in env.command_and_args:
             cmdline.append(env.format(arg))
 
-        return call_process(".", cmdline,
-                            stdout_callback = _stdout_callback,
-                            stderr_callback = _stderr_callback) == 0
-
-def _stdout_callback(line, default_log_function):
-    print(line, file = sys.stdout)
-
-def _stderr_callback(line, default_log_function):
-    print(line, file = sys.stderr)
-
+        return nimp.system.call_process(".", cmdline) == 0

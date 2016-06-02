@@ -1,90 +1,56 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
 
-from nimp.command import *
-from nimp.unreal import *
-from nimp.system import *
-from nimp.torrent import *
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
 
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
 
-class FileSetCommand(Command):
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''' Fileset related commands '''
+
+import logging
+
+import nimp.command
+import nimp.system
+
+class ListFileSet(nimp.command.Command):
+    ''' Loads a fileset and prints mapped files '''
     def __init__(self):
-        Command.__init__(self, 'fileset', 'Do stuff on a list of files')
+        super(ListFileSet, self).__init__()
 
-    #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        parser.add_argument('--arg',
-                            help    = 'Add a key/value pair for use in string interpolation',
-                            metavar = '<KEY>=<VALUE>',
-                            nargs   = 1,
-                            action  = 'append',
-                            default = [])
-
-        parser.add_argument('set_name',
+        parser.add_argument('fileset',
                             help    = 'Set name to load (e.g. binaries, version…)',
-                            metavar = '<SET_FILE>')
+                            metavar = '<fileset>')
 
-        parser.add_argument('action',
-                            help    = 'Action to execute on listed files (one of: robocopy, delete, checkout, reconcile, reconcile_and_submit, list, torrent)',
-                            metavar = '<ACTION>',
-                            choices = ['robocopy', 'delete', 'checkout', 'reconcile', 'reconcile_and_submit', 'list', 'torrent'])
-
-        parser.add_argument('--src',
-                            help    = 'Source directory',
-                            metavar = '<DIR>')
-
-        parser.add_argument('--to',
-                            help    = 'Destination, if relevant',
-                            metavar = '<DIR>',
-                            default = None)
-
+        nimp.command.add_common_arguments(parser,
+                                          'platform',
+                                          'configuration',
+                                          'target',
+                                          'free_parameters')
         return True
 
-    #---------------------------------------------------------------------------
     def run(self, env):
-        if env.arg is not None:
-            for key, value in [x[0].split('=') for x in env.arg]:
-                setattr(env, key, value)
-        env.standardize_names()
 
-        files = env.map_files()
+        files = nimp.system.map_files(env)
         files_chain = files
-        if env.src is not None:
-            files_chain = files_chain.src(env.src)
-
-        if env.to is not None:
-            files_chain = files_chain.to(env.to)
-
         files_chain.load_set(env.set_name)
 
-        if env.action == 'robocopy':
-            for source, destination in files():
-                robocopy(source, destination)
-
-        elif env.action == 'checkout':
-            with p4_transaction('Checkout') as trans:
-                map(trans.add, files)
-
-        elif env.action == 'delete':
-            for source, destination in files():
-                if os.path.isfile(source):
-                    log_notification("Removing file {0}", source)
-                    force_delete(source)
-
-        elif env.action == 'list':
-            for source, destination in files():
-                log_notification("{0} => {1}", source, destination)
-
-        elif env.action == 'torrent':
-            torrent_file = env.torrent_file if hasattr(env, 'torrent_file') else 'torrent.torrent'
-            torrent_dir = env.torrent_dir if hasattr(env, 'torrent_dir') else 'torrent'
-            torrent_tracker = env.torrent_tracker if hasattr(env, 'torrent_tracker') else 'http://tracker/announce'
-
-            # Build a list of everything we want in the torrent; only files for
-            # now but the code below would work with directories, too.
-            data = make_torrent(torrent_dir, torrent_tracker,
-                                (f for f, ignored in files() if os.path.isfile(f)))
-            with open(torrent_file, 'wb') as fd:
-                fd.write(data)
+        for source, destination in files():
+            logging.info("%s => %s", source, destination)
 
         return True
 

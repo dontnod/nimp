@@ -28,38 +28,50 @@ import logging
 import nimp.build
 import nimp.system
 
-def sanitize(env):
-    ''' Checks for correct project configuration. You have to have configured
-        the project via a .nimp.conf file at the project root '''
-    if not hasattr(env, 'project_type') or env.project_type not in ['UE4']:
+def load_config(env):
+    ''' Loads Unreal specific configuration values on env before parsing
+        command-line arguments '''
+    env.is_ue4 = hasattr(env, 'project_type') and env.project_type is 'UE4'
+    return True
+
+def load_arguments(env):
+    ''' Loads Unreal specific environment parameters. '''
+    if hasattr(env, 'project_type') and env.project_type == 'UE4':
+        return _ue4_load_arguments(env)
+
+    return True
+
+def build(env):
+    ''' Builds an Unreal Engine Project. config and platform arguments should
+        be set on environment in order to call this function. You can use
+        `nimp.environment.add_arguments` and `nimp.build.add_arguments` to do
+        so.'''
+    if not _check_for_unreal(env):
+        return False
+    return _ue4_build(env)
+
+def commandlet(env, command, *args):
+    ''' Runs an Unreal Engine commandlet. It can be usefull to run it through
+        nimp as OutputDebugString will be redirected to standard output. '''
+    if not _check_for_unreal(env):
+        return False
+    return _ue4_commandlet(env, command, *args)
+
+def cook(env):
+    ''' Cooks content of an Unreal Engine project '''
+    if not _check_for_unreal(env):
+        return False
+    return True
+
+def _check_for_unreal(env):
+    if not env.is_ue4:
         logging.error('This doesn\'t seems to be a supported project type.')
         logging.error('Check that you are launching nimp from an UE project')
         logging.error('directory, and that you have a .nimp.conf file in the')
         logging.error('project root directory (see documentation for further')
         logging.error('details)')
         return False
-
-    if env.project_type == 'UE4':
-        return _ue4_sanitize(env)
-
-def build(env):
-    ''' Builds an Unreal Engine Project. To use this function, be sure to call
-        `sanitize` function. You'll also need platform / configuration arguments
-         that can be added to a parser via `environment.add_platform_arguments
-         and build.add_arguments`
-    '''
-    assert hasattr(env, 'project_type') and env.project_type in ['UE4']
-    if env.project_type == 'UE4':
-        return _ue4_build(env)
-    assert False, 'Unsupported project type'
-
-def commandlet(env, command, *args):
-    ''' Runs an Unreal Engine commandlet. It can be usefull to run it through
-        nimp as OutputDebugString will be redirected to standard output. '''
-    assert hasattr(env, 'project_type') and env.project_type in ['UE4']
-    if env.project_type == 'UE4':
-        return _ue4_commandlet(env, command, *args)
-    assert False, 'Unsupported project type'
+    return True
 
 def _ue4_build(env):
     assert hasattr(env, 'ue4_build_configuration')
@@ -277,7 +289,7 @@ def _ue4_build_project(env, sln_file, project, build_platform,
                                     ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (build_platform),
                                      project, build_platform, configuration]) == 0
 
-def _ue4_sanitize(env):
+def _ue4_load_arguments(env):
     ''' Sets some variables for use with unreal 4 '''
     def _get_ue4_build_config(config):
         configs = { "debug"    : "Debug",
@@ -313,7 +325,6 @@ def _ue4_sanitize(env):
             return None
         return platforms[in_platform]
 
-    env.is_ue4 = hasattr(env, 'project_type') and env.project_type is 'UE4'
     if hasattr(env, 'platform'):
         env.ue4_build_platform = _get_ue4_build_platform(env.platform)
         env.ue4_cook_platform  = _get_ue4_cook_platform(env.platform)

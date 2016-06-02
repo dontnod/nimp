@@ -43,12 +43,6 @@ class UeCommandlet(nimp.command.Command):
 
         return True
 
-    def sanitize(self, env):
-        if not nimp.unreal.sanitize(env):
-            return False
-
-        return True
-
     def run(self, env):
         return nimp.unreal.commandlet(env, env.commandlet, *env.args)
 

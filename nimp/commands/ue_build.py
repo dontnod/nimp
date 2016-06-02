@@ -32,13 +32,7 @@ class UeBuild(nimp.command.Command):
         super(UeBuild, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.environment.add_arguments(parser)
-        nimp.build.add_arguments(parser)
-
-        parser.add_argument('-t', '--target',
-                            help = 'Target to build',
-                            metavar = '<target>',
-                            choices = ['game', 'editor', 'tools'])
+        nimp.command.add_common_arguments(parser, 'platform', 'configuration', 'target')
 
         parser.add_argument('--bootstrap',
                             help = 'bootstrap or regenerate project files, if applicable',
@@ -57,21 +51,7 @@ class UeBuild(nimp.command.Command):
 
         return True
 
-    def sanitize(self, env):
-        nimp.environment.sanitize(env)
-        nimp.build.sanitize(env)
-        if not nimp.unreal.sanitize(env):
-            return False
-
-        if not hasattr(env, 'target') or env.target is None:
-            if env.is_ue4:
-                if env.platform in ['win64', 'mac', 'linux']:
-                    env.target = 'editor'
-                else:
-                    env.target = 'game'
-
     def run(self, env):
-
         # Use distcc and/or ccache if available
         nimp.build.install_distcc_and_ccache()
 

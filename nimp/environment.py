@@ -22,37 +22,121 @@
 ''' Class and function relative to the nimp environment, i.e. configuration
 values and command line parameters set for this nimp execution '''
 
+import argparse
+import inspect
 import logging
 import os
-import platform
+import re
+import sys
 import time
 
-import nimp.system
+import nimp.command
+
+_LOG_FORMATS = {
+    'standard': '%(asctime)s [%(levelname)s] %(message)s'
+}
 
 class Environment:
     ''' Environment '''
+    config_loaders = []
+    argument_loaders = []
 
     def __init__(self):
-        # Some Windows tools don’t like “duplicate” environment variables, i.e.
-        # where only the case differs; we remove any lowercase version we find.
-        # The loop is O(n²) but we don’t have that many entries so it’s all right.
-        env_vars = [x.lower() for x in os.environ.keys()]
-        for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
-            dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
-            logging.warning("Fixing duplicate environment variable: " + '/'.join(dupelist))
-            for duplicated in dupelist[1:]:
-                del os.environ[duplicated]
-        # … But in some cases (Windows Python) the duplicate variables are masked
-        # by the os.environ wrapper, so we do it another way to make sure there
-        # are no dupes:
-        for key in sorted(os.environ.keys()):
-            val = os.environ[key]
-            del os.environ[key]
-            os.environ[key] = val
-
-        self.command_to_run = None
+        self.command = None
         self.root_dir = None
         self.environment = {}
+
+    def load_argument_parser(self):
+        ''' Returns an argument parser for nimp and his subcommands '''
+        # Import project-local commands from .nimp/commands
+        cmd_dict = _get_instances(nimp.commands, nimp.command.Command)
+        command_list = cmd_dict.values()
+        localpath = os.path.abspath(os.path.join(self.root_dir, '.nimp'))
+        if localpath not in sys.path:
+            sys.path.append(localpath)
+        try:
+            #pylint: disable=import-error
+            import commands
+            cmd_dict = _get_instances(commands, nimp.command.Command)
+            command_list += cmd_dict.values()
+        except ImportError:
+            pass
+
+        command_list = sorted(command_list,
+                              key = lambda command: command.__class__.__name__)
+
+        parser = argparse.ArgumentParser(formatter_class=argparse.HelpFormatter)
+        log_group = parser.add_argument_group("Logging")
+
+        log_group.add_argument('--log-format',
+                               help='Set log format',
+                               metavar = "FORMAT_NAME",
+                               type=str,
+                               default="standard",
+                               choices   = _LOG_FORMATS)
+
+        log_group.add_argument('-v',
+                               '--verbose',
+                               help='Enable verbose mode',
+                               default=False,
+                               action="store_true")
+
+        subparsers  = parser.add_subparsers(title='Commands')
+        for command_it in command_list:
+            command_class = type(command_it)
+            name_array = re.findall('[A-Z][^A-Z]*', command_class.__name__)
+            command_name = '-'.join([it.lower() for it in name_array])
+            command_parser = subparsers.add_parser(command_name,
+                                                   help = command_class.__doc__)
+            if not command_it.configure_arguments(self, command_parser):
+                return False
+            command_parser.set_defaults(command = command_it)
+
+        return parser
+
+    def load_arguments(self):
+        ''' Executes arguments loader to clean and tweak argument variables '''
+        for argument_loader in Environment.argument_loaders:
+            if not argument_loader(self):
+                return False
+
+        return True
+
+    def run(self, argv):
+        ''' Runs nimp with argv and argc '''
+        if not self._load_nimp_conf():
+            return False
+
+        for config_loader in Environment.config_loaders:
+            if not config_loader(self):
+                logging.error('Error while loading nimp config')
+                return False
+
+        # Loads argument parser, parses argv with it and adds command line para
+        # meters as properties of the environment
+        parser = self.load_argument_parser()
+        arguments = parser.parse_args(argv[1:])
+        for key, value in vars(arguments).items():
+            setattr(self, key, value)
+
+        # Sets up logging
+        log_level = logging.DEBUG if getattr(self, 'verbose')  else logging.INFO
+        logging.basicConfig(format=_LOG_FORMATS[getattr(self, 'log_format')],
+                            level=log_level)
+
+        if hasattr(self, 'environment'):
+            for key, val in self.environment.items():
+                os.environ[key] = val
+
+        if self.command is None:
+            logging.error("No command specified. Please try nimp -h to get a list of available commands")
+            return False
+
+        if not self.load_arguments():
+            logging.error('Error while loading environment parameters')
+            return False
+
+        return self.command.run(self)
 
     def format(self, fmt, **override_kwargs):
         ''' Interpolates given string with config values & command line para-
@@ -70,11 +154,16 @@ class Environment:
         kwargs.update(override_kwargs)
         return method(*args, **kwargs)
 
-    def map_files(self):
-        ''' Returns a file mapper to list / copy files. '''
-        def _default_mapper(_, dest):
-            yield (self.root_dir, dest)
-        return nimp.system.FileMapper(_default_mapper, format_args = vars(self))
+    def check_config(self, *var_names):
+        ''' Checks all configuration values are set in nimp configuration '''
+        all_ok = True
+        for it in var_names:
+            if not hasattr(self, it):
+                logging.error('Required configuration value "%s" was not found.')
+                all_ok = False
+        if not all_ok:
+            logging.error('Check your .nimp.conf for missing configuration values')
+        return all_ok
 
     def load_config_file(self, filename):
         ''' Loads a config file and adds its values to this environment '''
@@ -90,13 +179,29 @@ class Environment:
 
     def setup_envvars(self):
         ''' Applies environment variables from .nimp.conf '''
-        if hasattr(self, 'environment'):
-            for key, val in self.environment.items():
-                os.environ[key] = val
 
-    def execute_hook(self, hook_name):
+    def execute_hook(self, hook_name, *args):
         ''' Executes a hook in the .nimp/hooks directory '''
         pass
+
+    def _load_nimp_conf(self):
+        nimp_conf_dir = "."
+        nimp_conf_file = ".nimp.conf"
+        while os.path.abspath(os.sep) != os.path.abspath(nimp_conf_dir):
+            if os.path.exists(os.path.join(nimp_conf_dir, nimp_conf_file)):
+                break
+            nimp_conf_dir = os.path.join("..", nimp_conf_dir)
+
+        self.root_dir = nimp_conf_dir
+
+        if not os.path.isfile(os.path.join(nimp_conf_dir, nimp_conf_file)):
+            return True
+
+        if not self.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
+            logging.error("Error loading %s", nimp_conf_file)
+            return False
+
+        return True
 
 def read_config_file(filename):
     ''' Reads a config file and returns a dictionary with values defined in it '''
@@ -120,49 +225,28 @@ def read_config_file(filename):
 
     return {}
 
-def add_arguments(parser):
-    ''' Adds platform argument to the given parser '''
-    parser.add_argument('-p', '--platform',
-                        help = 'Platform',
-                        metavar = '<platform>')
+def _get_instances(module, instance_type):
+    result = {}
+    module_dict = module.__dict__
+    if "__all__" in module_dict:
+        module_name = module_dict["__name__"]
+        sub_modules_names = module_dict["__all__"]
+        for sub_module_name_it in sub_modules_names:
+            sub_module_complete_name = module_name + "." + sub_module_name_it
+            sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
+            sub_instances = _get_instances(sub_module_it, instance_type)
+            for (klass, instance) in sub_instances.items():
+                result[klass] = instance
 
-def sanitize(env):
-    ''' Standardizes platform names and sets helpers booleans '''
-    std_platforms = { "ps4"       : "ps4",
-                      "orbis"     : "ps4",
-                      "xboxone"   : "xboxone",
-                      "dingo"     : "xboxone",
-                      "win32"     : "win32",
-                      "pcconsole" : "win32",
-                      "win64"     : "win64",
-                      "pc"        : "win64",
-                      "windows"   : "win64",
-                      "xbox360"   : "xbox360",
-                      "x360"      : "xbox360",
-                      "ps3"       : "ps3",
-                      "linux"     : "linux",
-                      "mac"       : "mac",
-                      "macos"     : "mac" }
 
-    if nimp.system.is_windows():
-        env.platform = 'win64'
-    elif platform.system() == 'Darwin':
-        env.platform = 'mac'
-    else:
-        env.platform = 'linux'
+    module_attributes = dir(module)
+    for attribute_name in module_attributes:
+        attribute_value = getattr(module, attribute_name)
+        is_valid = attribute_value != instance_type
+        is_valid = is_valid and inspect.isclass(attribute_value)
+        is_valid = is_valid and issubclass(attribute_value, instance_type)
+        is_valid = is_valid and not inspect.isabstract(attribute_value)
+        if is_valid:
+            result[attribute_value.__name__] = attribute_value()
+    return result
 
-    if hasattr(env, "platform") and env.platform is not None:
-        if env.platform.lower() in std_platforms:
-            env.platform =  std_platforms[env.platform.lower()]
-
-        env.is_win32 = env.platform == "win32"
-        env.is_win64 = env.platform == "win64"
-        env.is_ps3   = env.platform == "ps3"
-        env.is_ps4   = env.platform == "ps4"
-        env.is_x360  = env.platform == "xbox360"
-        env.is_xone  = env.platform == "xboxone"
-        env.is_linux = env.platform == "linux"
-        env.is_mac   = env.platform == "mac"
-
-        env.is_microsoft_platform = env.is_win32 or env.is_win64 or env.is_x360 or env.is_xone
-        env.is_sony_platform      = env.is_ps3 or env.is_ps4

@@ -1,35 +1,40 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
 
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''' Deploys binary files from a zipped archives '''
+
+import logging
 import zipfile
 
-from nimp.command import *
-from nimp.unreal import *
-from nimp.system import *
+import nimp.command
+import nimp.environment
+import nimp.system
 
-#-------------------------------------------------------------------------------
-class DeployCommand(Command):
+class Deploy(nimp.command.Command):
+    ''' Deploys binaries from a zipped archive to local directory '''
     def __init__(self):
-        Command.__init__(self,
-                         'deploy',
-                         'Deployment command')
+        super(Deploy, self).__init__()
 
-    #---------------------------------------------------------------------------
     def configure_arguments(self, env, parser):
-        parser.add_argument('-r', '--revision',
-                            help = 'revision',
-                            metavar = '<revision>')
-
-        parser.add_argument('-p', '--platform',
-                            help = 'platform to deploy',
-                            metavar = '<platform>')
-
-        parser.add_argument('-c', '--configuration',
-                            help = 'configuration to deploy',
-                            metavar = '<config>')
-
-        parser.add_argument('-t', '--target',
-                            help = 'target to deploy (game, editor, tools)',
-                            metavar = '<platform>')
+        nimp.command.add_common_arguments(parser, 'revision', 'target')
 
         parser.add_argument('--max-revision',
                             help = 'Find a revision <= to this',
@@ -37,26 +42,25 @@ class DeployCommand(Command):
 
         return True
 
-    #---------------------------------------------------------------------------
     def run(self, env):
-        files_to_deploy = mapper = env.map_files()
-
+        mapper = nimp.system.map_files(env)
         mapper = mapper.to(env.root_dir)
 
-        log_notification("Deploying version…")
+        logging.debug("Deploying version…")
 
         if env.revision is None:
-            env.revision = get_latest_available_revision(env, env.binaries_archive, **vars(env))
+            env.revision = nimp.system.get_latest_available_revision(env, env.binaries_archive, **vars(env))
 
         if env.revision is None:
             return False
 
         # Now uncompress the archive; it’s simple
-        fd = open(sanitize_path(env.format(env.binaries_archive)), 'rb')
-        z = zipfile.ZipFile(fd)
-        for name in z.namelist():
-            log_notification('Extracting {0} to {1}', name, env.root_dir)
-            z.extract(name, sanitize_path(env.format(env.root_dir)))
+        fd = open(nimp.system.sanitize_path(env.format(env.binaries_archive)), 'rb')
+        zip_file = zipfile.ZipFile(fd)
+        for name in zip_file.namelist():
+            logging.info('Extracting %s to %s', name, env.root_dir)
+            dest = nimp.system.sanitize_path(env.format(env.root_dir))
+            zip_file.extract(name, dest)
         fd.close()
 
         return True

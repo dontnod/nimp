@@ -58,18 +58,7 @@ def add_arguments(parser):
                         help = 'Perforce workspace',
                         type = str)
 
-def get_client(env):
-    ''' Returns a p4 client initialized with parameters from the environment.
-        Use the :func:`nimp.p4.add_arguments` method to add needed arguments to
-        a command sub-parser '''
-    assert isinstance(env, nimp.environment.Environment)
-    port   = env.p4port   if hasattr(env, 'p4port') else None
-    user   = env.p4user   if hasattr(env, 'p4user') else None
-    pwd    = env.p4pass   if hasattr(env, 'p4pass') else None
-    client = env.p4client if hasattr(env, 'p4client') else None
-    return P4(port, user, pwd, client)
-
-def sanitize(env):
+def check_for_p4(env):
     ''' Checks for perforce availability.
         This will print an error message if perforce can't be used. '''
     p4 = get_client(env)
@@ -81,6 +70,19 @@ def sanitize(env):
                        'settings are correctily set'))
         return False
     return True
+
+
+def get_client(env):
+    ''' Returns a p4 client initialized with parameters from the environment.
+        Use the :func:`nimp.p4.add_arguments` method to add needed arguments to
+        a command sub-parser '''
+    assert isinstance(env, nimp.environment.Environment)
+    port   = env.p4port   if hasattr(env, 'p4port') else None
+    user   = env.p4user   if hasattr(env, 'p4user') else None
+    pwd    = env.p4pass   if hasattr(env, 'p4pass') else None
+    client = env.p4client if hasattr(env, 'p4client') else None
+    return P4(port, user, pwd, client)
+
 class P4:
     ''' P4 Client '''
     def __init__(self, host = None, user = None, password = None, client = None):

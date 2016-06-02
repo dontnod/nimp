@@ -43,9 +43,6 @@ class Check(nimp.command.Command):
 
         return True
 
-    def sanitize(self, env):
-        return True
-
     def run(self, env):
         # Check running processes for possible issues
         if env.mode == 'processes':
