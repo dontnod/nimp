@@ -7,5 +7,11 @@ Nimp command line manual
 .. toctree::
    :glob:
 
-   commands/build
+.. contents::
+
+.. argparse::
+   :module: nimp.nimp_cli
+   :func: _get_parser
+   :prog: Nimp
+
 

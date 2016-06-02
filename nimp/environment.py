@@ -43,7 +43,7 @@ class Environment:
 
     def __init__(self):
         self.command = None
-        self.root_dir = None
+        self.root_dir = '.'
         self.environment = {}
 
     def load_argument_parser(self):
