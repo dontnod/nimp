@@ -25,17 +25,26 @@ import os
 import itertools
 import unittest
 
+import nimp.tests.utils
 import nimp.system
 
 def _file_mapper(**format_args):
-    mapper = nimp.system.FileMapper(mapper = _yield_mapper, format_args = format_args)
+    mapper = nimp.system.FileMapper(mapper=_yield_mapper,
+                                    format_args=format_args)
+
     return mapper, mapper.src("mocks/file_mapper_tests").to('.')
 
 def _yield_mapper(src, destination):
-    yield os.path.normpath(src), os.path.normpath(destination)
+    if src is not None:
+        src = os.path.normpath(src)
+
+    if destination is not None:
+        destination = os.path.normpath(destination)
+
+    yield src, destination
 
 class _FileSetTests(unittest.TestCase):
-    def __init__(self, methodName = 'runTest'):
+    def __init__(self, methodName='runTest'):
         super(_FileSetTests, self).__init__(methodName)
 
     def _check_files(self, mapper_files, *expected_files):
@@ -47,13 +56,13 @@ class _FileSetTests(unittest.TestCase):
 
     def test_call(self):
         ''' Calling a file mapper with a simple file name should process it.'''
-        files, src = _file_mapper(qux = 'qux.ext1')
+        files, src = _file_mapper(qux='qux.ext1')
         src.glob('{qux}')
         self._check_files(files(), ('qux.ext1', 'qux.ext1'))
 
     def test_dst(self):
         ''' To should translate target directory '''
-        files, src = _file_mapper(dir = 'dest')
+        files, src = _file_mapper(dir='dest')
         src.to("{dir}").glob('qux.ext1')
         self._check_files(files(), ('qux.ext1', 'dest/qux.ext1'))
 
@@ -83,9 +92,9 @@ class _FileSetTests(unittest.TestCase):
     def test_glob_absolute(self):
         ''' Call to a file_mapper should support absolute paths '''
         abs_qux_path = os.path.abspath("mocks/file_mapper_tests/qux.ext1")
-        files = nimp.system.FileMapper(mapper = _yield_mapper)
+        files = nimp.system.FileMapper(mapper=_yield_mapper)
         files.to('.').glob(abs_qux_path)
-        self.assertListEqual(list(files()), [(abs_qux_path,abs_qux_path)])
+        self.assertListEqual(list(files()), [(abs_qux_path, abs_qux_path)])
 
     def test_glob_recursive(self):
         ''' Call to a file_mapper should recursive globs '''
@@ -125,13 +134,13 @@ class _FileSetTests(unittest.TestCase):
 
     def test_replace(self):
         ''' Replace should handle regular exression and replace them in destination path.'''
-        files, src = _file_mapper(qux = 'qux.ext1', repl = 'foobar')
+        files, src = _file_mapper(qux='qux.ext1', repl='foobar')
         src.glob('{qux}').replace('{qux}', '{repl}')
         self._check_files(files(), ('qux.ext1', 'foobar'))
 
     def test_src(self):
         ''' src is used in every test, just testing format here. '''
-        files, src = _file_mapper(dir = 'foo')
+        files, src = _file_mapper(dir='foo')
         src.src('{dir}').glob('quux.ext1')
         self._check_files(files(), ('foo/quux.ext1', 'quux.ext1'))
 

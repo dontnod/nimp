@@ -72,7 +72,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
         return args.command_to_run(args, stdin)
 
     def _init_args(self, parser):
-        for flag in ['-z', '-c', '-H', '-p', '-P', '-u']:
+        for flag in ['-z', '-c', '-H', '-p', '-P', '-u', '-x']:
             parser.add_argument(flag)
 
         subparsers  = parser.add_subparsers(title='Commands')
