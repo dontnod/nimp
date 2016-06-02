@@ -282,7 +282,7 @@ def all_map(mapper, fileset):
             return False
     return True
 
-def load_config(env):
+def load_arguments(env):
     '''Sets default platform '''
     if is_windows():
         env.platform = 'win64'

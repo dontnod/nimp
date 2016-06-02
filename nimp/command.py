@@ -81,7 +81,7 @@ def add_common_arguments(parser, *arg_ids):
 def load_arguments(env):
     ''' Standardizes some environment parameters and sets new values '''
     if hasattr(env, 'free_parameters') and env.free_parameters is not None:
-        for key, value in [ x.split('=') for x in env.args]:
+        for key, value in [ x.split('=') for x in env.free_parameters]:
             setattr(env, key, value)
 
     std_platforms = { "ps4"       : "ps4",

@@ -50,7 +50,7 @@ class ListFileSet(nimp.command.Command):
 
         files = nimp.system.map_files(env)
         files_chain = files
-        files_chain.load_set(env.set_name)
+        files_chain.load_set(env.fileset)
 
         for source, destination in files():
             logging.info("%s => %s", source, destination)
