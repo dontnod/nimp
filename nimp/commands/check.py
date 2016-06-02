@@ -1,55 +1,71 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2016 Dontnod Entertainment
 
-import sys
-import platform
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+''' Environment check command '''
+
+import logging
 import os
-import unittest
+import platform
+import re
 
-from nimp.commands.command import *
+import nimp.command
+import nimp.system
 
-from nimp.tests.utilities import file_mapper_tests
-from nimp.system import *
-
-
-class Check(Command):
-
+class Check(nimp.command.Command):
+    ''' Performs various checks on the environment '''
     def __init__(self):
-        Command.__init__(self, 'check', 'Various checks about the environment')
+        super(Check, self).__init__()
 
 
     def configure_arguments(self, env, parser):
-
         parser.add_argument('mode',
                             help = 'Check mode (status, nimp, processes)',
-                            metavar = '<mode>')
+                            metavar = '<mode>',
+                            choices = ['status', 'processes'])
 
         return True
 
+    def sanitize(self, env):
+        return True
 
     def run(self, env):
-
         # Check running processes for possible issues
         if env.mode == 'processes':
-            return self.check_processes(env)
+            return Check._check_processes(env)
 
         # Print information about the current environment
         if env.mode == 'status':
-            self.info_project(env)
-            self.info_python(env)
-            self.info_env(env)
-            return True;
+            Check._info_project(env)
+            Check._info_python()
+            Check._info_env()
+            return True
 
-
-        log_error('Unsupported check mode “{0}”', env.mode)
         return False
 
-
-    def check_processes(self, env):
-
-        log_verbose('Checking running processes…')
+    @staticmethod
+    def _check_processes(env):
+        logging.debug('Checking running processes…')
 
         # Irrelevant on sane Unix platforms
-        if not is_windows():
+        if not nimp.system.is_windows():
             return True
 
         # Irrelevant if we’re not a UE3 or UE4 project
@@ -61,47 +77,51 @@ class Check(Command):
 
         # List all processes
         cmd = ['wmic', 'process', 'get', 'executablepath,parentprocessid,processid', '/value']
-        result, output, error = capture_process_output('.', cmd)
+        result, output, _ = nimp.system.capture_process_output('.', cmd)
         if result != 0:
             return False
 
         # Build a dictionary of all processes
         processes = {}
         path, pid, ppid = '', 0, 0
-        for l in [l.strip() for l in output.splitlines()]:
-            if l.lower().startswith('executablepath='):
-                path = re.sub('[^=]*=', '', l)
-            if l.lower().startswith('parentprocessid='):
-                ppid = re.sub('[^=]*=', '', l)
-            if l.lower().startswith('processid='):
-                pid = re.sub('[^=]*=', '', l)
+        for line in [line.strip() for line in output.splitlines()]:
+            if line.lower().startswith('executablepath='):
+                path = re.sub('[^=]*=', '', line)
+            if line.lower().startswith('parentprocessid='):
+                ppid = re.sub('[^=]*=', '', line)
+            if line.lower().startswith('processid='):
+                pid = re.sub('[^=]*=', '', line)
                 processes[pid] = (path, ppid)
 
         # Find all running binaries launched from the project directory and kill them
         prefix = os.path.abspath(env.root_dir).replace('/', '\\').lower()
         for pid, info in processes.items():
             if info[0].lower().startswith(prefix):
-                log_warning('Found problematic process {0} ({1})', pid, info[0])
+                logging.warning('Found problematic process %s (%s)', pid, info[0])
                 if info[1] in processes:
-                    log_warning('Parent is {0} ({1})', info[1], processes[info[1]][0])
-                log_warning('Killing process…')
-                call_process('.', ['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
+                    logging.warning('Parent is %s (%s)', info[1], processes[info[1]][0])
+                logging.warning('Killing process…')
+                nimp.system.call_process('.', ['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
 
-        log_verbose('{0} processes checked.', len(processes))
+        logging.debug('%s processes checked.', len(processes))
 
         return True
 
-
-    def info_project(self, env):
+    @staticmethod
+    def _info_project(env):
         print('Project:')
-        if hasattr(env, 'game'): print('  game: ', env.game)
-        if hasattr(env, 'project'): print('  project name: ', env.project)
-        if hasattr(env, 'project_type'): print('  project type: ', env.project_type)
-        if hasattr(env, 'root_dir'): print('  root directory: ', os.path.abspath(env.root_dir))
+        if hasattr(env, 'game'):
+            print('  game: ', env.game)
+        if hasattr(env, 'project'):
+            print('  project name: ', env.project)
+        if hasattr(env, 'project_type'):
+            print('  project type: ', env.project_type)
+        if hasattr(env, 'root_dir'):
+            print('  root directory: ', os.path.abspath(env.root_dir))
         print()
 
-
-    def info_python(self, env):
+    @staticmethod
+    def _info_python():
         print('Python:')
         print('  runtime version: ', platform.python_version())
         print(('  system:  %s\n' +
@@ -115,8 +135,8 @@ class Check(Command):
         print('  path separator: ', os.pathsep)
         print('')
 
-
-    def info_env(self, env):
+    @staticmethod
+    def _info_env():
         print('Environment:')
         for key, val in sorted(os.environ.items()):
             print('  ' + key + '=' + val)

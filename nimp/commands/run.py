@@ -24,9 +24,9 @@
 import sys
 import argparse
 
-import nimp.commands.command
+import nimp.command
 
-class _RunCommand(nimp.commands.command.Command):
+class _RunCommand(nimp.command.Command):
     def __init__(self):
         super(_RunCommand, self).__init__('run', 'Executes a shell command')
 

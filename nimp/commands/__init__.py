@@ -1,8 +1,5 @@
 __all__ = [
-    "build",
     "check",
-    "command",
-    "commandlet",
     "cook",
     "deploy",
     "fileset",
@@ -15,6 +12,8 @@ __all__ = [
     "run_tests",
     "shaders",
     "ship",
-    "sync_jira"
+    "sync_jira",
+    "ue_build",
+    "ue_commandlet",
 ]
 

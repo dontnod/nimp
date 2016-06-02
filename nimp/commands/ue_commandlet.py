@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) 2016 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
@@ -18,29 +19,36 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Nimp self-testing '''
+''' Unreal Engine commandlet execution command '''
 
-import logging
-import unittest
-import unittest.mock
-
-import nimp.tests
+import argparse
 
 import nimp.command
+import nimp.unreal
 
-class RunTests(nimp.command.Command):
-    ''' Perforce command base class '''
-
+class UeCommandlet(nimp.command.Command):
+    ''' Executes an Unreal Engine Commandlet. '''
     def __init__(self):
-        super(RunTests, self).__init__()
+        super(UeCommandlet, self).__init__()
 
     def configure_arguments(self, env, parser):
+        parser.add_argument('commandlet',
+                            help    = 'Commandlet name',
+                            metavar = '<command>')
+
+        parser.add_argument('args',
+                            help    = 'Commandlet arguments',
+                            metavar = '<args>',
+                            nargs    = argparse.REMAINDER)
+
         return True
 
     def sanitize(self, env):
-        pass
+        if not nimp.unreal.sanitize(env):
+            return False
+
+        return True
 
     def run(self, env):
-        return unittest.main(module = nimp.tests, argv = [".", '-v'])
-
+        return nimp.unreal.commandlet(env, env.commandlet, *env.args)
 

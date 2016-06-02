@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from nimp.commands.command import *
-from nimp.ue3 import *
+from nimp.command import *
+from nimp.unreal import *
 from nimp.system import *
 from nimp.torrent import *
 

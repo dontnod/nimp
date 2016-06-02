@@ -2,14 +2,13 @@
 
 import datetime
 
-import nimp.commands.command
-from nimp.ue3 import *
-from nimp.ue4 import *
+import nimp.command
+from nimp.unreal import *
 from nimp.build import *
 from nimp.environment import *
 
 #-------------------------------------------------------------------------------
-class PruneVersionsCommand(nimp.commands.command.Command):
+class PruneVersionsCommand(nimp.command.Command):
     def __init__(self):
         Command.__init__(self, 'prune-versions', 'Prune old versions')
 

@@ -28,8 +28,6 @@ import platform
 import time
 
 import nimp.system
-import nimp.ue3
-import nimp.ue4
 
 class Environment:
     ''' Environment '''
@@ -122,7 +120,13 @@ def read_config_file(filename):
 
     return {}
 
-def sanitize_platform(env):
+def add_arguments(parser):
+    ''' Adds platform argument to the given parser '''
+    parser.add_argument('-p', '--platform',
+                        help = 'Platform',
+                        metavar = '<platform>')
+
+def sanitize(env):
     ''' Standardizes platform names and sets helpers booleans '''
     std_platforms = { "ps4"       : "ps4",
                       "orbis"     : "ps4",

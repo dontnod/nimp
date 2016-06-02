@@ -23,10 +23,10 @@
 
 import abc
 
-import nimp.commands.command
+import nimp.command
 import nimp.p4
 
-class P4Command(nimp.commands.command.Command):
+class P4Command(nimp.command.Command):
     ''' Perforce command base class '''
 
     def __init__(self):
@@ -77,7 +77,7 @@ class P4Fileset(P4Command):
                             help = 'Fileset to load.')
 
         parser.add_argument('changelist_description',
-                            metavar = '<format>',
+                            metavar = '<description>',
                             help = 'Changelist description format, will be interpolated with environment value.')
 
         nimp.system.add_fileset_parameters_arguments(parser)
@@ -114,7 +114,7 @@ class P4Submit(P4Command):
         super(P4Submit, self).configure_arguments(env, parser)
 
         parser.add_argument('changelist_description',
-                            metavar = '<format>',
+                            metavar = '<description>',
                             help = 'Changelist description format, will be interpolated with environment value.')
 
         return True
@@ -131,98 +131,3 @@ class P4Submit(P4Command):
 
         return p4.submit(changelist)
 
-#   def _register_prepare_workspace(subparsers):
-#       def _execute(env):
-#           if not nimp.p4.create_config_file(env.p4port, env.p4user, env.p4pass, env.p4client):
-#               return False
-#
-#           if env.patch_config is not None and env.patch_config != "None":
-#               if not env.load_config_file(env.patch_config):
-#                   logging.error("Error while loading patch config file %s, aborting...", env.patch_config)
-#                   return False
-#
-#               for file_path, revision in env.patch_files_revisions:
-#                   log_notification("Syncing file {0} to revision {1}", file_path, revision)
-#                   if not p4_sync(file_path, revision):
-#                       return False
-#
-#                   if file_path == ".nimp.conf":
-#                       log_notification("Reloading config...")
-#                       if not env.load_config_file(".nimp.conf"):
-#                           return False
-#           return True
-#
-#       parser = subparsers.add_parser("prepare-workspace", help = "Writes a .p4config file and removes all pending CLs from workspace")
-#
-#
-#       parser.add_argument("--patch-config",
-#                           help = "Path to the patch config file",
-#                           metavar = "<FILE>",
-#                           default = "None")
-#
-#       parser.set_defaults(p4_command_to_run = _execute)
-#
-#   #---------------------------------------------------------------------------
-#   def _register_clean_workspace(self, subparsers):
-#       def _execute(env):
-#           return p4_clean_workspace()
-#
-#       parser = subparsers.add_parser("clean-workspace", help = "Reverts and delete all pending changelists.")
-#       parser.set_defaults(p4_command_to_run = _execute)
-#
-#
-#   #---------------------------------------------------------------------------
-#   def _register_checkout(self, subparsers):
-#       _register_fileset_command(subparsers , "checkout", "Checks out a fileset", p4_edit)
-#
-#   #---------------------------------------------------------------------------
-#   def _register_reconcile(self, subparsers):
-#       _register_fileset_command(subparsers, "reconcile", "Reconciles a fileset", p4_reconcile)
-#
-#   #---------------------------------------------------------------------------
-#   def _register_submit(self, subparsers):
-#       def _execute(env):
-#           cl_number = p4_get_or_create_changelist(env.format(env.cl_name))
-#
-#           if cl_number is None:
-#               return False
-#
-#           return p4_submit(cl_number)
-#
-#       parser = subparsers.add_parser("submit",
-#                                      help = "Reconciles a fileset")
-#       parser.add_argument('cl_name', metavar = '<FORMAT>', type = str, default = None)
-#       parser.add_argument('--arg', help = 'DEPRECATED, DO NOT USE', nargs = 2, action = 'append', default = [])
-#       parser.set_defaults(p4_command_to_run = _execute)
-#
-#---------------------------------------------------------------------------
-#ef _register_fileset_command(subparsers, command_name, help, p4_func):
-#   def _execute(env):
-#       cl_number = p4_get_or_create_changelist(env.format(env.cl_name))
-#
-#       if cl_number is None:
-#           return False
-#
-#       if env.fileset:
-#           files = env.map_files()
-#           if files.load_set(env.format(env.p4_path)) is None:
-#               return False
-#           files = [file[0] for file in files()]
-#       else:
-#           files = [env.format(env.p4_path)]
-#
-#       return p4_func(cl_number, *files)
-#   parser = subparsers.add_parser(command_name,
-#                                  help = help)
-#   parser.add_argument('cl_name', metavar = '<STR>', type = str)
-#   parser.add_argument('p4_path', metavar = '<PATH>', type = str)
-#   parser.add_argument('--fileset',
-#                       help    = "Handle path as a fileset, not a regular path.",
-#                       action  = "store_true",
-#                       default = False)
-#   parser.add_argument('--arg',
-#                       help    = 'Specify interpolation arguments to set while checking out.',
-#                       nargs=2,
-#                       action='append',
-#                       default = [])
-#   parser.set_defaults(p4_command_to_run = _execute)

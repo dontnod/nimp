@@ -28,7 +28,13 @@ import subprocess
 
 import nimp.system
 
-def sanitize_config(env):
+def add_arguments(parser):
+    ''' Adds configuration parameters to parser '''
+    parser.add_argument('-c', '--configuration',
+                        help = 'Configuration to build',
+                        metavar = '<configuration>')
+
+def sanitize(env):
     ''' Cleans config related env variables '''
     if hasattr(env, 'configuration') and env.configuration is not None:
         std_configs = { 'debug'    : 'debug',
@@ -62,7 +68,6 @@ def vsbuild(solution, platform_name, configuration, project = None, vs_version =
     else: # Mac and Linux alike
         command = [ 'xbuild', solution, '/verbosity:quiet', '/p:TargetFrameworkVersion=v4.5', '/p:TargetFrameworkProfile=', '/nologo' ]
         return nimp.system.call_process(build_directory, command) == 0
-
 
 def _find_devenv_path(vs_version):
     devenv_path = None

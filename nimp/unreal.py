@@ -29,52 +29,39 @@ import nimp.build
 import nimp.system
 
 def sanitize(env):
-    ''' Sets some variables for use with unreal 4 '''
-    def _get_ue4_build_config(config):
-        configs = { "debug"    : "Debug",
-                    "devel"    : "Development",
-                    "test"     : "Test",
-                    "shipping" : "Shipping", }
-        if config not in configs:
-            logging.warning('Unsupported UE4 build config “%s”', config)
-            return None
-        return configs[config]
+    ''' Checks for correct project configuration. You have to have configured
+        the project via a .nimp.conf file at the project root '''
+    if not hasattr(env, 'project_type') or env.project_type not in ['UE4']:
+        logging.error('This doesn\'t seems to be a supported project type.')
+        logging.error('Check that you are launching nimp from an UE project')
+        logging.error('directory, and that you have a .nimp.conf file in the')
+        logging.error('project root directory (see documentation for further')
+        logging.error('details)')
+        return False
 
-    def _get_ue4_build_platform(in_platform):
-        platforms = { "ps4"     : "PS4",
-                      "xboxone" : "XboxOne",
-                      "win64"   : "Win64",
-                      "win32"   : "Win32",
-                      "linux"   : "Linux",
-                      "mac"     : "Mac", }
-        if in_platform not in platforms:
-            logging.warning('Unsupported UE4 build platform “%s”', in_platform)
-            return None
-        return platforms[in_platform]
+    if env.project_type == 'UE4':
+        return _ue4_sanitize(env)
 
-    def _get_ue4_cook_platform(in_platform):
-        platforms = { "ps4"     : "PS4",
-                      "xboxone" : "XboxOne",
-                      "win64"   : "Win64",
-                      "win32"   : "Win32",
-                      "linux"   : "Linux",
-                      "mac"     : "Mac", }
-        if in_platform not in platforms:
-            logging.warning('Unsupported UE4 build platform “%s”', in_platform)
-            return None
-        return platforms[in_platform]
+def build(env):
+    ''' Builds an Unreal Engine Project. To use this function, be sure to call
+        `sanitize` function. You'll also need platform / configuration arguments
+         that can be added to a parser via `environment.add_platform_arguments
+         and build.add_arguments`
+    '''
+    assert hasattr(env, 'project_type') and env.project_type in ['UE4']
+    if env.project_type == 'UE4':
+        return _ue4_build(env)
+    assert False, 'Unsupported project type'
 
-    env.is_ue4 = hasattr(env, 'project_type') and env.project_type is 'UE4'
-    if hasattr(env, 'platform'):
-        env.ue4_build_platform = _get_ue4_build_platform(env.platform)
-        env.ue4_cook_platform  = _get_ue4_cook_platform(env.platform)
-    if hasattr(env, 'configuration'):
-        if env.configuration is None:
-            env.configuration = 'devel'
-        env.ue4_build_configuration = _get_ue4_build_config(env.configuration)
+def commandlet(env, command, *args):
+    ''' Runs an Unreal Engine commandlet. It can be usefull to run it through
+        nimp as OutputDebugString will be redirected to standard output. '''
+    assert hasattr(env, 'project_type') and env.project_type in ['UE4']
+    if env.project_type == 'UE4':
+        return _ue4_commandlet(env, command, *args)
+    assert False, 'Unsupported project type'
 
-def ue4_build(env):
-    ''' Builds unreal engine 4 '''
+def _ue4_build(env):
     assert hasattr(env, 'ue4_build_configuration')
     assert env.ue4_build_configuration is not None
 
@@ -254,6 +241,25 @@ def ue4_build(env):
 
     return True
 
+def _ue4_commandlet(env, command, *args):
+    ''' Runs an UE4 commandlet '''
+    if nimp.system.is_windows():
+        exe = 'Engine/Binaries/Win64/UE4Editor.exe'
+    elif platform.system() == 'Darwin':
+        exe = 'Engine/Binaries/Mac/UE4Editor'
+    else:
+        exe = 'Engine/Binaries/Linux/UE4Editor'
+
+    cmdline = [nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), exe)),
+               env.game,
+               '-run=%s' % command]
+
+    cmdline += list(args)
+    cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
+
+    return nimp.system.call_process('.', cmdline) == 0
+
+
 def _ue4_generate_project(env):
     if nimp.system.is_windows():
         return nimp.system.call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat'])
@@ -271,21 +277,49 @@ def _ue4_build_project(env, sln_file, project, build_platform,
                                     ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (build_platform),
                                      project, build_platform, configuration]) == 0
 
-def ue4_commandlet(env, commandlet, *args):
-    ''' Runs an UE4 commandlet '''
-    if nimp.system.is_windows():
-        exe = 'Engine/Binaries/Win64/UE4Editor.exe'
-    elif platform.system() == 'Darwin':
-        exe = 'Engine/Binaries/Mac/UE4Editor'
-    else:
-        exe = 'Engine/Binaries/Linux/UE4Editor'
+def _ue4_sanitize(env):
+    ''' Sets some variables for use with unreal 4 '''
+    def _get_ue4_build_config(config):
+        configs = { "debug"    : "Debug",
+                    "devel"    : "Development",
+                    "test"     : "Test",
+                    "shipping" : "Shipping", }
+        if config not in configs:
+            logging.warning('Unsupported UE4 build config “%s”', config)
+            return None
+        return configs[config]
 
-    cmdline = [nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), exe)),
-               env.game,
-               '-run=%s' % commandlet]
+    def _get_ue4_build_platform(in_platform):
+        platforms = { "ps4"     : "PS4",
+                      "xboxone" : "XboxOne",
+                      "win64"   : "Win64",
+                      "win32"   : "Win32",
+                      "linux"   : "Linux",
+                      "mac"     : "Mac", }
+        if in_platform not in platforms:
+            logging.warning('Unsupported UE4 build platform “%s”', in_platform)
+            return None
+        return platforms[in_platform]
 
-    cmdline += list(args)
-    cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
+    def _get_ue4_cook_platform(in_platform):
+        platforms = { "ps4"     : "PS4",
+                      "xboxone" : "XboxOne",
+                      "win64"   : "Win64",
+                      "win32"   : "Win32",
+                      "linux"   : "Linux",
+                      "mac"     : "Mac", }
+        if in_platform not in platforms:
+            logging.warning('Unsupported UE4 build platform “%s”', in_platform)
+            return None
+        return platforms[in_platform]
 
-    return nimp.system.call_process('.', cmdline) == 0
+    env.is_ue4 = hasattr(env, 'project_type') and env.project_type is 'UE4'
+    if hasattr(env, 'platform'):
+        env.ue4_build_platform = _get_ue4_build_platform(env.platform)
+        env.ue4_cook_platform  = _get_ue4_cook_platform(env.platform)
+    if hasattr(env, 'configuration'):
+        if env.configuration is None:
+            env.configuration = 'devel'
+        env.ue4_build_configuration = _get_ue4_build_config(env.configuration)
 
+    return True

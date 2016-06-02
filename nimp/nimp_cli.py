@@ -31,7 +31,8 @@ import sys
 import time
 import traceback
 
-import nimp.commands.command
+import nimp.command
+import nimp.commands
 import nimp.environment
 import nimp.system
 
@@ -97,14 +98,14 @@ def _recursive_get_instances(module, instance_type):
 
 def _load_commands(env):
     # Import project-local commands from .nimp/commands
-    result = _get_instances(nimp.commands, nimp.commands.command.Command)
+    result = _get_instances(nimp.commands, nimp.command.Command)
     localpath = os.path.abspath(os.path.join(env.root_dir, '.nimp'))
     if localpath not in sys.path:
         sys.path.append(localpath)
     try:
         #pylint: disable=import-error
         import commands
-        result += _get_instances(commands, nimp.commands.command.Command)
+        result += _get_instances(commands, nimp.command.Command)
     except ImportError:
         pass
 
@@ -184,7 +185,9 @@ def main():
 
         _init_logging(env)
 
-        env.command_to_run.sanitize(env)
+        if not env.command_to_run.sanitize(env):
+            return 1
+
         return env.command_to_run.run(env)
 
     except KeyboardInterrupt:

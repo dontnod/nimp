@@ -3,9 +3,8 @@
 import shutil
 import zipfile
 
-from nimp.commands.command import *
-from nimp.ue3 import *
-from nimp.ue4 import *
+from nimp.command import *
+from nimp.unreal import *
 from nimp.build import *
 from nimp.system import *
 from nimp.torrent import *
