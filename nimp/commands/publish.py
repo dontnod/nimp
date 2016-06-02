@@ -46,6 +46,9 @@ class PublishBinaries(nimp.command.Command):
 
         return True
 
+    def is_available(self, env):
+        return True, ''
+
     def run(self, env):
         if not env.check_config('binaries_tmp'):
             return False
@@ -72,6 +75,9 @@ class PublishSymbols(nimp.command.Command):
 
         return True
 
+    def is_available(self, env):
+        return True, ''
+
     def run(self, env):
         symbols_to_publish = nimp.system.map_files(env)
         symbols_to_publish.load_set("symbols")
@@ -94,6 +100,12 @@ class PublishVersion(nimp.command.Command):
                             nargs = '+')
 
         return True
+
+    def is_available(self, env):
+        return (nimp.system.try_import('BitTornado') is not None,
+                ('bittornado python module was not found on your system and is '
+                 'required by this command. You can install it with pip3 (give '
+                 'bittornado repo url here) '))
 
     def run(self, env):
         if not env.check_config('binaries_tmp', 'binaries_archive', 'binaries_torrent'):

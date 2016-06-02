@@ -51,6 +51,9 @@ class UeBuild(nimp.command.Command):
 
         return True
 
+    def is_available(self, env):
+        return nimp.unreal.is_unreal4_available(env)
+
     def run(self, env):
         # Use distcc and/or ccache if available
         nimp.build.install_distcc_and_ccache()

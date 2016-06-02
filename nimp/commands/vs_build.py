@@ -36,6 +36,10 @@ class VsBuild(nimp.command.Command):
         nimp.command.add_common_arguments(parser, 'platform', 'configuration')
         return True
 
+    def is_available(self, env):
+        # TODO : Check for Visual Studio availability
+        return True, ''
+
     def run(self, env):
         for file in os.listdir('.'):
             if os.path.splitext(file)[1] == '.sln' and os.path.isfile(file):

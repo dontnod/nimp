@@ -37,6 +37,9 @@ class UeLights(nimp.command.Command):
                             required = True)
         return True
 
+    def is_available(self, env):
+        return nimp.unreal.is_unreal4_available(env)
+
     def run(self, env):
         if not env.check_config('lighting_maps'):
             return False

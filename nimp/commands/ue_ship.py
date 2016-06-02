@@ -39,6 +39,9 @@ class UeShip(nimp.command.Command):
 
         return True
 
+    def is_available(self, env):
+        return nimp.unreal.is_unreal4_available(env)
+
     def run(self, env):
         if not env.check_config('publish_ship'):
             return False

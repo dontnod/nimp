@@ -22,9 +22,16 @@
 ''' Perforce related commands. '''
 
 import abc
+import shutil
 
 import nimp.command
 import nimp.p4
+
+def _is_p4_available():
+    if shutil.which('p4') is None:
+        return False, ('p4 executable was not found on your system, check your'
+                       'installation.')
+    return True, ''
 
 class P4Command(nimp.command.Command):
     ''' Perforce command base class '''
@@ -36,6 +43,9 @@ class P4Command(nimp.command.Command):
         nimp.p4.add_arguments(parser)
         return True
 
+    def is_available(self, env):
+        return _is_p4_available()
+
     @abc.abstractmethod
     def run(self, env):
         ''' Executes the command '''
@@ -46,6 +56,9 @@ class P4CleanWorkspace(P4Command):
         workspace. '''
     def __init__(self):
         super(P4CleanWorkspace, self).__init__()
+
+    def is_available(self, env):
+        return _is_p4_available()
 
     def run(self, env):
         if not nimp.p4.check_for_p4(env):
@@ -78,6 +91,9 @@ class P4Fileset(P4Command):
 
         nimp.command.add_common_arguments(parser, 'free_parameters')
         return True
+
+    def is_available(self, env):
+        return _is_p4_available()
 
     def run(self, env):
         if not nimp.p4.check_for_p4(env):
@@ -112,6 +128,9 @@ class P4Submit(P4Command):
                             help = 'Changelist description format, will be interpolated with environment value.')
 
         return True
+
+    def is_available(self, env):
+        return _is_p4_available()
 
     def run(self, env):
         if not nimp.p4.check_for_p4(env):

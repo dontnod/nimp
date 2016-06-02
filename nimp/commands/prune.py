@@ -50,6 +50,9 @@ class Prune(nimp.command.Command):
                             action  = "store_true")
         return True
 
+    def is_available(self, env):
+        return True, ''
+
     def run(self, env):
         prune_policy_path = env.file
         prune_policy_conf = nimp.environment.read_config_file(prune_policy_path)

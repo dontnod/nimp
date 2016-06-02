@@ -23,6 +23,7 @@
 
 import abc
 import argparse
+import logging
 
 class Command(metaclass=abc.ABCMeta):
     ''' Abstract class for commands '''
@@ -33,6 +34,12 @@ class Command(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def configure_arguments(self, env, parser):
         ''' Registers arguments definition in command parser '''
+        pass
+
+    @abc.abstractmethod
+    def is_available(self, env):
+        ''' Returns a tuple (bool, disabled reason to know why a command is
+            currently disabled '''
         pass
 
     @abc.abstractmethod
@@ -124,3 +131,18 @@ def load_arguments(env):
 
     return True
 
+class DisabledCommand(Command):
+    ''' Command printing a help text to why it is currently disabled  '''
+    def __init__(self, help_text):
+        super(DisabledCommand, self).__init__()
+        self._help = help_text
+
+    def configure_arguments(self, env, parser):
+        assert False
+
+    def is_available(self, env):
+        assert False
+
+    def run(self, env):
+        logging.error('This command is currently unavailable')
+        logging.error(self._help)

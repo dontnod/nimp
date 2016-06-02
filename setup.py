@@ -16,17 +16,11 @@ setup_info = dict(
     packages = [
         'nimp',
         'nimp/commands',
-        'nimp/modules',
-        'nimp/modules/log_formats',
-        'nimp/tests',
-        'nimp/tests/utilities',
         'nimp',
     ],
 
     install_requires = [
         'glob2',
-        'bittornado',
-		'jira',
     ],
 
     entry_points = {

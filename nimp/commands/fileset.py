@@ -43,6 +43,9 @@ class ListFileSet(nimp.command.Command):
                                           'free_parameters')
         return True
 
+    def is_available(self, env):
+        return True, ''
+
     def run(self, env):
 
         files = nimp.system.map_files(env)

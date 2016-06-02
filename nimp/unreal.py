@@ -63,6 +63,14 @@ def cook(env):
         return False
     return True
 
+def is_unreal4_available(env):
+    ''' Returns a tuple containing unreal availability and a help text
+        giving a reason of why it isn't if it's the case '''
+    return env.is_ue4, ('No .nimp.conf configured for Unreal 4 was found in '
+                        'this directory or one of its parents. Check that you '
+                        'are launching nimp from inside an UE4 project directory'
+                        ' and that you have a properly configured .nimp.conf. '
+                        'Check documentation for more details on .nimp.conf.')
 def _check_for_unreal(env):
     if not env.is_ue4:
         logging.error('This doesn\'t seems to be a supported project type.')

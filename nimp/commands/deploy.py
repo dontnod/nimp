@@ -42,6 +42,9 @@ class Deploy(nimp.command.Command):
 
         return True
 
+    def is_available(self, env):
+        return True, ''
+
     def run(self, env):
         mapper = nimp.system.map_files(env)
         mapper = mapper.to(env.root_dir)

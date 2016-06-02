@@ -37,6 +37,9 @@ class Run(nimp.command.Command):
                             metavar  = '<command> [<argument>...]')
         return True
 
+    def is_available(self, env):
+        return True, ''
+
     def run(self, env):
         cmdline = []
         for arg in env.command_and_args:

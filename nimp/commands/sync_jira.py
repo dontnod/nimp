@@ -25,18 +25,14 @@ import json
 from collections import OrderedDict
 import tempfile
 import os
-import importlib
 import logging
 
 import nimp.command
 import nimp.unreal
+import nimp.system
 import nimp.p4
 
-#Jira import. That way, if jira module isn't installed for a user, nimp will not crash
-_JIRA_IMPORTED = importlib.util.find_spec("jira") is not None
-if _JIRA_IMPORTED:
-    #pylint: disable=wrong-import-position,wrong-import-order
-    from jira import JIRA
+JIRA = nimp.system.try_import('jira')
 
 class SyncJira(nimp.command.Command):
     '''Retreive all uassets  with metadata then create the corresponding jira tasks'''
@@ -52,57 +48,58 @@ class SyncJira(nimp.command.Command):
                             nargs    = '+')
         return True
 
+    def is_available(self, env):
+        if JIRA is None:
+            return False , ('jira python module was not found on your system '
+                            'and is required by this command. You can install '
+                            'it with pip3 '
+                            '(see https://pypi.python.org/pypi/jira)')
+        return nimp.unreal.is_unreal4_available(env)
+
     def run(self, env):
         '''
             Method that run the sync-jira nimp command
             Run the DNEAssetMining commandlet that will outpout a json with the ue objects with metadata
             then, it creates the corresponding Jira tasks associated to these objects
         '''
-        if _JIRA_IMPORTED :
-            if env.is_ue4:
-                options = { 'server': env.jira_server }
-                jira = JIRA(options,basic_auth=(env.jira_id, env.jira_password))
+        assert JIRA is not None and env.is_ue4
+        options = { 'server': env.jira_server }
+        jira = JIRA.JIRA(options,basic_auth=(env.jira_id, env.jira_password))
 
-                #Filter modified files to get only the edited or added ones
-                #Only Check in the Content/... p4 folder of the current working directory. It remplaces the condition filename.startswith(os.getcwd()) == true
-                p4 = nimp.p4.get_client(env)
-                packages = p4.get_modified_files(*env.changelists, root='Content/...')
-                filtered_packages = []
-                for (filename, action) in packages:
-                    if action == 'edit' or action == 'add':
-                        if filename.find('Content') != -1 and (filename.find('.uasset') != -1 or filename.find('.umap') != -1):
-                            filename = filename.replace('\\','/')
-                            filename = filename.split('/Content/')[1]
-                            filename = '/Game/' + filename
-                            filename = filename.replace('.uasset','')
-                            filename = filename.replace('.umap','')
-                            filtered_packages.append(filename)
+        #Filter modified files to get only the edited or added ones
+        #Only Check in the Content/... p4 folder of the current working directory. It remplaces the condition filename.startswith(os.getcwd()) == true
+        p4 = nimp.p4.get_client(env)
+        packages = p4.get_modified_files(*env.changelists, root='Content/...')
+        filtered_packages = []
+        for (filename, action) in packages:
+            if action == 'edit' or action == 'add':
+                if filename.find('Content') != -1 and (filename.find('.uasset') != -1 or filename.find('.umap') != -1):
+                    filename = filename.replace('\\','/')
+                    filename = filename.split('/Content/')[1]
+                    filename = '/Game/' + filename
+                    filename = filename.replace('.uasset','')
+                    filename = filename.replace('.umap','')
+                    filtered_packages.append(filename)
 
-                if len(filtered_packages) == 0:
-                    logging.warning('No Packages to mine found in changelists ' + str(env.changelists) +'.')
-                    return True
-
-                #Create a new temp file and close it in order that the commandlet writes in that file
-                temp = tempfile.NamedTemporaryFile(delete = False)
-                temp.close()
-                if nimp.unreal.commandlet(env,'DNEAssetMiningCommandlet', 'packages=%s' % ','.join(filtered_packages), "json=%s" % temp.name):
-                    try:
-                        json_file = open(temp.name, encoding='utf-8',errors='replace')
-                        if os.stat(temp.name).st_size > 0:
-                            json_data = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
-                            SyncJira.parse_json_and_create_jira_task(env, json_data, jira)
-                        else:
-                            logging.info('No Metadata found in the mined packages, the file is empty.')
-                        json_file.close()
-                        os.remove(temp.name)
-                    except ValueError:
-                        logging.error('ValueError : Invalid characters in Metadata (%s)', temp.name)
-            else:
-                logging.error('This command is only supported on UE4')
+        if len(filtered_packages) == 0:
+            logging.warning('No Packages to mine found in changelists ' + str(env.changelists) +'.')
             return True
-        else:
-            logging.error('Jira Python library is not install. Use "pip3 install jira" to fix this error.')
-            return False
+
+        #Create a new temp file and close it in order that the commandlet writes in that file
+        temp = tempfile.NamedTemporaryFile(delete = False)
+        temp.close()
+        if nimp.unreal.commandlet(env,'DNEAssetMiningCommandlet', 'packages=%s' % ','.join(filtered_packages), "json=%s" % temp.name):
+            try:
+                json_file = open(temp.name, encoding='utf-8',errors='replace')
+                if os.stat(temp.name).st_size > 0:
+                    json_data = json.loads(json_file.read(), object_pairs_hook=OrderedDict)
+                    SyncJira.parse_json_and_create_jira_task(env, json_data, jira)
+                else:
+                    logging.info('No Metadata found in the mined packages, the file is empty.')
+                json_file.close()
+                os.remove(temp.name)
+            except ValueError:
+                logging.error('ValueError : Invalid characters in Metadata (%s)', temp.name)
 
     @staticmethod
     def parse_json_and_create_jira_task(env, json_data, jira_object):

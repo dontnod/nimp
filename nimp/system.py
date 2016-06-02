@@ -36,6 +36,7 @@ import subprocess
 import sys
 import threading
 import time
+import importlib
 
 import glob2
 
@@ -48,6 +49,13 @@ def is_windows():
 def is_msys():
     ''' Returns True if the platform is msys. '''
     return platform.system()[0:7] == 'MSYS_NT'
+
+def try_import(module_name):
+    ''' Tries to import a module, return none if unavailable '''
+    try:
+        return importlib.import_module(module_name)
+    except ImportError:
+        return None
 
 def split_path(path):
     ''' Returns an array of path elements '''
