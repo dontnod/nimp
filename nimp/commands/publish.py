@@ -48,7 +48,8 @@ class _Binaries(nimp.command.Command):
         nimp.command.add_common_arguments(parser,
                                           'platform',
                                           'configuration',
-                                          'target')
+                                          'target',
+                                          'revision')
 
         return True
 
