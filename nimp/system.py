@@ -213,7 +213,7 @@ def robocopy(src, dest):
     src = sanitize_path(src)
     dest = sanitize_path(dest)
 
-    logging.debug('Copying “%s” to “%s”', src, dest)
+    logging.debug('Copying "%s" to "%s"', src, dest)
 
     if os.path.isdir(src):
         safe_makedirs(dest)
