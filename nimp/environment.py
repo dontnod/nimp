@@ -201,10 +201,6 @@ class Environment:
     def setup_envvars(self):
         ''' Applies environment variables from .nimp.conf '''
 
-    def execute_hook(self, hook_name, *args):
-        ''' Executes a hook in the .nimp/hooks directory '''
-        pass
-
     def _load_nimp_conf(self):
         nimp_conf_dir = "."
         nimp_conf_file = ".nimp.conf"
@@ -223,6 +219,19 @@ class Environment:
             return False
 
         return True
+
+def execute_hook(hook_name, *args):
+    ''' Executes a hook in the .nimp/hooks directory '''
+    logging.debug('Trying to Executing hook %s', hook_name)
+    hook_module = nimp.system.try_import('hooks.' + hook_name)
+    if hook_module is None:
+        logging.debug('No %s hook found in .nimp/hooks directory', hook_name)
+        return
+    if not hasattr(hook_module, 'run'):
+        logging.debug('No "run" method found in .nimp/hooks/%s module', hook_name)
+        return
+
+    return getattr(hook_module, 'run')(*args)
 
 def read_config_file(filename):
     ''' Reads a config file and returns a dictionary with values defined in it '''
@@ -258,7 +267,6 @@ def _get_instances(module, instance_type):
             sub_instances = _get_instances(sub_module_it, instance_type)
             for (klass, instance) in sub_instances.items():
                 result[klass] = instance
-
 
     module_attributes = dir(module)
     for attribute_name in module_attributes:

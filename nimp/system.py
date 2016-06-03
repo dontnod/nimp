@@ -30,6 +30,7 @@ import os
 import os.path
 import platform
 import re
+import shutil
 import stat
 import struct
 import subprocess
@@ -232,7 +233,6 @@ def robocopy(src, dest):
                     return False
                 logging.error('Retrying after 10 seconds (%s retries left)', max_retries)
                 time.sleep(10)
-
             except Exception as ex: #pylint: disable=broad-except
                 logging.error('Copy error: %s', ex)
                 return False

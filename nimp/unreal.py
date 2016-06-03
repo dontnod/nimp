@@ -92,37 +92,7 @@ def _ue4_build(env):
         os.environ['UBT_bAllowFastBuild'] = 'true'
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
-    # The project file generation requires RPCUtility and Ionic.Zip.Reduced very early
-    tmp = env.format('{root_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln')
-    if not nimp.build.vsbuild(tmp, 'Any CPU', 'Development', None, '11', 'Build') \
-       and not nimp.build.vsbuild(tmp, 'Any CPU', 'Development', None, '12', 'Build') \
-       and not nimp.build.vsbuild(tmp, 'Any CPU', 'Development', None, '14', 'Build'):
-        logging.error("Could not build RPCUtility")
-        return False
-
-    if platform.system() == 'Darwin':
-        # HACK: For some reason nothing copies this file on OS X
-        nimp.system.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Ionic/Ionic.Zip.Reduced.dll'),
-                             env.format('{root_dir}/Engine/Binaries/DotNET/Ionic.Zip.Reduced.dll'))
-        # HACK: and nothing creates this directory
-        nimp.system.safe_makedirs(env.format('{root_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
-
-    # HACK: We also need this on Windows
-    if nimp.system.is_windows():
-        for dll in [ 'FBX/2014.2.1/lib/vs2012/x64/release/libfbxsdk.dll',
-                     'FBX/2016.1.1/lib/vs2015/x64/release/libfbxsdk.dll',
-                     'IntelEmbree/Embree270/Win64/lib/embree.dll',
-                     'IntelEmbree/Embree270/Win64/lib/tbb.dll',
-                     'IntelEmbree/Embree270/Win64/lib/tbbmalloc.dll' ]:
-            src = env.format('{root_dir}/Engine/Source/ThirdParty/' + dll)
-            dst = env.format('{root_dir}/Engine/Binaries/Win64/' + os.path.basename(dll))
-            if os.path.exists(nimp.system.sanitize_path(src)):
-                nimp.system.robocopy(src, dst)
-
-    # HACK: We need this on Linux...
-    if platform.system() == 'Linux':
-        nimp.system.robocopy(env.format('{root_dir}/Engine/Binaries/ThirdParty/Steamworks/Steamv132/Linux/libsteam_api.so'),
-                             env.format('{root_dir}/Engine/Binaries/Linux/libsteam_api.so'))
+    nimp.environment.execute_hook('before_ue4_build', env)
 
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
@@ -245,7 +215,7 @@ def _ue4_build(env):
     if env.target == 'game':
         if not _ue4_build_project(env, solution, env.game, env.ue4_build_platform,
                                   env.ue4_build_configuration, vs_version, 'Build'):
-            return False
+            result = False
 
     if env.target == 'editor':
         if env.platform in ['linux', 'mac']:
@@ -257,9 +227,11 @@ def _ue4_build(env):
 
         if not _ue4_build_project(env, solution, project, env.ue4_build_platform,
                                   config, vs_version, 'Build'):
-            return False
+            result = False
 
-    return True
+    nimp.environment.execute_hook('after_ue4_build', env, result)
+
+    return result
 
 def _ue4_commandlet(env, command, *args):
     ''' Runs an UE4 commandlet '''
