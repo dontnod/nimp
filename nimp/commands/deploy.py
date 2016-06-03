@@ -22,11 +22,15 @@
 ''' Deploys binary files from a zipped archives '''
 
 import logging
+import os
+import os.path
 import zipfile
 
 import nimp.command
 import nimp.environment
 import nimp.system
+
+MAGIC = nimp.system.try_import('magic')
 
 class Deploy(nimp.command.Command):
     ''' Deploys compiled binaries to local directory '''
@@ -43,7 +47,9 @@ class Deploy(nimp.command.Command):
         return True
 
     def is_available(self, env):
-        return True, ''
+        return (nimp.system.try_import('magic') is not None,
+                ('The magic python module was not found on your system and is '
+                 'required by this command.'))
 
     def run(self, env):
         mapper = nimp.system.map_files(env)
@@ -62,8 +68,19 @@ class Deploy(nimp.command.Command):
         zip_file = zipfile.ZipFile(fd)
         for name in zip_file.namelist():
             logging.info('Extracting %s to %s', name, env.root_dir)
-            dest = nimp.system.sanitize_path(env.format(env.root_dir))
-            zip_file.extract(name, dest)
+            zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
+
+            # If this is an executable or a script, make it +x
+            try:
+                filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
+                filetype = MAGIC.from_file(filename).decode('ascii')
+                if 'executable' in filetype or 'script' in filetype:
+                    log_notification('Making executable because of file type: {0}', filetype)
+                    file_stat = os.stat(filename)
+                    os.chmod(filename, file_stat.st_mode | stat.S_IEXEC)
+            #pylint: disable=broad-except
+            except Exception:
+                pass
         fd.close()
 
         return True
