@@ -77,7 +77,7 @@ def main():
 
         nimp.environment.Environment.argument_loaders += argument_loaders
 
-        return nimp.environment.Environment().run(sys.argv)
+        result = 0 if nimp.environment.Environment().run(sys.argv) else 1
 
     except KeyboardInterrupt:
         logging.info("Program interrupted. (Ctrl-C)")
@@ -95,6 +95,5 @@ def main():
     return result
 
 if __name__ == "__main__":
-    RET_CODE = 0 if main() else 1
-    sys.exit(RET_CODE)
+    sys.exit(main())
 
