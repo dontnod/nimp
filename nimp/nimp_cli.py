@@ -85,9 +85,9 @@ def main():
         result = 1
     except SystemExit:
         result = 1
-
-    if nimp.system.is_windows():
-        nimp_monitor.stop()
+    finally:
+        if nimp.system.is_windows():
+            nimp_monitor.stop()
 
     end = time.time()
     logging.info("Command took %f seconds.", end - start)
