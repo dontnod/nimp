@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import os
+import stat
 import zipfile
+
+from magic import from_file
 
 from nimp.commands._command import *
 from nimp.utilities.ue3 import *
@@ -59,6 +63,17 @@ class DeployCommand(Command):
         for name in z.namelist():
             log_notification('Extracting {0} to {1}', name, env.root_dir)
             z.extract(name, sanitize_path(env.format(env.root_dir)))
+
+            # If this is an executable or a script, make it +x
+            try:
+                filename = sanitize_path(os.path.join(env.format(env.root_dir), name))
+                filetype = from_file(filename).decode('ascii')
+                if 'executable' in filetype or 'script' in filetype:
+                    log_notification('Making executable because of file type: {0}', filetype)
+                    st = os.stat(filename)
+                    os.chmod(filename, st.st_mode | stat.S_IEXEC)
+            except:
+                pass
         fd.close()
 
         return True
