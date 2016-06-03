@@ -51,7 +51,8 @@ def mock_capture_process_output(*mock_commands):
     def _mock(directory, command, stdin = None, _ = True):
         assert directory is not None
         executable = command[0]
-        assert executable in mock_dict
+        if executable not in mock_dict:
+            return (0, '', '')
         return mock_dict[executable].get_result(command[1:], stdin = stdin)
 
     with unittest.mock.patch('nimp.system.capture_process_output') as mock:
@@ -59,6 +60,12 @@ def mock_capture_process_output(*mock_commands):
             mock_is_msys.return_value = False
             mock.side_effect = _mock
             yield mock
+
+@contextlib.contextmanager
+def mock_call_process():
+    ''' Mocks calls to popen '''
+    with unittest.mock.patch('nimp.system.call_process') as mock:
+        yield mock
 
 @contextlib.contextmanager
 def mock_filesystem():
@@ -75,3 +82,9 @@ def create_file( name, content):
     with open(name, 'w') as file_content:
         file_content.write(content)
 
+@contextlib.contextmanager
+def dry_run_mock():
+    ''' Mocks methods to not actually perform any operation '''
+    with mock_capture_process_output():
+        with mock_call_process():
+            yield

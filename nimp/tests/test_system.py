@@ -98,20 +98,22 @@ class _FileSetTests(unittest.TestCase):
 
     def test_glob_recursive(self):
         ''' Call to a file_mapper should recursive globs '''
-        files, src = _file_mapper()
-        src.glob("**/*")
-        self._check_files(files(), ('foo', 'foo'),
-                          ('qux.ext1', 'qux.ext1'),
-                          ('foo/bar', 'foo/bar'),
-                          ('foo/quux.ext1', 'foo/quux.ext1'),
-                          ('foo/bar/corge.ext1', 'foo/bar/corge.ext1'),
-                          ('foo/bar/corge.ext2', 'foo/bar/corge.ext2'))
+        with nimp.tests.utils.mock_filesystem():
+            files, src = _file_mapper()
+            src.glob("**/*")
+            self._check_files(files(), ('foo', 'foo'),
+                              ('foo/bar', 'foo/bar'),
+                              ('foo/bar/corge.ext1', 'foo/bar/corge.ext1'),
+                              ('foo/bar/corge.ext2', 'foo/bar/corge.ext2'),
+                              ('foo/quux.ext1', 'foo/quux.ext1'),
+                              ('qux.ext1', 'qux.ext1'))
 
     def test_glob_src(self):
         ''' Glob src should be handled '''
-        files, src = _file_mapper()
-        src.src('fo*').glob('quux.ext1')
-        self._check_files(files(), ('foo/quux.ext1', 'quux.ext1'))
+        with nimp.tests.utils.mock_filesystem():
+            files, src = _file_mapper()
+            src.src('fo*').glob('quux.ext1')
+            self._check_files(files(), ('foo/quux.ext1', 'quux.ext1'))
 
     def test_once(self):
         ''' Multiple calls to the same once mapper shouldn't append

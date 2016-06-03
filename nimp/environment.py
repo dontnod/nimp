@@ -44,6 +44,7 @@ class Environment:
         self.command = None
         self.root_dir = '.'
         self.environment = {}
+        self.dry_run = False
 
     def load_argument_parser(self):
         ''' Returns an argument parser for nimp and his subcommands '''
@@ -128,7 +129,11 @@ class Environment:
             logging.error('Error while loading environment parameters')
             return False
 
-        return self.command.run(self)
+        if self.dry_run:
+            with nimp.tests.utils.dry_run_mock():
+                return self.command.run(self)
+        else:
+            return self.command.run(self)
 
     def format(self, fmt, **override_kwargs):
         ''' Interpolates given string with config values & command line para-

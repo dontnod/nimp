@@ -30,6 +30,7 @@ import os
 import os.path
 import platform
 import re
+import pathlib
 import shutil
 import stat
 import struct
@@ -39,9 +40,8 @@ import threading
 import time
 import importlib
 
-import glob2
-
 import nimp.environment
+
 
 def is_windows():
     ''' Return True if the runtime platform is Windows, including MSYS '''
@@ -339,7 +339,8 @@ class FileMapper(object):
                 else:
                     glob_path = os.path.join(src, pattern)
 
-                for glob_source in glob2.glob(glob_path):
+                for glob_source in pathlib.Path('.').glob(glob_path):
+                    glob_source = '/'.join(glob_source.parts)
                     found = True
                     glob_source = str(glob_source)
                     # This is merely equivalent to os.path.relpath(src, self._source_path)

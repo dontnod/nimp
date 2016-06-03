@@ -57,8 +57,11 @@ def _clean_environment_variables():
         del os.environ[key]
         os.environ[key] = val
 
-def main():
+def main(argv = None):
     ''' Nimp entry point '''
+    if argv is None:
+        argv = sys.argv
+
     start = time.time()
 
     result = 0
@@ -77,7 +80,7 @@ def main():
 
         nimp.environment.Environment.argument_loaders += argument_loaders
 
-        result = 0 if nimp.environment.Environment().run(sys.argv) else 1
+        result = 0 if nimp.environment.Environment().run(argv) else 1
 
     except KeyboardInterrupt:
         logging.info("Program interrupted. (Ctrl-C)")

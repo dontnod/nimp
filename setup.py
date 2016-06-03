@@ -20,7 +20,6 @@ setup_info = dict(
     ],
 
     install_requires = [
-        'glob2',
     ],
 
     entry_points = {
