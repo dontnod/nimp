@@ -57,10 +57,6 @@ def _clean_environment_variables():
         del os.environ[key]
         os.environ[key] = val
 
-def _get_parser():
-    env = nimp.environment.Environment()
-    return env.load_argument_parser()
-
 def main():
     ''' Nimp entry point '''
     start = time.time()
