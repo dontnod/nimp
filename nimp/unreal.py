@@ -313,4 +313,10 @@ def _ue4_load_arguments(env):
             env.configuration = 'devel'
         env.ue4_build_configuration = _get_ue4_build_config(env.configuration)
 
+    if not hasattr(env, 'target') or env.target is None and env.is_ue4:
+        if env.platform in ['win64', 'mac', 'linux']:
+            env.target = 'editor'
+        else:
+            env.target = 'game'
+
     return True
