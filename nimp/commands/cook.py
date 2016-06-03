@@ -19,43 +19,39 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Build commands '''
+''' Environment check command '''
 
 import nimp.command
-import nimp.build
-import nimp.environment
-import nimp.unreal
 
-class UeBuild(nimp.command.Command):
-    ''' Compiles an unreal engine project '''
+class Cook(nimp.command.Command):
+    ''' Cooks game content '''
     def __init__(self):
-        super(UeBuild, self).__init__()
+        super(Cook, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'platform', 'configuration', 'target')
+        parser.add_argument('-c',
+                            '--configuration',
+                            help    = 'configurations to cook',
+                            metavar = '<configuration>',
+                            choices = ['test', 'shipping'])
 
-        parser.add_argument('--bootstrap',
-                            help = 'bootstrap or regenerate project files, if applicable',
-                            action = "store_true",
+        nimp.command.add_common_arguments('platform')
+
+        parser.add_argument('--incremental',
+                            help    = 'Perform an incremental cook',
+                            action  = "store_true",
                             default = False)
 
-        parser.add_argument('--disable-unity',
-                            help = 'disable unity build',
-                            action = "store_true",
-                            default = False)
-
-        parser.add_argument('--fastbuild',
-                            help = 'activate FASTBuild (implies --disable-unity for now)',
-                            action = 'store_true',
-                            default = False)
-
+        parser.add_argument('--noexpansion',
+                            help    = 'Do not expand map dependencies',
+                            default = False,
+                            action  = "store_true")
         return True
 
     def is_available(self, env):
         return nimp.unreal.is_unreal4_available(env)
 
     def run(self, env):
-        # Use distcc and/or ccache if available
-        nimp.build.install_distcc_and_ccache()
+        if env.is_ue4:
+            return nimp.unreal.cook(env)
 
-        return nimp.unreal.build(env)

@@ -26,7 +26,6 @@ import argparse
 import inspect
 import logging
 import os
-import re
 import sys
 import time
 
@@ -64,10 +63,10 @@ class Environment:
 
         command_list = sorted(command_list,
                               key = lambda command: command.__class__.__name__)
+        command_list = [it for it in command_list if not it.__class__.__name__.startswith('_')]
 
         prog_description = 'Script utilities to ship games, mostly Unreal Engine based ones.'
-        parser = argparse.ArgumentParser(description = prog_description,
-                                         formatter_class=argparse.RawDescriptionHelpFormatter)
+        parser = argparse.ArgumentParser(description = prog_description)
         log_group = parser.add_argument_group("Logging")
 
         log_group.add_argument('--log-format',
@@ -83,35 +82,7 @@ class Environment:
                                default=False,
                                action="store_true")
 
-        command_description = ('Commands marked with /!\\ are currently'
-                               ' unavailable. You can issue\n "nimp <command> -h'
-                               '" to know why <command> is currently disabled')
-        subparsers  = parser.add_subparsers(metavar = '<command>',
-                                            description = command_description )
-
-        for command_it in command_list:
-            command_class = type(command_it)
-            name_array = re.findall('[A-Z][^A-Z]*', command_class.__name__)
-            command_name = '-'.join([it.lower() for it in name_array])
-
-            enabled, reason = command_it.is_available(self)
-            description = ''
-            command_help = command_class.__doc__
-
-            if not enabled:
-                description = 'This command is currently disabled :\n' + reason
-                command_help = '/!\\ ' + command_help
-
-            command_parser = subparsers.add_parser(command_name,
-                                                   description = description,
-                                                   help = command_help)
-            if not command_it.configure_arguments(self, command_parser):
-                return False
-
-            command_to_run = command_it
-            if not enabled:
-                command_to_run = nimp.command.DisabledCommand(reason)
-            command_parser.set_defaults(command = command_to_run)
+        nimp.command.add_commands_subparser(command_list, parser, self)
 
         return parser
 

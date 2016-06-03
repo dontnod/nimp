@@ -40,8 +40,7 @@ class P4Command(nimp.command.Command):
         super(P4Command, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.p4.add_arguments(parser)
-        return True
+        pass
 
     def is_available(self, env):
         return _is_p4_available()
@@ -51,11 +50,25 @@ class P4Command(nimp.command.Command):
         ''' Executes the command '''
         pass
 
-class P4CleanWorkspace(P4Command):
-    ''' Reverts all files and deletes all pending changelists in current
-        workspace. '''
+class P4(nimp.command.CommandGroup):
+    ''' P4 related commands.
+        Multiline'''
     def __init__(self):
-        super(P4CleanWorkspace, self).__init__()
+        super(P4, self).__init__([_CleanWorkspace(),
+                                  _Submit(),
+                                  _Fileset()])
+
+    def configure_arguments(self, env, parser):
+        super(P4, self).configure_arguments(env, parser)
+        nimp.p4.add_arguments(parser)
+
+    def is_available(self, env):
+        return _is_p4_available()
+
+class _CleanWorkspace(P4Command):
+    ''' Reverts and deletes all pending changelists '''
+    def __init__(self):
+        super(_CleanWorkspace, self).__init__()
 
     def is_available(self, env):
         return _is_p4_available()
@@ -67,15 +80,15 @@ class P4CleanWorkspace(P4Command):
         p4 = nimp.p4.get_client(env)
         return p4.clean_workspace()
 
-class P4Fileset(P4Command):
+class _Fileset(P4Command):
     ''' Runs perforce commands operation on a fileset. '''
     def __init__(self):
-        super(P4Fileset, self).__init__()
+        super(_Fileset, self).__init__()
 
     def configure_arguments(self, env, parser):
         # These are not marked required=True because sometimes we don’t
         # really need them.
-        super(P4Fileset, self).configure_arguments(env, parser)
+        super(_Fileset, self).configure_arguments(env, parser)
 
         parser.add_argument('p4_operation',
                             help = 'Operation to perform on the fileset.',
@@ -113,15 +126,15 @@ class P4Fileset(P4Command):
                        'reconcile' : p4.reconcile }
         return operations[env.p4_operation](changelist, *files)
 
-class P4Submit(P4Command):
+class _Submit(P4Command):
     ''' Submits a changelist identified by it's description  '''
     def __init__(self):
-        super(P4Submit, self).__init__()
+        super(_Submit, self).__init__()
 
     def configure_arguments(self, env, parser):
         # These are not marked required=True because sometimes we don’t
         # really need them.
-        super(P4Submit, self).configure_arguments(env, parser)
+        super(_Submit, self).configure_arguments(env, parser)
 
         parser.add_argument('changelist_description',
                             metavar = '<description>',

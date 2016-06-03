@@ -35,7 +35,7 @@ import nimp.p4
 JIRA = nimp.system.try_import('jira')
 
 class SyncJira(nimp.command.Command):
-    '''Retreive all uassets  with metadata then create the corresponding jira tasks'''
+    ''' Creates jira tasks from assets metadata '''
     def __init__(self):
         '''__init__'''
         super(SyncJira, self).__init__()

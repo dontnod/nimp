@@ -29,16 +29,22 @@ import zipfile
 import nimp.command
 import nimp.torrent
 
-class PublishBinaries(nimp.command.Command):
+class Publish(nimp.command.CommandGroup):
+    ''' Publishing commands '''
+    def __init__(self):
+        super(Publish, self).__init__([_Binaries(),
+                                       _Symbols(),
+                                       _Version()])
+
+    def is_available(self, env):
+        return True, ''
+
+class _Binaries(nimp.command.Command):
     ''' Publishes binaries fileset '''
     def __init__(self):
-        super(PublishBinaries, self).__init__()
+        super(_Binaries, self).__init__()
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('-m', '--mode',
-                            help = 'operating mode (binaries, symbols, version)',
-                            metavar = '<mode>',
-                            choices = ['binaries', 'symbols', 'version'])
         nimp.command.add_common_arguments(parser,
                                           'platform',
                                           'configuration',
@@ -57,16 +63,12 @@ class PublishBinaries(nimp.command.Command):
         files_to_publish.to(env.binaries_tmp).load_set("binaries")
         return nimp.system.all_map(nimp.system.robocopy, files_to_publish())
 
-class PublishSymbols(nimp.command.Command):
+class _Symbols(nimp.command.Command):
     ''' Publishes build symbols to a symbol server '''
     def __init__(self):
-        super(PublishSymbols, self).__init__()
+        super(_Symbols, self).__init__()
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('-m', '--mode',
-                            help = 'operating mode (binaries, symbols, version)',
-                            metavar = '<mode>',
-                            choices = ['binaries', 'symbols', 'version'])
         nimp.command.add_common_arguments(parser,
                                           'platform',
                                           'configuration',
@@ -83,10 +85,10 @@ class PublishSymbols(nimp.command.Command):
         symbols_to_publish.load_set("symbols")
         return nimp.build.upload_symbols(env, symbols_to_publish())
 
-class PublishVersion(nimp.command.Command):
-    ''' Makes a torrent out of compiled binaries '''
+class _Version(nimp.command.Command):
+    ''' Creates a torrent out of compiled binaries '''
     def __init__(self):
-        super(PublishVersion, self).__init__()
+        super(_Version, self).__init__()
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser,

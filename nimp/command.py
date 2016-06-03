@@ -24,6 +24,7 @@
 import abc
 import argparse
 import logging
+import re
 
 class Command(metaclass=abc.ABCMeta):
     ''' Abstract class for commands '''
@@ -130,6 +131,54 @@ def load_arguments(env):
             env.configuration = ""
 
     return True
+
+def add_commands_subparser(commands, parser, env):
+    ''' Adds a list of commands to a subparser '''
+    command_description = ('Commands marked with /!\\ are currently unavailable.'
+                           ' You can issue "nimp <command> -h" to know why '
+                           '<command> is currently disabled')
+    subparsers  = parser.add_subparsers(metavar = '<command>',
+                                        description = command_description )
+
+    for command_it in commands:
+        command_class = type(command_it)
+        name_array = re.findall('[A-Z][^A-Z]*', command_class.__name__)
+        command_name = '-'.join([it.lower() for it in name_array])
+
+        enabled, reason = command_it.is_available(env)
+        description = ''
+        command_help = command_class.__doc__
+        command_help = command_help.split('\n')[0]
+
+        if not enabled:
+            description = 'This command is currently disabled :\n' + reason
+            command_help = '/!\\ ' + command_help
+
+        command_parser = subparsers.add_parser(command_name,
+                                               description = description,
+                                               help = command_help)
+        command_it.configure_arguments(env, command_parser)
+
+        command_to_run = command_it
+        if not enabled:
+            command_to_run = DisabledCommand(reason)
+        command_parser.set_defaults(command = command_to_run)
+
+class CommandGroup(Command):
+    ''' Creates subparser from commands '''
+    def __init__(self, sub_commands):
+        super(CommandGroup, self).__init__()
+        self._sub_commands = sub_commands
+
+    def configure_arguments(self, env, parser):
+        add_commands_subparser(self._sub_commands, parser, env)
+
+    @abc.abstractmethod
+    def is_available(self, env):
+        assert False
+
+    def run(self, env):
+        assert False
 
 class DisabledCommand(Command):
     ''' Command printing a help text to why it is currently disabled  '''

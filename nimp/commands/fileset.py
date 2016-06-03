@@ -26,10 +26,10 @@ import logging
 import nimp.command
 import nimp.system
 
-class ListFileSet(nimp.command.Command):
+class ListFileset(nimp.command.Command):
     ''' Loads a fileset and prints mapped files '''
     def __init__(self):
-        super(ListFileSet, self).__init__()
+        super(ListFileset, self).__init__()
 
     def configure_arguments(self, env, parser):
         parser.add_argument('fileset',

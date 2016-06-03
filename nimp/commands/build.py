@@ -19,33 +19,43 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Unreal ligthing related commands '''
-
-import logging
+''' Build commands '''
 
 import nimp.command
+import nimp.build
+import nimp.environment
+import nimp.unreal
 
-class UeLights(nimp.command.Command):
-    ''' Builds lighting of an Unreal Engine project '''
+class Build(nimp.command.Command):
+    ''' Builds a project binaries '''
     def __init__(self):
-        super(UeLights, self).__init__()
+        super(Build, self).__init__()
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('--context',
-                            help    = 'Map context to build',
-                            metavar = '<context>',
-                            required = True)
+        nimp.command.add_common_arguments(parser, 'platform', 'configuration', 'target')
+
+        parser.add_argument('--bootstrap',
+                            help = 'bootstrap or regenerate project files, if applicable',
+                            action = "store_true",
+                            default = False)
+
+        parser.add_argument('--disable-unity',
+                            help = 'disable unity build',
+                            action = "store_true",
+                            default = False)
+
+        parser.add_argument('--fastbuild',
+                            help = 'activate FASTBuild (implies --disable-unity for now)',
+                            action = 'store_true',
+                            default = False)
+
         return True
 
     def is_available(self, env):
         return nimp.unreal.is_unreal4_available(env)
 
     def run(self, env):
-        if not env.check_config('lighting_maps'):
-            return False
+        # Use distcc and/or ccache if available
+        nimp.build.install_distcc_and_ccache()
 
-        logging.error('Not implemented yet')
-        # map_list = env.lighting_maps[env.context]
-        # return nimp.unreal.lights(env, map_list)
-        return True
-
+        return nimp.unreal.build(env)

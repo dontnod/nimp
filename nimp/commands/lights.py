@@ -19,33 +19,33 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Unreal Engine commandlet execution command '''
+''' Unreal ligthing related commands '''
 
-import argparse
+import logging
 
 import nimp.command
-import nimp.unreal
 
-class UeCommandlet(nimp.command.Command):
-    ''' Executes an Unreal Engine Commandlet. '''
+class Lights(nimp.command.Command):
+    ''' Builds lighting of an Unreal Engine project '''
     def __init__(self):
-        super(UeCommandlet, self).__init__()
+        super(Lights, self).__init__()
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('commandlet',
-                            help    = 'Commandlet name',
-                            metavar = '<command>')
-
-        parser.add_argument('args',
-                            help    = 'Commandlet arguments',
-                            metavar = '<args>',
-                            nargs    = argparse.REMAINDER)
-
+        parser.add_argument('--context',
+                            help    = 'Map context to build',
+                            metavar = '<context>',
+                            required = True)
         return True
 
     def is_available(self, env):
         return nimp.unreal.is_unreal4_available(env)
 
     def run(self, env):
-        return nimp.unreal.commandlet(env, env.commandlet, *env.args)
+        if not env.check_config('lighting_maps'):
+            return False
+
+        logging.error('Not implemented yet')
+        # map_list = env.lighting_maps[env.context]
+        # return nimp.unreal.lights(env, map_list)
+        return True
 

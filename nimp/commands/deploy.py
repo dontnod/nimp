@@ -29,7 +29,7 @@ import nimp.environment
 import nimp.system
 
 class Deploy(nimp.command.Command):
-    ''' Deploys binaries from a zipped archive to local directory '''
+    ''' Deploys compiled binaries to local directory '''
     def __init__(self):
         super(Deploy, self).__init__()
 

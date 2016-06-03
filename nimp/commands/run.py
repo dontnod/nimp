@@ -25,8 +25,7 @@ import nimp.command
 import nimp.system
 
 class Run(nimp.command.Command):
-    ''' Runs a command, interpolating arguments and command name with
-        environment parameters '''
+    ''' Simply runs a command '''
     def __init__(self):
         super(Run, self).__init__()
 

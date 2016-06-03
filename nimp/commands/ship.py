@@ -25,10 +25,10 @@ import os
 import nimp.commands
 import nimp.environment
 
-class UeShip(nimp.command.Command):
+class Ship(nimp.command.Command):
     ''' Packages an unreal project for release '''
     def __init__(self):
-        super(UeShip, self).__init__()
+        super(Ship, self).__init__()
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'revision')

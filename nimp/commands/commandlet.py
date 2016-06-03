@@ -19,39 +19,33 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-''' Environment check command '''
+''' Unreal Engine commandlet execution command '''
+
+import argparse
 
 import nimp.command
+import nimp.unreal
 
-class UeCook(nimp.command.Command):
-    ''' Cooks content of an Unreal Engine project '''
+class Commandlet(nimp.command.Command):
+    ''' Runs an Unreal Engine Commandlet. '''
     def __init__(self):
-        super(UeCook, self).__init__()
+        super(Commandlet, self).__init__()
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('-c',
-                            '--configuration',
-                            help    = 'configurations to cook',
-                            metavar = '<configuration>',
-                            choices = ['test', 'shipping'])
+        parser.add_argument('commandlet',
+                            help    = 'Commandlet name',
+                            metavar = '<command>')
 
-        nimp.command.add_common_arguments('platform')
+        parser.add_argument('args',
+                            help    = 'Commandlet arguments',
+                            metavar = '<args>',
+                            nargs    = argparse.REMAINDER)
 
-        parser.add_argument('--incremental',
-                            help    = 'Perform an incremental cook',
-                            action  = "store_true",
-                            default = False)
-
-        parser.add_argument('--noexpansion',
-                            help    = 'Do not expand map dependencies',
-                            default = False,
-                            action  = "store_true")
         return True
 
     def is_available(self, env):
         return nimp.unreal.is_unreal4_available(env)
 
     def run(self, env):
-        if env.is_ue4:
-            return nimp.unreal.cook(env)
+        return nimp.unreal.commandlet(env, env.commandlet, *env.args)
 
