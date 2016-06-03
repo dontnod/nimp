@@ -49,7 +49,7 @@ class Environment:
         ''' Returns an argument parser for nimp and his subcommands '''
         # Import project-local commands from .nimp/commands
         cmd_dict = _get_instances(nimp.commands, nimp.command.Command)
-        command_list = cmd_dict.values()
+        command_list = list(cmd_dict.values())
         localpath = os.path.abspath(os.path.join(self.root_dir, '.nimp'))
         if localpath not in sys.path:
             sys.path.append(localpath)
@@ -57,7 +57,7 @@ class Environment:
             #pylint: disable=import-error
             import commands
             cmd_dict = _get_instances(commands, nimp.command.Command)
-            command_list += cmd_dict.values()
+            command_list += list(cmd_dict.values())
         except ImportError:
             pass
 

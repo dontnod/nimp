@@ -627,6 +627,8 @@ def get_latest_available_revision(env, version_directory_format, max_revision, *
 
 if is_windows():
     _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None
+    _KERNEL32.MapViewOfFile.restype = ctypes.c_void_p
+    _KERNEL32.UnmapViewOfFile.argtypes = [ctypes.c_void_p]
 
     INVALID_HANDLE_VALUE = -1 # Should be c_void_p(-1).value but doesn’t work
 
@@ -673,6 +675,7 @@ if is_windows():
                                                          0,
                                                          self._bufsize,
                                                          'DBWIN_BUFFER')
+
             self._buffer = _KERNEL32.MapViewOfFile(self._mapping,
                                                    FILE_MAP_READ,
                                                    0, 0,
@@ -709,7 +712,8 @@ if is_windows():
                                                           0,
                                                           INFINITE)
                 if result == WAIT_OBJECT_0:
-                    pid, = struct.unpack('I', ctypes.string_at(self._buffer, pid_length))
+                    pid_data = ctypes.string_at(self._buffer, pid_length)
+                    pid, = struct.unpack('I', pid_data)
                     data = ctypes.string_at(self._buffer + pid_length, data_length)
 
                     # Signal that the buffer is available
