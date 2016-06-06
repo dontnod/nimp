@@ -29,7 +29,6 @@ __all__ = [
     'prune',
     'publish',
     'run',
-    'sync_jira',
     'build',
     'commandlet',
     'cook',
