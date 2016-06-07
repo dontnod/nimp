@@ -57,12 +57,6 @@ def commandlet(env, command, *args):
         return False
     return _ue4_commandlet(env, command, *args)
 
-def cook(env):
-    ''' Cooks content of an Unreal Engine project '''
-    if not _check_for_unreal(env):
-        return False
-    return True
-
 def is_unreal4_available(env):
     ''' Returns a tuple containing unreal availability and a help text
         giving a reason of why it isn't if it's the case '''

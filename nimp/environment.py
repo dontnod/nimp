@@ -239,7 +239,11 @@ def _get_instances(module, instance_type):
         sub_modules_names = module_dict["__all__"]
         for sub_module_name_it in sub_modules_names:
             sub_module_complete_name = module_name + "." + sub_module_name_it
-            sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
+            try:
+                sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
+            except ImportError as exception:
+                logging.warning('Error importing local command %s : %s' % (sub_module_complete_name, exception))
+                continue
             sub_instances = _get_instances(sub_module_it, instance_type)
             for (klass, instance) in sub_instances.items():
                 result[klass] = instance

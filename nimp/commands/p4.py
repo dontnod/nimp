@@ -51,8 +51,7 @@ class P4Command(nimp.command.Command):
         pass
 
 class P4(nimp.command.CommandGroup):
-    ''' P4 related commands.
-        Multiline'''
+    ''' P4 related commands. '''
     def __init__(self):
         super(P4, self).__init__([_CleanWorkspace(),
                                   _Submit(),
@@ -102,7 +101,8 @@ class _Fileset(P4Command):
                             metavar = '<description>',
                             help = 'Changelist description format, will be interpolated with environment value.')
 
-        nimp.command.add_common_arguments(parser, 'free_parameters')
+        nimp.command.add_common_arguments(parser, 'platform', 'configuration',
+                                          'target', 'revision', 'free_parameters')
         return True
 
     def is_available(self, env):

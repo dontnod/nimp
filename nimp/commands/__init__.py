@@ -22,18 +22,14 @@
 ''' Nimp subcommands declarations '''
 
 __all__ = [
+    'build',
     'check',
+    'commandlet',
     'deploy',
     'fileset',
     'p4',
-    'prune',
     'publish',
     'run',
-    'build',
-    'commandlet',
-    'cook',
-    'lights',
     'ship',
-    'build',
 ]
 
