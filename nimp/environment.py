@@ -242,7 +242,7 @@ def _get_instances(module, instance_type):
             try:
                 sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
             except ImportError as exception:
-                logging.warning('Error importing local command %s : %s' % (sub_module_complete_name, exception))
+                logging.warning('Error importing local command %s : %s', sub_module_complete_name, exception)
                 continue
             sub_instances = _get_instances(sub_module_it, instance_type)
             for (klass, instance) in sub_instances.items():

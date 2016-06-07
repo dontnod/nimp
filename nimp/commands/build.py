@@ -21,6 +21,9 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Build commands '''
 
+import os
+import os.path
+
 import nimp.command
 import nimp.build
 import nimp.environment
@@ -52,10 +55,40 @@ class Build(nimp.command.Command):
         return True
 
     def is_available(self, env):
-        return nimp.unreal.is_unreal4_available(env)
+        available = env.is_ue4 or Build._find_vs_solution() is not None
+        return (available, ('Nothing found to build. Check that you are either'
+                            ' in an Unreal Engine project directory, or that'
+                            ' there is a .sln file in current directory'))
 
     def run(self, env):
         # Use distcc and/or ccache if available
-        nimp.build.install_distcc_and_ccache()
 
-        return nimp.unreal.build(env)
+        if env.is_ue4:
+            nimp.build.install_distcc_and_ccache()
+            return nimp.unreal.build(env)
+
+        sln = Build._find_vs_solution()
+        if sln is not None:
+            platform, config = 'Any CPU', 'Release'
+            if hasattr(env, 'platform') and env.platform is not None:
+                platform = env.platform
+            if hasattr(env, 'configuration') and env.configuration is not None:
+                config = env.configuration
+
+            sln = open(sln).read()
+            vsver = '11'
+            if '# Visual Studio 2012' in sln:
+                vsver = '11'
+            elif '# Visual Studio 2013' in sln:
+                vsver = '12'
+
+            return nimp.build.vsbuild(sln, platform, config, env.target, vsver, 'Build')
+
+        return False
+
+    @staticmethod
+    def _find_vs_solution():
+        for it in os.listdir('.'):
+            if os.path.splitext(it)[1] == '.sln' and os.path.isfile(it):
+                return it
+        return None

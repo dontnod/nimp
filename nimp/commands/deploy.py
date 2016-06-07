@@ -24,6 +24,7 @@
 import logging
 import os
 import os.path
+import stat
 import zipfile
 
 import nimp.command
@@ -75,7 +76,7 @@ class Deploy(nimp.command.Command):
                 filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
                 filetype = MAGIC.from_file(filename).decode('ascii')
                 if 'executable' in filetype or 'script' in filetype:
-                    log_notification('Making executable because of file type: {0}', filetype)
+                    logging.info('Making executable because of file type: %s', filetype)
                     file_stat = os.stat(filename)
                     os.chmod(filename, file_stat.st_mode | stat.S_IEXEC)
             #pylint: disable=broad-except
