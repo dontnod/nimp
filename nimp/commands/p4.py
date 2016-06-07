@@ -53,7 +53,7 @@ class P4Command(nimp.command.Command):
 class P4(nimp.command.CommandGroup):
     ''' P4 related commands. '''
     def __init__(self):
-        super(P4, self).__init__([_CleanWorkspace(),
+        super(P4, self).__init__([_RevertWorkspace(),
                                   _Submit(),
                                   _Fileset()])
 
@@ -64,10 +64,10 @@ class P4(nimp.command.CommandGroup):
     def is_available(self, env):
         return _is_p4_available()
 
-class _CleanWorkspace(P4Command):
+class _RevertWorkspace(P4Command):
     ''' Reverts and deletes all pending changelists '''
     def __init__(self):
-        super(_CleanWorkspace, self).__init__()
+        super(_RevertWorkspace, self).__init__()
 
     def is_available(self, env):
         return _is_p4_available()
