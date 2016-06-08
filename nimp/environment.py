@@ -23,9 +23,11 @@
 values and command line parameters set for this nimp execution '''
 
 import argparse
+import collections
 import inspect
 import logging
 import os
+import re
 import sys
 import time
 
@@ -70,12 +72,17 @@ class Environment:
         parser = argparse.ArgumentParser(description = prog_description)
         log_group = parser.add_argument_group("Logging")
 
-        log_group.add_argument('--log-format',
-                               help='Set log format',
-                               metavar = "FORMAT_NAME",
-                               type=str,
-                               default="standard",
-                               choices   = _LOG_FORMATS)
+        log_group.add_argument('-s',
+                               '--summary',
+                               help='Outputs an error/warning summary at end of command',
+                               action='store_true',
+                               default=None)
+
+        log_group.add_argument('--summary-out',
+                               help='Writes the warning/error summary to a file',
+                               metavar = "<file>",
+                               type=argparse.FileType('w'),
+                               default=None)
 
         log_group.add_argument('-v',
                                '--verbose',
@@ -114,8 +121,22 @@ class Environment:
 
         # Sets up logging
         log_level = logging.DEBUG if getattr(self, 'verbose')  else logging.INFO
-        logging.basicConfig(format=_LOG_FORMATS[getattr(self, 'log_format')],
+        # Need to do that because some log may already have been output
+        for handler in list(logging.root.handlers):
+            logging.root.removeHandler(handler)
+        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                             level=log_level)
+
+        summary_handler = _SummaryLoggingHandler(self)
+        logging.root.addHandler(summary_handler)
+
+        child_logger = logging.getLogger('child_processes')
+        child_logger.propagate = False
+        child_logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        child_logger.addHandler(handler)
+        child_logger.addHandler(summary_handler)
 
         if hasattr(self, 'environment'):
             for key, val in self.environment.items():
@@ -129,11 +150,18 @@ class Environment:
             logging.error('Error while loading environment parameters')
             return False
 
-        if self.dry_run:
-            with nimp.tests.utils.dry_run_mock():
-                return self.command.run(self)
-        else:
-            return self.command.run(self)
+        result = self.command.run(self)
+        #Fixme : return 0, 1 or 2 in every command
+        if result == 0 or result is True:
+            result = summary_handler.get_result()
+
+        if getattr(self, 'summary'):
+            summary_handler.write_summary(sys.stdout)
+
+        summary_out = getattr(self, 'summary_out')
+        if summary_out is not None:
+            summary_handler.write_summary(summary_out)
+        return 0
 
     def format(self, fmt, **override_kwargs):
         ''' Interpolates given string with config values & command line para-
@@ -258,4 +286,89 @@ def _get_instances(module, instance_type):
         if is_valid:
             result[attribute_value.__name__] = attribute_value()
     return result
+
+class _SummaryLoggingHandler(logging.Handler):
+    def __init__(self, env):
+        super(_SummaryLoggingHandler, self).__init__(logging.DEBUG)
+        self._error_patterns = []
+        self._warning_patterns = []
+        self._errors = {}
+        self._warnings = {}
+
+        error_patterns = ['.*: fatal error:.*' # GCC Errors
+                         ]
+
+        warning_patterns = ['.*: warning:.*' # GCC Warnings
+                           ]
+
+        if hasattr(env, 'error_patterns') and env.error_patterns is not None:
+            error_patterns.extend(env.error_patterns)
+
+        if hasattr(env, 'warning_patterns') and env.warning_patterns is not None:
+            warning_patterns.extend(env.warning_patterns)
+
+        for pattern in error_patterns:
+            self._error_patterns.append(re.compile(pattern))
+
+        for pattern in warning_patterns:
+            self._warning_patterns.append(re.compile(pattern))
+
+    def emit(self, record):
+        if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
+            _SummaryLoggingHandler._add_record(record.getMessage(),
+                                               self._errors)
+            return
+        if record.levelno == logging.WARNING:
+            _SummaryLoggingHandler._add_record(record.getMessage(),
+                                               self._warnings)
+            return
+
+        msg = record.getMessage()
+        for pattern in self._error_patterns:
+            if pattern.match(msg):
+                _SummaryLoggingHandler._add_record(msg, self._errors)
+                return
+
+        for pattern in self._warning_patterns:
+            if pattern.match(msg):
+                _SummaryLoggingHandler._add_record(msg, self._warnings)
+                return
+
+    def get_result(self):
+        ''' Returns the error code for this execution '''
+        if len(self._errors) != 0:
+            return 1
+
+        if len(self._warnings) != 0:
+            return 2
+
+        return 0
+
+    def write_summary(self, destination):
+        ''' Writes summary to destination '''
+        text = _SummaryLoggingHandler._get_summary('Errors', self._errors)
+        text += _SummaryLoggingHandler._get_summary('Warnings', self._warnings)
+
+        destination.write(text)
+
+    @staticmethod
+    def _add_record(msg, destination):
+        if msg not in destination:
+            destination[msg] = 0
+        destination[msg] = destination[msg] + 1
+
+    @staticmethod
+    def _get_summary(level_name, messages):
+        if len(messages) == 0:
+            return ''
+
+        total = sum(messages.values())
+        result = '\n%s %s (%s total) :\n' % (len(messages), level_name, total)
+        result += '*' * (len(result) - 2)
+        result += '\n'
+
+        for msg, count in messages.items():
+            result += '(%s x) : %s\n' % (count, msg)
+
+        return result
 

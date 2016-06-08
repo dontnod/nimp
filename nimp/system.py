@@ -151,11 +151,12 @@ def call_process(directory, command, heartbeat = 0):
                 last_time += heartbeat
             time.sleep(0.050)
 
-    def _output_worker(in_pipe, out_pipe):
+    def _output_worker(in_pipe):
         # FIXME: it would be better to use while process.poll() == None
         # here, but thread safety issues in Python < 3.4 prevent it.
         while process:
             try:
+                logger = logging.getLogger('child_processes')
                 for line in iter(in_pipe.readline, ''):
                     try:
                         line = line.decode("utf-8")
@@ -165,7 +166,7 @@ def call_process(directory, command, heartbeat = 0):
                     if line == '':
                         break
 
-                    out_pipe.write(line)
+                    logger.info(line.strip('\n'))
 
                 # Sleep for 10 milliseconds if there was no data,
                 # or we’ll hog the CPU.
@@ -174,10 +175,10 @@ def call_process(directory, command, heartbeat = 0):
             except ValueError:
                 return
 
-    log_thread_args = [ (process.stdout, sys.stdout),
-                        (process.stderr, sys.stderr) ]
+    log_thread_args = [ (process.stdout,),
+                        (process.stderr,)]
     if is_windows():
-        log_thread_args += [ (debug_pipe.output, sys.stdout) ]
+        log_thread_args += [ (debug_pipe.output,) ]
 
     worker_threads = [ threading.Thread(target = _output_worker, args = args) for args in log_thread_args ]
     # Send keepalive to stderr if requested
