@@ -84,6 +84,10 @@ class Environment:
                                type=argparse.FileType('w'),
                                default=None)
 
+        log_group.add_argument('--do-nothing',
+                               help='Just parses arguments and exits (used for CIS tests)',
+                               action='store_true')
+
         log_group.add_argument('-v',
                                '--verbose',
                                help='Enable verbose mode',
@@ -150,7 +154,7 @@ class Environment:
             logging.error('Error while loading environment parameters')
             return False
 
-        result = self.command.run(self)
+        result = self.command.run(self) if not getattr(self, 'do_nothing') else 0
         #Fixme : return 0, 1 or 2 in every command
         if result == 0 or result is True:
             result = summary_handler.get_result()
@@ -161,7 +165,8 @@ class Environment:
         summary_out = getattr(self, 'summary_out')
         if summary_out is not None:
             summary_handler.write_summary(summary_out)
-        return 0
+
+        return result
 
     def format(self, fmt, **override_kwargs):
         ''' Interpolates given string with config values & command line para-

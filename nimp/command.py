@@ -74,7 +74,7 @@ def add_common_arguments(parser, *arg_ids):
             parser.add_argument('free_parameters',
                                 help    = 'Add a key/value pair for use in string interpolation',
                                 metavar = '<key>=<value>',
-                                nargs   = argparse.REMAINDER,
+                                nargs   = '*',
                                 default = [])
         else:
             assert False, 'Unknown argument type'

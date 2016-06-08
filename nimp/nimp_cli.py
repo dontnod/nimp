@@ -80,7 +80,7 @@ def main(argv = None):
 
         nimp.environment.Environment.argument_loaders += argument_loaders
 
-        result = 0 if nimp.environment.Environment().run(argv) else 1
+        result = nimp.environment.Environment().run(argv)
 
     except KeyboardInterrupt:
         logging.info("Program interrupted. (Ctrl-C)")

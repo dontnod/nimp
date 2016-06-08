@@ -52,7 +52,7 @@ class FilesetCommand(nimp.command.Command):
     def run(self, env):
         files = nimp.system.map_files(env)
         files_chain = files
-        files_chain.load_set(env.fileset)
+        files_chain.files().load_set(env.fileset)
         return self._run_fileset(files_chain)
 
     @abc.abstractmethod

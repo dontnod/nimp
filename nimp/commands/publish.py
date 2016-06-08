@@ -94,7 +94,8 @@ class _Version(nimp.command.Command):
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser,
                                           'platform',
-                                          'target')
+                                          'target',
+                                          'revision')
 
         parser.add_argument('-l',
                             '--configurations',
