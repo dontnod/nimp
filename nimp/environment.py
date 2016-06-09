@@ -81,7 +81,7 @@ class Environment:
         log_group.add_argument('--summary-out',
                                help='Writes the warning/error summary to a file',
                                metavar = "<file>",
-                               type=argparse.FileType('w'),
+                               type=str,
                                default=None)
 
         log_group.add_argument('--do-nothing',
@@ -131,7 +131,7 @@ class Environment:
         logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                             level=log_level)
 
-        summary_handler = _SummaryLoggingHandler(self)
+        summary_handler = _SummaryLogHandler(self)
         logging.root.addHandler(summary_handler)
 
         child_logger = logging.getLogger('child_processes')
@@ -161,10 +161,6 @@ class Environment:
 
         if getattr(self, 'summary'):
             summary_handler.write_summary(sys.stdout)
-
-        summary_out = getattr(self, 'summary_out')
-        if summary_out is not None:
-            summary_handler.write_summary(summary_out)
 
         return result
 
@@ -292,13 +288,15 @@ def _get_instances(module, instance_type):
             result[attribute_value.__name__] = attribute_value()
     return result
 
-class _SummaryLoggingHandler(logging.Handler):
+class _SummaryLogHandler(logging.Handler):
     def __init__(self, env):
-        super(_SummaryLoggingHandler, self).__init__(logging.DEBUG)
+        super(_SummaryLogHandler, self).__init__(logging.DEBUG)
+        self._env = env
         self._error_patterns = []
         self._warning_patterns = []
         self._errors = {}
         self._warnings = {}
+        self._out = None
 
         error_patterns = ['.*: fatal error:.*' # GCC Errors
                          ]
@@ -320,23 +318,23 @@ class _SummaryLoggingHandler(logging.Handler):
 
     def emit(self, record):
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
-            _SummaryLoggingHandler._add_record(record.getMessage(),
+            self._add_record(record.getMessage(),
                                                self._errors)
             return
         if record.levelno == logging.WARNING:
-            _SummaryLoggingHandler._add_record(record.getMessage(),
+            self._add_record(record.getMessage(),
                                                self._warnings)
             return
 
         msg = record.getMessage()
         for pattern in self._error_patterns:
             if pattern.match(msg):
-                _SummaryLoggingHandler._add_record(msg, self._errors)
+                self._add_record(msg, self._errors)
                 return
 
         for pattern in self._warning_patterns:
             if pattern.match(msg):
-                _SummaryLoggingHandler._add_record(msg, self._warnings)
+                self._add_record(msg, self._warnings)
                 return
 
     def get_result(self):
@@ -351,16 +349,21 @@ class _SummaryLoggingHandler(logging.Handler):
 
     def write_summary(self, destination):
         ''' Writes summary to destination '''
-        text = _SummaryLoggingHandler._get_summary('Errors', self._errors)
-        text += _SummaryLoggingHandler._get_summary('Warnings', self._warnings)
+        text = _SummaryLogHandler._get_summary('Errors', self._errors)
+        text += _SummaryLogHandler._get_summary('Warnings', self._warnings)
 
         destination.write(text)
 
-    @staticmethod
-    def _add_record(msg, destination):
+    def _add_record(self, msg, destination):
         if msg not in destination:
             destination[msg] = 0
         destination[msg] = destination[msg] + 1
+        if self._env.summary_out is not None:
+            if self._out is None:
+                self._out = open(self._env.summary_out, 'w')
+            self.write_summary(self._out)
+            self._out.flush()
+
 
     @staticmethod
     def _get_summary(level_name, messages):

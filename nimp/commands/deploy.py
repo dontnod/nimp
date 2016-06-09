@@ -39,7 +39,7 @@ class Deploy(nimp.command.Command):
         super(Deploy, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'revision', 'target')
+        nimp.command.add_common_arguments(parser, 'revision', 'platform')
 
         parser.add_argument('--max-revision',
                             help = 'Find a revision <= to this',
