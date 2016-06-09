@@ -123,46 +123,25 @@ class Environment:
         for key, value in vars(arguments).items():
             setattr(self, key, value)
 
-        # Sets up logging
-        log_level = logging.DEBUG if getattr(self, 'verbose')  else logging.INFO
-        # Need to do that because some log may already have been output
-        for handler in list(logging.root.handlers):
-            logging.root.removeHandler(handler)
-        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
-                            level=log_level)
+        with _LogHandler(self) as log_handler:
+            if hasattr(self, 'environment'):
+                for key, val in self.environment.items():
+                    os.environ[key] = val
 
-        summary_handler = _SummaryLogHandler(self)
-        logging.root.addHandler(summary_handler)
+            if self.command is None:
+                logging.error("No command specified. Please try nimp -h to get a list of available commands")
+                return False
 
-        child_logger = logging.getLogger('child_processes')
-        child_logger.propagate = False
-        child_logger.setLevel(logging.INFO)
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(logging.Formatter('%(message)s'))
-        child_logger.addHandler(handler)
-        child_logger.addHandler(summary_handler)
+            if not self.load_arguments():
+                logging.error('Error while loading environment parameters')
+                return False
 
-        if hasattr(self, 'environment'):
-            for key, val in self.environment.items():
-                os.environ[key] = val
+            result = self.command.run(self) if not getattr(self, 'do_nothing') else 0
+            #Fixme : return 0, 1 or 2 in every command
+            if result == 0 or result is True:
+                result = log_handler.get_result()
 
-        if self.command is None:
-            logging.error("No command specified. Please try nimp -h to get a list of available commands")
-            return False
-
-        if not self.load_arguments():
-            logging.error('Error while loading environment parameters')
-            return False
-
-        result = self.command.run(self) if not getattr(self, 'do_nothing') else 0
-        #Fixme : return 0, 1 or 2 in every command
-        if result == 0 or result is True:
-            result = summary_handler.get_result()
-
-        if getattr(self, 'summary'):
-            summary_handler.write_summary(sys.stdout)
-
-        return result
+            return result
 
     def format(self, fmt, **override_kwargs):
         ''' Interpolates given string with config values & command line para-
@@ -288,9 +267,9 @@ def _get_instances(module, instance_type):
             result[attribute_value.__name__] = attribute_value()
     return result
 
-class _SummaryLogHandler(logging.Handler):
+class _LogHandler(logging.Handler):
     def __init__(self, env):
-        super(_SummaryLogHandler, self).__init__(logging.DEBUG)
+        super(_LogHandler, self).__init__(logging.DEBUG)
         self._env = env
         self._error_patterns = []
         self._warning_patterns = []
@@ -315,6 +294,35 @@ class _SummaryLogHandler(logging.Handler):
 
         for pattern in warning_patterns:
             self._warning_patterns.append(re.compile(pattern))
+
+    def __enter__(self):
+        # Sets up logging
+        log_level = logging.DEBUG if getattr(self._env, 'verbose')  else logging.INFO
+        # Need to do that because some log may already have been output
+        for handler in list(logging.root.handlers):
+            logging.root.removeHandler(handler)
+
+        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
+                            level=log_level)
+
+        logging.root.addHandler(self)
+
+        child_logger = logging.getLogger('child_processes')
+        child_logger.propagate = False
+        child_logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        child_logger.addHandler(handler)
+        child_logger.addHandler(self)
+        return self
+
+    def __exit__(self, ex_type, value, traceback):
+        if getattr(self._env, 'summary'):
+            self._write_summary(sys.stdout)
+
+        if self._env.summary_out is not None:
+            with open(self._env.summary_out, 'w') as out:
+                self._write_summary(out)
 
     def emit(self, record):
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
@@ -347,10 +355,10 @@ class _SummaryLogHandler(logging.Handler):
 
         return 0
 
-    def write_summary(self, destination):
+    def _write_summary(self, destination):
         ''' Writes summary to destination '''
-        text = _SummaryLogHandler._get_summary('Errors', self._errors)
-        text += _SummaryLogHandler._get_summary('Warnings', self._warnings)
+        text = _LogHandler._get_summary('Errors', self._errors)
+        text += _LogHandler._get_summary('Warnings', self._warnings)
 
         destination.write(text)
 
@@ -358,12 +366,6 @@ class _SummaryLogHandler(logging.Handler):
         if msg not in destination:
             destination[msg] = 0
         destination[msg] = destination[msg] + 1
-        if self._env.summary_out is not None:
-            if self._out is None:
-                self._out = open(self._env.summary_out, 'w')
-            self.write_summary(self._out)
-            self._out.flush()
-
 
     @staticmethod
     def _get_summary(level_name, messages):
