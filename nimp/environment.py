@@ -23,7 +23,6 @@
 values and command line parameters set for this nimp execution '''
 
 import argparse
-import collections
 import inspect
 import logging
 import os
@@ -326,23 +325,23 @@ class _LogHandler(logging.Handler):
 
     def emit(self, record):
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
-            self._add_record(record.getMessage(),
-                                               self._errors)
+            _LogHandler._add_record(record.getMessage(),
+                                    self._errors)
             return
         if record.levelno == logging.WARNING:
-            self._add_record(record.getMessage(),
-                                               self._warnings)
+            _LogHandler._add_record(record.getMessage(),
+                                    self._warnings)
             return
 
         msg = record.getMessage()
         for pattern in self._error_patterns:
             if pattern.match(msg):
-                self._add_record(msg, self._errors)
+                _LogHandler._add_record(msg, self._errors)
                 return
 
         for pattern in self._warning_patterns:
             if pattern.match(msg):
-                self._add_record(msg, self._warnings)
+                _LogHandler._add_record(msg, self._warnings)
                 return
 
     def get_result(self):
@@ -362,7 +361,8 @@ class _LogHandler(logging.Handler):
 
         destination.write(text)
 
-    def _add_record(self, msg, destination):
+    @staticmethod
+    def _add_record(msg, destination):
         if msg not in destination:
             destination[msg] = 0
         destination[msg] = destination[msg] + 1
@@ -373,7 +373,7 @@ class _LogHandler(logging.Handler):
             return ''
 
         total = sum(messages.values())
-        result = '\n%s %s (%s total) :\n' % (len(messages), level_name, total)
+        result = '\n%s Distinct %s (%s total) :\n' % (len(messages), level_name, total)
         result += '*' * (len(result) - 2)
         result += '\n'
 

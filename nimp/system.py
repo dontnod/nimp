@@ -35,7 +35,6 @@ import shutil
 import stat
 import struct
 import subprocess
-import sys
 import threading
 import time
 import importlib

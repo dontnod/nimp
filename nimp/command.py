@@ -22,7 +22,6 @@
 ''' Abstract class for commands '''
 
 import abc
-import argparse
 import logging
 import re
 
