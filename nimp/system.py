@@ -228,11 +228,12 @@ def robocopy(src, dest):
                 shutil.copy2(src, dest)
                 break
             except IOError as ex:
-                logging.error('I/O error %s : %s', ex.errno, ex.strerror)
+                logging.warning('I/O error %s : %s', ex.errno, ex.strerror)
                 max_retries -= 1
                 if max_retries <= 0:
+                    logging.error('Error copying %s to %s (%s : %s)', src, dest, ex.errno, ex.strerror)
                     return False
-                logging.error('Retrying after 10 seconds (%s retries left)', max_retries)
+                logging.warning('Retrying after 10 seconds (%s retries left)', max_retries)
                 time.sleep(10)
             except Exception as ex: #pylint: disable=broad-except
                 logging.error('Copy error: %s', ex)
@@ -357,7 +358,7 @@ class FileMapper(object):
 
                     yield (glob_source, new_dest)
                 if not found:
-                    logging.error("No match for “%s” in “%s” (aka. “%s”)", pattern, src, glob_path)
+                    logging.info("No match for “%s” in “%s” (aka. “%s”)", pattern, src, glob_path)
                     #raise Exception("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
         return self.append(_glob_mapper)
 

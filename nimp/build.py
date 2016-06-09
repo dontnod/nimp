@@ -82,7 +82,7 @@ def _find_devenv_path(vs_version):
     if not os.path.exists(devenv_path):
         return None
 
-    logging.error("Found Visual Studio at %s", devenv_path)
+    logging.info("Found Visual Studio at %s", devenv_path)
     return devenv_path
 
 def install_distcc_and_ccache():
@@ -94,7 +94,7 @@ def install_distcc_and_ccache():
 
     # Make sure distcc will be called if we use ccache
     if os.path.exists(distcc_dir):
-        logging.error('Found distcc, so setting CCACHE_PREFIX=distcc')
+        logging.info('Found distcc, so setting CCACHE_PREFIX=distcc')
         os.environ['CCACHE_PREFIX'] = 'distcc'
 
     # Add ccache to PATH if it exists, otherwise add distcc
@@ -104,7 +104,7 @@ def install_distcc_and_ccache():
         extra_path = distcc_dir
     else:
         return
-    logging.error('Adding %s to PATH', extra_path)
+    logging.info('Adding %s to PATH', extra_path)
     os.environ['PATH'] = extra_path + ':' + os.getenv('PATH')
 
     if os.path.exists(distcc_dir):
@@ -142,7 +142,6 @@ def upload_symbols(env, symbols):
                                       "/t", env.project, # Product name
                                       "/c", transaction_comment,
                                       "/v", env.revision ]) != 0:
-            logging.error("Oops! An error occurred while uploading symbols.")
             # Do not remove symbol index; keep it for later debugging
             return False
 
@@ -183,7 +182,6 @@ def delete_symbol_transaction(symsrv, transaction_id):
                  "/s",
                  symsrv]
     if nimp.system.call_process(".", command) != 0:
-        logging.error("Oops! An error occurred while deleting symbols.")
         return False
     return True
 
