@@ -285,12 +285,13 @@ def all_map(mapper, fileset):
 
 def load_arguments(env):
     '''Sets default platform '''
-    if is_windows():
-        env.platform = 'win64'
-    elif platform.system() == 'Darwin':
-        env.platform = 'mac'
-    else:
-        env.platform = 'linux'
+    if not hasattr(env, 'platform'):
+        if is_windows():
+            env.platform = 'win64'
+        elif platform.system() == 'Darwin':
+            env.platform = 'mac'
+        else:
+            env.platform = 'linux'
 
     return True
 
