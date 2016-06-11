@@ -110,7 +110,7 @@ def capture_process_output(directory, command, stdin = None, encoding = 'utf-8')
     ''' Returns a 3-uple containing return code, stdout and stderr of the given
         command '''
     command = _sanitize_command(command)
-    logging.debug("Running “%s” in “%s”", " ".join(command), os.path.abspath(directory))
+    logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(directory))
     process = subprocess.Popen(command,
                                cwd     = directory,
                                stdout  = subprocess.PIPE,
@@ -124,7 +124,7 @@ def capture_process_output(directory, command, stdin = None, encoding = 'utf-8')
 def call_process(directory, command, heartbeat = 0):
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
-    logging.debug("Running “%s” in “%s”", " ".join(command), os.path.abspath(directory))
+    logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(directory))
 
     if is_windows():
         _disable_win32_dialogs()
@@ -198,12 +198,6 @@ def call_process(directory, command, heartbeat = 0):
             debug_pipe.stop()
         for thread in worker_threads:
             thread.join()
-
-    if process_return == 0:
-        log = logging.debug
-    else:
-        log = logging.error
-    log("Program “%s” finished with exit code %s", command[0], process_return)
 
     return process_return
 
