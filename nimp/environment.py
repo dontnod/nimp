@@ -276,10 +276,10 @@ class _LogHandler(logging.Handler):
         self._warnings = {}
         self._out = None
 
-        error_patterns = ['.*: fatal error:.*' # GCC Errors
+        error_patterns = [r'.*: fatal error.*:.*' # GCC Errors
                          ]
 
-        warning_patterns = ['.*: warning:.*' # GCC Warnings
+        warning_patterns = [r'.*: warning.*:.*' # GCC Warnings
                            ]
 
         if hasattr(env, 'error_patterns') and env.error_patterns is not None:
