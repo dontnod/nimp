@@ -158,14 +158,17 @@ def call_process(directory, command, heartbeat = 0):
                 logger = logging.getLogger('child_processes')
                 for line in iter(in_pipe.readline, ''):
                     try:
-                        line = line.decode("utf-8")
+                        if is_windows():
+                            line = line.decode("cp850")
+                        else:
+                            line = line.decode("utf-8")
                     except UnicodeError:
                         line = line.decode("cp850")
 
                     if line == '':
                         break
 
-                    logger.info(line.strip('\n'))
+                    logger.info(line.strip('\n').strip('\r'))
 
                 # Sleep for 10 milliseconds if there was no data,
                 # or we’ll hog the CPU.
