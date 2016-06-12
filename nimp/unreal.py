@@ -117,7 +117,7 @@ def _ue4_build(env):
     solution = env.format(env.solution)
 
     # We’ll try to build all tools even in case of failure
-    result = True
+    success = True
 
     # List of tools to build
     tools = [ 'UnrealHeaderTool' ]
@@ -166,7 +166,7 @@ def _ue4_build(env):
                                   else 'Win64',
                                   'Development', vs_version, 'Build'):
             logging.error("Could not build %s", tool)
-            result = False
+            success = False
 
     # Build tools from other solutions or with other flags
     if env.target == 'tools':
@@ -174,19 +174,19 @@ def _ue4_build(env):
         if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln'),
                                   'Any CPU', 'Development', None, vs_version, 'Build'):
             logging.error("Could not build NetworkProfiler")
-            result = False
+            success = False
 
         if env.platform != 'mac':
             # This also builds AgentInterface.dll, needed by SwarmInterface.sln
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
                                       'Any CPU', 'Development', None, vs_version, 'Build'):
                 logging.error("Could not build UnrealSwarm")
-                result = False
+                success = False
 
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
                                       'Any CPU', 'Development', None, vs_version, 'Build'):
                 logging.error("Could not build SwarmInterface")
-                result = False
+                success = False
 
         # These tools seem to be Windows only for now
         if env.platform == 'win64':
@@ -194,22 +194,22 @@ def _ue4_build(env):
             if not _ue4_build_project(env, solution, 'BootstrapPackagedGame',
                                       'Win64', 'Shipping', vs_version, 'Build'):
                 logging.error("Could not build BootstrapPackagedGame")
-                result = False
+                success = False
 
             tmp = env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
             if os.path.exists(nimp.system.sanitize_path(tmp)):
                 if not nimp.build.vsbuild(tmp, 'x64', 'Development', None, '11', 'Build') \
                    and not nimp.build.vsbuild(tmp, 'x64', 'Development', None, '14', 'Build'):
                     logging.error("Could not build XboxOnePackageNameUtil")
-                    result = False
+                    success = False
 
-    if not result:
-        return result
+    if not success:
+        return success
 
     if env.target == 'game':
         if not _ue4_build_project(env, solution, env.game, env.ue4_build_platform,
                                   env.ue4_build_configuration, vs_version, 'Build'):
-            result = False
+            success = False
 
     if env.target == 'editor':
         if env.platform in ['linux', 'mac']:
@@ -221,11 +221,11 @@ def _ue4_build(env):
 
         if not _ue4_build_project(env, solution, project, env.ue4_build_platform,
                                   config, vs_version, 'Build'):
-            result = False
+            success = False
 
-    nimp.environment.execute_hook('after_ue4_build', env, result)
+    nimp.environment.execute_hook('after_ue4_build', env, success)
 
-    return result
+    return success
 
 def _ue4_commandlet(env, command, *args):
     ''' Runs an UE4 commandlet '''
