@@ -335,9 +335,17 @@ class P4:
 
     def _run(self, *args, stdin = None):
         command = self._get_p4_command(*args)
-        result, output, error = nimp.system.capture_process_output('.', command, stdin, 'cp437')
+
+        retry = 0
+        while retry <= 5:
+            result, output, error = nimp.system.capture_process_output('.', command, stdin, 'cp437')
+            if 'Operation took too long ' in error:
+                retry += 1
+                continue
+
         if result != 0 or error != '':
             return None
+
         return output
 
     def _parse_command_output(self, command, *patterns, stdin = None):
