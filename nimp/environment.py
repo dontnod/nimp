@@ -46,6 +46,7 @@ class Environment:
         self.root_dir = '.'
         self.environment = {}
         self.dry_run = False
+        self.summary = None
 
     def load_argument_parser(self):
         ''' Returns an argument parser for nimp and his subcommands '''
@@ -73,13 +74,8 @@ class Environment:
 
         log_group.add_argument('-s',
                                '--summary',
-                               help='Outputs an error/warning summary at end of command',
-                               action='store_true',
-                               default=None)
-
-        log_group.add_argument('--summary-out',
-                               help='Writes the warning/error summary to a file',
-                               metavar = "<file>",
+                               metavar='<file>',
+                               help='Enables summary mode (c.f. documentation)',
                                type=str,
                                default=None)
 
@@ -107,13 +103,17 @@ class Environment:
 
     def run(self, argv):
         ''' Runs nimp with argv and argc '''
+        exit_success = 0
+        exit_error = 1
+        exit_warnings = 2
+
         if not self._load_nimp_conf():
-            return False
+            return exit_error
 
         for config_loader in Environment.config_loaders:
             if not config_loader(self):
                 logging.error('Error while loading nimp config')
-                return False
+                return exit_error
 
         # Loads argument parser, parses argv with it and adds command line para
         # meters as properties of the environment
@@ -129,18 +129,26 @@ class Environment:
 
             if self.command is None:
                 logging.error("No command specified. Please try nimp -h to get a list of available commands")
-                return False
+                return exit_error
 
             if not self.load_arguments():
                 logging.error('Error while loading environment parameters')
-                return False
+                return exit_error
 
-            result = self.command.run(self) if not getattr(self, 'do_nothing') else 0
-            #Fixme : return 0, 1 or 2 in every command
-            if result == 0 or result is True:
-                result = log_handler.get_result()
+            success = self.command.run(self) if not getattr(self, 'do_nothing') else True
 
-            return result
+            if not success:
+                return exit_error
+
+            # If command succeed and summary mode is on, we check for captured
+            # errors or warnings
+            if self.summary is not None:
+                if log_handler.has_errors():
+                    return exit_error
+                elif log_handler.has_warnings():
+                    return exit_warnings
+
+            return exit_success
 
     def format(self, fmt, **override_kwargs):
         ''' Interpolates given string with config values & command line para-
@@ -297,31 +305,47 @@ class _LogHandler(logging.Handler):
     def __enter__(self):
         # Sets up logging
         log_level = logging.DEBUG if getattr(self._env, 'verbose')  else logging.INFO
+
+        root_logger = logging.root
+
         # Need to do that because some log may already have been output
         for handler in list(logging.root.handlers):
-            logging.root.removeHandler(handler)
+            root_logger.removeHandler(handler)
 
         logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
                             level=log_level)
 
-        logging.root.addHandler(self)
-
-        child_logger = logging.getLogger('child_processes')
-        child_logger.propagate = False
-        child_logger.setLevel(logging.INFO)
+        child_processes_logger = logging.getLogger('child_processes')
+        child_processes_logger.propagate = False
+        child_processes_logger.setLevel(logging.INFO)
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(logging.Formatter('%(message)s'))
-        child_logger.addHandler(handler)
-        child_logger.addHandler(self)
+        child_processes_logger.addHandler(handler)
+
+        # Enables warnings and errors recording
+        if self._env.summary is not None:
+            root_logger.addHandler(self)
+            child_processes_logger.addHandler(self)
+
         return self
 
     def __exit__(self, ex_type, value, traceback):
-        if getattr(self._env, 'summary'):
-            self._write_summary(sys.stdout)
+        if self._env.summary is not None:
+            summary = self._env.summary
+            # So we can print summary to stdout
+            if summary.lower() == 'stdout':
+                self._write_summary(sys.stdout)
+            else:
+                with open(summary, 'w') as out:
+                    self._write_summary(out)
 
-        if self._env.summary_out is not None:
-            with open(self._env.summary_out, 'w') as out:
-                self._write_summary(out)
+    def has_errors(self):
+        ''' Returns true if errors were emmited durring program execution '''
+        return len(self._errors) != 0
+
+    def has_warnings(self):
+        ''' Returns true if warnings were emmited durring program execution '''
+        return len(self._warnings) != 0
 
     def emit(self, record):
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
@@ -343,16 +367,6 @@ class _LogHandler(logging.Handler):
             if pattern.match(msg):
                 _LogHandler._add_record(msg, self._warnings)
                 return
-
-    def get_result(self):
-        ''' Returns the error code for this execution '''
-        if len(self._errors) != 0:
-            return 1
-
-        if len(self._warnings) != 0:
-            return 2
-
-        return 0
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''

@@ -132,12 +132,17 @@ def call_process(directory, command, heartbeat = 0):
 
     # The bufsize = 1 is important; if we don’t bufferise the
     # output, we’re going to make the callee lag a lot.
-    process = subprocess.Popen(command,
-                               cwd     = directory,
-                               stdout  = subprocess.PIPE,
-                               stderr  = subprocess.PIPE,
-                               stdin   = None,
-                               bufsize = 1)
+    try:
+        process = subprocess.Popen(command,
+                                   cwd     = directory,
+                                   stdout  = subprocess.PIPE,
+                                   stderr  = subprocess.PIPE,
+                                   stdin   = None,
+                                   bufsize = 1)
+    except FileNotFoundError as ex:
+        logging.error(ex)
+        return 1
+
     if is_windows():
         debug_pipe.attach(process.pid)
         debug_pipe.start()
