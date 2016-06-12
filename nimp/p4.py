@@ -246,7 +246,8 @@ class P4:
         workspace = self.get_workspace()
         assert isinstance(workspace, str)
         for changelist, in self._parse_command_output(["changes", "-c", workspace, "-s", "pending"], r"\.\.\. change (\d+)"):
-            yield changelist
+            if changelist is not None:
+                yield changelist
 
     def get_user(self):
         ''' Returns current perforce user '''
@@ -254,7 +255,10 @@ class P4:
 
     def get_workspace(self):
         ''' Returns current workspace '''
-        return next(self._parse_command_output(["info"], r"^\.\.\. clientName (.*)$"))[0]
+        workspace =  next(self._parse_command_output(["info"], r"^\.\.\. clientName (.*)$"))[0]
+        if workspace == '*unknown*':
+            return None
+        return workspace
 
     def is_file_versioned(self, file_path):
         ''' Checks if a file is known by the source control '''
@@ -339,29 +343,31 @@ class P4:
         retry = 0
         while retry <= 5:
             result, output, error = nimp.system.capture_process_output('.', command, stdin, 'cp437')
-            if 'Operation took too long ' in error:
-                retry += 1
-                continue
+            if result != 0 or error != '':
+                if 'Operation took too long ' in error:
+                    retry += 1
+                    continue
 
-        if result != 0 or error != '':
-            return None
+                logging.info('p4 command failed : %s', error)
+                return None
 
-        return output
+            return output
 
     def _parse_command_output(self, command, *patterns, stdin = None):
         output = self._run(*command, stdin = stdin)
 
-        assert output is not None
+        if output is not None:
+            match_list = []
 
-        match_list = []
+            for pattern in patterns:
+                matches = list(re.finditer(pattern, output, re.MULTILINE))
+                result = []
+                for match in matches:
+                    match_string = match.group(1)
+                    match_string = match_string.strip()
+                    result.append(match_string)
+                match_list.append(result)
 
-        for pattern in patterns:
-            matches = list(re.finditer(pattern, output, re.MULTILINE))
-            result = []
-            for match in matches:
-                match_string = match.group(1)
-                match_string = match_string.strip()
-                result.append(match_string)
-            match_list.append(result)
+            return zip(*match_list)
 
-        return zip(*match_list)
+        return [(None,)]
