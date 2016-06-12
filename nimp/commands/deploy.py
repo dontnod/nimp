@@ -48,6 +48,9 @@ class Deploy(nimp.command.Command):
         return True
 
     def is_available(self, env):
+        if nimp.system.is_windows():
+            return True, ''
+
         return (nimp.system.try_import('magic') is not None,
                 ('The magic python module was not found on your system and is '
                  'required by this command.'))
@@ -73,12 +76,13 @@ class Deploy(nimp.command.Command):
 
             # If this is an executable or a script, make it +x
             try:
-                filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
-                filetype = MAGIC.from_file(filename).decode('ascii')
-                if 'executable' in filetype or 'script' in filetype:
-                    logging.info('Making executable because of file type: %s', filetype)
-                    file_stat = os.stat(filename)
-                    os.chmod(filename, file_stat.st_mode | stat.S_IEXEC)
+                if MAGIC is not None:
+                    filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
+                    filetype = MAGIC.from_file(filename).decode('ascii')
+                    if 'executable' in filetype or 'script' in filetype:
+                        logging.info('Making executable because of file type: %s', filetype)
+                        file_stat = os.stat(filename)
+                        os.chmod(filename, file_stat.st_mode | stat.S_IEXEC)
             #pylint: disable=broad-except
             except Exception:
                 pass
