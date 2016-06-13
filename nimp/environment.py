@@ -294,6 +294,7 @@ class _LogHandler(logging.Handler):
             r'[\/\w\-. ]+\(\d+,\d+\): (fatal ?)error : .*',
             r'[\/\w\-. ]+ : error : [A-Z0-9]+: reference to undefined symbol.*',
             r'^duplicate symbol \w+ in:',
+            r'clang: error: no such file or directory:.*',
 
             #.NET / Mono
             r'[\/\w\-. ]+\(\d+,\d+\) : error [A-Z\d]+: .*',
