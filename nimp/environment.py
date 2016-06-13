@@ -293,6 +293,7 @@ class _LogHandler(logging.Handler):
             # Clang
             r'[\/\w\-. ]+\(\d+,\d+\): (fatal ?)error : .*',
             r'[\/\w\-. ]+ : error : [A-Z0-9]+: reference to undefined symbol.*',
+            r'^duplicate symbol \w+ in:',
 
             #.NET / Mono
             r'[\/\w\-. ]+\(\d+,\d+\) : error [A-Z\d]+: .*',
