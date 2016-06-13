@@ -287,33 +287,32 @@ class _LogHandler(logging.Handler):
 
         error_patterns = [
             #GCC
-            r'[\/\w\-. ]+:\d+:\d+: (fatal )?error: .*', #GCC errors
-            r'[\/\w\-. ]+:\d+: undefined reference to .*', #GCC linker error
+            r'[\/\w\W\-. ]+:\d+:\d+: (fatal )?error: .*', #GCC errors
+            r'[\/\w\W\-. ]+:\d+: undefined reference to .*', #GCC linker error
 
             # Clang
-            r'[\/\w\-. ]+\(\d+,\d+\): (fatal ?)error : .*',
-            r'[\/\w\-. ]+ : error : [A-Z0-9]+: reference to undefined symbol.*',
+            r'[\/\w\W\-. ]+\(\d+,\d+\): (fatal ?)error : .*',
+            r'[\/\w\W\-. ]+ : error : [A-Z0-9]+: reference to undefined symbol.*',
             r'^duplicate symbol \w+ in:',
             r'clang: error: no such file or directory:.*',
 
             #.NET / Mono
-            r'[\/\w\-. ]+\(\d+,\d+\) : error [A-Z\d]+: .*',
+            r'[\/\w\W\-. ]+\(\d+,\d+\) : error [A-Z\d]+: .*',
 
             #MSVC
-            r'[\/\w\-. ]+\(\d+\): error [A-Z\d]+: .*',
-            r'[\/\w\-. ]+\ : error [A-Z\d]+: unresolved external symbol .*',
+            r'[\/\w\W\-. ]+\(\d+\): error [A-Z\d]+: .*',
+            r'[\/\w\W\-. ]+\ : error [A-Z\d]+: unresolved external symbol .*',
         ]
 
         warning_patterns = [
-            r'[\/\w\-. ]+\(\d+,\d+\) : warning [A-Z\d]+: .*', # MSVC .NET / Mono
-            r'[\/\w\-. ]+:\d+:\d+: warning: .*', # GCC
-            r'[\/\w\-. ]+\(\d+,\d+\): warning : .*', # Clang
-            r'[\/\w\-. ]+\(\d+\): warning [A-Z\d]+: .*' # MSVC
+            r'[\/\w\W\-.: ]+\(\d+,\d+\) : warning [A-Z\d]+: .*', # MSVC .NET / Mono
+            r'[\/\w\W\-.: ]+:\d+:\d+: warning: .*', # GCC
+            r'[\/\w\W\-.: ]+\(\d+,\d+\): warning : .*', # Clang
+            r'[\/\w\W\-.: ]+\(\d+\): warning [A-Z\d]+: .*' # MSVC
         ]
 
         ignore_patterns = [
         ]
-
 
         self._compile_patterns(ignore_patterns,
                                'ignore_patterns',
@@ -403,15 +402,21 @@ class _LogHandler(logging.Handler):
                                     self._warnings)
             return
 
-        for pattern in self._error_patterns:
-            if pattern.match(msg):
-                _LogHandler._add_record(msg, self._errors)
+        _LogHandler._match_message(self._error_patterns, msg, self._errors)
+        _LogHandler._match_message(self._warning_patterns, msg, self._warnings)
+
+    @staticmethod
+    def _match_message(patterns, msg, destination):
+        for pattern in patterns:
+            match = pattern.match(msg)
+            if match is not None:
+                group_dict = match.groupdict()
+                if 'message' in group_dict:
+                    msg = group_dict['message']
+
+                _LogHandler._add_record(msg, destination)
                 return
 
-        for pattern in self._warning_patterns:
-            if pattern.match(msg):
-                _LogHandler._add_record(msg, self._warnings)
-                return
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
