@@ -278,29 +278,67 @@ class _LogHandler(logging.Handler):
     def __init__(self, env):
         super(_LogHandler, self).__init__(logging.DEBUG)
         self._env = env
+        self._ignore_patterns = []
         self._error_patterns = []
         self._warning_patterns = []
         self._errors = {}
         self._warnings = {}
         self._out = None
 
-        error_patterns = [r'.*: fatal error.*:.*' # GCC Errors
-                         ]
+        error_patterns = [
+            #GCC
+            r'[\/\w\-. ]+:\d+:\d+: (fatal )?error: .*', #GCC errors
+            r'[\/\w\-. ]+:\d+: undefined reference to .*', #GCC linker error
 
-        warning_patterns = [r'.*: warning.*:.*' # GCC Warnings
-                           ]
+            # Clang
+            r'[\/\w\-. ]+\(\d+,\d+\): (fatal ?)error : .*',
+            r'[\/\w\-. ]+ : error : [A-Z0-9]+: reference to undefined symbol.*',
 
-        if hasattr(env, 'error_patterns') and env.error_patterns is not None:
-            error_patterns.extend(env.error_patterns)
+            #.NET / Mono
+            r'[\/\w\-. ]+\(\d+,\d+\) : error [A-Z\d]+: .*',
 
-        if hasattr(env, 'warning_patterns') and env.warning_patterns is not None:
-            warning_patterns.extend(env.warning_patterns)
+            #MSVC
+            r'[\/\w\-. ]+\(\d+\): error [A-Z\d]+: .*',
+            r'[\/\w\-. ]+\ : error [A-Z\d]+: unresolved external symbol .*',
+        ]
 
-        for pattern in error_patterns:
-            self._error_patterns.append(re.compile(pattern))
+        warning_patterns = [
+            r'[\/\w\-. ]+\(\d+,\d+\) : warning [A-Z\d]+: .*', # MSVC .NET / Mono
+            r'[\/\w\-. ]+:\d+:\d+: warning: .*', # GCC
+            r'[\/\w\-. ]+\(\d+,\d+\): warning : .*', # Clang
+            r'[\/\w\-. ]+\(\d+\): warning [A-Z\d]+: .*' # MSVC
+        ]
 
-        for pattern in warning_patterns:
-            self._warning_patterns.append(re.compile(pattern))
+        ignore_patterns = [
+        ]
+
+
+        self._compile_patterns(ignore_patterns,
+                               'ignore_patterns',
+                               self._ignore_patterns)
+
+        self._compile_patterns(error_patterns,
+                               'error_patterns',
+                               self._error_patterns)
+
+        self._compile_patterns(warning_patterns,
+                               'warning_patterns',
+                               self._warning_patterns)
+
+    def _compile_patterns(self, patterns, key, destination):
+        config_key = 'summary_%s' % key
+        if hasattr(self._env, config_key):
+            additionnal_patterns = getattr(self._env, config_key)
+            if additionnal_patterns is not None:
+                patterns.extend(additionnal_patterns)
+
+        for pattern in patterns:
+            try:
+                destination.append(re.compile(pattern))
+            #pylint: disable=broad-except
+            except Exception as ex:
+                logging.error('Error while compiling pattern %s : %s',
+                              pattern, ex)
 
     def __enter__(self):
         # Sets up logging
@@ -348,6 +386,12 @@ class _LogHandler(logging.Handler):
         return len(self._warnings) != 0
 
     def emit(self, record):
+        msg = record.getMessage()
+
+        for pattern in self._ignore_patterns:
+            if pattern.match(msg):
+                return
+
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
             _LogHandler._add_record(record.getMessage(),
                                     self._errors)
@@ -357,7 +401,6 @@ class _LogHandler(logging.Handler):
                                     self._warnings)
             return
 
-        msg = record.getMessage()
         for pattern in self._error_patterns:
             if pattern.match(msg):
                 _LogHandler._add_record(msg, self._errors)
