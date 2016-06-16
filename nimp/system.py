@@ -250,9 +250,9 @@ def force_delete(path):
 
     path = sanitize_path(path)
 
-    if os.path.exists(path):
+    if os.path.isfile(path):
         os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-    os.remove(path)
+        os.remove(path)
 
 
 def _sanitize_command(command):
