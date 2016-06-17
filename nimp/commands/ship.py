@@ -57,7 +57,7 @@ class Ship(nimp.command.Command):
                                       '-cook', '-stage', '-archive',
                                       '-archivedirectory=%s' % nimp.system.sanitize_path(loose_dir),
                                       '-package',
-                                      '-clientconfig=%s' % env.configuration,
+                                      '-clientconfig=%s' % env.ue4_build_configuration,
                                       '-ue4exe=UE4Editor-Cmd.exe',
                                       '-pak',
                                       '-prereqs',
