@@ -7,22 +7,35 @@ integration (compiling, publishing binaries & packaged versions...)
 
 ::
 
-    nimp [-h] [-s] [--summary-out <file>] [--do-nothing] [-v] <command> ...
-
     Script utilities to ship games, mostly Unreal Engine based ones.
 
     optional arguments:
         -h, --help            show this help message and exit
 
     Logging:
-        -s, --summary         Outputs an error/warning summary at end of command
-        --summary-out <file>  Writes the warning/error summary to a file
+        -s <file>, --summary <file>
+                              Enables summary mode (c.f. documentation)
         --do-nothing          Just parses arguments and exits (used for CIS tests)
         -v, --verbose         Enable verbose mode
 
-Warnings and errors are mathed in the child processes output via a set of
-regular expressions that can be tweaked per-project in the nimp config file (see
-the :ref:`config_warning_error_patterns` documentation for further details).
+
+--do-nothing allows to check that the argument are correct and quit, wich allows
+us to test our CIS jobs sequencing.
+
+Summary mode
+============
+The -s options enables summary mode. When it's enabled, output from nimp and
+it's child processes are matched against regular expressions, then grouped and 
+summarized at the end of the execution. The summary will be writen to the file
+given as argument of --summary, or to stdout if the argument is "stdout".  The
+return code of nimp will be 1 if an error was matched even if the runned command
+returned success. If some if some warnings were matched, nimp will return 2.
+If the command fails and no error was matched, nimp will still return 1.
+
+Some error and warning patterns are directly hard-coded in nimp (gcc and MSVC
+errors and warning patterns, for example) but you can tweak them per-project in
+the nimp.conf file via the *error_patterns*, *warning_patterns*,
+*ignore_patterns* configuration values (TODO : add links).
 
 Available commands
 ==================
