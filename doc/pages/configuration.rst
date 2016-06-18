@@ -15,3 +15,11 @@ configuration value is documented on the page of the said command, in the
 Global Configuration Values
 ---------------------------
 
+Project commands
+================
+
+Filesets
+========
+
+Hooks
+=====
