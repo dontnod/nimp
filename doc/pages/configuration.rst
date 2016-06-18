@@ -14,6 +14,7 @@ configuration value is documented on the page of the said command, in the
 
 Global Configuration Values
 ---------------------------
+* *project_type* : Sets this project's type. For now, only 'UE4' is supported.
 
 Project commands
 ================
