@@ -67,8 +67,19 @@ class P4Mock(nimp.tests.utils.MockCommand):
             changelist.files[filename] = (new_rev, None)
         return cl_number
 
-    def get_result(self, command, stdin = None):
+    def get_result(self, command, stdin=None):
         args = self._parser.parse_args(command)
+
+        if args.x not in ['-', None]:
+            assert False, 'Wrong -x parameter format'
+
+        should_have_stdin = args.x == '-'
+        should_have_stdin = should_have_stdin or (hasattr(args, 'i') and args.i)
+
+        if should_have_stdin and stdin is None:
+            assert False, '-x or -i flag provided but no stdin'
+        elif not should_have_stdin and stdin is not None:
+            assert False, 'stdin provided but no -x or -i flag'
         return args.command_to_run(args, stdin)
 
     def _init_args(self, parser):
