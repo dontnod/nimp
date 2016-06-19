@@ -177,7 +177,8 @@ class P4:
             files_to_edit.append(file_name)
 
         edit_input = '\n'.join(files_to_edit)
-        output = self._run("edit", "-c", cl_number, stdin = edit_input)
+        output = self._run('-x', '-', "edit", "-c",
+                           cl_number, stdin = edit_input)
         return output is not None
 
     def reconcile(self, cl_number, *files):
@@ -190,9 +191,9 @@ class P4:
 
         if files_to_delete:
             delete_input = '\n'.join(files_to_delete)
-            if self._run("revert", stdin = delete_input) is None:
+            if self._run('-x', '-', "revert", stdin = delete_input) is None:
                 return False
-            if self._run("delete", "-c", cl_number, stdin = delete_input) is None:
+            if self._run('-x', '-', "delete", "-c", cl_number, stdin = delete_input) is None:
                 return False
 
         reconcile_paths = []
@@ -204,7 +205,7 @@ class P4:
                 reconcile_paths.append(it)
 
         reconcile_input = '\n'.join(reconcile_paths)
-        self._run("reconcile", "-c", cl_number, stdin = reconcile_input)
+        self._run('-x', '-', "reconcile", "-c", cl_number, stdin = reconcile_input)
         return True
 
     def get_changelist_description(self, cl_number):
