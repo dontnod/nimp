@@ -178,11 +178,16 @@ def _ue4_build(env):
 
         if env.platform != 'mac':
             # This also builds AgentInterface.dll, needed by SwarmInterface.sln
-            if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
+            # XXX: try 10 times because of a race condition in there
+            for attempt in range(10):
+                swarm_success = True
+                if nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
                                       'Any CPU', 'Development', None, vs_version, 'Build'):
+                    break
                 logging.error("Could not build UnrealSwarm")
-                # FIXME: this is just some temporary debug stuff
-                nimp.system.call_process('.', [ 'handle', '-accepteula', '-u'])
+                swarm_success = False
+
+            if not swarm_success:
                 success = False
 
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
