@@ -22,6 +22,7 @@
 ''' Fileset related commands '''
 
 import abc
+import os.path
 
 import logging
 
@@ -53,17 +54,19 @@ class FilesetCommand(nimp.command.Command):
         files = nimp.system.map_files(env)
         files_chain = files
         files_chain.load_set(env.fileset)
-        return self._run_fileset(files_chain)
+        return self._run_fileset(env, files_chain)
 
     @abc.abstractmethod
-    def _run_fileset(self, file_mapper):
+    def _run_fileset(self, env, file_mapper):
         pass
 
 class Fileset(nimp.command.CommandGroup):
     ''' Fileset related commands '''
     def __init__(self):
         super(Fileset, self).__init__([_List(),
-                                       _Delete()])
+                                       _Delete(),
+                                       _Stash(),
+                                       _Unstash(),])
 
     def is_available(self, env):
         return True, ''
@@ -73,7 +76,7 @@ class _Delete(FilesetCommand):
     def __init__(self):
         super(_Delete, self).__init__()
 
-    def _run_fileset(self, file_mapper):
+    def _run_fileset(self, env, file_mapper):
         for path, _ in file_mapper():
             logging.info("Deleting %s", path)
             nimp.system.force_delete(path)
@@ -85,9 +88,48 @@ class _List(FilesetCommand):
     def __init__(self):
         super(_List, self).__init__()
 
-    def _run_fileset(self, file_mapper):
+    def _run_fileset(self, env, file_mapper):
         for source, destination in file_mapper():
             logging.info("%s => %s", source, destination)
+
+        return True
+
+class _Stash(FilesetCommand):
+    ''' Loads a fileset and moves files out of the way '''
+    def __init__(self):
+        super(_Stash, self).__init__()
+
+    def _run_fileset(self, env, file_mapper):
+        stash_file = '.stash-%s.txt' % (env.fileset)
+
+        nimp.system.force_delete(stash_file)
+        with open(stash_file, 'w') as stash:
+            for src, _ in file_mapper():
+                src = nimp.system.sanitize_path(src)
+                if not os.path.isfile(src):
+                    continue
+                dst = src + '.stash'
+                os.replace(src, dst)
+                logging.info('Stashing %s', src)
+                stash.write('%s\n' % (src))
+
+        return True
+
+class _Unstash(FilesetCommand):
+    ''' Restores a stashed fileset; does not actually use the fileset '''
+    def __init__(self):
+        super(_Unstash, self).__init__()
+
+    def _run_fileset(self, env, file_mapper):
+        stash_file = '.stash-%s.txt' % (env.fileset)
+
+        with open(stash_file, 'r') as stash:
+            for dst in stash.readlines():
+                dst = dst.strip()
+                src = dst + '.stash'
+                os.replace(src, dst)
+                logging.info('Unstashing %s', dst)
+        nimp.system.force_delete(stash_file)
 
         return True
 
