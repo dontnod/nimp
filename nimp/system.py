@@ -166,9 +166,9 @@ def call_process(directory, command, heartbeat = 0):
                         if is_windows():
                             line = line.decode("cp850")
                         else:
-                            line = line.decode("utf-8")
+                            line = line.decode("utf-8", errors='replace')
                     except UnicodeError:
-                        line = line.decode("cp850")
+                        line = line.decode("cp850", errors='replace')
 
                     if line == '':
                         break
