@@ -181,6 +181,8 @@ def _ue4_build(env):
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
                                       'Any CPU', 'Development', None, vs_version, 'Build'):
                 logging.error("Could not build UnrealSwarm")
+                # FIXME: this is just some temporary debug stuff
+                nimp.system.call_process('.', [ 'handle', '-accepteula', '-u'])
                 success = False
 
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
