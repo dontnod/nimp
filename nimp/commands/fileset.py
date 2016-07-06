@@ -108,6 +108,8 @@ class _Stash(FilesetCommand):
                 src = nimp.system.sanitize_path(src)
                 if not os.path.isfile(src):
                     continue
+                if src.endswith('.stash'):
+                    continue
                 dst = src + '.stash'
                 os.replace(src, dst)
                 logging.info('Stashing %s', src)
@@ -123,13 +125,18 @@ class _Unstash(FilesetCommand):
     def _run_fileset(self, env, file_mapper):
         stash_file = '.stash-%s.txt' % (env.fileset)
 
+        success = True
         with open(stash_file, 'r') as stash:
             for dst in stash.readlines():
                 dst = dst.strip()
                 src = dst + '.stash'
-                os.replace(src, dst)
-                logging.info('Unstashing %s', dst)
+                try:
+                    logging.info('Unstashing %s', dst)
+                    os.replace(src, dst)
+                except Exception as ex:
+                    logging.error(ex)
+                    success = False
         nimp.system.force_delete(stash_file)
 
-        return True
+        return success
 
