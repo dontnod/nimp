@@ -76,8 +76,8 @@ def _check_for_unreal(env):
     return True
 
 def _ue4_build(env):
-    assert hasattr(env, 'ue4_build_configuration')
-    assert env.ue4_build_configuration is not None
+    assert hasattr(env, 'ue4_config')
+    assert env.ue4_config is not None
 
     if env.disable_unity:
         os.environ['UBT_bUseUnityBuild'] = 'false'
@@ -214,19 +214,19 @@ def _ue4_build(env):
         return success
 
     if env.target == 'game':
-        if not _ue4_build_project(env, solution, env.game, env.ue4_build_platform,
-                                  env.ue4_build_configuration, vs_version, 'Build'):
+        if not _ue4_build_project(env, solution, env.game, env.ue4_platform,
+                                  env.ue4_config, vs_version, 'Build'):
             success = False
 
     if env.target == 'editor':
         if env.platform in ['linux', 'mac']:
             project = env.game + 'Editor'
-            config = env.ue4_build_configuration
+            config = env.ue4_config
         else:
             project = env.game
-            config = env.ue4_build_configuration + ' Editor'
+            config = env.ue4_config + ' Editor'
 
-        if not _ue4_build_project(env, solution, project, env.ue4_build_platform,
+        if not _ue4_build_project(env, solution, project, env.ue4_platform,
                                   config, vs_version, 'Build'):
             success = False
 
@@ -272,7 +272,7 @@ def _ue4_build_project(env, sln_file, project, build_platform,
 
 def _ue4_load_arguments(env):
     ''' Sets some variables for use with unreal 4 '''
-    def _get_ue4_build_config(config):
+    def _get_ue4_config(config):
         configs = { "debug"    : "Debug",
                     "devel"    : "Development",
                     "test"     : "Test",
@@ -282,19 +282,7 @@ def _ue4_load_arguments(env):
             return None
         return configs[config]
 
-    def _get_ue4_build_platform(in_platform):
-        platforms = { "ps4"     : "PS4",
-                      "xboxone" : "XboxOne",
-                      "win64"   : "Win64",
-                      "win32"   : "Win32",
-                      "linux"   : "Linux",
-                      "mac"     : "Mac", }
-        if in_platform not in platforms:
-            logging.warning('Unsupported UE4 build platform “%s”', in_platform)
-            return None
-        return platforms[in_platform]
-
-    def _get_ue4_cook_platform(in_platform):
+    def _get_ue4_platform(in_platform):
         platforms = { "ps4"     : "PS4",
                       "xboxone" : "XboxOne",
                       "win64"   : "Win64",
@@ -307,12 +295,15 @@ def _ue4_load_arguments(env):
         return platforms[in_platform]
 
     if hasattr(env, 'platform'):
-        env.ue4_build_platform = _get_ue4_build_platform(env.platform)
-        env.ue4_cook_platform  = _get_ue4_cook_platform(env.platform)
+        env.ue4_platform = _get_ue4_platform(env.platform)
+        # Legacy
+        env.ue4_build_platform = _get_ue4_platform(env.platform)
     if hasattr(env, 'configuration'):
         if env.configuration is None:
             env.configuration = 'devel'
-        env.ue4_build_configuration = _get_ue4_build_config(env.configuration)
+        env.ue4_config = _get_ue4_config(env.configuration)
+        # Legacy
+        env.ue4_build_configuration = _get_ue4_config(env.configuration)
 
     if not hasattr(env, 'target') or env.target is None and env.is_ue4:
         if env.platform in ['win64', 'mac', 'linux']:

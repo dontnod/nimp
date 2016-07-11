@@ -57,12 +57,12 @@ class Ship(nimp.command.Command):
                                       '-cook', '-stage', '-archive',
                                       '-archivedirectory=%s' % nimp.system.sanitize_path(loose_dir),
                                       '-package',
-                                      '-clientconfig=%s' % env.ue4_build_configuration,
+                                      env.format('-clientconfig={ue4_config}'),
                                       '-ue4exe=UE4Editor-Cmd.exe',
                                       '-pak',
                                       '-prereqs',
                                       '-nodebuginfo',
-                                      env.format('-targetplatform={ue4_cook_platform}'),
+                                      env.format('-targetplatform={ue4_platform}'),
                                       '-utf8output'],
                                     heartbeat = 30) != 0:
             return False
