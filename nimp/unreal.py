@@ -266,9 +266,15 @@ def _ue4_build_project(env, sln_file, project, build_platform,
         return nimp.build.vsbuild(sln_file, build_platform, configuration,
                                   project, vs_version, target)
 
+    if platform.system() == 'Darwin':
+        host_platform = 'Mac'
+    else:
+        host_platform = 'Linux'
+
     return nimp.system.call_process(env.root_dir,
-                                    ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (build_platform),
+                                    ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (host_platform),
                                      project, build_platform, configuration]) == 0
+
 
 def _ue4_load_arguments(env):
     ''' Sets some variables for use with unreal 4 '''
