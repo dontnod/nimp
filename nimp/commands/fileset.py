@@ -22,6 +22,7 @@
 ''' Fileset related commands '''
 
 import abc
+import hashlib
 import os.path
 
 import logging
@@ -100,9 +101,12 @@ class _Stash(FilesetCommand):
         super(_Stash, self).__init__()
 
     def _run_fileset(self, env, file_mapper):
-        stash_file = '.stash-%s.txt' % (env.fileset)
+        stash_dir = env.format('{root_dir}/.nimp/stash')
+        nimp.system.safe_makedirs(stash_dir)
 
+        stash_file = os.path.join(stash_dir, env.fileset)
         nimp.system.force_delete(stash_file)
+
         with open(stash_file, 'w') as stash:
             for src, _ in file_mapper():
                 src = nimp.system.sanitize_path(src)
@@ -110,10 +114,10 @@ class _Stash(FilesetCommand):
                     continue
                 if src.endswith('.stash'):
                     continue
-                dst = src + '.stash'
-                os.replace(src, dst)
-                logging.info('Stashing %s', src)
-                stash.write('%s\n' % (src))
+                md5 = hashlib.md5(src.encode('utf8')).hexdigest()
+                os.replace(src, os.path.join(stash_dir, md5))
+                logging.info('Stashing %s as %s', src, md5)
+                stash.write('%s %s\n' % (md5, src))
 
         return True
 
@@ -123,15 +127,16 @@ class _Unstash(FilesetCommand):
         super(_Unstash, self).__init__()
 
     def _run_fileset(self, env, file_mapper):
-        stash_file = '.stash-%s.txt' % (env.fileset)
+        stash_dir = env.format('{root_dir}/.nimp/stash')
+        stash_file = os.path.join(stash_dir, env.fileset)
 
         success = True
         with open(stash_file, 'r') as stash:
             for dst in stash.readlines():
-                dst = dst.strip()
-                src = dst + '.stash'
                 try:
-                    logging.info('Unstashing %s', dst)
+                    md5, dst = dst.strip().split()
+                    src = os.path.join(stash_dir, md5)
+                    logging.info('Unstashing %s as %s', md5, dst)
                     os.replace(src, dst)
                 except Exception as ex:
                     logging.error(ex)
