@@ -80,7 +80,7 @@ class _Delete(FilesetCommand):
     def _run_fileset(self, env, file_mapper):
         for path, _ in file_mapper():
             logging.info("Deleting %s", path)
-            nimp.system.force_delete(path)
+            nimp.system.safe_delete(path)
 
         return True
 
@@ -105,7 +105,7 @@ class _Stash(FilesetCommand):
         nimp.system.safe_makedirs(stash_dir)
 
         stash_file = os.path.join(stash_dir, env.fileset)
-        nimp.system.force_delete(stash_file)
+        nimp.system.safe_delete(stash_file)
 
         with open(stash_file, 'w') as stash:
             for src, _ in file_mapper():
@@ -137,11 +137,12 @@ class _Unstash(FilesetCommand):
                     md5, dst = dst.strip().split()
                     src = os.path.join(stash_dir, md5)
                     logging.info('Unstashing %s as %s', md5, dst)
+                    nimp.system.safe_delete(dst)
                     os.replace(src, dst)
                 except Exception as ex:
                     logging.error(ex)
                     success = False
-        nimp.system.force_delete(stash_file)
+        nimp.system.safe_delete(stash_file)
 
         return success
 

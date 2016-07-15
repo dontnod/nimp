@@ -245,14 +245,17 @@ def robocopy(src, dest):
 
     return True
 
-def force_delete(path):
+def safe_delete(path):
     ''' 'Robust' delete. '''
 
     path = sanitize_path(path)
 
     if os.path.isfile(path):
-        os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-        os.remove(path)
+        try:
+            os.chmod(path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+            os.remove(path)
+        except OSError:
+            pass
 
 
 def _sanitize_command(command):
