@@ -369,6 +369,6 @@ class P4:
                     result.append(match_string)
                 match_list.append(result)
 
-            return zip(*match_list)
+            for elem in zip(*match_list):
+                yield elem
 
-        return [(None,)]
