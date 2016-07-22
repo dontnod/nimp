@@ -137,7 +137,7 @@ class _Version(nimp.command.Command):
         logging.info('Creating Zip file %s…', archive)
 
         if not os.path.isdir(os.path.dirname(archive)):
-            nimp.system.safe_makedirs(os.path.isdir(os.path.dirname(archive)))
+            nimp.system.safe_makedirs(os.path.dirname(archive))
 
         fd = zipfile.ZipFile(archive_tmp, 'w', zipfile.ZIP_DEFLATED)
         publish = nimp.system.map_files(env)
@@ -156,7 +156,7 @@ class _Version(nimp.command.Command):
         logging.info('Creating torrent %s…', torrent)
 
         if not os.path.isdir(os.path.dirname(torrent)):
-            nimp.system.safe_makedirs(os.path.isdir(os.path.dirname(torrent)))
+            nimp.system.safe_makedirs(os.path.dirname(torrent))
 
         publish = nimp.system.map_files(env)
         publish.src(env.binaries_archive).to(os.path.basename(archive))
