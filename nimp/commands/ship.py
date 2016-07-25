@@ -34,8 +34,13 @@ class Ship(nimp.command.Command):
         nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'revision')
 
         parser.add_argument('--destination',
-                            help    = 'Destination Directory',
+                            help = 'Destination directory',
                             metavar = '<dir>')
+
+        parser.add_argument('--map',
+                            help = 'Override default map',
+                            default = '',
+                            metavar = '<map>')
 
         return True
 
@@ -57,6 +62,7 @@ class Ship(nimp.command.Command):
                                       '-cook', '-stage', '-archive',
                                       '-archivedirectory=%s' % nimp.system.sanitize_path(loose_dir),
                                       '-package',
+                                      env.format('-map={map}'),
                                       env.format('-clientconfig={ue4_config}'),
                                       '-ue4exe=UE4Editor-Cmd.exe',
                                       '-pak',
