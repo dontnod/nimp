@@ -59,23 +59,25 @@ class Ship(nimp.command.Command):
         loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
         exe_path = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), 'Engine/Binaries/DotNET/AutomationTool.exe'))
         # Use heartbeat because this sometimes compiles shaders in the background
-        if nimp.system.call_process('.',
-                                    [ exe_path,
-                                      'BuildCookRun',
-                                      '-nocompileeditor', '-nop4',
-                                      nimp.system.sanitize_path(env.format('-project={game}/{game}.uproject')),
-                                      '-cook', '-stage', '-archive',
-                                      '-archivedirectory=%s' % nimp.system.sanitize_path(loose_dir),
-                                      '-package',
-                                      env.format('-map={map}'),
-                                      env.format('-clientconfig={ue4_config}'),
-                                      '-ue4exe=UE4Editor-Cmd.exe',
-                                      '-pak',
-                                      '-prereqs',
-                                      '-nodebuginfo',
-                                      env.format('-targetplatform={ue4_platform}'),
-                                      '-utf8output'],
-                                    heartbeat = 30) != 0:
+        cmd = [ exe_path, 'BuildCookRun',
+                          '-nocompileeditor', '-nop4',
+                          nimp.system.sanitize_path(env.format('-project={game}/{game}.uproject')),
+                          '-cook', '-stage', '-archive',
+                          '-archivedirectory=%s' % nimp.system.sanitize_path(loose_dir),
+                          '-package',
+                          env.format('-clientconfig={ue4_config}'),
+                          '-ue4exe=UE4Editor-Cmd.exe',
+                          '-pak',
+                          '-prereqs',
+                          '-nodebuginfo',
+                          env.format('-targetplatform={ue4_platform}'),
+                          '-utf8output' ]
+        # If a map is specified, use -cooksinglepackage (otherwise all the
+        # default maps will be cooked, too).
+        if env.map:
+            cmd += [ env.format('-map={map}'), '-cooksinglepackage' ]
+
+        if nimp.system.call_process('.', cmd, heartbeat = 30) != 0:
             return False
         return True
 
