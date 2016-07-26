@@ -37,6 +37,11 @@ class Ship(nimp.command.Command):
                             help = 'Destination directory',
                             metavar = '<dir>')
 
+        parser.add_argument('--package',
+                            help = 'Override final package name',
+                            default = 'default',
+                            metavar = '<map>')
+
         parser.add_argument('--map',
                             help = 'Override default map',
                             default = '',
