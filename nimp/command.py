@@ -84,50 +84,56 @@ def load_arguments(env):
         for key, value in [ x.split('=') for x in env.free_parameters]:
             setattr(env, key, value)
 
-    std_platforms = { "ps4"       : "ps4",
-                      "orbis"     : "ps4",
-                      "xboxone"   : "xboxone",
-                      "dingo"     : "xboxone",
-                      "win32"     : "win32",
-                      "pcconsole" : "win32",
-                      "win64"     : "win64",
-                      "pc"        : "win64",
-                      "windows"   : "win64",
-                      "xbox360"   : "xbox360",
-                      "x360"      : "xbox360",
-                      "ps3"       : "ps3",
-                      "linux"     : "linux",
-                      "mac"       : "mac",
-                      "macos"     : "mac" }
-
     if hasattr(env, "platform") and env.platform is not None:
-        if env.platform.lower() in std_platforms:
-            env.platform =  std_platforms[env.platform.lower()]
+        def sanitize_platform(platform):
+            std_platforms = { "ps4"       : "ps4",
+                              "orbis"     : "ps4",
+                              "xboxone"   : "xboxone",
+                              "dingo"     : "xboxone",
+                              "win32"     : "win32",
+                              "pcconsole" : "win32",
+                              "win64"     : "win64",
+                              "pc"        : "win64",
+                              "windows"   : "win64",
+                              "xbox360"   : "xbox360",
+                              "x360"      : "xbox360",
+                              "ps3"       : "ps3",
+                              "linux"     : "linux",
+                              "mac"       : "mac",
+                              "macos"     : "mac" }
 
-        env.is_win32 = env.platform == "win32"
-        env.is_win64 = env.platform == "win64"
-        env.is_ps3   = env.platform == "ps3"
-        env.is_ps4   = env.platform == "ps4"
-        env.is_x360  = env.platform == "xbox360"
-        env.is_xone  = env.platform == "xboxone"
-        env.is_linux = env.platform == "linux"
-        env.is_mac   = env.platform == "mac"
+            if platform.lower() not in std_platforms:
+                return platform
+            return std_platforms[platform.lower()]
+
+        env.platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
+
+        env.is_win32 = 'win32'   in env.platform.split('+')
+        env.is_win64 = 'win64'   in env.platform.split('+')
+        env.is_ps3   = 'ps3'     in env.platform.split('+')
+        env.is_ps4   = 'ps4'     in env.platform.split('+')
+        env.is_x360  = 'xbox360' in env.platform.split('+')
+        env.is_xone  = 'xboxone' in env.platform.split('+')
+        env.is_linux = 'linux'   in env.platform.split('+')
+        env.is_mac   = 'mac'     in env.platform.split('+')
 
         env.is_microsoft_platform = env.is_win32 or env.is_win64 or env.is_x360 or env.is_xone
         env.is_sony_platform      = env.is_ps3 or env.is_ps4
 
     if hasattr(env, 'configuration') and env.configuration is not None:
-        std_configs = { 'debug'    : 'debug',
-                        'devel'    : 'devel',
-                        'release'  : 'release',
-                        'test'     : 'test',
-                        'shipping' : 'shipping',
-                      }
+        def sanitize_config(config):
+            std_configs = { 'debug'    : 'debug',
+                            'devel'    : 'devel',
+                            'release'  : 'release',
+                            'test'     : 'test',
+                            'shipping' : 'shipping',
+                          }
 
-        if env.configuration.lower() in std_configs:
-            env.configuration = std_configs[env.configuration.lower()]
-        else:
-            env.configuration = ""
+            if config.lower() not in std_configs:
+                return ""
+            return std_configs[config.lower()]
+
+        env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
 
     return True
 
