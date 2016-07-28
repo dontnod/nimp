@@ -301,15 +301,12 @@ def _ue4_load_arguments(env):
         return platforms[in_platform]
 
     if hasattr(env, 'platform'):
-        env.ue4_platform = _get_ue4_platform(env.platform)
-        # Legacy
-        env.ue4_build_platform = _get_ue4_platform(env.platform)
+        env.ue4_platform = '+'.join(map(_get_ue4_platform, env.platform.split('+')))
+
     if hasattr(env, 'configuration'):
         if env.configuration is None:
             env.configuration = 'devel'
-        env.ue4_config = _get_ue4_config(env.configuration)
-        # Legacy
-        env.ue4_build_configuration = _get_ue4_config(env.configuration)
+        env.ue4_config = '+'.join(map(_get_ue4_config, env.configuration.split('+')))
 
     if not hasattr(env, 'target') or env.target is None and env.is_ue4:
         if env.platform in ['win64', 'mac', 'linux']:
