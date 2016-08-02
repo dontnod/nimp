@@ -162,13 +162,19 @@ def call_process(directory, command, heartbeat = 0):
             try:
                 logger = logging.getLogger('child_processes')
                 for line in iter(in_pipe.readline, ''):
+                    # Try to decode as UTF-8 first; if it fails, try CP850 on
+                    # Windows, or UTF-8 with error substitution elsewhere. If
+                    # it fails again, try CP850 with error substitution.
                     try:
-                        if is_windows():
-                            line = line.decode("cp850")
-                        else:
-                            line = line.decode("utf-8", errors='replace')
+                        line = line.decode("utf-8")
                     except UnicodeError:
-                        line = line.decode("cp850", errors='replace')
+                        try:
+                            if is_windows():
+                                line = line.decode("cp850")
+                            else:
+                                line = line.decode("utf-8", errors='replace')
+                        except UnicodeError:
+                            line = line.decode("cp850", errors='replace')
 
                     if line == '':
                         break
