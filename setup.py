@@ -4,14 +4,14 @@ import os
 import shutil
 import sys
 
-VERSION = '0.0.0git'
+VERSION = '0.0.1'
 
 setup_info = dict(
 
-    name = 'nimp',
+    name = 'nimp-cli',
     version = VERSION,
     author = 'Dontnod Entertainment',
-    description = 'DNE build tool',
+    description = 'Multipurpose build tool',
 
     packages = [
         'nimp',
