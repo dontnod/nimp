@@ -10,8 +10,18 @@ setup_info = dict(
 
     name = 'nimp-cli',
     version = VERSION,
-    author = 'Dontnod Entertainment',
     description = 'Multipurpose build tool',
+    long_description = '' +
+        'Nimp is a cross-platform tool that helps maintain, compile, cook, ' +
+        'and ship game projects. It currently supports Unreal Engine.' +
+        '',
+    license = 'MIT',
+
+    url = 'https://github.com/dontnod/nimp',
+    download_url = 'https://github.com/dontnod/nimp/tarball/master',
+
+    author = 'Dontnod Entertainment',
+    author_email = 'root@dont-nod.com',
 
     packages = [
         'nimp',
@@ -26,6 +36,26 @@ setup_info = dict(
     entry_points = {
         'console_scripts' : [ 'nimp = nimp.nimp_cli:main' ],
     },
+
+    # See list at https://pypi.python.org/pypi?:action=list_classifiers
+    classifiers = [
+        'Development Status :: 3 - Alpha',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Operating System :: MacOS',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX',
+        'Operating System :: Unix',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Topic :: Software Development :: Build Tools',
+    ],
+
+    keywords = 'build compile unrealengine',
 )
 
 setuptools_info = dict(
