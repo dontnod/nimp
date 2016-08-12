@@ -50,12 +50,12 @@ def build(env):
         return False
     return _ue4_build(env)
 
-def commandlet(env, command, *args):
+def commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an Unreal Engine commandlet. It can be usefull to run it through
         nimp as OutputDebugString will be redirected to standard output. '''
     if not _check_for_unreal(env):
         return False
-    return _ue4_commandlet(env, command, *args)
+    return _ue4_commandlet(env, command, *args, heartbeat = hearbeat)
 
 def is_unreal4_available(env):
     ''' Returns a tuple containing unreal availability and a help text
@@ -234,7 +234,7 @@ def _ue4_build(env):
 
     return success
 
-def _ue4_commandlet(env, command, *args):
+def _ue4_commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an UE4 commandlet '''
     if nimp.system.is_windows():
         exe = 'Engine/Binaries/Win64/UE4Editor.exe'
@@ -250,7 +250,7 @@ def _ue4_commandlet(env, command, *args):
     cmdline += list(args)
     cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
 
-    return nimp.system.call_process('.', cmdline) == 0
+    return nimp.system.call_process('.', cmdline, heartbeat = hearbeat) == 0
 
 
 def _ue4_generate_project(env):
