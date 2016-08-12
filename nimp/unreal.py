@@ -55,7 +55,7 @@ def commandlet(env, command, *args, heartbeat = 0):
         nimp as OutputDebugString will be redirected to standard output. '''
     if not _check_for_unreal(env):
         return False
-    return _ue4_commandlet(env, command, *args, heartbeat = hearbeat)
+    return _ue4_commandlet(env, command, *args, heartbeat = heartbeat)
 
 def is_unreal4_available(env):
     ''' Returns a tuple containing unreal availability and a help text
@@ -250,7 +250,7 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
     cmdline += list(args)
     cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
 
-    return nimp.system.call_process('.', cmdline, heartbeat = hearbeat) == 0
+    return nimp.system.call_process('.', cmdline, heartbeat = heartbeat) == 0
 
 
 def _ue4_generate_project(env):
