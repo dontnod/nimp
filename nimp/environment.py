@@ -217,7 +217,7 @@ class Environment:
 
 def execute_hook(hook_name, *args):
     ''' Executes a hook in the .nimp/hooks directory '''
-    logging.debug('Trying to Executing hook %s', hook_name)
+    logging.debug('Looking for %s hook', hook_name)
     hook_module = nimp.system.try_import('hooks.' + hook_name)
     if hook_module is None:
         logging.debug('No %s hook found in .nimp/hooks directory', hook_name)
@@ -233,7 +233,7 @@ def read_config_file(filename):
     try:
         conf = open(filename, "rb").read()
     except IOError as exception:
-        logging.error("Unable to open configuration file : %s", exception)
+        logging.error("Unable to open configuration file: %s", exception)
         return None
     # Parse configuration file
     try:
@@ -245,7 +245,7 @@ def read_config_file(filename):
         logging.error("Configuration file %s has no 'config' section.", filename)
     #pylint: disable=broad-except
     except Exception as ex:
-        logging.error("Unable to load configuration file %s : %s", filename, str(ex))
+        logging.error("Unable to load configuration file %s: %s", filename, str(ex))
         return None
 
     return {}
@@ -261,7 +261,7 @@ def _get_instances(module, instance_type):
             try:
                 sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
             except ImportError as exception:
-                logging.warning('Error importing local command %s : %s', sub_module_complete_name, exception)
+                logging.warning('Error importing local command %s: %s', sub_module_complete_name, exception)
                 continue
             sub_instances = _get_instances(sub_module_it, instance_type)
             for (klass, instance) in sub_instances.items():
@@ -342,7 +342,7 @@ class _LogHandler(logging.Handler):
                 destination.append(re.compile(pattern))
             #pylint: disable=broad-except
             except Exception as ex:
-                logging.error('Error while compiling pattern %s : %s',
+                logging.error('Error while compiling pattern %s: %s',
                               pattern, ex)
 
     def __enter__(self):
@@ -441,12 +441,12 @@ class _LogHandler(logging.Handler):
             return ''
 
         total = sum(messages.values())
-        result = '\n%s Distinct %s (%s total) :\n' % (len(messages), level_name, total)
+        result = '\n%s Distinct %s (%s total):\n' % (len(messages), level_name, total)
         result += '*' * (len(result) - 2)
         result += '\n'
 
         for msg, count in messages.items():
-            result += '(%s x) : %s\n' % (count, msg)
+            result += '(%s x): %s\n' % (count, msg)
 
         return result
 
