@@ -51,8 +51,8 @@ class Deploy(nimp.command.Command):
         if nimp.system.is_windows():
             return True, ''
 
-        return (nimp.system.try_import('magic') is not None,
-                ('The magic python module was not found on your system and is '
+        return (MAGIC is not None and hasattr(MAGIC, 'from_file'),
+                ('The python-magic module was not found on your system and is '
                  'required by this command.'))
 
     def run(self, env):

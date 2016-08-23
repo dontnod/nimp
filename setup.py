@@ -31,7 +31,7 @@ setup_info = dict(
 
     install_requires = [
         'glob2',
-        'magic',
+        'python-magic',
     ],
 
     entry_points = {
