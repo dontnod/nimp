@@ -4,7 +4,7 @@ import os
 import shutil
 import sys
 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 
 setup_info = dict(
 
@@ -18,7 +18,7 @@ setup_info = dict(
     license = 'MIT',
 
     url = 'https://github.com/dontnod/nimp',
-    download_url = 'https://github.com/dontnod/nimp/tarball/master',
+    download_url = 'https://github.com/dontnod/nimp/tarball/' + VERSION,
 
     author = 'Dontnod Entertainment',
     author_email = 'root@dont-nod.com',
