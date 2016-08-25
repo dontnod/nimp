@@ -76,17 +76,20 @@ class Deploy(nimp.command.Command):
             zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
 
             # If this is an executable or a script, make it +x
-            try:
-                if MAGIC is not None:
-                    filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
-                    filetype = MAGIC.from_file(filename).decode('ascii')
-                    if 'executable' in filetype or 'script' in filetype:
+            if MAGIC is not None:
+                filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
+                filetype = MAGIC.from_file(filename)
+                if type(filetype) is bytes:
+                    # Older versions of python-magic return bytes instead of a string
+                    filetype = filetype.decode('ascii')
+
+                if 'executable' in filetype or 'script' in filetype:
+                    try:
                         logging.info('Making executable because of file type: %s', filetype)
                         file_stat = os.stat(filename)
                         os.chmod(filename, file_stat.st_mode | stat.S_IEXEC)
-            #pylint: disable=broad-except
-            except Exception:
-                pass
+                    except Exception:
+                        pass
         fd.close()
 
         return True
