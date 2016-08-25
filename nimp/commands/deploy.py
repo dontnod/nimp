@@ -72,11 +72,6 @@ class Deploy(nimp.command.Command):
         zip_file = zipfile.ZipFile(fd)
         for name in zip_file.namelist():
 
-            # TODO: remove this code when our files are cleaned up
-            if name.endswith('.stash'):
-                logging.info('Ignoring junk file %s', name)
-                continue
-
             logging.info('Extracting %s to %s', name, env.root_dir)
             zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
 
