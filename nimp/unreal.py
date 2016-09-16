@@ -259,7 +259,7 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
 
 def _ue4_generate_project(env):
     if nimp.system.is_windows():
-        return nimp.system.call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat'])
+        return nimp.system.call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat', '-2015'])
     else:
         return nimp.system.call_process(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
 
