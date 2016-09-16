@@ -101,13 +101,16 @@ def _ue4_build(env):
     vs_version = '14'
     try:
         for line in open(env.format(env.solution)):
-            if '# Visual Studio 2012' in line:
+            if ('# Visual Studio 2012' in line or
+                '# Visual Studio 11' in line):
                 vs_version = '11'
                 break
-            if '# Visual Studio 2013' in line:
+            if ('# Visual Studio 2013' in line or
+                '# Visual Studio 12' in line):
                 vs_version = '12'
                 break
-            if '# Visual Studio 2015' in line:
+            if ('# Visual Studio 2015' in line or
+                '# Visual Studio 14' in line):
                 vs_version = '14'
                 break
     except IOError:
