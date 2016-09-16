@@ -75,11 +75,11 @@ class Build(nimp.command.Command):
             if hasattr(env, 'configuration') and env.configuration is not None:
                 config = env.configuration
 
-            sln = open(sln).read()
-            vsver = '11'
-            if '# Visual Studio 2012' in sln:
+            contents = open(sln).read()
+            vsver = '14'
+            if '# Visual Studio 2012' in contents:
                 vsver = '11'
-            elif '# Visual Studio 2013' in sln:
+            elif '# Visual Studio 2013' in contents:
                 vsver = '12'
 
             return nimp.build.vsbuild(sln, platform, config, env.target, vsver, 'Build')
@@ -92,3 +92,4 @@ class Build(nimp.command.Command):
             if os.path.splitext(it)[1] == '.sln' and os.path.isfile(it):
                 return it
         return None
+
