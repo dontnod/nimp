@@ -143,13 +143,13 @@ class Environment:
             # If command succeed and summary mode is on, we check for captured
             # errors or warnings
             if self.summary is not None:
+
                 if log_handler.has_errors():
-                    if success:
-                        logging.error('Command succeeded with errors')
-                    return exit_error
-                elif log_handler.has_warnings():
-                    if success:
-                        logging.warning('Command succeeded with warnings')
+                    logging.error('Command succeeded with errors')
+                    return exit_warnings
+
+                if log_handler.has_warnings():
+                    logging.warning('Command succeeded with warnings')
                     return exit_warnings
 
             return exit_success
