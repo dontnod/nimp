@@ -146,7 +146,8 @@ def _ue4_build(env):
         if env.platform == 'win64':
             tools += [ 'DotNETUtilities',
                        'AutomationTool',
-                       'SymbolDebugger', ]
+                       'SymbolDebugger',
+                       'CrashReportClient', ]
             need_ps4devkitutil = True
             need_ps4mapfileutil = True
             need_xboxonepdbfileutil = True
