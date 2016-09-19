@@ -168,7 +168,9 @@ def _ue4_build(env):
                                   'Mac' if env.platform == 'mac'
                                   else 'Linux' if env.platform == 'linux'
                                   else 'Win64',
-                                  'Development', vs_version, 'Build'):
+                                  'Shipping' if tool == 'CrashReportClient'
+                                  else 'Development', 
+                                  vs_version, 'Build'):
             logging.error("Could not build %s", tool)
             success = False
 
