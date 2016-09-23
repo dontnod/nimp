@@ -4,7 +4,7 @@ import os
 import shutil
 import sys
 
-VERSION = '0.0.3'
+VERSION = '0.0.4'
 
 setup_info = dict(
 
