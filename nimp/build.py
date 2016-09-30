@@ -131,17 +131,19 @@ def upload_symbols(env, symbols):
 
         store_root = nimp.system.sanitize_path(env.format(env.publish_symbols))
         transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, env.configuration, env.revision)
-        if nimp.system.call_process(".",
-                                    [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
-                                      "add",
-                                      "/compress",
-                                      "/r", # Recursive
-                                      "/f", "@" + index_file,
-                                      "/s", store_root,
-                                      "/o", # Verbose output
-                                      "/t", env.project, # Product name
-                                      "/c", transaction_comment,
-                                      "/v", env.revision ]) != 0:
+        cmd = [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+                "add",
+                "/r", # Recursive
+                "/f", "@" + index_file,
+                "/s", store_root,
+                "/o", # Verbose output
+                "/t", env.project, # Product name
+                "/c", transaction_comment,
+                "/v", env.revision, ]
+        if hasattr(env, 'compress') and env.compress:
+            cmd += [ "/compress" ]
+
+        if nimp.system.call_process(".", cmd) != 0:
             # Do not remove symbol index; keep it for later debugging
             return False
 
