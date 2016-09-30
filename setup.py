@@ -4,7 +4,10 @@ import os
 import shutil
 import sys
 
-VERSION = '0.0.4'
+# Update version below and:
+#  python3 setup.py bdist
+#  python3 setup.py sdist upload
+VERSION = '0.0.6'
 
 setup_info = dict(
 
