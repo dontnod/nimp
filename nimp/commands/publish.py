@@ -21,7 +21,6 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Publishing related commands '''
 
-import itertools
 import logging
 import os
 import shutil
@@ -91,7 +90,21 @@ class _Symbols(nimp.command.Command):
         symbols_to_publish.load_set("symbols")
         binaries_to_publish = nimp.system.map_files(env)
         binaries_to_publish.load_set("binaries")
-        return nimp.build.upload_symbols(env, itertools.chain(symbols_to_publish(), binaries_to_publish()))
+        return nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish()))
+
+    @staticmethod
+    def _chain_symbols_and_binaries(symbols, binaries):
+	    # sort of itertools.chain, but binaries are pushed only if corresp. symbol is present
+	    symbol_roots = []
+	    for symbol in symbols:
+		    symbol_root, _ = os.path.splitext(symbol)
+		    symbol_roots.append(symbol_root)
+		    yield symbol
+	    for binary in binaries:
+		    binary_root, _ = os.path.splitext(binary)
+		    # (it's always Microsoft platform so OK to just splitext)
+		    if binary_root in symbol_roots:
+			    yield binary
 
 class _Version(nimp.command.Command):
     ''' Creates a torrent out of compiled binaries '''
