@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Publishing related commands '''
 
+import itertools
 import logging
 import os
 import shutil
@@ -65,7 +66,7 @@ class _Binaries(nimp.command.Command):
         return nimp.system.all_map(nimp.system.robocopy, files_to_publish())
 
 class _Symbols(nimp.command.Command):
-    ''' Publishes build symbols to a symbol server '''
+    ''' Publishes build symbols (and binaries!) to a symbol server '''
     def __init__(self):
         super(_Symbols, self).__init__()
 
@@ -88,7 +89,9 @@ class _Symbols(nimp.command.Command):
     def run(self, env):
         symbols_to_publish = nimp.system.map_files(env)
         symbols_to_publish.load_set("symbols")
-        return nimp.build.upload_symbols(env, symbols_to_publish())
+        binaries_to_publish = nimp.system.map_files(env)
+        binaries_to_publish.load_set("binaries")
+        return nimp.build.upload_symbols(env, itertools.chain(symbols_to_publish(), binaries_to_publish()))
 
 class _Version(nimp.command.Command):
     ''' Creates a torrent out of compiled binaries '''
