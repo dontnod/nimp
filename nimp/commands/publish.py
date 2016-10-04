@@ -78,7 +78,8 @@ class _Symbols(nimp.command.Command):
         parser.add_argument('-z',
                             '--compress',
                             help    = 'Compress symbols when uploading',
-                            default = False)
+                            default = False,
+                            action  = 'store_true')
         return True
 
     def is_available(self, env):
