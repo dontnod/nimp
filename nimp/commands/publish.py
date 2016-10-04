@@ -94,17 +94,17 @@ class _Symbols(nimp.command.Command):
 
     @staticmethod
     def _chain_symbols_and_binaries(symbols, binaries):
-	    # sort of itertools.chain, but binaries are pushed only if corresp. symbol is present
-	    symbol_roots = []
-	    for symbol in symbols:
-		    symbol_root, _ = os.path.splitext(symbol)
-		    symbol_roots.append(symbol_root)
-		    yield symbol
-	    for binary in binaries:
-		    binary_root, _ = os.path.splitext(binary)
-		    # (it's always Microsoft platform so OK to just splitext)
-		    if binary_root in symbol_roots:
-			    yield binary
+        # sort of itertools.chain, but binaries are pushed only if corresp. symbol is present
+        symbol_roots = []
+        for symbol in symbols:
+            symbol_root, _ = os.path.splitext(symbol[0])
+            symbol_roots.append(symbol_root)
+            yield symbol
+        for binary in binaries:
+            binary_root, _ = os.path.splitext(binary[0])
+            # (it's always Microsoft platform so OK to just splitext)
+            if binary_root in symbol_roots:
+                yield binary
 
 class _Version(nimp.command.Command):
     ''' Creates a torrent out of compiled binaries '''
