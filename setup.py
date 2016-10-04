@@ -7,7 +7,7 @@ import sys
 # Update version below and:
 #  python3 setup.py bdist
 #  python3 setup.py sdist upload
-VERSION = '0.0.8'
+VERSION = '0.0.9'
 
 setup_info = dict(
 
