@@ -25,6 +25,8 @@ import logging
 import os
 import platform
 import re
+import shutil
+import time
 
 import nimp.command
 import nimp.system
@@ -39,7 +41,7 @@ class Check(nimp.command.Command):
         parser.add_argument('mode',
                             help = 'Check mode (status, nimp, processes)',
                             metavar = '<mode>',
-                            choices = ['status', 'processes'])
+                            choices = ['status', 'processes', 'disk'])
 
         return True
 
@@ -47,9 +49,13 @@ class Check(nimp.command.Command):
         return True, ''
 
     def run(self, env):
-        # Check running processes for possible issues
+        # Check running processes for issues and kill them if necessary
         if env.mode == 'processes':
             return Check._check_processes(env)
+
+        # Check disk space and block until there is free space
+        if env.mode == 'disk':
+            return Check._check_disk(env.root_dir)
 
         # Print information about the current environment
         if env.mode == 'status':
@@ -141,4 +147,23 @@ class Check(nimp.command.Command):
         for key, val in sorted(os.environ.items()):
             print('  ' + key + '=' + val)
         print()
+
+    @staticmethod
+    def _check_disk(path):
+        # Check every 5 minutes, for a maximum of 2 hours
+        wait_time = 5 * 60
+        total_wait_time = 2 * 60 * 60
+        byte2gib = 1.0 / 1024 / 1024 / 1024
+        while total_wait_time > 0:
+            total, used, free = shutil.disk_usage(path)
+            logging.warning('Disk usage: %.2f GiB total, %.2f GiB used, %.2f GiB free',
+                            total * byte2gib, used * byte2gib, free * byte2gib)
+            free_percent = 100.0 * free / total
+            if free_percent > 0.5:
+                return True
+            logging.warning('Only %f%% free on disk, waiting for %d seconds',
+                            free_percent, wait_time)
+            time.sleep(wait_time)
+            total_wait_time -= wait_time
+        return False
 
