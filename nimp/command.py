@@ -152,7 +152,7 @@ def add_commands_subparser(commands, parser, env):
 
         enabled, reason = command_it.is_available(env)
         description = ''
-        command_help = command_class.__doc__
+        command_help = command_class.__doc__ or "NO HELP AVAILABLE, FIX ME!"
         command_help = command_help.split('\n')[0]
 
         if not enabled:
