@@ -187,22 +187,30 @@ class _Disks(CheckCommand):
         wait_time = min(env.delay, 5 * 60) # Check at least every 5 minutes
         total_wait_time = env.delay
 
+        ran_callback = False
         while True:
             total, used, free = shutil.disk_usage(path)
             byte2gib = 1.0 / 1024 / 1024 / 1024
             byte2pct = 100.0 / total
-            logging.info('Disk usage: %.2f GiB total, %.2f GiB used (%.2f%%), %.2f GiB free (%.2f%%)',
-                         total * byte2gib, used * byte2gib, used * byte2pct, free * byte2gib, free * byte2pct)
+            logging.info('Disk usage on %s: %.2f GiB total, %.2f GiB used (%.2f%%), %.2f GiB free (%.2f%%)',
+                         path, total * byte2gib, used * byte2gib, used * byte2pct, free * byte2gib, free * byte2pct)
             free_percent = free * byte2pct
-            if free_percent < env.error:
-                if total_wait_time <= 0:
-                    return False
-                logging.warning('Only %.2f%% free on disk, waiting for %d seconds',
-                                free_percent, wait_time)
-            else:
-                if free_percent < env.warning:
-                    logging.warning('Only %.2f%% free space on disk', free_percent)
+            if free_percent >= env.warning:
                 break
+            if not ran_callback and free_percent < env.warning:
+                logging.warning('Only %.2f%% free space on disk, trying diskfull hook', free_percent)
+                nimp.environment.execute_hook('diskfull', env)
+                ran_callback = True
+                continue
+            if free_percent >= env.warning:
+                break
+            if free_percent >= env.error:
+                logging.warning('Only %.2f%% free space on disk', free_percent)
+                break
+            if total_wait_time <= 0:
+                return False
+            logging.warning('Only %.2f%% free on disk, waiting for %d seconds',
+                            free_percent, wait_time)
             time.sleep(wait_time)
             total_wait_time -= wait_time
         return True
