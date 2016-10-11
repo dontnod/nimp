@@ -217,10 +217,9 @@ class Environment:
 
 def execute_hook(hook_name, *args):
     ''' Executes a hook in the .nimp/hooks directory '''
-    logging.debug('Looking for %s hook', hook_name)
+    logging.debug('Looking for %s hook in .nimp/hooks', hook_name)
     hook_module = nimp.system.try_import('hooks.' + hook_name)
     if hook_module is None:
-        logging.debug('No %s hook found in .nimp/hooks directory', hook_name)
         return
     if not hasattr(hook_module, 'run'):
         logging.debug('No "run" method found in .nimp/hooks/%s module', hook_name)

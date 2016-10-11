@@ -54,7 +54,11 @@ def try_import(module_name):
     ''' Tries to import a module, return none if unavailable '''
     try:
         return importlib.import_module(module_name)
-    except ImportError:
+    except ImportError as e:
+        if e.name == module_name:
+            logging.debug('No module %s found', module_name)
+        else:
+            logging.warning('%s', e)
         return None
 
 def split_path(path):
