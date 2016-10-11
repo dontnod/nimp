@@ -195,8 +195,6 @@ class _Disks(CheckCommand):
             logging.info('Disk usage on %s: %.2f GiB total, %.2f GiB used (%.2f%%), %.2f GiB free (%.2f%%)',
                          path, total * byte2gib, used * byte2gib, used * byte2pct, free * byte2gib, free * byte2pct)
             free_percent = free * byte2pct
-            if free_percent >= env.warning:
-                break
             if not ran_callback and free_percent < env.warning:
                 logging.warning('Only %.2f%% free space on disk, trying diskfull hook', free_percent)
                 nimp.environment.execute_hook('diskfull', env)
