@@ -87,6 +87,7 @@ def _ue4_build(env):
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
     nimp.environment.execute_hook('before_ue4_build', env)
+    nimp.environment.execute_hook('prebuild', env)
 
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
@@ -237,6 +238,7 @@ def _ue4_build(env):
             success = False
 
     nimp.environment.execute_hook('after_ue4_build', env, success)
+    nimp.environment.execute_hook('postbuild', env, success)
 
     return success
 
