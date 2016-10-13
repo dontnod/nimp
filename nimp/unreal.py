@@ -170,7 +170,7 @@ def _ue4_build(env):
                                   else 'Linux' if env.platform == 'linux'
                                   else 'Win64',
                                   'Shipping' if tool == 'CrashReportClient'
-                                  else 'Development', 
+                                  else 'Development',
                                   vs_version, 'Build'):
             logging.error("Could not build %s", tool)
             success = False
@@ -179,7 +179,9 @@ def _ue4_build(env):
     if env.target == 'tools':
 
         if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln'),
-                                  'Any CPU', 'Development', None, vs_version, 'Build'):
+                                  'Any CPU', 'Development',
+                                  vs_version=vs_version,
+                                  target='Build'):
             logging.error("Could not build NetworkProfiler")
             success = False
 
@@ -189,7 +191,9 @@ def _ue4_build(env):
             for attempt in range(10):
                 swarm_success = True
                 if nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
-                                      'Any CPU', 'Development', None, vs_version, 'Build'):
+                                      'Any CPU', 'Development',
+                                      vs_version=vs_version,
+                                      target='Build'):
                     break
                 logging.error("Could not build UnrealSwarm")
                 swarm_success = False
@@ -198,7 +202,9 @@ def _ue4_build(env):
                 success = False
 
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
-                                      'Any CPU', 'Development', None, vs_version, 'Build'):
+                                      'Any CPU', 'Development',
+                                      vs_version=vs_version,
+                                      target='Build'):
                 logging.error("Could not build SwarmInterface")
                 success = False
 
@@ -212,8 +218,12 @@ def _ue4_build(env):
 
             tmp = env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
             if os.path.exists(nimp.system.sanitize_path(tmp)):
-                if not nimp.build.vsbuild(tmp, 'x64', 'Development', None, '11', 'Build') \
-                   and not nimp.build.vsbuild(tmp, 'x64', 'Development', None, '14', 'Build'):
+                if not nimp.build.vsbuild(tmp, 'x64', 'Development',
+                                          vs_version='11',
+                                          target='Build') \
+                   and not nimp.build.vsbuild(tmp, 'x64', 'Development',
+                                              vs_version='14',
+                                              target='Build'):
                     logging.error("Could not build XboxOnePackageNameUtil")
                     success = False
 
@@ -272,7 +282,9 @@ def _ue4_build_project(env, sln_file, project, build_platform,
 
     if nimp.system.is_windows():
         return nimp.build.vsbuild(sln_file, build_platform, configuration,
-                                  project, vs_version, target)
+                                  project=project,
+                                  vs_version=vs_version,
+                                  target=target)
 
     if platform.system() == 'Darwin':
         host_platform = 'Mac'

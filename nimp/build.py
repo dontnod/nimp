@@ -28,7 +28,8 @@ import subprocess
 
 import nimp.system
 
-def vsbuild(solution, platform_name, configuration, project = None, vs_version = '12', target = 'Build'):
+def vsbuild(solution, platform_name, configuration, project=None,
+            vs_version='12', target='Build', dotnet_version='4.6'):
     ''' Builds a project with Visual Studio '''
     build_directory = '.'
 
@@ -45,7 +46,7 @@ def vsbuild(solution, platform_name, configuration, project = None, vs_version =
         return nimp.system.call_process(build_directory, command) == 0
 
     else: # Mac and Linux alike
-        command = [ 'xbuild', solution, '/verbosity:quiet', '/p:TargetFrameworkVersion=v4.5', '/p:TargetFrameworkProfile=', '/nologo' ]
+        command = [ 'xbuild', solution, '/verbosity:quiet', '/p:TargetFrameworkVersion=v' + dotnet_version, '/p:TargetFrameworkProfile=', '/nologo' ]
         return nimp.system.call_process(build_directory, command) == 0
 
 def _find_devenv_path(vs_version):

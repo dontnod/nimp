@@ -82,7 +82,10 @@ class Build(nimp.command.Command):
             elif '# Visual Studio 2013' in contents:
                 vsver = '12'
 
-            return nimp.build.vsbuild(sln, platform, config, env.target, vsver, 'Build')
+            return nimp.build.vsbuild(sln, platform, config,
+                                      project=env.target,
+                                      vs_version=vsver,
+                                      target='Build')
 
         return False
 
