@@ -33,6 +33,7 @@ class Publish(nimp.command.CommandGroup):
     ''' Publishing commands '''
     def __init__(self):
         super(Publish, self).__init__([_Binaries(),
+                                       _Debug(),
                                        _Symbols(),
                                        _Version()])
 
@@ -50,7 +51,6 @@ class _Binaries(nimp.command.Command):
                                           'configuration',
                                           'target',
                                           'revision')
-
         return True
 
     def is_available(self, env):
@@ -62,6 +62,30 @@ class _Binaries(nimp.command.Command):
 
         files_to_publish = nimp.system.map_files(env)
         files_to_publish.to(env.binaries_tmp).load_set("binaries")
+        return nimp.system.all_map(nimp.system.robocopy, files_to_publish())
+
+class _Debug(nimp.command.Command):
+    ''' Publishes debug fileset '''
+    def __init__(self):
+        super(_Debug, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        nimp.command.add_common_arguments(parser,
+                                          'platform',
+                                          'configuration',
+                                          'target',
+                                          'revision')
+        return True
+
+    def is_available(self, env):
+        return True, ''
+
+    def run(self, env):
+        if not env.check_config('binaries_tmp'):
+            return False
+
+        files_to_publish = nimp.system.map_files(env)
+        files_to_publish.to(env.binaries_tmp).load_set("symbols")
         return nimp.system.all_map(nimp.system.robocopy, files_to_publish())
 
 class _Symbols(nimp.command.Command):
