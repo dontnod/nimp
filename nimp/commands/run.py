@@ -21,6 +21,8 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Command to wrap command execution '''
 
+import argparse
+
 import nimp.command
 import nimp.system
 
@@ -31,9 +33,9 @@ class Run(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         parser.add_argument('command_and_args',
-                            help     = 'Command to run',
-                            nargs    = '+',
-                            metavar  = '<command> [<argument>...]')
+                            help = 'Command to run',
+                            metavar = '<command> [<argument>...]',
+                            nargs = argparse.REMAINDER)
         return True
 
     def is_available(self, env):
@@ -45,3 +47,4 @@ class Run(nimp.command.Command):
             cmdline.append(env.format(arg))
 
         return nimp.system.call_process(".", cmdline) == 0
+

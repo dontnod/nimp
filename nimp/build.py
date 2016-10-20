@@ -29,7 +29,7 @@ import subprocess
 import nimp.system
 
 def vsbuild(solution, platform_name, configuration, project=None,
-            vs_version='12', target='Build', dotnet_version='4.5'):
+            vs_version='12', target='Build', dotnet_version='4.6'):
     ''' Builds a project with Visual Studio '''
     build_directory = '.'
 
