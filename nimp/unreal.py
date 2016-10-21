@@ -239,7 +239,8 @@ def _ue4_build(env):
                                   config, vs_version, 'Build'):
             success = False
 
-    nimp.environment.execute_hook('postbuild', env)
+    if success:
+        nimp.environment.execute_hook('postbuild', env)
 
     return success
 
