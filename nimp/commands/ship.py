@@ -73,10 +73,8 @@ class Ship(nimp.command.Command):
                           '-nodebuginfo',
                           env.format('-targetplatform={ue4_platform}'),
                           '-utf8output' ]
-        # If a map is specified, use -cooksinglepackage (otherwise all the
-        # default maps will be cooked, too).
         if env.map:
-            cmd += [ env.format('-map={map}'), '-cooksinglepackage' ]
+            cmd += [ env.format('-mapstocook={map}') ]
 
         if nimp.system.call_process('.', cmd, heartbeat = 30) != 0:
             return False
