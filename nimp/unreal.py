@@ -184,6 +184,15 @@ def _ue4_build(env):
             logging.error("Could not build NetworkProfiler")
             success = False
 
+        if env.platform != 'win64':
+            # On Windows this is part of the main .sln, but not on Linux…
+            if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/AutomationTool/AutomationTool_Mono.sln'),
+                                      'Any CPU', 'Development',
+                                      vs_version=vs_version,
+                                      target='Build'):
+                logging.error("Could not build AutomationTool")
+                success = False
+
         if env.platform != 'mac':
             # This also builds AgentInterface.dll, needed by SwarmInterface.sln
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
