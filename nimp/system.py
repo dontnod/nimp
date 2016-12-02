@@ -235,8 +235,9 @@ def robocopy(src, dest):
         while True:
             try:
                 if os.path.exists(dest):
-                    os.chmod(dest, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+                    os.chmod(dest, stat.S_IRWXU)
                 shutil.copy2(src, dest)
+                os.chmod(dest, stat.S_IRWXU)
                 break
             except IOError as ex:
                 logging.warning('I/O error %s : %s', ex.errno, ex.strerror)
