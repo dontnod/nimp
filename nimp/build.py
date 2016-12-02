@@ -46,7 +46,11 @@ def vsbuild(solution, platform_name, configuration, project=None,
         return nimp.system.call_process(build_directory, command) == 0
 
     else: # Mac and Linux alike
-        command = [ 'xbuild', solution, '/verbosity:quiet', '/p:TargetFrameworkVersion=v' + dotnet_version, '/p:TargetFrameworkProfile=', '/nologo' ]
+        command = [ 'xbuild', solution, '/verbosity:quiet', '/nologo',
+                    '/p:Configuration=' + configuration,
+                    '/p:Platform=' + platform_name,
+                    '/p:TargetFrameworkVersion=v' + dotnet_version,
+                    '/p:TargetFrameworkProfile=' ]
         return nimp.system.call_process(build_directory, command) == 0
 
 def _find_devenv_path(vs_version):
