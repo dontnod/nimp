@@ -67,6 +67,7 @@ class Ship(nimp.command.Command):
                           '-package',
                           env.format('-clientconfig={ue4_config}'),
                           '-ue4exe=UE4Editor-Cmd.exe',
+                          '-crashreporter',
                           '-pak',
                           '-prereqs',
                           '-nodebuginfo',
