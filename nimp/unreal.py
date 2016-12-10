@@ -135,7 +135,8 @@ def _ue4_build(env):
         tools += [ 'UnrealFrontend',
                    'UnrealFileServer',
                    'ShaderCompileWorker',
-                   'UnrealPak', ]
+                   'UnrealPak',
+                   'CrashReportClient' ]
 
         if env.platform != 'mac':
             tools += [ 'UnrealLightmass', ] # doesn’t build (yet?)
@@ -146,8 +147,7 @@ def _ue4_build(env):
         if env.platform == 'win64':
             tools += [ 'DotNETUtilities',
                        'AutomationTool',
-                       'SymbolDebugger',
-                       'CrashReportClient', ]
+                       'SymbolDebugger' ]
             need_ps4devkitutil = True
             need_ps4mapfileutil = True
             need_xboxonepdbfileutil = True
