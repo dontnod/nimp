@@ -234,6 +234,7 @@ def _ue4_build(env):
     if env.target == 'game':
         if not _ue4_build_project(env, solution, env.game, env.ue4_platform,
                                   env.ue4_config, vs_version, 'Build'):
+            logging.error("Could not build game project")
             success = False
 
     if env.target == 'editor':
@@ -246,6 +247,7 @@ def _ue4_build(env):
 
         if not _ue4_build_project(env, solution, project, env.ue4_platform,
                                   config, vs_version, 'Build'):
+            logging.error("Could not build editor project")
             success = False
 
     if success:
