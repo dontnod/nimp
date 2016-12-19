@@ -205,6 +205,7 @@ class P4:
             if action == 'add':
                 logging.debug("Deleting the following file because it's not under Perforce source control: %s", filename)
                 nimp.system.safe_delete(filename)
+        return True
 
     def reconcile(self, cl_number, *files):
         ''' Reconciles given files in given cl '''
