@@ -91,7 +91,7 @@ class _Fileset(P4Command):
 
         parser.add_argument('p4_operation',
                             help = 'Operation to perform on the fileset.',
-                            choices = ['checkout', 'reconcile'])
+                            choices = ['checkout', 'reconcile', 'delete-uncontrolled'])
 
         parser.add_argument('fileset',
                             metavar = '<fileset>',
@@ -114,17 +114,25 @@ class _Fileset(P4Command):
 
         p4 = nimp.p4.get_client(env)
 
-        description = env.format(env.changelist_description)
-        changelist = p4.get_or_create_changelist(description)
+        # Dictionary below has the following structure:
+        # key: p4_operation
+        # value: [method, uses_a_changelist]
+        operations = { 'checkout' : [p4.edit, True], 
+                       'reconcile' : [p4.reconcile, True], 
+                       'delete-uncontrolled' : [p4.delete_uncontrolled, False] }
 
         files = nimp.system.map_files(env)
         if files.load_set(env.fileset) is None:
             return False
         files = [file[0] for file in files()]
 
-        operations = { 'checkout' : p4.edit,
-                       'reconcile' : p4.reconcile }
-        return operations[env.p4_operation](changelist, *files)
+        if operations[env.p4_operation][1]:
+            description = env.format(env.changelist_description)
+            changelist = p4.get_or_create_changelist(description)
+            return operations[env.p4_operation][0](changelist, *files)
+        else:
+            return operations[env.p4_operation][0](*files)
+
 
 class _Submit(P4Command):
     ''' Submits a changelist identified by it's description  '''
