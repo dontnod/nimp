@@ -85,8 +85,8 @@ def get_client(env):
 
 class P4:
     ''' P4 Client '''
-    def __init__(self, host = None, user = None, password = None, client = None):
-        self._host = host
+    def __init__(self, port = None, user = None, password = None, client = None):
+        self._port = port
         self._user = user
         self._password = password
         self._client = client
@@ -352,8 +352,8 @@ class P4:
 
     def _get_p4_command(self, *args):
         command = ['p4', '-z', 'tag']
-        if self._host is not None:
-            command += ['-H', self._host]
+        if self._port is not None:
+            command += ['-p', self._port]
         if self._user is not None:
             command += ['-u', self._user]
         if self._password is not None:
