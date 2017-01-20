@@ -156,7 +156,7 @@ class _Version(nimp.command.Command):
                  'bittornado repo url here) '))
 
     def run(self, env):
-        if not env.check_config('binaries_tmp', 'binaries_archive', 'binaries_torrent'):
+        if not env.check_config('binaries_tmp', 'binaries_archive_for_publish', 'binaries_torrent'):
             return False
 
         files_to_deploy = nimp.system.map_files(env).to(env.format(env.root_dir))
@@ -175,7 +175,7 @@ class _Version(nimp.command.Command):
             return False
 
         # Create a Zip file
-        archive = nimp.system.sanitize_path(env.format(env.binaries_archive))
+        archive = nimp.system.sanitize_path(env.format(env.binaries_archive_for_publish))
         archive_tmp = archive + '.tmp'
 
         logging.info('Creating Zip file %s…', archive)
@@ -203,7 +203,7 @@ class _Version(nimp.command.Command):
             nimp.system.safe_makedirs(os.path.dirname(torrent))
 
         publish = nimp.system.map_files(env)
-        publish.src(env.binaries_archive).to(os.path.basename(archive))
+        publish.src(env.binaries_archive_for_publish).to(os.path.basename(archive))
         data = nimp.torrent.make_torrent(None, env.torrent_tracker, publish)
         if not data:
             logging.error('Torrent is empty (no files?)')

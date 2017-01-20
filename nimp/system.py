@@ -30,6 +30,7 @@ import os
 import os.path
 import platform
 import re
+import requests
 import shutil
 import stat
 import struct
@@ -575,73 +576,103 @@ class FileMapper(object):
         except KeyError:
             raise AttributeError(name)
 
-def list_all_revisions(env, version_directory_format, **override_args):
-    ''' Lists all revisions based on directory pattern '''
-    version_directory_format = sanitize_path(version_directory_format)
-    revisions = []
-    format_args = { 'revision' : '*',
-                    'platform' : '*',
-                    'dlc' : '*',
-                    'configuration' : '*' }
+def list_all_revisions(env, archive_location_format, **override_args): 
+    ''' Lists all revisions based on pattern '''
+    
+    revisions_infos = []
+
+    http_match = re.match('^http(s?)://.*$', archive_location_format)
+    is_http = http_match is not None
+
+    format_args = {'revision' : '*',
+                   'platform' : '*',
+                   'dlc' : '*',
+                   'configuration' : '*'}
 
     format_args.update(vars(env).copy())
     format_args.update(override_args)
 
     if format_args['revision'] is None:
         format_args['revision'] = '*'
-
     if format_args['platform'] is None:
         format_args['platform'] = '*'
-
     if format_args['dlc'] is None:
         format_args['dlc'] = '*'
-
     if format_args['configuration'] is None:
         format_args['configuration'] = '*'
 
-    version_directory_format = version_directory_format.replace('\\', '/')
-    version_directories_glob = version_directory_format.format(**format_args)
+    # Preparing to search (either on a http directory listing or directly with a glob)
+    logging.debug('Looking for latest revision in %s…', archive_location_format)
+    if is_http:
+        listing_url, _, archive_pattern = archive_location_format.format(**format_args).rpartition("/")
+        archive_regex = fnmatch.translate(archive_pattern)
+    else:
+        archive_location_format = sanitize_path(archive_location_format)
+        archive_location_format = archive_location_format.replace('\\', '/')
+        archive_glob = archive_location_format.format(**format_args)
 
+    # Preparing for capture after search
     format_args.update({'revision'      : r'(?P<revision>\d+)',
                         'platform'      : r'(?P<platform>\w+)',
                         'dlc'           : r'(?P<dlc>\w+)',
                         'configuration' : r'(?P<configuration>\w+)'})
 
-    logging.debug('Looking for latest version in %s…', version_directory_format)
+    if is_http:
+        r = requests.get(listing_url)
+        # TODO: test r.ok and/or r.status_code...
+        listing_content = r.text
+        anchor_extractor = '^.*<a href="(?P<anchor_target>.+)">.*$'
+        _, _, archive_capture_regex = archive_location_format.format(**format_args).rpartition("/")
+        for line in listing_content.splitlines():
+            anchor_match = re.match(anchor_extractor, line)
+            if anchor_match is not None:
+                anchor_target = anchor_match.groupdict()['anchor_target']
+                revision_match = re.match(archive_regex, anchor_target)
+                revision_capture_match = re.match(archive_capture_regex, anchor_target)
 
-    for version_file in glob.glob(version_directories_glob):
-        version_file = version_file.replace('\\', '/')
-        version_regex = version_directory_format.format(**format_args)
+                if (revision_match is not None and revision_capture_match is not None):
+                    revision_infos = revision_capture_match.groupdict()
+                    revision_infos['is_http'] = True
+                    revision_infos['location'] = '/'.join([listing_url, anchor_target])
+                    revisions_infos += [revision_infos]
+    else:
+        archive_capture_regex = archive_location_format.format(**format_args)
+        for archive_file in glob.glob(archive_glob):
+            archive_file = archive_file.replace('\\', '/')
+            revision_match = re.match(archive_capture_regex, archive_file)
 
-        rev_match = re.match(version_regex, version_file)
+            if revision_match is not None:
+                revision_infos = revision_match.groupdict()
+                revision_infos['is_http'] = False
+                revision_infos['location'] = archive_file
+                revision_infos['creation_date'] = datetime.date.fromtimestamp(os.path.getctime(archive_file))
+                revisions_infos += [revision_infos]
 
-        if rev_match is not None:
-            rev_infos = rev_match.groupdict()
-            rev_infos['path'] = version_file
-            rev_infos['creation_date'] = datetime.date.fromtimestamp(os.path.getctime(version_file))
+    return sorted(revisions_infos, key=lambda ri: ri['revision'], reverse = True)
 
-            if 'platform' not in rev_infos:
-                rev_infos['platform'] = "*"
-            if 'dlc' not in rev_infos:
-                rev_infos['dlc'] = "*"
-            if 'configuration' not in rev_infos:
-                rev_infos['configuration'] = "*"
+def get_latest_available_revision(env, archive_location_format, max_revision, min_revision, **override_args):
+    ''' Returns the latest available revision based on pattern '''
+    revisions_infos = list_all_revisions(env, archive_location_format, **override_args)
+    for revision_infos in revisions_infos:
+        revision = revision_infos['revision']
+        if ((max_revision is None or int(revision) <= int(max_revision)) and
+            (min_revision is None or int(revision) >= int(min_revision))):
+            logging.debug('Found revision %s', revision)
+            return revision_infos
 
-            rev_infos['rev_type'] = '{dlc}_{platform}_{configuration}'.format(**rev_infos)
-            revisions += [rev_infos]
-
-    return sorted(revisions, key=lambda rev_infos: rev_infos['revision'], reverse = True)
-
-def get_latest_available_revision(env, version_directory_format, max_revision, **override_args):
-    ''' Returns the last revision of a file list '''
-    revisions = list_all_revisions(env, version_directory_format, **override_args)
-    for version_info in revisions:
-        revision = version_info['revision']
-        if max_revision is None or int(revision) <= int(max_revision):
-            logging.debug('Found version %s', revision)
-            return revision
-
-    raise Exception('No version <= %s found. Candidates were: %s' % (max_revision, ' '.join(revisions)))
+    revisions = map((lambda ri: ri['revision']), revisions_infos)
+    candidates_desc = (' Candidates were: %s' % ' '.join(revisions)) if revisions_infos else ''
+    if (env.revision is not None):
+        revision_desc = ' equal to %s' % env.revision
+    elif (max_revision is not None and min_revision is not None):
+        revision_desc = ' <= %s and >= %s' % (max_revision, min_revision)
+    elif (max_revision is not None):
+        revision_desc = ' <= %s' % max_revision
+    elif (min_revision is not None):
+        revision_desc = ' >= %s' % min_revision
+    else:
+        revision_desc = ''
+    raise Exception('No revision%s found.%s' % (revision_desc, candidates_desc))
 
 if is_windows():
     _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None
