@@ -51,6 +51,8 @@ def vsbuild(solution, platform_name, configuration, project=None,
                     '/p:Platform=' + platform_name,
                     '/p:TargetFrameworkVersion=v' + dotnet_version,
                     '/p:TargetFrameworkProfile=' ]
+        if project is not None:
+            command = command + [ '/target:' + project ]
         return nimp.system.call_process(build_directory, command) == 0
 
 def _find_devenv_path(vs_version):
