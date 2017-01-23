@@ -277,7 +277,10 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
                '-run=%s' % command]
 
     cmdline += list(args)
-    cmdline += ['-nopause', '-buildmachine', '-forcelogflush', '-unattended', '-noscriptcheck']
+    cmdline += ['-buildmachine', '-nopause', '-unattended', '-noscriptcheck']
+    # Remove -forcelogflush because it slows down cooking
+    # (https://udn.unrealengine.com/questions/330502/increased-cook-times-in-ue414.html)
+    #cmdline += ['-forcelogflush']
 
     return nimp.system.call_process('.', cmdline, heartbeat = heartbeat) == 0
 
