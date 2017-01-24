@@ -86,6 +86,7 @@ def load_arguments(env):
 
     if hasattr(env, "platform") and env.platform is not None:
         def sanitize_platform(platform):
+            ''' Sanitizes platform '''
             std_platforms = { "ps4"       : "ps4",
                               "orbis"     : "ps4",
                               "xboxone"   : "xboxone",
@@ -106,7 +107,7 @@ def load_arguments(env):
                 return platform
             return std_platforms[platform.lower()]
 
-        env.platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
+        env.platform = '+'.join(map(sanitize_platform, env.platform.split('+'))) #pylint: disable=bad-builtin
 
         env.is_win32 = 'win32'   in env.platform.split('+')
         env.is_win64 = 'win64'   in env.platform.split('+')
@@ -122,6 +123,7 @@ def load_arguments(env):
 
     if hasattr(env, 'configuration') and env.configuration is not None:
         def sanitize_config(config):
+            ''' Sanitizes config '''
             std_configs = { 'debug'    : 'debug',
                             'devel'    : 'devel',
                             'release'  : 'release',
@@ -133,7 +135,7 @@ def load_arguments(env):
                 return ""
             return std_configs[config.lower()]
 
-        env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
+        env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+'))) #pylint: disable=bad-builtin
 
     return True
 

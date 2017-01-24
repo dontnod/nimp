@@ -139,7 +139,7 @@ class _Unstash(FilesetCommand):
                     logging.info('Unstashing %s as %s', md5, dst)
                     nimp.system.safe_delete(dst)
                     os.replace(src, dst)
-                except Exception as ex:
+                except Exception as ex: #pylint: disable=broad-except
                     logging.error(ex)
                     success = False
         nimp.system.safe_delete(stash_file)

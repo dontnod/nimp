@@ -61,7 +61,6 @@ def _find_devenv_path(vs_version):
     # First try the registry, because the environment variable is unreliable
     # (case of Visual Studio installed on a different drive; it still sets
     # the envvar to point to C:\Program Files even if devenv.com is on D:\)
-    # pylinnt
     #pylint: disable=import-error
     from winreg import OpenKey, QueryValue, HKEY_LOCAL_MACHINE
     key_path = 'SOFTWARE\\Classes\\VisualStudio.accessor.' + vs_version + '.0\\shell\\Open'

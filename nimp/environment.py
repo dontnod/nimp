@@ -231,8 +231,8 @@ def read_config_file(filename):
     ''' Reads a config file and returns a dictionary with values defined in it '''
     try:
         conf = open(filename, "rb").read()
-    except IOError as exception:
-        logging.error("Unable to open configuration file: %s", exception)
+    except IOError as ex:
+        logging.error("Unable to open configuration file: %s", ex)
         return None
     # Parse configuration file
     try:
@@ -259,8 +259,8 @@ def _get_instances(module, instance_type):
             sub_module_complete_name = module_name + "." + sub_module_name_it
             try:
                 sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
-            except ImportError as exception:
-                logging.warning('Error importing local command %s: %s', sub_module_complete_name, exception)
+            except ImportError as ex:
+                logging.warning('Error importing local command %s: %s', sub_module_complete_name, ex)
                 continue
             sub_instances = _get_instances(sub_module_it, instance_type)
             for (klass, instance) in sub_instances.items():

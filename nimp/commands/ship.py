@@ -59,20 +59,21 @@ class Ship(nimp.command.Command):
         loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
         exe_path = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), 'Engine/Binaries/DotNET/AutomationTool.exe'))
         # Use heartbeat because this sometimes compiles shaders in the background
-        cmd = [ exe_path, 'BuildCookRun',
-                          '-nocompileeditor', '-nop4',
-                          nimp.system.sanitize_path(env.format('-project={game}/{game}.uproject')),
-                          '-cook', '-stage', '-archive',
-                          '-archivedirectory=%s' % nimp.system.sanitize_path(loose_dir),
-                          '-package',
-                          env.format('-clientconfig={ue4_config}'),
-                          '-ue4exe=UE4Editor-Cmd.exe',
-                          '-crashreporter',
-                          '-pak',
-                          '-prereqs',
-                          '-nodebuginfo',
-                          env.format('-targetplatform={ue4_platform}'),
-                          '-utf8output' ]
+        cmd = [ exe_path, 
+                'BuildCookRun',
+                '-nocompileeditor', '-nop4',
+                nimp.system.sanitize_path(env.format('-project={game}/{game}.uproject')),
+                '-cook', '-stage', '-archive',
+                '-archivedirectory=%s' % nimp.system.sanitize_path(loose_dir),
+                '-package',
+                env.format('-clientconfig={ue4_config}'),
+                '-ue4exe=UE4Editor-Cmd.exe',
+                '-crashreporter',
+                '-pak',
+                '-prereqs',
+                '-nodebuginfo',
+                env.format('-targetplatform={ue4_platform}'),
+                '-utf8output' ]
         if env.map:
             cmd += [ env.format('-mapstocook={map}') ]
 

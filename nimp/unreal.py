@@ -101,16 +101,16 @@ def _ue4_build(env):
     vs_version = '14'
     try:
         for line in open(env.format(env.solution)):
-            if ('# Visual Studio 2012' in line or
-                '# Visual Studio 11' in line):
+            if ('# Visual Studio 2012' in line
+                or '# Visual Studio 11' in line):
                 vs_version = '11'
                 break
-            if ('# Visual Studio 2013' in line or
-                '# Visual Studio 12' in line):
+            if ('# Visual Studio 2013' in line
+                or '# Visual Studio 12' in line):
                 vs_version = '12'
                 break
-            if ('# Visual Studio 2015' in line or
-                '# Visual Studio 14' in line):
+            if ('# Visual Studio 2015' in line
+                or '# Visual Studio 14' in line):
                 vs_version = '14'
                 break
     except IOError:
@@ -335,12 +335,12 @@ def _ue4_load_arguments(env):
         return platforms[in_platform]
 
     if hasattr(env, 'platform'):
-        env.ue4_platform = '+'.join(map(_get_ue4_platform, env.platform.split('+')))
+        env.ue4_platform = '+'.join(map(_get_ue4_platform, env.platform.split('+'))) #pylint: disable=bad-builtin
 
     if hasattr(env, 'configuration'):
         if env.configuration is None:
             env.configuration = 'devel'
-        env.ue4_config = '+'.join(map(_get_ue4_config, env.configuration.split('+')))
+        env.ue4_config = '+'.join(map(_get_ue4_config, env.configuration.split('+'))) #pylint: disable=bad-builtin
 
     if not hasattr(env, 'target') or env.target is None and env.is_ue4:
         if env.platform in ['win64', 'mac', 'linux']:

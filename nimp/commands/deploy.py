@@ -24,11 +24,12 @@
 import logging
 import os
 import os.path
-import requests
 import shutil
 import stat
 import tempfile
 import zipfile
+
+import requests
 
 #from pyremotezip import RemoteZip
 # (would be nice, but pyremotezip is python2 for now)
@@ -71,10 +72,10 @@ class Deploy(nimp.command.Command):
         logging.debug("Deploying version…")
 
         # Early exit, options harmonizing etc:
-        incompatible_options = ((env.max_revision is not None and env.min_revision is not None and int(env.max_revision) < int(env.min_revision)) or 
-                                (env.revision is not None and env.min_revision is not None and int(env.revision) < int(env.min_revision)) or 
-                                (env.max_revision is not None and env.revision is not None and int(env.max_revision) < int(env.revision)))
-        if incompatible_options: 
+        incompatible_options = ((env.max_revision is not None and env.min_revision is not None and int(env.max_revision) < int(env.min_revision))
+                                or (env.revision is not None and env.min_revision is not None and int(env.revision) < int(env.min_revision))
+                                or (env.max_revision is not None and env.revision is not None and int(env.max_revision) < int(env.revision)))
+        if incompatible_options:
             error_message = 'Incompatible options'
             if env.revision is not None:
                 error_message += ' - requested revision = %s' % env.revision
@@ -84,23 +85,23 @@ class Deploy(nimp.command.Command):
                 error_message += ' - specified min revision = %s' % env.min_revision
             logging.error(error_message)
             return False
-        if (env.revision is None and env.max_revision is not None and env.min_revision is not None and int(env.max_revision) == int(env.min_revision)):
+        if env.revision is None and env.max_revision is not None and env.min_revision is not None and int(env.max_revision) == int(env.min_revision):
             env.revision = env.max_revision # speeding things up
 
         revision_info = nimp.system.get_latest_available_revision(env, env.binaries_archive_for_deploy, **vars(env))
         env.revision = revision_info['revision']
         archive_location = revision_info['location']
-        if (env.revision is None or archive_location is None):
+        if env.revision is None or archive_location is None:
             return False
 
         # Now uncompress the archive
         if revision_info['is_http']:
             # (pyremotezip would be nice here (snippets below), but it's python2 for now)
             # snippets: rz = RemoteZip(archive_location); toc = rz.getTableOfContents(); output = rz.extractFile(toc[2]['filename'])
-            r = requests.get(archive_location, stream=True)
-            # TODO: test r.ok and/or r.status_code...
+            get_request = requests.get(archive_location, stream=True)
+            # TODO: test get_request.ok and/or get_request.status_code...
             file_object = tempfile.NamedTemporaryFile()
-            shutil.copyfileobj(r.raw, file_object)
+            shutil.copyfileobj(get_request.raw, file_object)
         else:
             file_object = open(nimp.system.sanitize_path(archive_location), 'rb')
         zip_file = zipfile.ZipFile(file_object)
@@ -118,7 +119,7 @@ class Deploy(nimp.command.Command):
         # If this is an executable or a script, make it +x
         if MAGIC is not None:
             filetype = MAGIC.from_file(filename)
-            if type(filetype) is bytes:
+            if isinstance(filetype, bytes):
                 # Older versions of python-magic return bytes instead of a string
                 filetype = filetype.decode('ascii')
 
@@ -127,5 +128,5 @@ class Deploy(nimp.command.Command):
                     logging.info('Making executable because of file type: %s', filetype)
                     file_stat = os.stat(filename)
                     os.chmod(filename, file_stat.st_mode | stat.S_IEXEC)
-                except Exception:
+                except Exception: #pylint: disable=broad-except
                     pass

@@ -30,7 +30,6 @@ import os
 import os.path
 import platform
 import re
-import requests
 import shutil
 import stat
 import struct
@@ -40,6 +39,7 @@ import time
 import importlib
 
 import glob2
+import requests
 
 import nimp.environment
 
@@ -55,11 +55,11 @@ def try_import(module_name):
     ''' Tries to import a module, return none if unavailable '''
     try:
         return importlib.import_module(module_name)
-    except ImportError as e:
-        if e.name == module_name:
+    except ImportError as ex:
+        if ex.name == module_name:
             logging.debug('No module %s found', module_name)
         else:
-            logging.warning('%s', e)
+            logging.warning('%s', ex)
         return None
 
 def split_path(path):
@@ -398,8 +398,8 @@ class FileMapper(object):
         locals_vars = {}
         try:
             conf = open(file_name, "rb").read()
-        except IOError as exception:
-            logging.error("Error loading fileset: unable to open file: %s", exception)
+        except IOError as ex:
+            logging.error("Error loading fileset: unable to open file: %s", ex)
             return None
 
         try:
@@ -576,10 +576,10 @@ class FileMapper(object):
         except KeyError:
             raise AttributeError(name)
 
-def list_all_revisions(env, archive_location_format, **override_args): 
+def list_all_revisions(env, archive_location_format, **override_args):
     ''' Lists all revisions based on pattern '''
-    
-    revisions_infos = []
+
+    revisions_info = []
 
     http_match = re.match('^http(s?)://.*$', archive_location_format)
     is_http = http_match is not None
@@ -618,57 +618,64 @@ def list_all_revisions(env, archive_location_format, **override_args):
                         'configuration' : r'(?P<configuration>\w+)'})
 
     if is_http:
-        r = requests.get(listing_url)
-        # TODO: test r.ok and/or r.status_code...
-        listing_content = r.text
-        anchor_extractor = '^.*<a href="(?P<anchor_target>.+)">.*$'
+        get_request = requests.get(listing_url)
+        # TODO: test get_request.ok and/or get_request.status_code...
+        listing_content = get_request.text
         _, _, archive_capture_regex = archive_location_format.format(**format_args).rpartition("/")
         for line in listing_content.splitlines():
-            anchor_match = re.match(anchor_extractor, line)
-            if anchor_match is not None:
-                anchor_target = anchor_match.groupdict()['anchor_target']
-                revision_match = re.match(archive_regex, anchor_target)
-                revision_capture_match = re.match(archive_capture_regex, anchor_target)
-
-                if (revision_match is not None and revision_capture_match is not None):
-                    revision_infos = revision_capture_match.groupdict()
-                    revision_infos['is_http'] = True
-                    revision_infos['location'] = '/'.join([listing_url, anchor_target])
-                    revisions_infos += [revision_infos]
+            extract_revision_info_from_html_listing_line(revisions_info, listing_url, line, archive_regex, archive_capture_regex)
     else:
         archive_capture_regex = archive_location_format.format(**format_args)
-        for archive_file in glob.glob(archive_glob):
-            archive_file = archive_file.replace('\\', '/')
-            revision_match = re.match(archive_capture_regex, archive_file)
+        for archive_path in glob.glob(archive_glob):
+            archive_path = archive_path.replace('\\', '/')
+            extract_revision_info_from_path(revisions_info, archive_path, archive_capture_regex)
 
-            if revision_match is not None:
-                revision_infos = revision_match.groupdict()
-                revision_infos['is_http'] = False
-                revision_infos['location'] = archive_file
-                revision_infos['creation_date'] = datetime.date.fromtimestamp(os.path.getctime(archive_file))
-                revisions_infos += [revision_infos]
+    return sorted(revisions_info, key=lambda ri: ri['revision'], reverse = True)
 
-    return sorted(revisions_infos, key=lambda ri: ri['revision'], reverse = True)
+def extract_revision_info_from_html_listing_line(revisions_info, listing_url, line, archive_regex, archive_capture_regex):
+    anchor_extractor = '^.*<a href="(?P<anchor_target>.+)">.*$'
+    anchor_match = re.match(anchor_extractor, line)
+
+    if anchor_match is not None:
+        anchor_target = anchor_match.groupdict()['anchor_target']
+        revision_match = re.match(archive_regex, anchor_target)
+        revision_capture_match = re.match(archive_capture_regex, anchor_target)
+
+        if revision_match is not None and revision_capture_match is not None:
+            revision_info = revision_capture_match.groupdict()
+            revision_info['is_http'] = True
+            revision_info['location'] = '/'.join([listing_url, anchor_target])
+            revisions_info += [revision_info]
+
+def extract_revision_info_from_path(revisions_info, archive_path, archive_capture_regex):
+    revision_match = re.match(archive_capture_regex, archive_path)
+
+    if revision_match is not None:
+        revision_info = revision_match.groupdict()
+        revision_info['is_http'] = False
+        revision_info['location'] = archive_path
+        revision_info['creation_date'] = datetime.date.fromtimestamp(os.path.getctime(archive_path))
+        revisions_info += [revision_info]
 
 def get_latest_available_revision(env, archive_location_format, max_revision, min_revision, **override_args):
     ''' Returns the latest available revision based on pattern '''
-    revisions_infos = list_all_revisions(env, archive_location_format, **override_args)
-    for revision_infos in revisions_infos:
-        revision = revision_infos['revision']
-        if ((max_revision is None or int(revision) <= int(max_revision)) and
-            (min_revision is None or int(revision) >= int(min_revision))):
+    revisions_info = list_all_revisions(env, archive_location_format, **override_args)
+    for revision_info in revisions_info:
+        revision = revision_info['revision']
+        if ((max_revision is None or int(revision) <= int(max_revision)) 
+            and (min_revision is None or int(revision) >= int(min_revision))):
             logging.debug('Found revision %s', revision)
-            return revision_infos
+            return revision_info
 
-    revisions = map((lambda ri: ri['revision']), revisions_infos)
-    candidates_desc = (' Candidates were: %s' % ' '.join(revisions)) if revisions_infos else ''
-    if (env.revision is not None):
+    revisions = [revision_info['revision'] for revision_info in revisions_info]
+    candidates_desc = (' Candidates were: %s' % ' '.join(revisions)) if revisions_info else ''
+    if env.revision is not None:
         revision_desc = ' equal to %s' % env.revision
-    elif (max_revision is not None and min_revision is not None):
+    elif max_revision is not None and min_revision is not None:
         revision_desc = ' <= %s and >= %s' % (max_revision, min_revision)
-    elif (max_revision is not None):
+    elif max_revision is not None:
         revision_desc = ' <= %s' % max_revision
-    elif (min_revision is not None):
+    elif min_revision is not None:
         revision_desc = ' >= %s' % min_revision
     else:
         revision_desc = ''

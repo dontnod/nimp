@@ -85,6 +85,8 @@ def get_client(env):
 
 class P4:
     ''' P4 Client '''
+    #pylint: disable=too-many-public-methods
+
     def __init__(self, port = None, user = None, password = None, client = None):
         self._port = port
         self._user = user

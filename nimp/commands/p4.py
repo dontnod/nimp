@@ -117,8 +117,8 @@ class _Fileset(P4Command):
         # Dictionary below has the following structure:
         # key: p4_operation
         # value: [method, uses_a_changelist]
-        operations = { 'checkout' : [p4.edit, True], 
-                       'reconcile' : [p4.reconcile, True], 
+        operations = { 'checkout' : [p4.edit, True],
+                       'reconcile' : [p4.reconcile, True],
                        'delete-uncontrolled' : [p4.delete_uncontrolled, False] }
 
         files = nimp.system.map_files(env)

@@ -562,7 +562,7 @@ def mock_p4():
 class _P4Tests(unittest.TestCase):
     def __init__(self, test):
         super(_P4Tests, self).__init__(test)
-        self._p4 = nimp.p4.P4(host = 'test_host',
+        self._p4 = nimp.p4.P4(port = 'test_port',
                               user = 'test_user',
                               password = 'test_password',
                               client = 'test_client')
