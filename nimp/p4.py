@@ -196,8 +196,8 @@ class P4:
         status_input = '\n'.join(status_paths)
 
         for filename, action in self._parse_command_output(['-x', '-', '-z', 'tag', 'reconcile', '-n', '-f'],
-                                                            r"^\.\.\. clientFile(.*)$",
-                                                            r"^\.\.\. action(.*)", stdin = status_input):
+                                                           r"^\.\.\. clientFile(.*)$",
+                                                           r"^\.\.\. action(.*)", stdin = status_input):
             filename = os.path.normpath(filename) if filename is not None else ''
             yield filename, action
 

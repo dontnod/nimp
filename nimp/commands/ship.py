@@ -59,7 +59,7 @@ class Ship(nimp.command.Command):
         loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
         exe_path = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), 'Engine/Binaries/DotNET/AutomationTool.exe'))
         # Use heartbeat because this sometimes compiles shaders in the background
-        cmd = [ exe_path, 
+        cmd = [ exe_path,
                 'BuildCookRun',
                 '-nocompileeditor', '-nop4',
                 nimp.system.sanitize_path(env.format('-project={game}/{game}.uproject')),

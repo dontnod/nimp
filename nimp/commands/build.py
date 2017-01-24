@@ -35,7 +35,7 @@ class Build(nimp.command.Command):
         super(Build, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 
+        nimp.command.add_common_arguments(parser,
                                           'platform',
                                           'configuration',
                                           'target',

@@ -623,7 +623,7 @@ def list_all_revisions(env, archive_location_format, **override_args):
         listing_content = get_request.text
         _, _, archive_capture_regex = archive_location_format.format(**format_args).rpartition("/")
         for line in listing_content.splitlines():
-            extract_revision_info_from_html_listing_line(revisions_info, listing_url, line, archive_regex, archive_capture_regex)
+            extract_revision_info_from_html(revisions_info, listing_url, line, archive_regex, archive_capture_regex)
     else:
         archive_capture_regex = archive_location_format.format(**format_args)
         for archive_path in glob.glob(archive_glob):
@@ -632,7 +632,9 @@ def list_all_revisions(env, archive_location_format, **override_args):
 
     return sorted(revisions_info, key=lambda ri: ri['revision'], reverse = True)
 
-def extract_revision_info_from_html_listing_line(revisions_info, listing_url, line, archive_regex, archive_capture_regex):
+def extract_revision_info_from_html(revisions_info, listing_url, line, archive_regex, archive_capture_regex):
+    ''' Extracts revision info by parsing a line from a html directory listing
+        (looking at anchors) (if it's a match) '''
     anchor_extractor = '^.*<a href="(?P<anchor_target>.+)">.*$'
     anchor_match = re.match(anchor_extractor, line)
 
@@ -648,6 +650,7 @@ def extract_revision_info_from_html_listing_line(revisions_info, listing_url, li
             revisions_info += [revision_info]
 
 def extract_revision_info_from_path(revisions_info, archive_path, archive_capture_regex):
+    ''' Extracts revision info from a filename (if it's a match) '''
     revision_match = re.match(archive_capture_regex, archive_path)
 
     if revision_match is not None:
@@ -662,7 +665,7 @@ def get_latest_available_revision(env, archive_location_format, max_revision, mi
     revisions_info = list_all_revisions(env, archive_location_format, **override_args)
     for revision_info in revisions_info:
         revision = revision_info['revision']
-        if ((max_revision is None or int(revision) <= int(max_revision)) 
+        if ((max_revision is None or int(revision) <= int(max_revision))
             and (min_revision is None or int(revision) >= int(min_revision))):
             logging.debug('Found revision %s', revision)
             return revision_info
