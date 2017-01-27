@@ -100,8 +100,11 @@ class Deploy(nimp.command.Command):
             # snippets: rz = RemoteZip(archive_location); toc = rz.getTableOfContents(); output = rz.extractFile(toc[2]['filename'])
             get_request = requests.get(archive_location, stream=True)
             # TODO: test get_request.ok and/or get_request.status_code...
+            archive_size = int(get_request.headers['content-length'])
             file_object = tempfile.NamedTemporaryFile()
-            shutil.copyfileobj(get_request.raw, file_object)
+            logging.info('Download of %s is starting.', archive_location)
+            Deploy._custom_copyfileobj(get_request.raw, file_object, archive_size)
+            logging.info('Download of %s is done!', archive_location)
         else:
             file_object = open(nimp.system.sanitize_path(archive_location), 'rb')
         zip_file = zipfile.ZipFile(file_object)
@@ -113,6 +116,24 @@ class Deploy(nimp.command.Command):
         file_object.close()
 
         return True
+
+    @staticmethod
+    def _custom_copyfileobj(fsrc, fdst, source_size, length=16*1024):
+        ''' Custom version of shutil.copyfileobj tailored to add progress logging 
+            for our streaming/download/http copyfileobj case '''
+        copied = 0
+        copied_perc = 0
+        download_log_perc_interval = 5
+        while 1:
+            buf = fsrc.read(length)
+            if not buf:
+                break
+            fdst.write(buf)
+            copied += len(buf)
+            new_copied_perc = int(copied * 100 / source_size)
+            if new_copied_perc >= copied_perc + download_log_perc_interval:
+                copied_perc = new_copied_perc
+                logging.info('%d%% downloaded', copied_perc)
 
     @staticmethod
     def _make_executable_if_needed(filename):
