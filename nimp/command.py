@@ -100,8 +100,10 @@ def load_arguments(env):
                               "x360"      : "xbox360",
                               "ps3"       : "ps3",
                               "linux"     : "linux",
+                              "android"   : "android",
                               "mac"       : "mac",
-                              "macos"     : "mac" }
+                              "macos"     : "mac",
+                              "ios"       : "ios" }
 
             if platform.lower() not in std_platforms:
                 return platform
@@ -109,17 +111,20 @@ def load_arguments(env):
 
         env.platform = '+'.join(map(sanitize_platform, env.platform.split('+'))) #pylint: disable=bad-builtin
 
-        env.is_win32 = 'win32'   in env.platform.split('+')
-        env.is_win64 = 'win64'   in env.platform.split('+')
-        env.is_ps3   = 'ps3'     in env.platform.split('+')
-        env.is_ps4   = 'ps4'     in env.platform.split('+')
-        env.is_x360  = 'xbox360' in env.platform.split('+')
-        env.is_xone  = 'xboxone' in env.platform.split('+')
-        env.is_linux = 'linux'   in env.platform.split('+')
-        env.is_mac   = 'mac'     in env.platform.split('+')
+        env.is_win32   = 'win32'   in env.platform.split('+')
+        env.is_win64   = 'win64'   in env.platform.split('+')
+        env.is_ps3     = 'ps3'     in env.platform.split('+')
+        env.is_ps4     = 'ps4'     in env.platform.split('+')
+        env.is_x360    = 'xbox360' in env.platform.split('+')
+        env.is_xone    = 'xboxone' in env.platform.split('+')
+        env.is_linux   = 'linux'   in env.platform.split('+')
+        env.is_android = 'android' in env.platform.split('+')
+        env.is_mac     = 'mac'     in env.platform.split('+')
+        env.is_ios     = 'ios'     in env.platform.split('+')
 
         env.is_microsoft_platform = env.is_win32 or env.is_win64 or env.is_x360 or env.is_xone
         env.is_sony_platform      = env.is_ps3 or env.is_ps4
+        env.is_mobile_platform    = env.is_ios or env.is_android
 
     if hasattr(env, 'configuration') and env.configuration is not None:
         def sanitize_config(config):

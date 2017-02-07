@@ -328,7 +328,9 @@ def _ue4_load_arguments(env):
                       "win64"   : "Win64",
                       "win32"   : "Win32",
                       "linux"   : "Linux",
-                      "mac"     : "Mac", }
+                      "android" : "Android",
+                      "mac"     : "Mac",
+                      "ios"     : "iOS", }
         if in_platform not in platforms:
             logging.warning('Unsupported UE4 build platform “%s”', in_platform)
             return None
