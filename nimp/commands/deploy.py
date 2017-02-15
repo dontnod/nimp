@@ -94,28 +94,39 @@ class Deploy(nimp.command.Command):
         if env.revision is None or archive_location is None:
             return False
 
-        # Now uncompress the archive
-        if revision_info['is_http']:
-            # (pyremotezip would be nice here (snippets below), but it's python2 for now)
-            # snippets: rz = RemoteZip(archive_location); toc = rz.getTableOfContents(); output = rz.extractFile(toc[2]['filename'])
-            get_request = requests.get(archive_location, stream=True)
-            # TODO: test get_request.ok and/or get_request.status_code...
-            archive_size = int(get_request.headers['content-length'])
-            file_object = tempfile.NamedTemporaryFile()
-            logging.info('Download of %s is starting.', archive_location)
-            Deploy._custom_copyfileobj(get_request.raw, file_object, archive_size)
-            logging.info('Download of %s is done!', archive_location)
-        else:
-            file_object = open(nimp.system.sanitize_path(archive_location), 'rb')
-        zip_file = zipfile.ZipFile(file_object)
-        for name in zip_file.namelist():
-            logging.info('Extracting %s to %s', name, env.root_dir)
-            zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
-            filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
-            Deploy._make_executable_if_needed(filename)
-        file_object.close()
+        # Now decompress the archive
+        archive_object = None
+        try:
+            if revision_info['is_http']:
+                # (pyremotezip would be nice here (snippets below), but it's python2 for now)
+                # snippets: rz = RemoteZip(archive_location); toc = rz.getTableOfContents(); output = rz.extractFile(toc[2]['filename'])
+                get_request = requests.get(archive_location, stream=True)
+                # TODO: test get_request.ok and/or get_request.status_code...
+                archive_size = int(get_request.headers['content-length'])
+                archive_object = tempfile.NamedTemporaryFile(prefix='temp_downloaded_zip_', dir=env.root_dir)
+                logging.info('Download of %s is starting.', archive_location)
+                try:
+                    Deploy._custom_copyfileobj(get_request.raw, archive_object, archive_size)
+                    logging.info('Download of %s is done!', archive_location)
+                except OSError as ex:
+                    logging.error('Download of %s has failed: %s', archive_location, ex)
+                    raise Exception('Download has failed') from ex
+            else:
+                archive_object = open(nimp.system.sanitize_path(archive_location), 'rb')
+            zip_file = zipfile.ZipFile(archive_object)
+            for name in zip_file.namelist():
+                logging.info('Extracting %s to %s', name, env.root_dir)
+                zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
+                filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
+                Deploy._make_executable_if_needed(filename)
 
-        return True
+            return True
+        except Exception as ex: #pylint: disable=broad-except
+            logging.error('Decompression of archive %s has failed: %s', archive_location, ex)
+            return False
+        finally:
+            if archive_object is not None:
+                archive_object.close()
 
     @staticmethod
     def _custom_copyfileobj(fsrc, fdst, source_size, length=16*1024):
