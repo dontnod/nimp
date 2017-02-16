@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Deploys binary files from a zipped archives '''
 
+import io
 import logging
 import os
 import os.path
@@ -136,13 +137,13 @@ class Deploy(nimp.command.Command):
                     go_deeper = False
                     break
         for name in zip_file.namelist():
-            logging.info('Extracting %s to %s', name, env.root_dir)
-            zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
-            filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
-            Deploy._make_executable_if_needed(filename)
             if go_deeper:
-                Deploy._decompress(filename, env)
-                os.remove(filename)
+                Deploy._decompress(io.BytesIO(zip_file.read(name)), env)
+            else:
+                logging.info('Extracting %s to %s', name, env.root_dir)
+                zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
+                filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
+                Deploy._make_executable_if_needed(filename)
 
     @staticmethod
     def _custom_copyfileobj(fsrc, fdst, source_size, length=16*1024):
