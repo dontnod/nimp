@@ -103,7 +103,9 @@ class Deploy(nimp.command.Command):
                 get_request = requests.get(archive_location, stream=True)
                 # TODO: test get_request.ok and/or get_request.status_code...
                 archive_size = int(get_request.headers['content-length'])
-                archive_object = tempfile.NamedTemporaryFile(prefix='temp_downloaded_zip_', dir=nimp.system.sanitize_path(env.format(env.root_dir)))
+                tmp_download_directory = nimp.system.sanitize_path(env.format(os.path.join(env.root_dir, env.game, 'Intermediate', 'Downloads')))
+                nimp.system.safe_makedirs(tmp_download_directory) # As NamedTemporaryFile apparently needs an existing dir when the parameter is passed
+                archive_object = tempfile.NamedTemporaryFile(prefix='tmp_', suffix='.zip', dir=tmp_download_directory)
                 logging.info('Download of %s is starting.', archive_location)
                 try:
                     Deploy._custom_copyfileobj(get_request.raw, archive_object, archive_size)
