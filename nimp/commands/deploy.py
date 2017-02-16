@@ -113,12 +113,7 @@ class Deploy(nimp.command.Command):
                     raise Exception('Download has failed') from ex
             else:
                 archive_object = open(nimp.system.sanitize_path(archive_location), 'rb')
-            zip_file = zipfile.ZipFile(archive_object)
-            for name in zip_file.namelist():
-                logging.info('Extracting %s to %s', name, env.root_dir)
-                zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
-                filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
-                Deploy._make_executable_if_needed(filename)
+            Deploy._decompress(archive_object, env, handle_zip_of_zips=True)
 
             return True
         except Exception as ex: #pylint: disable=broad-except
@@ -127,6 +122,25 @@ class Deploy(nimp.command.Command):
         finally:
             if archive_object is not None:
                 archive_object.close()
+
+    @staticmethod
+    def _decompress(file, env, handle_zip_of_zips=False):
+        zip_file = zipfile.ZipFile(file)
+        go_deeper = False
+        if handle_zip_of_zips:
+            go_deeper = True
+            for name in zip_file.namelist():
+                if not name.endswith('.zip'):
+                    go_deeper = False
+                    break
+        for name in zip_file.namelist():
+            logging.info('Extracting %s to %s', name, env.root_dir)
+            zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
+            filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
+            Deploy._make_executable_if_needed(filename)
+            if go_deeper:
+                Deploy._decompress(filename, env)
+                os.remove(filename)
 
     @staticmethod
     def _custom_copyfileobj(fsrc, fdst, source_size, length=16*1024):
