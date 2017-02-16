@@ -103,7 +103,7 @@ class Deploy(nimp.command.Command):
                 get_request = requests.get(archive_location, stream=True)
                 # TODO: test get_request.ok and/or get_request.status_code...
                 archive_size = int(get_request.headers['content-length'])
-                archive_object = tempfile.NamedTemporaryFile(prefix='temp_downloaded_zip_', dir=env.root_dir)
+                archive_object = tempfile.NamedTemporaryFile(prefix='temp_downloaded_zip_', dir=nimp.system.sanitize_path(env.format(env.root_dir)))
                 logging.info('Download of %s is starting.', archive_location)
                 try:
                     Deploy._custom_copyfileobj(get_request.raw, archive_object, archive_size)
