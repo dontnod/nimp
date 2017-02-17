@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Publishing related commands '''
 
+import itertools
 import logging
 import os
 import shutil
@@ -183,10 +184,19 @@ class _Version(nimp.command.Command):
         if not os.path.isdir(os.path.dirname(archive)):
             nimp.system.safe_makedirs(os.path.dirname(archive))
 
-        fd = zipfile.ZipFile(archive_tmp, 'w', zipfile.ZIP_DEFLATED)
         publish = nimp.system.map_files(env)
         publish.to('.').load_set('version')
-        for src, dst in publish():
+        to_zip_alt, to_zip = itertools.tee(publish())
+        all_zips = False
+        for src, dst in to_zip_alt:
+            if os.path.isfile(src):
+                all_zips = True
+                if not src.endswith('.zip'):
+                    all_zips = False
+                    break
+        compression = zipfile.ZIP_STORED if all_zips else zipfile.ZIP_DEFLATED
+        fd = zipfile.ZipFile(archive_tmp, 'w', compression)
+        for src, dst in to_zip:
             if os.path.isfile(src):
                 logging.info('Adding %s as %s', src, dst)
                 fd.write(src, dst)
