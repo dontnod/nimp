@@ -157,26 +157,39 @@ class _Version(nimp.command.Command):
                  'bittornado repo url here) '))
 
     def run(self, env):
-        if not env.check_config('binaries_tmp', 'binaries_archive_for_publish', 'binaries_torrent'):
-            return False
 
         files_to_deploy = nimp.system.map_files(env).to(env.format(env.root_dir))
 
-        for config_or_target in env.configurations:
+        is_data = 'tiles' in env.configurations
 
-            config = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
-            target = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
+        # If we’re publishing data
+        if is_data:
+            if not env.check_config('data_archive_for_publish', 'data_torrent'):
+                return False
+            archive_path = env.data_archive_for_publish
+            torrent_path = env.data_torrent
 
-            tmp = files_to_deploy.override(configuration = config, target = target)
-            tmp = tmp.src(env.binaries_tmp)
-            tmp.glob("**")
+        # If we’re publishing binaries
+        else:
+            if not env.check_config('binaries_tmp', 'binaries_archive_for_publish', 'binaries_torrent'):
+                return False
+            archive_path = env.binaries_archive_for_publish
+            torrent_path = env.binaries_torrent
+
+            for config_or_target in env.configurations:
+                config = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
+                target = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
+
+                tmp = files_to_deploy.override(configuration = config, target = target)
+                tmp = tmp.src(env.binaries_tmp)
+                tmp.glob("**")
 
         logging.info("Deploying binaries…")
         if not nimp.system.all_map(nimp.system.robocopy, files_to_deploy()):
             return False
 
         # Create a Zip file
-        archive = nimp.system.sanitize_path(env.format(env.binaries_archive_for_publish))
+        archive = nimp.system.sanitize_path(env.format(archive_path))
         archive_tmp = archive + '.tmp'
 
         logging.info('Creating Zip file %s…', archive)
@@ -204,7 +217,7 @@ class _Version(nimp.command.Command):
         shutil.move(archive_tmp, archive)
 
         # Create a torrent
-        torrent = nimp.system.sanitize_path(env.format(env.binaries_torrent))
+        torrent = nimp.system.sanitize_path(env.format(torrent_path))
         torrent_tmp = torrent + '.tmp'
 
         logging.info('Creating torrent %s…', torrent)
@@ -213,7 +226,7 @@ class _Version(nimp.command.Command):
             nimp.system.safe_makedirs(os.path.dirname(torrent))
 
         publish = nimp.system.map_files(env)
-        publish.src(env.binaries_archive_for_publish).to(os.path.basename(archive))
+        publish.src(archive_path).to(os.path.basename(archive))
         data = nimp.torrent.make_torrent(None, env.torrent_tracker, publish)
         if not data:
             logging.error('Torrent is empty (no files?)')
