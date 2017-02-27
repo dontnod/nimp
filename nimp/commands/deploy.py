@@ -117,6 +117,7 @@ class Deploy(nimp.command.Command):
             else:
                 archive_object = open(nimp.system.sanitize_path(archive_location), 'rb')
             Deploy._decompress(archive_object, env, handle_zip_of_zips=True)
+            nimp.system.save_last_deployed_revision(env)
 
             return True
         except Exception as ex: #pylint: disable=broad-except

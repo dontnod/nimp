@@ -684,6 +684,25 @@ def get_latest_available_revision(env, archive_location_format, max_revision, mi
         revision_desc = ''
     raise Exception('No revision%s found.%s' % (revision_desc, candidates_desc))
 
+def load_or_save_last_deployed_revision(env, mode):
+    last_deployed_revision = env.revision if mode == 'save' else None
+    last_deployed_revision_memo_file = nimp.system.sanitize_path(os.path.abspath(os.path.join(env.root_dir, '.nimp', 'utils', 'last_deployed_revision.txt')))
+    if mode == 'save':
+        safe_makedirs(os.path.dirname(last_deployed_revision_memo_file))
+        with open(last_deployed_revision_memo_file, 'w') as f:
+            f.write(last_deployed_revision)
+    elif mode == 'load':
+        if os.path.isfile(last_deployed_revision_memo_file):
+            with open(last_deployed_revision_memo_file, 'r') as f:
+                last_deployed_revision = f.read()
+    return last_deployed_revision
+
+def save_last_deployed_revision(env):
+    load_or_save_last_deployed_revision(env, 'save')
+
+def load_last_deployed_revision(env):
+    return load_or_save_last_deployed_revision(env, 'load')
+    
 if is_windows():
     _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None
     _KERNEL32.MapViewOfFile.restype = ctypes.c_void_p
