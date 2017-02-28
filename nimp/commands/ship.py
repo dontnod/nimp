@@ -22,10 +22,12 @@
 ''' Commands related to version packaging and shipping '''
 
 import os
+import shutil
 
 import nimp.commands
 import nimp.environment
 import nimp.system
+import nimp.p4
 
 class Ship(nimp.command.Command):
     ''' Packages an unreal project for release '''
@@ -79,6 +81,36 @@ class Ship(nimp.command.Command):
         if env.map:
             cmd += [ env.format('-mapstocook={map}') ]
 
-        if nimp.system.call_process('.', cmd, heartbeat = 30) != 0:
-            return False
-        return True
+        Ship._tweak_default_game_ini(env)
+        success = nimp.system.call_process('.', cmd, heartbeat = 30) == 0
+        Ship._revert_default_game_ini(env)
+        return success
+
+    @staticmethod
+    def _tweak_default_game_ini(env):
+        original_default_game_ini = Ship._get_default_game_ini_path(env)
+        tweaked_default_game_ini = os.path.splitext(original_default_game_ini)[0] + '.tweaked.ini'
+        with open(tweaked_default_game_ini, 'w') as tweaked_ini:
+            with open(original_default_game_ini, 'r') as original_ini:
+                for line in original_ini:
+                    if line.lower().startswith('projectversion='):
+                        tweaked_ini.write('ProjectVersion=%s\n' % Ship._get_project_version_string(env))
+                    else:
+                        tweaked_ini.write(line)
+        p4_client = nimp.p4.get_client(env)
+        p4_client.edit('default', original_default_game_ini)
+        shutil.move(tweaked_default_game_ini, original_default_game_ini)
+
+    @staticmethod
+    def _revert_default_game_ini(env):
+        p4_client = nimp.p4.get_client(env)
+        p4_client.revert('default', Ship._get_default_game_ini_path(env))
+
+    @staticmethod
+    def _get_default_game_ini_path(env):
+        return nimp.system.sanitize_path(os.path.abspath(os.path.join(env.root_dir, env.game, 'Config', 'DefaultGame.ini')))
+
+    @staticmethod
+    def _get_project_version_string(env):
+        last_deployed_revision = nimp.system.load_last_deployed_revision(env)
+        return 'e%s-d%s' % (last_deployed_revision if last_deployed_revision is not None else '??????', env.revision)
