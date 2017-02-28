@@ -298,6 +298,20 @@ class P4:
             return False
         return "no such file(s)" not in error and "file(s) not in client" not in error
 
+    def revert(self, *files):
+        ''' Reverts given files (regardless of the changelist they're edited in) '''
+        files_to_revert = []
+        for file_name, _, action in self.get_files_status(*files):
+            if action != "edit":
+                logging.debug("Ignoring not checked out file %s", file_name)
+                continue
+            logging.debug("Adding file %s to revert", file_name)
+            files_to_revert.append(file_name)
+
+        revert_input = '\n'.join(files_to_revert)
+        output = self._run('-x', '-', "revert", stdin = revert_input) is None
+        return output is not None
+
     def revert_changelist(self, cl_number):
         ''' Reverts given changelist '''
         output = self._run("revert", "-c", cl_number, "//...")
