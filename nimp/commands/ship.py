@@ -60,7 +60,6 @@ class Ship(nimp.command.Command):
 
         loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
         exe_path = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), 'Engine/Binaries/DotNET/AutomationTool.exe'))
-        tweaked_default_game_ini = Ship._copy_and_tweak_default_game_ini(env)
         # Use heartbeat because this sometimes compiles shaders in the background
         cmd = [ exe_path,
                 'BuildCookRun',
@@ -71,7 +70,6 @@ class Ship(nimp.command.Command):
                 '-package',
                 env.format('-clientconfig={ue4_config}'),
                 '-ue4exe=UE4Editor-Cmd.exe',
-                '-DEFGAMEINI=%s' % tweaked_default_game_ini,
                 '-crashreporter',
                 '-pak',
                 '-prereqs',
@@ -84,21 +82,3 @@ class Ship(nimp.command.Command):
         if nimp.system.call_process('.', cmd, heartbeat = 30) != 0:
             return False
         return True
-
-    @staticmethod
-    def _copy_and_tweak_default_game_ini(env):
-        original_default_game_ini = nimp.system.sanitize_path(os.path.abspath(os.path.join(env.root_dir, env.game, 'Config', 'DefaultGame.ini')))
-        tweaked_default_game_ini = original_default_game_ini.replace('DefaultGame.ini', 'TweakedDefaultGame.ini')
-        with open(tweaked_default_game_ini, 'w') as tweaked_ini:
-            with open(original_default_game_ini, 'r') as original_ini:
-                for line in original_ini:
-                    if line.lower().startswith('projectversion='):
-                        tweaked_ini.write('ProjectVersion=%s\n' % Ship._get_project_version_string(env))
-                    else:
-                        tweaked_ini.write(line)
-        return tweaked_default_game_ini
-
-    @staticmethod
-    def _get_project_version_string(env):
-        last_deployed_revision = nimp.system.load_last_deployed_revision(env)
-        return 'e%s-d%s' % (last_deployed_revision if last_deployed_revision is not None else '??????', env.revision)
