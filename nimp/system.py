@@ -217,7 +217,7 @@ def call_process(directory, command, heartbeat = 0):
 
     return process_return
 
-def robocopy(src, dest):
+def robocopy(src, dest, ignore_older=False):
     ''' 'Robust' copy. '''
 
     # Retry up to 5 times after I/O errors
@@ -225,6 +225,10 @@ def robocopy(src, dest):
 
     src = sanitize_path(src)
     dest = sanitize_path(dest)
+
+    if ignore_older and os.stat(src).st_mtime - os.stat(dest).st_mtime < 1:
+        logging.info('Skipping “%s”, not newer than “%s”', src, dest)
+        return True
 
     logging.debug('Copying "%s" to "%s"', src, dest)
 
