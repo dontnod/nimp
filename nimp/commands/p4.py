@@ -128,8 +128,11 @@ class _Fileset(P4Command):
         files = [file[0] for file in files()]
 
         if operations[env.p4_operation][1]:
-            description = env.format(env.changelist_description)
-            changelist = p4.get_or_create_changelist(description)
+            if env.changelist_description == 'default':
+                changelist = 'default'
+            else:
+                description = env.format(env.changelist_description)
+                changelist = p4.get_or_create_changelist(description)
             return operations[env.p4_operation][0](changelist, *files)
         else:
             return operations[env.p4_operation][0](*files)
