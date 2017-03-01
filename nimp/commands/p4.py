@@ -91,7 +91,7 @@ class _Fileset(P4Command):
 
         parser.add_argument('p4_operation',
                             help = 'Operation to perform on the fileset.',
-                            choices = ['checkout', 'reconcile', 'delete-uncontrolled'])
+                            choices = ['checkout', 'revert', 'reconcile', 'delete-uncontrolled'])
 
         parser.add_argument('fileset',
                             metavar = '<fileset>',
@@ -119,6 +119,7 @@ class _Fileset(P4Command):
         # value: [method, uses_a_changelist]
         operations = { 'checkout' : [p4.edit, True],
                        'reconcile' : [p4.reconcile, True],
+                       'revert' : [p4.revert, False],
                        'delete-uncontrolled' : [p4.delete_uncontrolled, False] }
 
         files = nimp.system.map_files(env)
