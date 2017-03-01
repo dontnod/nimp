@@ -23,11 +23,11 @@
 
 import os
 import shutil
+import logging
 
 import nimp.commands
 import nimp.environment
 import nimp.system
-import nimp.p4
 
 class Ship(nimp.command.Command):
     ''' Packages an unreal project for release '''
@@ -81,30 +81,25 @@ class Ship(nimp.command.Command):
         if env.map:
             cmd += [ env.format('-mapstocook={map}') ]
 
-        #Ship._tweak_default_game_ini(env)
+        Ship._tweak_default_game_ini(env)
         success = nimp.system.call_process('.', cmd, heartbeat = 30) == 0
-        #Ship._revert_default_game_ini(env)
         return success
 
     @staticmethod
     def _tweak_default_game_ini(env):
         original_default_game_ini = Ship._get_default_game_ini_path(env)
-        tweaked_default_game_ini = os.path.splitext(original_default_game_ini)[0] + '.tweaked.ini'
-        with open(tweaked_default_game_ini, 'w') as tweaked_ini:
-            with open(original_default_game_ini, 'r') as original_ini:
-                for line in original_ini:
-                    if line.lower().startswith('projectversion='):
-                        tweaked_ini.write('ProjectVersion=%s\n' % Ship._get_project_version_string(env))
-                    else:
-                        tweaked_ini.write(line)
-        p4_client = nimp.p4.get_client(env)
-        p4_client.edit('default', original_default_game_ini)
-        shutil.move(tweaked_default_game_ini, original_default_game_ini)
-
-    @staticmethod
-    def _revert_default_game_ini(env):
-        p4_client = nimp.p4.get_client(env)
-        p4_client.revert('default', Ship._get_default_game_ini_path(env))
+        if os.access(original_default_game_ini, os.W_OK):
+            tweaked_default_game_ini = os.path.splitext(original_default_game_ini)[0] + '.tweaked.ini'
+            with open(tweaked_default_game_ini, 'w') as tweaked_ini:
+                with open(original_default_game_ini, 'r') as original_ini:
+                    for line in original_ini:
+                        if line.lower().startswith('projectversion='):
+                            tweaked_ini.write('ProjectVersion=%s\n' % Ship._get_project_version_string(env))
+                        else:
+                            tweaked_ini.write(line)
+            shutil.move(tweaked_default_game_ini, original_default_game_ini)
+        else:
+            logging.warning('%s is not writable!', original_default_game_ini)
 
     @staticmethod
     def _get_default_game_ini_path(env):
