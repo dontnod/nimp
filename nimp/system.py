@@ -226,7 +226,8 @@ def robocopy(src, dest, ignore_older=False):
     src = sanitize_path(src)
     dest = sanitize_path(dest)
 
-    if ignore_older and os.stat(src).st_mtime - os.stat(dest).st_mtime < 1:
+    if ignore_older and os.path.isfile(src) and os.path.isfile(dest) \
+       and os.stat(src).st_mtime - os.stat(dest).st_mtime < 1:
         logging.info('Skipping “%s”, not newer than “%s”', src, dest)
         return True
 
