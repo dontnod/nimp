@@ -47,7 +47,7 @@ class Deploy(nimp.command.Command):
         super(Deploy, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'revision', 'platform')
+        nimp.command.add_common_arguments(parser, 'revision', 'platform', 'target')
 
         parser.add_argument('--max-revision',
                             help = 'Find a revision <= to this',
@@ -89,7 +89,11 @@ class Deploy(nimp.command.Command):
         if env.revision is None and env.max_revision is not None and env.min_revision is not None and int(env.max_revision) == int(env.min_revision):
             env.revision = env.max_revision # speeding things up
 
-        revision_info = nimp.system.get_latest_available_revision(env, env.binaries_archive_for_deploy, **vars(env))
+        if hasattr(env, 'target') and 'tiles' in env.target:
+            archive = env.data_archive_for_deploy
+        else:
+            archive = env.binaries_archive_for_deploy
+        revision_info = nimp.system.get_latest_available_revision(env, archive, **vars(env))
         env.revision = revision_info['revision']
         archive_location = revision_info['location']
         if env.revision is None or archive_location is None:
