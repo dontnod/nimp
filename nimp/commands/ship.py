@@ -110,5 +110,7 @@ class Ship(nimp.command.Command):
 
     @staticmethod
     def _get_project_version_string(env):
-        last_deployed_revision = nimp.system.load_last_deployed_revision(env)
-        return 'e%s-d%s' % (last_deployed_revision if last_deployed_revision is not None else '??????', env.revision)
+        last_deployed_revision = str(nimp.system.load_last_deployed_revision(env)) or '??????'
+        return '%s.%s.%s.%s' % (last_deployed_revision[0:3], last_deployed_revision[3:6], env.revision[0:3], env.revision[3:6])
+        #return 'e%s-d%s' % (last_deployed_revision, env.revision)
+
