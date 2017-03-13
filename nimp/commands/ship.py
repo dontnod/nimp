@@ -22,6 +22,7 @@
 ''' Commands related to version packaging and shipping '''
 
 import os
+import re
 import shutil
 import logging
 
@@ -111,6 +112,9 @@ class Ship(nimp.command.Command):
     @staticmethod
     def _get_project_version_string(env):
         last_deployed_revision = str(nimp.system.load_last_deployed_revision(env)) or '??????'
-        return '%s.%s.%s.%s' % (last_deployed_revision[0:3], last_deployed_revision[3:6], env.revision[0:3], env.revision[3:6])
+        return '%s.%s.%s.%s' % (re.sub(r'^0*([0-9])', r'\1', last_deployed_revision[0:3]),
+                                re.sub(r'^0*([0-9])', r'\1', last_deployed_revision[3:6]),
+                                re.sub(r'^0*([0-9])', r'\1', env.revision[0:3]),
+                                re.sub(r'^0*([0-9])', r'\1', env.revision[3:6]))
         #return 'e%s-d%s' % (last_deployed_revision, env.revision)
 
