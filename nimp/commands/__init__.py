@@ -26,6 +26,7 @@ __all__ = [
     'check',
     'commandlet',
     'deploy',
+    'dev',
     'fileset',
     'p4',
     'publish',
