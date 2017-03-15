@@ -148,10 +148,17 @@ class _Processes(CheckCommand):
 
         success = True
 
-        # Find all running binaries launched from the project directory and kill them
+        # Find all (but configured exceptions) running binaries launched from the project directory
+        # and (if so configured) kill them
         prefix = os.path.abspath(env.root_dir).replace('/', '\\').lower()
         for pid, info in processes.items():
             if info[0].lower().startswith(prefix):
+                process_basename = os.path.basename(info[0])
+                processes_ignore_patterns = [ 
+                    r'^CrashReportClient\.exe$',
+                ]
+                if any([re.match(pattern, process_basename, re.IGNORECASE) for pattern in processes_ignore_patterns]):
+                    continue
                 logging.warning('Found problematic process %s (%s)', pid, info[0])
                 if info[1] in processes:
                     logging.warning('Parent is %s (%s)', info[1], processes[info[1]][0])
