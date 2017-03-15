@@ -23,6 +23,7 @@
 values and command line parameters set for this nimp execution '''
 
 import argparse
+import collections;
 import inspect
 import logging
 import os
@@ -284,8 +285,12 @@ class _LogHandler(logging.Handler):
         self._ignore_patterns = []
         self._error_patterns = []
         self._warning_patterns = []
-        self._errors = {}
-        self._warnings = {}
+        self._context_patterns = []
+        self._summary = ''
+        self._context = collections.deque([], 4)
+        self._has_errors = False
+        self._has_warnings = False
+        self._error_count = 0
         self._out = None
 
         error_patterns = [
@@ -329,6 +334,10 @@ class _LogHandler(logging.Handler):
         self._compile_patterns(warning_patterns,
                                'warning_patterns',
                                self._warning_patterns)
+
+        self._compile_patterns([],
+                               'context_patterns',
+                               self._context_patterns)
 
     def _compile_patterns(self, patterns, key, destination):
         config_key = 'summary_%s' % key
@@ -384,33 +393,50 @@ class _LogHandler(logging.Handler):
 
     def has_errors(self):
         ''' Returns true if errors were emmited durring program execution '''
-        return len(self._errors) != 0
+        return self._has_errors
 
     def has_warnings(self):
         ''' Returns true if warnings were emmited durring program execution '''
-        return len(self._warnings) != 0
+        return self._has_warnings
 
     def emit(self, record):
         msg = record.getMessage()
 
         for pattern in self._ignore_patterns:
             if pattern.match(msg):
+                self._add_context(msg)
                 return
 
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
-            _LogHandler._add_record(record.getMessage(),
-                                    self._errors)
+            self._add_record(record.getMessage(), '[ ERROR ]')
+            self._has_errors = True
             return
         if record.levelno == logging.WARNING:
-            _LogHandler._add_record(record.getMessage(),
-                                    self._warnings)
+            self._add_record(record.getMessage(), '[WARNING]')
+            self._has_warnings = True
             return
 
-        _LogHandler._match_message(self._error_patterns, msg, self._errors)
-        _LogHandler._match_message(self._warning_patterns, msg, self._warnings)
+        if self._match_message(self._error_patterns, msg,   '[ ERROR ]'):
+            self._has_errors = True
+        elif self._match_message(self._warning_patterns, msg, '[WARNING]'):
+            self._has_warnings = True
+        else:
+            self._add_context(msg)
 
-    @staticmethod
-    def _match_message(patterns, msg, destination):
+    def _add_context(self, msg):
+        for pattern in self._context_patterns:
+            match = pattern.match(msg)
+            if match is not None:
+                group_dict = match.groupdict()
+                if 'message' in group_dict:
+                    msg = group_dict['message']
+        self._context.append(msg)
+        show_context = len(self._context) < self._context.maxlen
+        show_context = show_context and (self._has_errors or self._has_warnings)
+        if show_context:
+            self._summary += '[ NOTIF ] ' + msg + '\n'
+
+    def _match_message(self, patterns, msg, prefix):
         for pattern in patterns:
             match = pattern.match(msg)
             if match is not None:
@@ -418,22 +444,20 @@ class _LogHandler(logging.Handler):
                 if 'message' in group_dict:
                     msg = group_dict['message']
 
-                _LogHandler._add_record(msg, destination)
-                return
-
+                self._add_record(msg, prefix)
+                return True
+        return False
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
-        text = _LogHandler._get_summary('Errors', self._errors)
-        text += _LogHandler._get_summary('Warnings', self._warnings)
+        destination.write(self._summary)
 
-        destination.write(text)
-
-    @staticmethod
-    def _add_record(msg, destination):
-        if msg not in destination:
-            destination[msg] = 0
-        destination[msg] = destination[msg] + 1
+    def _add_record(self, msg, prefix):
+        if len(self._context) == self._context.maxlen:
+            self._summary += '\n *********************************************\n'
+            while len(self._context) > 0:
+                self._summary += '[ NOTIF ] ' + self._context.popleft() + '\n'
+        self._summary += prefix + ' ' + msg + '\n'
 
     @staticmethod
     def _get_summary(level_name, messages):
