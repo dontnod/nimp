@@ -391,6 +391,8 @@ class _AssetSummary(object):
         for warning in self._warnings:
             destination.write(' * WARNING : %s\n' % warning)
 
+        destination.write('\n')
+
     def _add_message(self, msg, destination):
         for message_format, patterns in self._hints.items():
             for pattern in patterns:
