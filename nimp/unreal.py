@@ -27,6 +27,7 @@ import logging
 
 import nimp.build
 import nimp.system
+import nimp.summary
 
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
@@ -102,15 +103,15 @@ def _ue4_build(env):
     try:
         for line in open(env.format(env.solution)):
             if ('# Visual Studio 2012' in line
-                or '# Visual Studio 11' in line):
+                    or '# Visual Studio 11' in line):
                 vs_version = '11'
                 break
             if ('# Visual Studio 2013' in line
-                or '# Visual Studio 12' in line):
+                    or '# Visual Studio 12' in line):
                 vs_version = '12'
                 break
             if ('# Visual Studio 2015' in line
-                or '# Visual Studio 14' in line):
+                    or '# Visual Studio 14' in line):
                 vs_version = '14'
                 break
     except IOError:
@@ -351,3 +352,8 @@ def _ue4_load_arguments(env):
             env.target = 'game'
 
     return True
+
+class UnrealSummaryHandler(nimp.summary.SummaryHandler):
+    """ Summary handler presenting in a more cool way the results of load
+    package, load maps and cook commandlet """
+    pass

@@ -23,19 +23,25 @@
 values and command line parameters set for this nimp execution '''
 
 import argparse
-import collections;
 import inspect
 import logging
 import os
-import re
 import sys
 import time
 
 import nimp.command
+import nimp.summary
+import nimp.unreal
 
 _LOG_FORMATS = {
     'standard': '%(asctime)s [%(levelname)s] %(message)s'
 }
+
+_SUMMARY_HANDLERS = {
+    'default': nimp.summary.DefaultSummaryHandler,
+    'unreal': nimp.unreal.UnrealSummaryHandler
+}
+
 
 class Environment:
     ''' Environment '''
@@ -80,6 +86,15 @@ class Environment:
                                type=str,
                                default=None)
 
+        assert 'default' in _SUMMARY_HANDLERS
+        log_group.add_argument('--summary-format',
+                               metavar='<format>',
+                               help='Choose the summary format',
+                               type=str,
+                               choices = list(_SUMMARY_HANDLERS.keys()),
+                               default='default')
+
+
         log_group.add_argument('--do-nothing',
                                help='Just parses arguments and exits (used for CIS tests)',
                                action='store_true')
@@ -123,7 +138,8 @@ class Environment:
         for key, value in vars(arguments).items():
             setattr(self, key, value)
 
-        with _LogHandler(self) as log_handler:
+        summary_format = getattr(self, 'summary_format')
+        with _SUMMARY_HANDLERS[summary_format](self) as log_handler:
             if hasattr(self, 'environment'):
                 for key, val in self.environment.items():
                     os.environ[key] = val
@@ -277,200 +293,3 @@ def _get_instances(module, instance_type):
         if is_valid:
             result[attribute_value.__name__] = attribute_value()
     return result
-
-class _LogHandler(logging.Handler):
-    def __init__(self, env):
-        super(_LogHandler, self).__init__(logging.DEBUG)
-        self._env = env
-        self._ignore_patterns = []
-        self._error_patterns = []
-        self._warning_patterns = []
-        self._context_patterns = []
-        self._summary = ''
-        self._context = collections.deque([], 4)
-        self._has_errors = False
-        self._has_warnings = False
-        self._error_count = 0
-        self._out = None
-
-        error_patterns = [
-            #GCC
-            r'[\/\w\W\-. ]+:\d+:\d+: (fatal )?error: .*', #GCC errors
-            r'[\/\w\W\-. ]+:\d+: undefined reference to .*', #GCC linker error
-
-            # Clang
-            r'[\/\w\W\-. ]+\(\d+,\d+\): (fatal ?)error : .*',
-            r'[\/\w\W\-. ]+ : error : [A-Z0-9]+: reference to undefined symbol.*',
-            r'^duplicate symbol \w+ in:',
-            r': multiple definition of ',
-            r'clang: error: no such file or directory:.*',
-
-            #.NET / Mono
-            r'[\/\w\W\-. ]+\(\d+,\d+\) : error [A-Z\d]+: .*',
-
-            #MSVC
-            r'[\/\w\W\-. ]+\(\d+\): error [A-Z\d]+: .*',
-            r'[\/\w\W\-. ]+\ : error [A-Z\d]+: unresolved external symbol .*',
-        ]
-
-        warning_patterns = [
-            r'[\/\w\W\-.: ]+\(\d+,\d+\) : warning [A-Z\d]+: .*', # MSVC .NET / Mono
-            r'[\/\w\W\-.: ]+:\d+:\d+: warning: .*', # GCC
-            r'[\/\w\W\-.: ]+\(\d+,\d+\): warning : .*', # Clang
-            r'[\/\w\W\-.: ]+\(\d+\): warning [A-Z\d]+: .*' # MSVC
-        ]
-
-        ignore_patterns = [
-        ]
-
-        self._compile_patterns(ignore_patterns,
-                               'ignore_patterns',
-                               self._ignore_patterns)
-
-        self._compile_patterns(error_patterns,
-                               'error_patterns',
-                               self._error_patterns)
-
-        self._compile_patterns(warning_patterns,
-                               'warning_patterns',
-                               self._warning_patterns)
-
-        self._compile_patterns([],
-                               'context_patterns',
-                               self._context_patterns)
-
-    def _compile_patterns(self, patterns, key, destination):
-        config_key = 'summary_%s' % key
-        if hasattr(self._env, config_key):
-            additionnal_patterns = getattr(self._env, config_key)
-            if additionnal_patterns is not None:
-                patterns.extend(additionnal_patterns)
-
-        for pattern in patterns:
-            try:
-                destination.append(re.compile(pattern))
-            #pylint: disable=broad-except
-            except Exception as ex:
-                logging.error('Error while compiling pattern %s: %s',
-                              pattern, ex)
-
-    def __enter__(self):
-        # Sets up logging
-        log_level = logging.DEBUG if getattr(self._env, 'verbose')  else logging.INFO
-
-        root_logger = logging.root
-
-        # Need to do that because some log may already have been output
-        for handler in list(logging.root.handlers):
-            root_logger.removeHandler(handler)
-
-        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
-                            level=log_level)
-
-        child_processes_logger = logging.getLogger('child_processes')
-        child_processes_logger.propagate = False
-        child_processes_logger.setLevel(logging.INFO)
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(logging.Formatter('%(message)s'))
-        child_processes_logger.addHandler(handler)
-
-        # Enables warnings and errors recording
-        if self._env.summary is not None:
-            root_logger.addHandler(self)
-            child_processes_logger.addHandler(self)
-
-        return self
-
-    def __exit__(self, ex_type, value, traceback):
-        if self._env.summary is not None:
-            summary = self._env.summary
-            # So we can print summary to stdout
-            if summary.lower() == 'stdout':
-                self._write_summary(sys.stdout)
-            else:
-                with open(summary, 'w') as out:
-                    self._write_summary(out)
-
-    def has_errors(self):
-        ''' Returns true if errors were emmited durring program execution '''
-        return self._has_errors
-
-    def has_warnings(self):
-        ''' Returns true if warnings were emmited durring program execution '''
-        return self._has_warnings
-
-    def emit(self, record):
-        msg = record.getMessage()
-
-        for pattern in self._ignore_patterns:
-            if pattern.match(msg):
-                self._add_context(msg)
-                return
-
-        if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
-            self._add_record(record.getMessage(), '[ ERROR ]')
-            self._has_errors = True
-            return
-        if record.levelno == logging.WARNING:
-            self._add_record(record.getMessage(), '[WARNING]')
-            self._has_warnings = True
-            return
-
-        if self._match_message(self._error_patterns, msg,   '[ ERROR ]'):
-            self._has_errors = True
-        elif self._match_message(self._warning_patterns, msg, '[WARNING]'):
-            self._has_warnings = True
-        else:
-            self._add_context(msg)
-
-    def _add_context(self, msg):
-        for pattern in self._context_patterns:
-            match = pattern.match(msg)
-            if match is not None:
-                group_dict = match.groupdict()
-                if 'message' in group_dict:
-                    msg = group_dict['message']
-        self._context.append(msg)
-        show_context = len(self._context) < self._context.maxlen
-        show_context = show_context and (self._has_errors or self._has_warnings)
-        if show_context:
-            self._summary += '[ NOTIF ] ' + msg + '\n'
-
-    def _match_message(self, patterns, msg, prefix):
-        for pattern in patterns:
-            match = pattern.match(msg)
-            if match is not None:
-                group_dict = match.groupdict()
-                if 'message' in group_dict:
-                    msg = group_dict['message']
-
-                self._add_record(msg, prefix)
-                return True
-        return False
-
-    def _write_summary(self, destination):
-        ''' Writes summary to destination '''
-        destination.write(self._summary)
-
-    def _add_record(self, msg, prefix):
-        if len(self._context) == self._context.maxlen:
-            self._summary += '\n *********************************************\n'
-            while len(self._context) > 0:
-                self._summary += '[ NOTIF ] ' + self._context.popleft() + '\n'
-        self._summary += prefix + ' ' + msg + '\n'
-
-    @staticmethod
-    def _get_summary(level_name, messages):
-        if len(messages) == 0:
-            return ''
-
-        total = sum(messages.values())
-        result = '\n%s Distinct %s (%s total):\n' % (len(messages), level_name, total)
-        result += '*' * (len(result) - 2)
-        result += '\n'
-
-        for msg, count in messages.items():
-            result += '(%s x): %s\n' % (count, msg)
-
-        return result
-
