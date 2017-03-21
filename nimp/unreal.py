@@ -406,7 +406,7 @@ class _AssetSummary(object):
                     finally:
                         pass
 
-        destination.add('Unknown error message : %s' % msg)
+        destination.add(msg)
 
 class UnrealSummaryHandler(nimp.summary.SummaryHandler):
     """ Default summary handler, showing one line by error / warning and
