@@ -127,7 +127,7 @@ def install_distcc_and_ccache():
             logging.debug('Setting UBT_PARALLEL=%s', workers)
             os.environ['UBT_PARALLEL'] = workers
 
-def upload_symbols(env, symbols):
+def upload_symbols(env, symbols, config):
     ''' Uploads build symbols to a symbol server '''
     if env.is_microsoft_platform:
         index_file = "symbols_index.txt"
@@ -136,7 +136,7 @@ def upload_symbols(env, symbols):
                 symbols_index.write(src + "\n")
 
         store_root = nimp.system.sanitize_path(env.format(env.publish_symbols))
-        transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, env.configuration, env.revision)
+        transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, config, env.revision)
         cmd = [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
                 "add",
                 "/r", # Recursive

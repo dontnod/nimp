@@ -73,7 +73,7 @@ class _Symbols(nimp.command.Command):
             binaries_to_publish = nimp.system.map_files(env)
             binaries_to_publish = binaries_to_publish.override(configuration = config, target = target)
             binaries_to_publish.load_set("binaries")
-            nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish()))
+            nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish()), config)
 
         return True
 
