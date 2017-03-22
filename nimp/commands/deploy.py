@@ -55,6 +55,10 @@ class Deploy(nimp.command.Command):
         parser.add_argument('--min-revision',
                             help = 'Find a revision >= to this',
                             metavar = '<revision>')
+        parser.add_argument('-s',
+                            '--do_symbols',
+                            help    = 'Deploy symbols INSTEAD of binaries',
+                            action  = 'store_true')
 
         return True
 
@@ -92,7 +96,7 @@ class Deploy(nimp.command.Command):
         if hasattr(env, 'target') and 'tiles' in env.target:
             archive = env.data_archive_for_deploy
         else:
-            archive = env.binaries_archive_for_deploy
+            archive = env.symbols_archive_for_deploy if env.do_symbols else env.binaries_archive_for_deploy
         revision_info = nimp.system.get_latest_available_revision(env, archive, **vars(env))
         env.revision = revision_info['revision']
         archive_location = revision_info['location']
