@@ -34,7 +34,6 @@ class Publish(nimp.command.CommandGroup):
     ''' Publishing commands '''
     def __init__(self):
         super(Publish, self).__init__([_Binaries(),
-                                       _Debug(),
                                        _Symbols(),
                                        _Version()])
 
@@ -65,32 +64,8 @@ class _Binaries(nimp.command.Command):
         files_to_publish.to(env.binaries_tmp).load_set("binaries")
         return nimp.system.all_map(nimp.system.robocopy, files_to_publish())
 
-class _Debug(nimp.command.Command):
-    ''' Publishes debug fileset '''
-    def __init__(self):
-        super(_Debug, self).__init__()
-
-    def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser,
-                                          'platform',
-                                          'configuration',
-                                          'target',
-                                          'revision')
-        return True
-
-    def is_available(self, env):
-        return True, ''
-
-    def run(self, env):
-        if not env.check_config('binaries_tmp'):
-            return False
-
-        files_to_publish = nimp.system.map_files(env)
-        files_to_publish.to(env.binaries_tmp).load_set("symbols")
-        return nimp.system.all_map(nimp.system.robocopy, files_to_publish())
-
 class _Symbols(nimp.command.Command):
-    ''' Publishes build symbols (and binaries!) to a symbol server '''
+    ''' Publishes symbols fileset '''
     def __init__(self):
         super(_Symbols, self).__init__()
 
@@ -100,36 +75,19 @@ class _Symbols(nimp.command.Command):
                                           'configuration',
                                           'target',
                                           'revision')
-        parser.add_argument('-z',
-                            '--compress',
-                            help    = 'Compress symbols when uploading',
-                            default = False,
-                            action  = 'store_true')
         return True
 
     def is_available(self, env):
         return True, ''
 
     def run(self, env):
-        symbols_to_publish = nimp.system.map_files(env)
-        symbols_to_publish.load_set("symbols")
-        binaries_to_publish = nimp.system.map_files(env)
-        binaries_to_publish.load_set("binaries")
-        return nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish()))
+        if not env.check_config('symbols_tmp'):
+            return False
 
-    @staticmethod
-    def _chain_symbols_and_binaries(symbols, binaries):
-        # sort of itertools.chain, but binaries are pushed only if corresp. symbol is present
-        symbol_roots = []
-        for symbol in symbols:
-            symbol_root, _ = os.path.splitext(symbol[0])
-            symbol_roots.append(symbol_root)
-            yield symbol
-        for binary in binaries:
-            binary_root, _ = os.path.splitext(binary[0])
-            # (it's always Microsoft platform so OK to just splitext)
-            if binary_root in symbol_roots:
-                yield binary
+        files_to_publish = nimp.system.map_files(env)
+        files_to_publish.to(env.symbols_tmp).load_set("symbols")
+        return nimp.system.all_map(nimp.system.robocopy, files_to_publish())
+
 
 class _Version(nimp.command.Command):
     ''' Creates a torrent out of compiled binaries '''
@@ -147,6 +105,10 @@ class _Version(nimp.command.Command):
                             help    = 'Configurations and targets to deploy',
                             metavar = '<configurations>',
                             nargs = '+')
+        parser.add_argument('-s',
+                            '--do_symbols',
+                            help    = 'Create a torrent out of symbols INSTEAD of binaries',
+                            action  = 'store_true')
 
         return True
 
@@ -166,25 +128,29 @@ class _Version(nimp.command.Command):
         if is_data:
             if not env.check_config('data_archive_for_publish', 'data_torrent'):
                 return False
+            target_desc = 'tiles'
             archive_path = env.data_archive_for_publish
             torrent_path = env.data_torrent
 
-        # If we’re publishing binaries
+        # If we’re publishing binaries (or symbols)
         else:
-            if not env.check_config('binaries_tmp', 'binaries_archive_for_publish', 'binaries_torrent'):
+            if not env.check_config('symbols_tmp' if env.do_symbols else 'binaries_tmp',
+                                    'symbols_archive_for_publish' if env.do_symbols else 'binaries_archive_for_publish',
+                                    'symbols_torrent' if env.do_symbols else 'binaries_torrent'):
                 return False
-            archive_path = env.binaries_archive_for_publish
-            torrent_path = env.binaries_torrent
+            target_desc = 'symbols' if env.do_symbols else 'binaries'
+            archive_path = env.symbols_archive_for_publish if env.do_symbols else env.binaries_archive_for_publish
+            torrent_path = env.symbols_torrent if env.do_symbols else env.binaries_torrent
 
             for config_or_target in env.configurations:
                 config = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
                 target = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
 
                 tmp = files_to_deploy.override(configuration = config, target = target)
-                tmp = tmp.src(env.binaries_tmp)
+                tmp = tmp.src(env.symbols_tmp if env.do_symbols else env.binaries_tmp)
                 tmp.glob("**")
 
-        logging.info("Deploying binaries…")
+        logging.info('Deploying {0}…'.format(target_desc))
         if not nimp.system.all_map(nimp.system.robocopy, files_to_deploy()):
             return False
 

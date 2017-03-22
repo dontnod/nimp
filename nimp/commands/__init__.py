@@ -30,6 +30,7 @@ __all__ = [
     'fileset',
     'p4',
     'publish',
+    'upload',    
     'run',
     'ship',
 ]
