@@ -77,6 +77,7 @@ class Ship(nimp.command.Command):
                 '-pak',
                 '-prereqs',
                 '-nodebuginfo',
+                '-iterative',
                 env.format('-targetplatform={ue4_platform}'),
                 '-utf8output' ]
         if env.map:
