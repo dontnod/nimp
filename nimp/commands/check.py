@@ -114,7 +114,7 @@ class _Processes(CheckCommand):
     def configure_arguments(self, env, parser):
         parser.add_argument('-k', '--kill',
                             help = 'Kill processes that can prevent builds',
-                            default = False, action = 'store_true')
+                            action = 'store_true')
         return True
 
     def _run_check(self, env):

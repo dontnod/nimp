@@ -43,18 +43,15 @@ class Build(nimp.command.Command):
 
         parser.add_argument('--bootstrap',
                             help = 'bootstrap or regenerate project files, if applicable',
-                            action = "store_true",
-                            default = False)
+                            action = 'store_true')
 
         parser.add_argument('--disable-unity',
                             help = 'disable unity build',
-                            action = "store_true",
-                            default = False)
+                            action = 'store_true')
 
         parser.add_argument('--fastbuild',
                             help = 'activate FASTBuild (implies --disable-unity for now)',
-                            action = 'store_true',
-                            default = False)
+                            action = 'store_true')
 
         return True
 

@@ -102,8 +102,7 @@ class Environment:
         log_group.add_argument('-v',
                                '--verbose',
                                help='Enable verbose mode',
-                               default=False,
-                               action="store_true")
+                               action='store_true')
 
         nimp.command.add_commands_subparser(command_list, parser, self)
 
