@@ -46,9 +46,13 @@ class _Symbols(nimp.command.Command):
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser,
                                           'platform',
-                                          'configuration',
                                           'target',
                                           'revision')
+        parser.add_argument('-l',
+                            '--configurations',
+                            help    = 'Configurations and targets to upload',
+                            metavar = '<configurations>',
+                            nargs = '+')
         parser.add_argument('-z',
                             '--compress',
                             help    = 'Compress symbols when uploading',
@@ -59,15 +63,19 @@ class _Symbols(nimp.command.Command):
         return True, ''
 
     def run(self, env):
-        # TODO:
-        # In order for this step not to be called at the end of a compilation job anymore
-        # (rather, triggered somehow once compilation / publishing are done...):
-        # gotta insert binaries + symbols zips deployment code (think deploy step) before the below code
-        symbols_to_publish = nimp.system.map_files(env)
-        symbols_to_publish.load_set("symbols")
-        binaries_to_publish = nimp.system.map_files(env)
-        binaries_to_publish.load_set("binaries")
-        return nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish()))
+        for config_or_target in env.configurations:
+            config = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
+            target = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
+
+            symbols_to_publish = nimp.system.map_files(env)
+            symbols_to_publish = symbols_to_publish.override(configuration = config, target = target)
+            symbols_to_publish.load_set("symbols")
+            binaries_to_publish = nimp.system.map_files(env)
+            binaries_to_publish = binaries_to_publish.override(configuration = config, target = target)
+            binaries_to_publish.load_set("binaries")
+            nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish()))
+
+        return True
 
     @staticmethod
     def _chain_symbols_and_binaries(symbols, binaries):
