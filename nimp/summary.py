@@ -104,9 +104,9 @@ class SummaryHandler(logging.Handler):
 
     def __enter__(self):
         # Sets up logging
-        log_level = logging.DEBUG
+        log_level = logging.INFO
         if getattr(self._env, 'verbose'):
-            log_level = logging.INFO
+            log_level = logging.DEBUG
 
         root_logger = logging.root
 
