@@ -239,8 +239,9 @@ class DefaultSummaryHandler(SummaryHandler):
             self._summary += '\n *********************************************\n'
             while len(self._context) > 0:
                 self._summary += '[  NOTIF  ] ' + self._context.popleft() + '\n'
-        self._summary += '[ ERROR ]%s\n' % msg
+        self._summary += '[  ERROR  ]%s\n' % msg
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
         destination.write(self._summary)
+
