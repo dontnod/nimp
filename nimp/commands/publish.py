@@ -108,6 +108,7 @@ class _Version(nimp.command.Command):
         parser.add_argument('-s',
                             '--do_symbols',
                             help    = 'Create a torrent out of symbols INSTEAD of binaries',
+                            default = False,
                             action  = 'store_true')
 
         return True
