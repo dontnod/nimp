@@ -123,15 +123,16 @@ class _Version(nimp.command.Command):
 
         files_to_deploy = nimp.system.map_files(env).to(env.format(env.root_dir))
 
-        is_data = 'tiles' in env.configurations
+        is_data = set(['tiles', 'lights']) & set(env.configurations)
 
         # If we’re publishing data
         if is_data:
             if not env.check_config('data_archive_for_publish', 'data_torrent'):
                 return False
-            target_desc = 'tiles'
+            target_desc = 'tiles' if 'tiles' in env.configurations else 'lights'
             archive_path = env.data_archive_for_publish
             torrent_path = env.data_torrent
+            env.dataset = target_desc
 
         # If we’re publishing binaries (or symbols)
         else:

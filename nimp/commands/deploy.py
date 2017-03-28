@@ -93,7 +93,8 @@ class Deploy(nimp.command.Command):
         if env.revision is None and env.max_revision is not None and env.min_revision is not None and int(env.max_revision) == int(env.min_revision):
             env.revision = env.max_revision # speeding things up
 
-        if hasattr(env, 'target') and 'tiles' in env.target:
+        if hasattr(env, 'target') and (set(['tiles', 'lights']) & set(env.target)):
+            env.dataset = 'tiles' if 'tiles' in env.target else 'lights'
             archive = env.data_archive_for_deploy
         else:
             archive = env.symbols_archive_for_deploy if env.do_symbols else env.binaries_archive_for_deploy

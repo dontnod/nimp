@@ -62,8 +62,8 @@ def add_common_arguments(parser, *arg_ids):
             parser.add_argument('-t', '--target',
                                 help = 'Target',
                                 metavar = '<target>',
-                                # “Tiles” is a bit of a hack for now
-                                choices = ['game', 'editor', 'tools', 'tiles'])
+                                # “Tiles” and “Lights” are a bit of a hack for now
+                                choices = ['game', 'editor', 'tools', 'tiles', 'lights'])
         elif arg_id == 'revision':
             parser.add_argument('-r',
                                 '--revision',
