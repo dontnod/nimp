@@ -145,4 +145,3 @@ class _Unstash(FilesetCommand):
         nimp.system.safe_delete(stash_file)
 
         return success
-

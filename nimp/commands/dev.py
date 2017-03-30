@@ -61,4 +61,3 @@ class _TestLogPatterns(nimp.command.Command):
                 line = line[:-1]
                 logger.info(line)
         return True
-

@@ -413,4 +413,3 @@ class P4:
 
             for elem in zip(*match_list):
                 yield elem
-

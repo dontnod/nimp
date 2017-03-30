@@ -118,4 +118,3 @@ class Ship(nimp.command.Command):
                                 re.sub(r'^0*([0-9])', r'\1', env.revision[0:3]),
                                 re.sub(r'^0*([0-9])', r'\1', env.revision[3:6]))
         #return 'e%s-d%s' % (last_deployed_revision, env.revision)
-

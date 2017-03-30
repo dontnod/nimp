@@ -167,4 +167,3 @@ class _Submit(P4Command):
         changelist = p4.get_or_create_changelist(description)
 
         return p4.submit(changelist)
-

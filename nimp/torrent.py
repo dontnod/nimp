@@ -57,4 +57,3 @@ def make_torrent(root, tracker, publish):
                    if key in BT_INFO.MetaInfo.typemap }
     metainfo = BT_INFO.MetaInfo(announce=tracker, info=info, **infoparams)
     return BT_BENCODE.bencode(metainfo)
-

@@ -25,7 +25,6 @@ import io
 import logging
 import os
 import os.path
-import shutil
 import stat
 import tempfile
 import zipfile
@@ -157,7 +156,7 @@ class Deploy(nimp.command.Command):
 
     @staticmethod
     def _custom_copyfileobj(fsrc, fdst, source_size, length=16*1024):
-        ''' Custom version of shutil.copyfileobj tailored to add progress logging 
+        ''' Custom version of shutil.copyfileobj tailored to add progress logging
             for our streaming/download/http copyfileobj case '''
         copied = 0
         copied_perc = 0

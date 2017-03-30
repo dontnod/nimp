@@ -670,8 +670,8 @@ def get_latest_available_revision(env, archive_location_format, max_revision, mi
     revisions_info = list_all_revisions(env, archive_location_format, **override_args)
     for revision_info in revisions_info:
         revision = revision_info['revision']
-        if ((max_revision is None or int(revision) <= int(max_revision))
-            and (min_revision is None or int(revision) >= int(min_revision))):
+        if ((max_revision is None or int(revision) <= int(max_revision)) and
+                (min_revision is None or int(revision) >= int(min_revision))):
             logging.debug('Found revision %s', revision)
             return revision_info
 
@@ -690,24 +690,27 @@ def get_latest_available_revision(env, archive_location_format, max_revision, mi
     raise Exception('No revision%s found.%s' % (revision_desc, candidates_desc))
 
 def load_or_save_last_deployed_revision(env, mode):
+    ''' Loads or saves the last deployed revision '''
     last_deployed_revision = env.revision if mode == 'save' else None
-    last_deployed_revision_memo_file = nimp.system.sanitize_path(os.path.abspath(os.path.join(env.root_dir, '.nimp', 'utils', 'last_deployed_revision.txt')))
+    memo_path = nimp.system.sanitize_path(os.path.abspath(os.path.join(env.root_dir, '.nimp', 'utils', 'last_deployed_revision.txt')))
     if mode == 'save':
-        safe_makedirs(os.path.dirname(last_deployed_revision_memo_file))
-        with open(last_deployed_revision_memo_file, 'w') as f:
-            f.write(last_deployed_revision)
+        safe_makedirs(os.path.dirname(memo_path))
+        with open(memo_path, 'w') as memo_file:
+            memo_file.write(last_deployed_revision)
     elif mode == 'load':
-        if os.path.isfile(last_deployed_revision_memo_file):
-            with open(last_deployed_revision_memo_file, 'r') as f:
-                last_deployed_revision = f.read()
+        if os.path.isfile(memo_path):
+            with open(memo_path, 'r') as memo_file:
+                last_deployed_revision = memo_file.read()
     return last_deployed_revision
 
 def save_last_deployed_revision(env):
+    ''' Saves the last deployed revision '''
     load_or_save_last_deployed_revision(env, 'save')
 
 def load_last_deployed_revision(env):
+    ''' Loads the last deployed revision '''
     return load_or_save_last_deployed_revision(env, 'load')
-    
+
 if is_windows():
     _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None
     _KERNEL32.MapViewOfFile.restype = ctypes.c_void_p
@@ -853,4 +856,3 @@ if is_windows():
 
 def _identity_mapper(src, dest):
     yield src, dest
-

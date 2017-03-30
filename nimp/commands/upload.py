@@ -21,11 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Uploading related commands '''
 
-import itertools
-import logging
 import os
-import shutil
-import zipfile
 
 import nimp.command
 import nimp.torrent

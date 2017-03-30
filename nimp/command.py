@@ -110,7 +110,7 @@ def load_arguments(env):
                 return platform
             return std_platforms[platform.lower()]
 
-        env.platform = '+'.join(map(sanitize_platform, env.platform.split('+'))) #pylint: disable=bad-builtin
+        env.platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
 
         env.is_win32   = 'win32'   in env.platform.split('+')
         env.is_win64   = 'win64'   in env.platform.split('+')
@@ -141,7 +141,7 @@ def load_arguments(env):
                 return ""
             return std_configs[config.lower()]
 
-        env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+'))) #pylint: disable=bad-builtin
+        env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
 
     return True
 

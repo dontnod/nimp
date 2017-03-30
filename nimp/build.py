@@ -192,4 +192,3 @@ def delete_symbol_transaction(symsrv, transaction_id):
     if nimp.system.call_process(".", command) != 0:
         return False
     return True
-

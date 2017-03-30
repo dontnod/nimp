@@ -149,4 +149,3 @@ class _FileSetTests(unittest.TestCase):
         files, src = _file_mapper()
         src.src('foo').to('dest').glob('quux.ext1')
         self._check_files(files(), ('foo/quux.ext1', 'dest/quux.ext1'))
-

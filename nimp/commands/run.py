@@ -47,4 +47,3 @@ class Run(nimp.command.Command):
             cmdline.append(env.format(arg))
 
         return nimp.system.call_process(".", cmdline) == 0
-

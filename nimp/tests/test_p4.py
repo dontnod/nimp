@@ -943,6 +943,3 @@ class _P4Tests(unittest.TestCase):
 
             self.assertListEqual([('/test_client/file_3', 'add')],
                                  sorted(cl_3_modified_files))
-
-
-

@@ -191,7 +191,7 @@ class Environment:
         all_ok = True
         for it in var_names:
             if not hasattr(self, it):
-                logging.error('Required configuration value "{0}" was not found.'.format(it))
+                logging.error('Required configuration value "%s" was not found.', it)
                 all_ok = False
         if not all_ok:
             logging.error('Check your .nimp.conf for missing configuration values')

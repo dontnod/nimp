@@ -154,7 +154,7 @@ class _Processes(CheckCommand):
         for pid, info in processes.items():
             if info[0].lower().startswith(prefix):
                 process_basename = os.path.basename(info[0])
-                processes_ignore_patterns = [ 
+                processes_ignore_patterns = [
                     r'^CrashReportClient\.exe$',
                 ]
                 if any([re.match(pattern, process_basename, re.IGNORECASE) for pattern in processes_ignore_patterns]):
@@ -219,4 +219,3 @@ class _Disks(CheckCommand):
             time.sleep(wait_time)
             total_wait_time -= wait_time
         return True
-

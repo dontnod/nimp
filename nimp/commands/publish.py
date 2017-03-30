@@ -152,11 +152,17 @@ class _Version(nimp.command.Command):
                 tmp = tmp.src(env.symbols_tmp if env.do_symbols else env.binaries_tmp)
                 tmp.glob("**")
 
-        logging.info('Deploying {0}…'.format(target_desc))
+        logging.info('Deploying %s…', target_desc)
         if not nimp.system.all_map(nimp.system.robocopy, files_to_deploy()):
             return False
 
-        # Create a Zip file
+        archive = _Version._create_zip_file(archive_path, env)
+        _Version._create_torrent(archive_path, archive, torrent_path, env)
+
+        return True
+
+    @staticmethod
+    def _create_zip_file(archive_path, env):
         archive = nimp.system.sanitize_path(env.format(archive_path))
         archive_tmp = archive + '.tmp'
 
@@ -183,8 +189,10 @@ class _Version(nimp.command.Command):
                 fd.write(src, dst)
         fd.close()
         shutil.move(archive_tmp, archive)
+        return archive
 
-        # Create a torrent
+    @staticmethod
+    def _create_torrent(archive_path, archive, torrent_path, env):
         torrent = nimp.system.sanitize_path(env.format(torrent_path))
         torrent_tmp = torrent + '.tmp'
 
@@ -202,6 +210,4 @@ class _Version(nimp.command.Command):
         with open(torrent_tmp, 'wb') as fd:
             fd.write(data)
         shutil.move(torrent_tmp, torrent)
-
-        return True
-
+        return torrent

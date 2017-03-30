@@ -52,7 +52,7 @@ def _clean_environment_variables():
     # … But in some cases (Windows Python) the duplicate variables are masked
     # by the os.environ wrapper, so we do it another way to make sure there
     # are no dupes:
-    for key in sorted(os.environ.keys()):
+    for key in sorted(os.environ.keys()): #pylint: disable=consider-iterating-dictionary
         val = os.environ[key]
         del os.environ[key]
         os.environ[key] = val
@@ -99,4 +99,3 @@ def main(argv = None):
 
 if __name__ == "__main__":
     sys.exit(main())
-

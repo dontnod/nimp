@@ -96,4 +96,3 @@ class Build(nimp.command.Command):
             if os.path.splitext(it)[1] == '.sln' and os.path.isfile(it):
                 return it
         return None
-

@@ -244,4 +244,3 @@ class DefaultSummaryHandler(SummaryHandler):
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
         destination.write(self._summary)
-
