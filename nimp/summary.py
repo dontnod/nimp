@@ -225,21 +225,21 @@ class DefaultSummaryHandler(SummaryHandler):
         show_context = len(self._context) < self._context.maxlen
         show_context = show_context and (self._has_errors or self._has_warnings)
         if show_context:
-            self._summary += '[  NOTIF  ] %s\n' % msg
+            self._summary += '[  NOTIF  ] %s\n' % (msg,)
 
     def _add_warning(self, msg):
         if len(self._context) == self._context.maxlen:
             self._summary += '\n *********************************************\n'
             while len(self._context) > 0:
-                self._summary += '[  NOTIF  ] ' + self._context.popleft() + '\n'
-        self._summary += '[ WARNING ] %s\n' % msg
+                self._summary += '[  NOTIF  ] %s\n' % (self._context.popleft(),)
+        self._summary += '[ WARNING ] %s\n' % (msg,)
 
     def _add_error(self, msg):
         if len(self._context) == self._context.maxlen:
             self._summary += '\n *********************************************\n'
             while len(self._context) > 0:
-                self._summary += '[  NOTIF  ] ' + self._context.popleft() + '\n'
-        self._summary += '[  ERROR  ]%s\n' % msg
+                self._summary += '[  NOTIF  ] %s\n' % (self._context.popleft(),)
+        self._summary += '[  ERROR  ] %s\n' % (msg,)
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
