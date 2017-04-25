@@ -332,6 +332,7 @@ class P4:
             if "No files to submit." in error:
                 logging.info("CL %s is empty, deleting it...", cl_number)
                 return self.delete_changelist(cl_number)
+            logging.error("%s", error)
             return False
 
         return True
