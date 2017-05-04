@@ -183,38 +183,12 @@ class P4:
                            cl_number, stdin = edit_input)
         return output is not None
 
-    def preview_reconcile(self, *files):
-        ''' Returns a very short summary of a reconcile simulation for the specified files or folders '''
-        status_paths = []
-        files = list(files)
-        for it in files:
-            if os.path.isdir(it):
-                status_paths.append(it +  "/...")
-            else:
-                status_paths.append(it)
-
-        status_input = '\n'.join(status_paths)
-
-        for filename, action in self._parse_command_output(['-x', '-', '-z', 'tag', 'reconcile', '-n', '-f'],
-                                                           r"^\.\.\. clientFile(.*)$",
-                                                           r"^\.\.\. action(.*)", stdin = status_input):
-            filename = os.path.normpath(filename) if filename is not None else ''
-            yield filename, action
-
-    def delete_uncontrolled(self, *files):
-        ''' Deletes files that are not under Perforce source control among the specified files or folders '''
-        for filename, action in self.preview_reconcile(*files):
-            if action == 'add':
-                logging.debug("Deleting the following file because it's not under Perforce source control: %s", filename)
-                nimp.system.safe_delete(filename)
-        return True
-
     def reconcile(self, cl_number, *files):
         ''' Reconciles given files in given cl '''
         files_to_delete = []
         for file_name, _, action in self.get_files_status(*files):
             if action == "edit" and not os.path.exists(file_name):
-                logging.debug("Manually reverting and deleting checkouted and missing file %s", file_name)
+                logging.debug("Manually reverting and deleting checked out and missing file %s", file_name)
                 files_to_delete.append(file_name)
 
         if files_to_delete:
