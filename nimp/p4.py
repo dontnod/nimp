@@ -185,29 +185,39 @@ class P4:
 
     def reconcile(self, cl_number, *files):
         ''' Reconciles given files in given cl '''
-        files_to_delete = []
-        for file_name, _, action in self.get_files_status(*files):
-            if action == "edit" and not os.path.exists(file_name):
-                logging.debug("Manually reverting and deleting checked out and missing file %s", file_name)
-                files_to_delete.append(file_name)
 
+        # List all currently edited depot files in our changelist
+        edited_files = []
+        for depot_file, action in self._parse_command_output(['describe', cl_number],
+                                                             r'^\.\.\. depotFile\d* (.*)$',
+                                                             r'^\.\.\. action\d* (.*)$'):
+            if action == 'edit':
+                edited_files.append(depot_file)
+
+        # Find edited files that no longer exist on the filesystem
+        files_to_delete = []
+        for depot_file, path in self._parse_command_output(['-x', '-', 'where'],
+                                                           r'^\.\.\. depotFile\d* (.*)$',
+                                                           r'^\.\.\. path\d* (.*)$',
+                                                           stdin='\n'.join(edited_files)):
+            if not os.path.exists(path):
+                logging.debug('Manually reverting and deleting checked out and missing file %s', path)
+                files_to_delete.append(path)
+
+        # Revert files that no longer belong here and mark them for delete
         if files_to_delete:
             delete_input = '\n'.join(files_to_delete)
-            if self._run('-x', '-', "revert", stdin = delete_input) is None:
+            if self._run('-x', '-', 'revert', stdin = delete_input) is None:
                 return False
-            if self._run('-x', '-', "delete", "-c", cl_number, stdin = delete_input) is None:
+            if self._run('-x', '-', 'delete', '-c', cl_number, stdin = delete_input) is None:
                 return False
 
         reconcile_paths = []
-        files = list(files)
-        for it in files:
-            if os.path.isdir(it):
-                reconcile_paths.append(it +  "/...")
-            else:
-                reconcile_paths.append(it)
+        for it in list(files):
+            reconcile_paths.append(it)
 
         reconcile_input = '\n'.join(reconcile_paths)
-        self._run('-x', '-', "reconcile", "-c", cl_number, stdin = reconcile_input)
+        self._run('-x', '-', 'reconcile', '-c', cl_number, stdin = reconcile_input)
         return True
 
     def get_changelist_description(self, cl_number):
