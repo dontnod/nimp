@@ -180,7 +180,7 @@ class P4:
 
         edit_input = '\n'.join(files_to_edit)
         output = self._run('-x', '-', "edit", "-c",
-                           cl_number, stdin = edit_input)
+                           cl_number, stdin=edit_input)
         return output is not None
 
     def reconcile(self, cl_number, *files):
@@ -207,9 +207,9 @@ class P4:
         # Revert files that no longer belong here and mark them for delete
         if files_to_delete:
             delete_input = '\n'.join(files_to_delete)
-            if self._run('-x', '-', 'revert', stdin = delete_input) is None:
+            if self._run('-x', '-', 'revert', stdin=delete_input) is None:
                 return False
-            if self._run('-x', '-', 'delete', '-c', cl_number, stdin = delete_input) is None:
+            if self._run('-x', '-', 'delete', '-c', cl_number, stdin=delete_input) is None:
                 return False
 
         reconcile_paths = []
@@ -217,7 +217,7 @@ class P4:
             reconcile_paths.append(it)
 
         reconcile_input = '\n'.join(reconcile_paths)
-        self._run('-x', '-', 'reconcile', '-c', cl_number, stdin = reconcile_input)
+        self._run('-x', '-', 'reconcile', '-c', cl_number, stdin=reconcile_input)
         return True
 
     def get_changelist_description(self, cl_number):
@@ -276,7 +276,7 @@ class P4:
     def is_file_versioned(self, file_path):
         ''' Checks if a file is known by the source control '''
         command = self._get_p4_command("fstat", file_path)
-        _, output, error = nimp.system.capture_process_output(".", command)
+        _, output, error = nimp.system.capture_process_output('.', command)
         # Checks if the file was not added then deleted
         if re.search(r"\.\.\.\s*headAction\s*delete", output) is not None:
             return False
@@ -293,17 +293,17 @@ class P4:
             files_to_revert.append(file_name)
 
         revert_input = '\n'.join(files_to_revert)
-        output = self._run('-x', '-', "revert", stdin = revert_input) is None
+        output = self._run('-x', '-', "revert", stdin=revert_input) is None
         return output is not None
 
     def revert_changelist(self, cl_number):
         ''' Reverts given changelist '''
-        output = self._run("revert", "-c", cl_number, "//...")
+        output = self._run('revert', '-c', cl_number, '//...')
         return output is not None
 
     def revert_unchanged(self, cl_number):
         ''' Reverts unchanged files in given changelist '''
-        output = self._run("revert", "-a", "-c", cl_number, "//...")
+        output = self._run('revert', '-a', '-c', cl_number, '//...')
         return output is not None
 
     def submit(self, cl_number):
@@ -336,7 +336,7 @@ class P4:
             command += [file_spec]
 
         command = self._get_p4_command(*command)
-        result, _, error = nimp.system.capture_process_output('.', command, None, 'cp437')
+        result, _, error = nimp.system.capture_process_output('.', command, None, encoding='cp437')
         if (result != 0 or error != '') and 'file(s) up-to-date' not in error:
             return False
 
@@ -365,12 +365,12 @@ class P4:
         command += list(args)
         return command
 
-    def _run(self, *args, stdin = None):
+    def _run(self, *args, stdin=None):
         command = self._get_p4_command(*args)
 
         retry = 0
         while retry <= 5:
-            result, output, error = nimp.system.capture_process_output('.', command, stdin, 'cp437')
+            result, output, error = nimp.system.capture_process_output('.', command, stdin, encoding='cp437')
             if result != 0 or error != '':
                 if 'Operation took too long ' in error:
                     retry += 1

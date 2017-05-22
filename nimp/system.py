@@ -111,22 +111,14 @@ def safe_makedirs(path):
             return
         raise
 
-def capture_process_output(directory, command, stdin = None, encoding = 'utf-8'):
+
+def capture_process_output(directory, command, stdin=None, encoding='utf-8'):
     ''' Returns a 3-uple containing return code, stdout and stderr of the given
         command '''
-    command = _sanitize_command(command)
-    logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(directory))
-    process = subprocess.Popen(command,
-                               cwd     = directory,
-                               stdout  = subprocess.PIPE,
-                               stderr  = subprocess.PIPE,
-                               stdin   = subprocess.PIPE,
-                               bufsize = 1)
-    output, error = process.communicate(stdin.encode(encoding) if stdin else None)
+    return call_process(directory, command, stdin=stdin, capture_output=True)
 
-    return process.wait(), output.decode(encoding), error.decode(encoding)
 
-def call_process(directory, command, heartbeat = 0):
+def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', capture_output=False):
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
     logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(directory))
@@ -142,7 +134,7 @@ def call_process(directory, command, heartbeat = 0):
                                    cwd     = directory,
                                    stdout  = subprocess.PIPE,
                                    stderr  = subprocess.PIPE,
-                                   stdin   = None,
+                                   stdin   = subprocess.PIPE if stdin else None,
                                    bufsize = 1)
     except FileNotFoundError as ex:
         logging.error(ex)
@@ -160,7 +152,11 @@ def call_process(directory, command, heartbeat = 0):
                 last_time += heartbeat
             time.sleep(0.050)
 
-    def _output_worker(in_pipe):
+    def _input_worker(in_pipe, data):
+        in_pipe.write(data)
+        in_pipe.close()
+
+    def _output_worker(in_pipe, data_array):
         # FIXME: it would be better to use while process.poll() == None
         # here, but thread safety issues in Python < 3.4 prevent it.
         while process:
@@ -171,18 +167,21 @@ def call_process(directory, command, heartbeat = 0):
                     # Windows, or UTF-8 with error substitution elsewhere. If
                     # it fails again, try CP850 with error substitution.
                     try:
-                        line = line.decode("utf-8")
+                        line = line.decode('utf-8')
                     except UnicodeError:
                         try:
                             if is_windows():
-                                line = line.decode("cp850")
+                                line = line.decode('cp850')
                             else:
-                                line = line.decode("utf-8", errors='replace')
+                                line = line.decode('utf-8', errors='replace')
                         except UnicodeError:
-                            line = line.decode("cp850", errors='replace')
+                            line = line.decode('cp850', errors='replace')
 
                     if line == '':
                         break
+
+                    if data_array is not None:
+                        data_array.append(line)
 
                     logger.info(line.strip('\n').strip('\r'))
 
@@ -193,21 +192,27 @@ def call_process(directory, command, heartbeat = 0):
             except ValueError:
                 return
 
-    log_thread_args = [ (process.stdout,),
-                        (process.stderr,)]
-    if is_windows():
-        log_thread_args += [ (debug_pipe.output,) ]
+    stdout = [] if capture_output else None
+    stderr = [] if capture_output else None
+    worker_threads = [ threading.Thread(target=_output_worker, args=(process.stdout, stdout)),
+                       threading.Thread(target=_output_worker, args=(process.stderr, stderr)) ]
 
-    worker_threads = [ threading.Thread(target = _output_worker, args = args) for args in log_thread_args ]
+    if is_windows():
+        worker_threads.append(threading.Thread(target=_output_worker, args=(debug_pipe.output, None)))
+
+    # Feed with stdin data if necessary
+    if stdin is not None:
+        worker_threads.append(threading.Thread(target=_input_worker, args=(process.stdin, stdin.encode(encoding))))
+
     # Send keepalive to stderr if requested
     if heartbeat > 0:
-        worker_threads += [ threading.Thread(target = _heartbeat_worker, args = (heartbeat, )) ]
+        worker_threads.append(threading.Thread(target = _heartbeat_worker, args = (heartbeat, )))
 
     for thread in worker_threads:
         thread.start()
 
     try:
-        process_return = process.wait()
+        exit_code = process.wait()
     finally:
         process = None
         if is_windows():
@@ -215,7 +220,11 @@ def call_process(directory, command, heartbeat = 0):
         for thread in worker_threads:
             thread.join()
 
-    return process_return
+    if capture_output:
+        return exit_code, ''.join(stdout), ''.join(stderr)
+    else:
+        return exit_code
+
 
 def robocopy(src, dest, ignore_older=False):
     ''' 'Robust' copy. '''
