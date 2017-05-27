@@ -128,49 +128,56 @@ class _Processes(CheckCommand):
         if not hasattr(env, 'project_type') or env.project_type not in [ 'UE4' ]:
             return True
 
-        # List all processes
-        cmd = ['wmic', 'process', 'get', 'executablepath,parentprocessid,processid', '/value']
-        result, output, _ = nimp.system.capture_process_output('.', cmd)
-        if result != 0:
-            return False
-
-        # Build a dictionary of all processes
-        processes = {}
-        path, pid, ppid = '', 0, 0
-        for line in [line.strip() for line in output.splitlines()]:
-            if line.lower().startswith('executablepath='):
-                path = re.sub('[^=]*=', '', line)
-            if line.lower().startswith('parentprocessid='):
-                ppid = re.sub('[^=]*=', '', line)
-            if line.lower().startswith('processid='):
-                pid = re.sub('[^=]*=', '', line)
-                processes[pid] = (path, ppid)
-
-        success = True
-
-        # Find all (but configured exceptions) running binaries launched from the project directory
-        # and (if so configured) kill them
         prefix = os.path.abspath(env.root_dir).replace('/', '\\').lower()
-        for pid, info in processes.items():
-            if info[0].lower().startswith(prefix):
+
+        # Find all running binaries launched from the project directory
+        # and optionally kill them, unless they’re in the exception list.
+        # We get to try 5 times just in case
+        for i in range(5):
+            found_problem = False
+            processes = self._list_windows_processes()
+            for pid, info in processes.items():
+                if not info[0].lower().startswith(prefix):
+                    continue
                 process_basename = os.path.basename(info[0])
                 processes_ignore_patterns = [
                     r'^CrashReportClient\.exe$',
                 ]
-                if any([re.match(pattern, process_basename, re.IGNORECASE) for pattern in processes_ignore_patterns]):
+                if any([re.match(p, process_basename, re.IGNORECASE) for p in processes_ignore_patterns]):
                     continue
                 logging.warning('Found problematic process %s (%s)', pid, info[0])
+                found_problem = True
                 if info[1] in processes:
                     logging.warning('Parent is %s (%s)', info[1], processes[info[1]][0])
                 if env.kill:
                     logging.info('Killing process…')
                     nimp.system.call_process('.', ['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
-                else:
-                    success = False
+            logging.info('%s processes checked.', len(processes))
+            if not env.kill:
+                return not found_problem
+            if not found_problem:
+                return True
+            time.sleep(5)
 
-        logging.info('%s processes checked.', len(processes))
+        return False
 
-        return success
+    def _list_windows_processes(self):
+        processes = {}
+        # List all processes
+        cmd = ['wmic', 'process', 'get', 'executablepath,parentprocessid,processid', '/value']
+        result, output, _ = nimp.system.capture_process_output('.', cmd)
+        if result == 0:
+            # Build a dictionary of all processes
+            path, pid, ppid = '', 0, 0
+            for line in [line.strip() for line in output.splitlines()]:
+                if line.lower().startswith('executablepath='):
+                    path = re.sub('[^=]*=', '', line)
+                if line.lower().startswith('parentprocessid='):
+                    ppid = re.sub('[^=]*=', '', line)
+                if line.lower().startswith('processid='):
+                    pid = re.sub('[^=]*=', '', line)
+                    processes[pid] = (path, ppid)
+        return processes
 
 
 class _Disks(CheckCommand):
