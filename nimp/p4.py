@@ -321,19 +321,15 @@ class P4:
 
         return True
 
-    def sync(self, file = None, cl_number = None):
+    def sync(self, *files, cl_number = None):
         ''' Udpate given file '''
         command = ["sync"]
-        file_spec = ""
 
-        if file is not None:
-            file_spec = file
-
+        file_list = list(files)
         if cl_number is not None:
-            file_spec += "@%s" % cl_number
+            file_list = map(file_list, lambda x: '%s@%s' % (x, cl_number))
 
-        if len(file_spec) > 0:
-            command += [file_spec]
+        command.extend(file_list)
 
         command = self._get_p4_command(*command)
         result, _, error = nimp.system.capture_process_output('.', command, None, encoding='cp437')

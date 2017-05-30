@@ -91,7 +91,7 @@ class _Fileset(P4Command):
 
         parser.add_argument('p4_operation',
                             help = 'Operation to perform on the fileset.',
-                            choices = ['checkout', 'revert', 'reconcile'])
+                            choices = ['checkout', 'revert', 'reconcile', 'sync'])
 
         parser.add_argument('fileset',
                             metavar = '<fileset>',
@@ -119,7 +119,8 @@ class _Fileset(P4Command):
         # value: [method, uses_a_changelist]
         operations = { 'checkout' : [p4.edit, True],
                        'reconcile' : [p4.reconcile, True],
-                       'revert' : [p4.revert, False], }
+                       'revert' : [p4.revert, False],
+                       'sync' : [p4.sync, False], }
 
         files = nimp.system.map_files(env)
         if files.load_set(env.fileset) is None:
@@ -138,7 +139,7 @@ class _Fileset(P4Command):
 
 
 class _Submit(P4Command):
-    ''' Submits a changelist identified by it's description  '''
+    ''' Submits a changelist identified by its description  '''
     def __init__(self):
         super(_Submit, self).__init__()
 
