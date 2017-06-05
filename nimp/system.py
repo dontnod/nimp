@@ -29,12 +29,12 @@ import logging
 import os
 import os.path
 import platform
+import queue
 import re
 import shutil
 import stat
 import struct
 import subprocess
-import sys
 import threading
 import time
 import importlib
@@ -124,12 +124,16 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
     command = _sanitize_command(command)
     logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(directory))
 
-    if is_windows():
+    capture_debug = True
+    if is_windows() and capture_debug:
         _disable_win32_dialogs()
         debug_pipe = _OutputDebugStringLogger()
+    else:
+        debug_pipe = None
 
-    # The bufsize = 1 is important; if we don’t bufferise the
-    # output, we’re going to make the callee lag a lot.
+    # The bufsize = 1 is important; if we don’t bufferise the output, we’re
+    # going to make the callee lag a lot. Using 1 or 1024 or 65536 does not
+    # make any noticeable difference, though.
     try:
         process = subprocess.Popen(command,
                                    cwd     = directory,
@@ -141,7 +145,7 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
         logging.error(ex)
         return 1
 
-    if is_windows():
+    if debug_pipe:
         debug_pipe.attach(process.pid)
         debug_pipe.start()
 
@@ -189,7 +193,7 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
     workers = [ threading.Thread(target=_output_worker, args=(process.stdout, stdout)),
                 threading.Thread(target=_output_worker, args=(process.stderr, stderr)) ]
 
-    if is_windows():
+    if debug_pipe:
         workers.append(threading.Thread(target=_output_worker, args=(debug_pipe.output, None)))
 
     # Feed with stdin data if necessary
@@ -207,7 +211,7 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
         exit_code = process.wait()
     finally:
         process = None
-        if is_windows():
+        if debug_pipe:
             debug_pipe.stop()
         for thread in workers:
             thread.join()
