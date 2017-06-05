@@ -149,6 +149,17 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
         debug_pipe.attach(process.pid)
         debug_pipe.start()
 
+    # FIXME: put all this in a class instead!
+    all_pipes = [ process.stdout,
+                  process.stderr,
+                  debug_pipe.output if debug_pipe else None ]
+
+    all_captures = [ [] if capture_output else None,
+                     [] if capture_output else None,
+                     None ]
+
+    debug_info = [ False ]
+
     def _heartbeat_worker(heartbeat):
         last_time = time.monotonic()
         while process is not None:
@@ -161,7 +172,11 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
         in_pipe.write(data)
         in_pipe.close()
 
-    def _output_worker(in_pipe, capture_array):
+    def _output_worker(index):
+        in_pipe = all_pipes[index]
+        capture_array = all_captures[index]
+        if in_pipe is None:
+            return
         while process is not None:
             logger = logging.getLogger('child_processes')
             # Try to decode as UTF-8 with BOM first; if it fails, try CP850 on
@@ -181,6 +196,14 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
                 if capture_array is not None:
                     capture_array.append(line)
 
+                # Stop reading data from stdout if data has arrived on OutputDebugString
+                if index == 2:
+                    debug_info[0] = True
+                elif index == 0 and debug_info[0]:
+                    logging.info('Stopping stdout monitoring (OutputDebugString is active)')
+                    all_pipes[0].close()
+                    return
+
                 logger.info(line.strip('\n').strip('\r'))
 
             # Sleep for 10 milliseconds if there was no data,
@@ -188,36 +211,34 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
             time.sleep(0.010)
 
 
-    stdout = [] if capture_output else None
-    stderr = [] if capture_output else None
-    workers = [ threading.Thread(target=_output_worker, args=(process.stdout, stdout)),
-                threading.Thread(target=_output_worker, args=(process.stderr, stderr)) ]
+    # Default threads
+    all_workers = [ threading.Thread(target=_output_worker, args=(i,)) for i in range(3) ]
 
-    if debug_pipe:
-        workers.append(threading.Thread(target=_output_worker, args=(debug_pipe.output, None)))
-
-    # Feed with stdin data if necessary
+    # Thread to feed stdin data if necessary
     if stdin is not None:
-        workers.append(threading.Thread(target=_input_worker, args=(process.stdin, stdin.encode(encoding))))
+        all_workers.append(threading.Thread(target=_input_worker, args=(process.stdin, stdin.encode(encoding))))
 
     # Send keepalive to stderr if requested
     if heartbeat > 0:
-        workers.append(threading.Thread(target = _heartbeat_worker, args = (heartbeat, )))
+        all_workers.append(threading.Thread(target = _heartbeat_worker, args = (heartbeat, )))
 
-    for thread in workers:
+    for thread in all_workers:
         thread.start()
 
     try:
         exit_code = process.wait()
     finally:
         process = None
+        # For some reason, must be done _before_ threads are joined, or
+        # we get stuck waiting for something!
         if debug_pipe:
             debug_pipe.stop()
-        for thread in workers:
+            debug_pipe = None
+        for thread in all_workers:
             thread.join()
 
     if capture_output:
-        return exit_code, ''.join(stdout), ''.join(stderr)
+        return exit_code, ''.join(all_captures[0]), ''.join(all_captures[1])
     else:
         return exit_code
 
