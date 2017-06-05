@@ -142,11 +142,11 @@ class SummaryHandler(logging.Handler):
                     self._write_summary(out)
 
     def has_errors(self):
-        ''' Returns true if errors were emmited durring program execution '''
+        ''' Returns true if errors were emitted during program execution '''
         return self._has_errors
 
     def has_warnings(self):
-        ''' Returns true if warnings were emmited durring program execution '''
+        ''' Returns true if warnings were emitted during program execution '''
         return self._has_warnings
 
     def emit(self, record):

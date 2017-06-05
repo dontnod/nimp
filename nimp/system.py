@@ -34,6 +34,7 @@ import shutil
 import stat
 import struct
 import subprocess
+import sys
 import threading
 import time
 import importlib
@@ -146,7 +147,7 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
 
     def _heartbeat_worker(heartbeat):
         last_time = time.monotonic()
-        while process:
+        while process is not None:
             if heartbeat > 0 and time.monotonic() > last_time + heartbeat:
                 logging.info("Keepalive for %s", command[0])
                 last_time += heartbeat
@@ -156,59 +157,50 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
         in_pipe.write(data)
         in_pipe.close()
 
-    def _output_worker(in_pipe, data_array):
-        # FIXME: it would be better to use while process.poll() == None
-        # here, but thread safety issues in Python < 3.4 prevent it.
-        while process:
-            try:
-                logger = logging.getLogger('child_processes')
-                for line in iter(in_pipe.readline, ''):
-                    # Try to decode as UTF-8 first; if it fails, try CP850 on
-                    # Windows, or UTF-8 with error substitution elsewhere. If
-                    # it fails again, try CP850 with error substitution.
+    def _output_worker(in_pipe, capture_array):
+        while process is not None:
+            logger = logging.getLogger('child_processes')
+            # Try to decode as UTF-8 with BOM first; if it fails, try CP850 on
+            # Windows, or UTF-8 with BOM and error substitution elsewhere. If
+            # it fails again, try CP850 with error substitution.
+            encodings = [('utf-8-sig', 'strict'),
+                         ('cp850',     'strict') if is_windows() else ('utf-8-sig', 'replace'),
+                         ('cp850',     'replace')]
+            for data in iter(in_pipe.readline, b''):
+                for encoding, errors in encodings:
                     try:
-                        line = line.decode('utf-8')
-                    except UnicodeError:
-                        try:
-                            if is_windows():
-                                line = line.decode('cp850')
-                            else:
-                                line = line.decode('utf-8', errors='replace')
-                        except UnicodeError:
-                            line = line.decode('cp850', errors='replace')
-
-                    if line == '':
+                        line = data.decode(encoding, errors=errors)
                         break
+                    except UnicodeError:
+                        pass
 
-                    if data_array is not None:
-                        data_array.append(line)
+                if capture_array is not None:
+                    capture_array.append(line)
 
-                    logger.info(line.strip('\n').strip('\r'))
+                logger.info(line.strip('\n').strip('\r'))
 
-                # Sleep for 10 milliseconds if there was no data,
-                # or we’ll hog the CPU.
-                time.sleep(0.010)
+            # Sleep for 10 milliseconds if there was no data,
+            # or we’ll hog the CPU.
+            time.sleep(0.010)
 
-            except ValueError:
-                return
 
     stdout = [] if capture_output else None
     stderr = [] if capture_output else None
-    worker_threads = [ threading.Thread(target=_output_worker, args=(process.stdout, stdout)),
-                       threading.Thread(target=_output_worker, args=(process.stderr, stderr)) ]
+    workers = [ threading.Thread(target=_output_worker, args=(process.stdout, stdout)),
+                threading.Thread(target=_output_worker, args=(process.stderr, stderr)) ]
 
     if is_windows():
-        worker_threads.append(threading.Thread(target=_output_worker, args=(debug_pipe.output, None)))
+        workers.append(threading.Thread(target=_output_worker, args=(debug_pipe.output, None)))
 
     # Feed with stdin data if necessary
     if stdin is not None:
-        worker_threads.append(threading.Thread(target=_input_worker, args=(process.stdin, stdin.encode(encoding))))
+        workers.append(threading.Thread(target=_input_worker, args=(process.stdin, stdin.encode(encoding))))
 
     # Send keepalive to stderr if requested
     if heartbeat > 0:
-        worker_threads.append(threading.Thread(target = _heartbeat_worker, args = (heartbeat, )))
+        workers.append(threading.Thread(target = _heartbeat_worker, args = (heartbeat, )))
 
-    for thread in worker_threads:
+    for thread in workers:
         thread.start()
 
     try:
@@ -217,7 +209,7 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
         process = None
         if is_windows():
             debug_pipe.stop()
-        for thread in worker_threads:
+        for thread in workers:
             thread.join()
 
     if capture_output:
