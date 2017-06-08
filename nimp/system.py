@@ -113,19 +113,20 @@ def safe_makedirs(path):
         raise
 
 
-def capture_process_output(directory, command, stdin=None, encoding='utf-8'):
+def capture_process_output(directory, command, stdin=None, hide_output=False, encoding='utf-8'):
     ''' Returns a 3-uple containing return code, stdout and stderr of the given
         command '''
-    return call_process(directory, command, stdin=stdin, capture_output=True)
+    return call_process(directory, command, stdin=stdin, capture_output=True, hide_output=hide_output)
 
 
-def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', capture_output=False):
+def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', capture_output=False, hide_output=False):
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
-    logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(directory))
+    if not hide_output:
+        logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(directory))
 
     capture_debug = True
-    if is_windows() and capture_debug:
+    if is_windows() and capture_debug and not hide_output:
         _disable_win32_dialogs()
         debug_pipe = _OutputDebugStringLogger()
     else:
@@ -204,7 +205,8 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
                     all_pipes[0].close()
                     return
 
-                logger.info(line.strip('\n').strip('\r'))
+                if not hide_output:
+                    logger.info(line.strip('\n').strip('\r'))
 
             # Sleep for 10 milliseconds if there was no data,
             # or we’ll hog the CPU.
@@ -806,7 +808,7 @@ if is_windows():
                 return pid
 
         def attach(self, pid):
-            ''' Sets the process pid from wich to capture output debug string '''
+            ''' Sets the process pid from which to capture output debug string '''
             self._pid = _OutputDebugStringLogger._pid_to_winpid(pid)
             logging.debug("Attached to process %d (winpid %d)", pid, self._pid)
 
