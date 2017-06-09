@@ -367,15 +367,20 @@ class P4:
     def _run(self, *args, stdin=None):
         command = self._get_p4_command(*args)
 
-        retry = 0
-        while retry <= 5:
+        for retry in range(5):
             result, output, error = nimp.system.capture_process_output('.', command, stdin, encoding='cp437')
-            if result != 0 or error != '':
-                if 'Operation took too long ' in error:
-                    retry += 1
-                    continue
 
-                logging.info('p4 command failed : %s', error)
+            if 'Operation took too long ' in error:
+                continue
+
+            has_fatal_errors = False
+            if 'can\'t update' in error or \
+               'can\'t clobber' in error or \
+               'can\'t overwrite' in error:
+                has_fatal_errors = True
+
+            if result != 0 or has_fatal_errors:
+                logging.info('p4 command failed: %s', error)
                 return None
 
             return output
