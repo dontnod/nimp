@@ -140,7 +140,7 @@ def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', 
                                    cwd     = directory,
                                    stdout  = subprocess.PIPE,
                                    stderr  = subprocess.PIPE,
-                                   stdin   = subprocess.PIPE if stdin else None,
+                                   stdin   = subprocess.PIPE if stdin is not None else None,
                                    bufsize = 1)
     except FileNotFoundError as ex:
         logging.error(ex)
