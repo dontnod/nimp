@@ -186,6 +186,8 @@ class P4:
     def reconcile(self, cl_number, *files):
         ''' Reconciles given files in given cl '''
 
+        ret = True
+
         # List all currently edited depot files in our changelist
         edited_files = []
         for depot_file, action in self._parse_command_output(['describe', cl_number],
@@ -205,20 +207,21 @@ class P4:
                 files_to_delete.append(path)
 
         # Revert files that no longer belong here and mark them for delete
-        if files_to_delete:
-            delete_input = '\n'.join(files_to_delete)
-            if self._run('-x', '-', 'revert', stdin=delete_input) is None:
-                return False
-            if self._run('-x', '-', 'delete', '-c', cl_number, stdin=delete_input) is None:
-                return False
+        delete_input = '\n'.join(files_to_delete)
+        if self._run('-x', '-', 'revert', stdin=delete_input) is None:
+            ret = False
+        if self._run('-x', '-', 'delete', '-c', cl_number, stdin=delete_input) is None:
+            ret = False
 
-        reconcile_paths = []
-        for it in list(files):
-            reconcile_paths.append(it)
+        # Revert unchanged files
+        if self._run('revert', '-a', '-c', cl_number) is None:
+            ret = False
 
-        reconcile_input = '\n'.join(reconcile_paths)
-        self._run('-x', '-', 'reconcile', '-c', cl_number, stdin=reconcile_input)
-        return True
+        # Reconcile files with -a: add missing files to checkout if necessary
+        if self._run('-x', '-', 'reconcile', '-a', '-c', cl_number, stdin='\n'.join(files)) is None:
+            ret = False
+
+        return ret
 
     def get_changelist_description(self, cl_number):
         ''' Returns description of given changelist '''
