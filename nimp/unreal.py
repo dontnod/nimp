@@ -286,14 +286,14 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
     # (https://udn.unrealengine.com/questions/330502/increased-cook-times-in-ue414.html)
     #cmdline += ['-forcelogflush']
 
-    return nimp.sys.process.call('.', cmdline, heartbeat = heartbeat) == 0
+    return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
 
 
 def _ue4_generate_project(env):
     if nimp.sys.platform.is_windows():
-        return nimp.sys.process.call(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat', '-2015'])
+        return nimp.sys.process.call(['cmd', '/c', 'GenerateProjectFiles.bat', '-2015'], cwd=env.root_dir)
     else:
-        return nimp.sys.process.call(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
+        return nimp.sys.process.call(['/bin/sh', './GenerateProjectFiles.sh'], cwd=env.root_dir)
 
 def _ue4_build_project(env, sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
@@ -309,9 +309,9 @@ def _ue4_build_project(env, sln_file, project, build_platform,
     else:
         host_platform = 'Linux'
 
-    return nimp.sys.process.call(env.root_dir,
-                                    ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (host_platform),
-                                     project, build_platform, configuration]) == 0
+    return nimp.sys.process.call(['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (host_platform),
+                                  project, build_platform, configuration],
+                                 cwd=env.root_dir) == 0
 
 
 def _ue4_load_arguments(env):

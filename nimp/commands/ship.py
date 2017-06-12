@@ -85,7 +85,7 @@ class Ship(nimp.command.Command):
             cmd += [ env.format('-mapstocook={map}') ]
 
         Ship._tweak_default_game_ini(env)
-        success = nimp.sys.process.call('.', cmd, heartbeat = 30) == 0
+        success = nimp.sys.process.call(cmd, heartbeat = 30) == 0
         return success
 
     @staticmethod

@@ -153,7 +153,7 @@ class _Processes(CheckCommand):
                     logging.warning('Parent is %s (%s)', info[1], processes[info[1]][0])
                 if env.kill:
                     logging.info('Killing process…')
-                    nimp.sys.process.call('.', ['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
+                    nimp.sys.process.call(['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
             logging.info('%s processes checked.', len(processes))
             if not env.kill:
                 return not found_problem

@@ -33,11 +33,11 @@ import time
 import nimp.sys.platform
 
 
-def call(directory, command, heartbeat=0, stdin=None, encoding='utf-8', capture_output=False, hide_output=False):
+def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8', capture_output=False, hide_output=False):
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
     if not hide_output:
-        logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(directory))
+        logging.debug('Running "%s" in "%s"', ' '.join(command), os.path.abspath(cwd))
 
     capture_debug = True
     if nimp.sys.platform.is_windows() and capture_debug and not hide_output:
@@ -51,7 +51,7 @@ def call(directory, command, heartbeat=0, stdin=None, encoding='utf-8', capture_
     # make any noticeable difference, though.
     try:
         process = subprocess.Popen(command,
-                                   cwd     = directory,
+                                   cwd     = cwd,
                                    stdout  = subprocess.PIPE,
                                    stderr  = subprocess.PIPE,
                                    stdin   = subprocess.PIPE if stdin is not None else None,

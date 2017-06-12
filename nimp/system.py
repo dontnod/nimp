@@ -51,11 +51,11 @@ def is_msys():
 
 def capture_process_output(directory, command, stdin=None, hide_output=False, encoding='utf-8'):
     ''' Obsolete, for backwards compatibility '''
-    return nimp.sys.process.call(directory, command, stdin=stdin, capture_output=True, hide_output=hide_output)
+    return nimp.sys.process.call(command, cwd=directory, stdin=stdin, capture_output=True, hide_output=hide_output)
 
 def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', capture_output=False, hide_output=False):
     ''' Obsolete, for backwards compatibility '''
-    return nimp.sys.process.call(directory, command, heartbeat, stdin, encoding, capture_output, hide_output)
+    return nimp.sys.process.call(command, cwd=directory, heartbeat=heartbeat, stdin=stdin, encoding=encoding, capture_output=capture_output, hide_output=hide_output)
 
 
 
