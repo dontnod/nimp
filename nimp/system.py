@@ -40,25 +40,6 @@ import nimp.environment
 import nimp.sys.platform
 import nimp.sys.process
 
-
-def is_windows():
-    ''' Obsolete, for backwards compatibility '''
-    return nimp.sys.platform.is_windows()
-
-def is_msys():
-    ''' Obsolete, for backwards compatibility '''
-    return nimp.sys.platform.is_msys()
-
-def capture_process_output(directory, command, stdin=None, hide_output=False, encoding='utf-8'):
-    ''' Obsolete, for backwards compatibility '''
-    return nimp.sys.process.call(command, cwd=directory, stdin=stdin, encoding=encoding, capture_output=True, hide_output=hide_output)
-
-def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', capture_output=False, hide_output=False):
-    ''' Obsolete, for backwards compatibility '''
-    return nimp.sys.process.call(command, cwd=directory, heartbeat=heartbeat, stdin=stdin, encoding=encoding, capture_output=capture_output, hide_output=hide_output)
-
-
-
 def try_import(module_name):
     ''' Tries to import a module, return none if unavailable '''
     try:

@@ -30,7 +30,6 @@ import time
 import abc
 
 import nimp.command
-import nimp.system
 import nimp.sys.platform
 import nimp.sys.process
 
@@ -167,7 +166,7 @@ class _Processes(CheckCommand):
         processes = {}
         # List all processes
         cmd = ['wmic', 'process', 'get', 'executablepath,parentprocessid,processid', '/value']
-        result, output, _ = nimp.system.capture_process_output('.', cmd)
+        result, output, _ = nimp.sys.process.call(cmd, capture_output=True)
         if result == 0:
             # Build a dictionary of all processes
             path, pid, ppid = '', 0, 0
