@@ -28,6 +28,8 @@ import re
 
 import nimp.build
 import nimp.system
+import nimp.sys.platform
+import nimp.sys.process
 import nimp.summary
 
 def load_config(env):
@@ -267,7 +269,7 @@ def _ue4_build(env):
 
 def _ue4_commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an UE4 commandlet '''
-    if nimp.system.is_windows():
+    if nimp.sys.platform.is_windows():
         exe = 'Engine/Binaries/Win64/UE4Editor.exe'
     elif platform.system() == 'Darwin':
         exe = 'Engine/Binaries/Mac/UE4Editor'
@@ -284,19 +286,19 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
     # (https://udn.unrealengine.com/questions/330502/increased-cook-times-in-ue414.html)
     #cmdline += ['-forcelogflush']
 
-    return nimp.system.call_process('.', cmdline, heartbeat = heartbeat) == 0
+    return nimp.sys.process.call('.', cmdline, heartbeat = heartbeat) == 0
 
 
 def _ue4_generate_project(env):
-    if nimp.system.is_windows():
-        return nimp.system.call_process(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat', '-2015'])
+    if nimp.sys.platform.is_windows():
+        return nimp.sys.process.call(env.root_dir, ['cmd', '/c', 'GenerateProjectFiles.bat', '-2015'])
     else:
-        return nimp.system.call_process(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
+        return nimp.sys.process.call(env.root_dir, ['/bin/sh', './GenerateProjectFiles.sh'])
 
 def _ue4_build_project(env, sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
 
-    if nimp.system.is_windows():
+    if nimp.sys.platform.is_windows():
         return nimp.build.vsbuild(sln_file, build_platform, configuration,
                                   project=project,
                                   vs_version=vs_version,
@@ -307,7 +309,7 @@ def _ue4_build_project(env, sln_file, project, build_platform,
     else:
         host_platform = 'Linux'
 
-    return nimp.system.call_process(env.root_dir,
+    return nimp.sys.process.call(env.root_dir,
                                     ['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (host_platform),
                                      project, build_platform, configuration]) == 0
 

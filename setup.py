@@ -29,7 +29,7 @@ setup_info = dict(
     packages = [
         'nimp',
         'nimp/commands',
-        'nimp',
+        'nimp/sys',
     ],
 
     install_requires = [

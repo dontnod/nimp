@@ -31,6 +31,8 @@ import abc
 
 import nimp.command
 import nimp.system
+import nimp.sys.platform
+import nimp.sys.process
 
 class Check(nimp.command.CommandGroup):
     ''' Check related commands '''
@@ -121,7 +123,7 @@ class _Processes(CheckCommand):
         logging.info('Checking running processes…')
 
         # Irrelevant on sane Unix platforms
-        if not nimp.system.is_windows():
+        if not nimp.sys.platform.is_windows():
             return True
 
         # Irrelevant if we’re not a UE4 project
@@ -151,7 +153,7 @@ class _Processes(CheckCommand):
                     logging.warning('Parent is %s (%s)', info[1], processes[info[1]][0])
                 if env.kill:
                     logging.info('Killing process…')
-                    nimp.system.call_process('.', ['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
+                    nimp.sys.process.call('.', ['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
             logging.info('%s processes checked.', len(processes))
             if not env.kill:
                 return not found_problem

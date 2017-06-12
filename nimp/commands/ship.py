@@ -29,6 +29,7 @@ import logging
 import nimp.commands
 import nimp.environment
 import nimp.system
+import nimp.sys.process
 
 class Ship(nimp.command.Command):
     ''' Packages an unreal project for release '''
@@ -84,7 +85,7 @@ class Ship(nimp.command.Command):
             cmd += [ env.format('-mapstocook={map}') ]
 
         Ship._tweak_default_game_ini(env)
-        success = nimp.system.call_process('.', cmd, heartbeat = 30) == 0
+        success = nimp.sys.process.call('.', cmd, heartbeat = 30) == 0
         return success
 
     @staticmethod

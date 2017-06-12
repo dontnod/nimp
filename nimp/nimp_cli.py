@@ -32,6 +32,7 @@ import nimp.command
 import nimp.commands
 import nimp.environment
 import nimp.system
+import nimp.sys.process
 import nimp.unreal
 
 sys.dont_write_bytecode = 1
@@ -66,9 +67,8 @@ def main(argv = None):
 
     result = 0
     try:
-        if nimp.system.is_windows():
-            nimp_monitor = nimp.system.NimpMonitor()
-            nimp_monitor.start()
+        nimp_monitor = nimp.sys.process.Monitor()
+        nimp_monitor.start()
 
         _clean_environment_variables()
 
@@ -89,8 +89,7 @@ def main(argv = None):
     except SystemExit:
         result = 1
     finally:
-        if nimp.system.is_windows():
-            nimp_monitor.stop()
+        nimp_monitor.stop()
 
     end = time.time()
     logging.info("Command took %f seconds.", end - start)

@@ -37,6 +37,7 @@ import requests
 import nimp.command
 import nimp.environment
 import nimp.system
+import nimp.sys.platform
 
 MAGIC = nimp.system.try_import('magic')
 
@@ -62,7 +63,7 @@ class Deploy(nimp.command.Command):
         return True
 
     def is_available(self, env):
-        if nimp.system.is_windows():
+        if nimp.sys.platform.is_windows():
             return True, ''
 
         return (MAGIC is not None and hasattr(MAGIC, 'from_file'),

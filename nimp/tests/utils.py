@@ -29,6 +29,8 @@ import unittest.mock
 import pyfakefs.fake_filesystem_unittest
 
 import nimp.system
+import nimp.sys.platform
+import nimp.sys.process
 
 class MockCommand(metaclass=abc.ABCMeta):
     ''' Used to mock a call to a system command '''
@@ -56,7 +58,7 @@ def mock_capture_process_output(*mock_commands):
         return mock_dict[executable].get_result(command[1:], stdin = stdin)
 
     with unittest.mock.patch('nimp.system.capture_process_output') as mock:
-        with unittest.mock.patch('nimp.system.is_msys') as mock_is_msys:
+        with unittest.mock.patch('nimp.sys.platform.is_msys') as mock_is_msys:
             mock_is_msys.return_value = False
             mock.side_effect = _mock
             yield mock
@@ -64,7 +66,7 @@ def mock_capture_process_output(*mock_commands):
 @contextlib.contextmanager
 def mock_call_process():
     ''' Mocks calls to popen '''
-    with unittest.mock.patch('nimp.system.call_process') as mock:
+    with unittest.mock.patch('nimp.sys.process.call') as mock:
         yield mock
 
 @contextlib.contextmanager

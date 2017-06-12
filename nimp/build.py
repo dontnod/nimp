@@ -27,13 +27,15 @@ import re
 import subprocess
 
 import nimp.system
+import nimp.sys.platform
+import nimp.sys.process
 
 def vsbuild(solution, platform_name, configuration, project=None,
             vs_version='12', target='Build', dotnet_version='4.6'):
     ''' Builds a project with Visual Studio '''
     build_directory = '.'
 
-    if nimp.system.is_windows():
+    if nimp.sys.platform.is_windows():
         devenv_path = _find_devenv_path(vs_version)
         if devenv_path is None:
             logging.error("Unable to find Visual Studio %s", vs_version)
@@ -43,7 +45,7 @@ def vsbuild(solution, platform_name, configuration, project=None,
         if project is not None:
             command = command + [ '/project', project ]
 
-        return nimp.system.call_process(build_directory, command) == 0
+        return nimp.sys.process.call(build_directory, command) == 0
 
     else: # Mac and Linux alike
         command = [ 'xbuild', solution, '/verbosity:quiet', '/nologo',
@@ -53,7 +55,7 @@ def vsbuild(solution, platform_name, configuration, project=None,
                     '/p:TargetFrameworkProfile=' ]
         if project is not None:
             command = command + [ '/target:' + project ]
-        return nimp.system.call_process(build_directory, command) == 0
+        return nimp.sys.process.call(build_directory, command) == 0
 
 def _find_devenv_path(vs_version):
     devenv_path = None
@@ -149,7 +151,7 @@ def upload_symbols(env, symbols, config):
         if hasattr(env, 'compress') and env.compress:
             cmd += [ "/compress" ]
 
-        if nimp.system.call_process(".", cmd) != 0:
+        if nimp.sys.process.call(".", cmd) != 0:
             # Do not remove symbol index; keep it for later debugging
             return False
 
@@ -189,6 +191,6 @@ def delete_symbol_transaction(symsrv, transaction_id):
                  transaction_id,
                  "/s",
                  symsrv]
-    if nimp.system.call_process(".", command) != 0:
+    if nimp.sys.process.call(".", command) != 0:
         return False
     return True
