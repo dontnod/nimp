@@ -330,7 +330,7 @@ class P4:
 
         file_list = list(files)
         if cl_number is not None:
-            file_list = map(file_list, lambda x: '%s@%s' % (x, cl_number))
+            file_list = list(map(file_list, lambda x: '%s@%s' % (x, cl_number)))
 
         command.extend(file_list)
 
@@ -367,8 +367,8 @@ class P4:
     def _run(self, *args, stdin=None):
         command = self._get_p4_command(*args)
 
-        for retry in range(5):
-            result, output, error = nimp.system.capture_process_output('.', command, stdin, encoding='cp437')
+        for _ in range(5):
+            result, output, error = nimp.system.capture_process_output('.', command, stdin=stdin, encoding='cp437')
 
             if 'Operation took too long ' in error:
                 continue

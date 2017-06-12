@@ -135,7 +135,7 @@ class _Processes(CheckCommand):
         # Find all running binaries launched from the project directory
         # and optionally kill them, unless they’re in the exception list.
         # We get to try 5 times just in case
-        for i in range(5):
+        for _ in range(5):
             found_problem = False
             processes = self._list_windows_processes()
             for pid, info in processes.items():

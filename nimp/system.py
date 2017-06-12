@@ -51,7 +51,7 @@ def is_msys():
 
 def capture_process_output(directory, command, stdin=None, hide_output=False, encoding='utf-8'):
     ''' Obsolete, for backwards compatibility '''
-    return nimp.sys.process.call(command, cwd=directory, stdin=stdin, capture_output=True, hide_output=hide_output)
+    return nimp.sys.process.call(command, cwd=directory, stdin=stdin, encoding=encoding, capture_output=True, hide_output=hide_output)
 
 def call_process(directory, command, heartbeat=0, stdin=None, encoding='utf-8', capture_output=False, hide_output=False):
     ''' Obsolete, for backwards compatibility '''
@@ -596,4 +596,3 @@ def load_last_deployed_revision(env):
 
 def _identity_mapper(src, dest):
     yield src, dest
-

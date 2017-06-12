@@ -316,7 +316,7 @@ if nimp.sys.platform.is_windows():
                 result = _KERNEL32.WaitForMultipleObjects(len(events), (ctypes.c_void_p * len(events))(*events), 0, INFINITE)
                 if result == WAIT_OBJECT_0:
                     logging.debug("Parent nimp.exe is not running anymore: current python process and its subprocesses are going to be killed")
-                    call_process('.', ['taskkill', '/F', '/T', '/PID', str(os.getpid())])
+                    call(['taskkill', '/F', '/T', '/PID', str(os.getpid())])
                     break
                 elif result == WAIT_OBJECT_1:
                     break
@@ -334,4 +334,3 @@ else:
 
         def stop(self):
             pass
-

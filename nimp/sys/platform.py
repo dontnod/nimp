@@ -34,4 +34,3 @@ def is_msys():
 def is_osx():
     ''' Returns True if the platform is OS X. '''
     return platform.system() == 'Darwin'
-
