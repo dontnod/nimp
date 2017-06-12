@@ -10,9 +10,11 @@ Nimp api reference.
    nimp.build
    nimp.command
    nimp.environment
-   nimp.p4
    nimp.system
-   nimp.torrent
    nimp.unreal
+   nimp.sys.platform
+   nimp.sys.process
+   nimp.utils.torrent
+   nimp.utils.p4
    nimp.tests.utils
    nimp.tests.test_p4

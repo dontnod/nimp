@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2014—2016 Dontnod Entertainment
+# Copyright © 2014—2017 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,13 +19,14 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 ''' Perforce related commands. '''
 
 import abc
 import shutil
 
 import nimp.command
-import nimp.p4
+import nimp.utils.p4
 
 def _is_p4_available():
     if shutil.which('p4') is None:
@@ -59,7 +60,7 @@ class P4(nimp.command.CommandGroup):
 
     def configure_arguments(self, env, parser):
         super(P4, self).configure_arguments(env, parser)
-        nimp.p4.add_arguments(parser)
+        nimp.utils.p4.add_arguments(parser)
 
     def is_available(self, env):
         return _is_p4_available()
@@ -73,10 +74,10 @@ class _RevertWorkspace(P4Command):
         return _is_p4_available()
 
     def run(self, env):
-        if not nimp.p4.check_for_p4(env):
+        if not nimp.utils.p4.check_for_p4(env):
             return False
 
-        p4 = nimp.p4.get_client(env)
+        p4 = nimp.utils.p4.get_client(env)
         return p4.clean_workspace()
 
 class _Fileset(P4Command):
@@ -109,10 +110,10 @@ class _Fileset(P4Command):
         return _is_p4_available()
 
     def run(self, env):
-        if not nimp.p4.check_for_p4(env):
+        if not nimp.utils.p4.check_for_p4(env):
             return False
 
-        p4 = nimp.p4.get_client(env)
+        p4 = nimp.utils.p4.get_client(env)
 
         # Dictionary below has the following structure:
         # key: p4_operation
@@ -158,10 +159,10 @@ class _Submit(P4Command):
         return _is_p4_available()
 
     def run(self, env):
-        if not nimp.p4.check_for_p4(env):
+        if not nimp.utils.p4.check_for_p4(env):
             return False
 
-        p4 = nimp.p4.get_client(env)
+        p4 = nimp.utils.p4.get_client(env)
 
         description = env.format(env.changelist_description)
         changelist = p4.get_or_create_changelist(description)

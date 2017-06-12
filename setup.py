@@ -30,6 +30,7 @@ setup_info = dict(
         'nimp',
         'nimp/commands',
         'nimp/sys',
+        'nimp/utils',
     ],
 
     install_requires = [

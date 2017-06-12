@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2014—2016 Dontnod Entertainment
+# Copyright © 2014—2017 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,6 +19,7 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 ''' System utilities unit tests '''
 
 import contextlib
@@ -28,7 +29,7 @@ import unittest.mock
 import argparse
 
 import nimp.tests.utils
-import nimp.p4
+import nimp.utils.p4
 
 class _MockChangelist:
     def __init__(self, number, description):
@@ -562,10 +563,10 @@ def mock_p4():
 class _P4Tests(unittest.TestCase):
     def __init__(self, test):
         super(_P4Tests, self).__init__(test)
-        self._p4 = nimp.p4.P4(port = 'test_port',
-                              user = 'test_user',
-                              password = 'test_password',
-                              client = 'test_client')
+        self._p4 = nimp.utils.p4.P4(port = 'test_port',
+                                    user = 'test_user',
+                                    password = 'test_password',
+                                    client = 'test_client')
 
     def _assert_action_is(self, filename, action):
         files_status = list(self._p4.get_files_status(filename))

@@ -20,14 +20,9 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Perforce utilities '''
+''' Utility functions '''
 
-import nimp.utils.p4
-
-def add_arguments(parser):
-    ''' Obsolete, for backwards compatibility '''
-    return nimp.utils.p4.add_arguments(parser)
-
-def get_client(env):
-    ''' Obsolete, for backwards compatibility '''
-    return nimp.utils.p4.get_client(env)
+__all__ = [
+    'p4',
+    'torrent',
+]

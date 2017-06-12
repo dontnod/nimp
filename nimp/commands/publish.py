@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2014—2016 Dontnod Entertainment
+# Copyright © 2014—2017 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,6 +19,7 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 ''' Publishing related commands '''
 
 import itertools
@@ -28,7 +29,7 @@ import shutil
 import zipfile
 
 import nimp.command
-import nimp.torrent
+import nimp.utils.torrent
 
 class Publish(nimp.command.CommandGroup):
     ''' Publishing commands '''
@@ -203,7 +204,7 @@ class _Version(nimp.command.Command):
 
         publish = nimp.system.map_files(env)
         publish.src(archive_path).to(os.path.basename(archive))
-        data = nimp.torrent.make_torrent(None, env.torrent_tracker, publish)
+        data = nimp.utils.torrent.create(None, env.torrent_tracker, publish)
         if not data:
             logging.error('Torrent is empty (no files?)')
             return False

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2014—2016 Dontnod Entertainment
+# Copyright © 2014—2017 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,12 +19,12 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 ''' Uploading related commands '''
 
 import os
 
 import nimp.command
-import nimp.torrent
 
 class Upload(nimp.command.CommandGroup):
     ''' Uploading commands '''
