@@ -122,7 +122,7 @@ class _Version(nimp.command.Command):
 
     def run(self, env):
 
-        files_to_deploy = nimp.system.map_files(env).to(env.format(env.root_dir))
+        files_to_deploy = nimp.system.map_files(env).to('.')
 
         is_data = set(['tiles', 'lights']) & set(env.configurations)
 
@@ -153,17 +153,13 @@ class _Version(nimp.command.Command):
                 tmp = tmp.src(env.symbols_tmp if env.do_symbols else env.binaries_tmp)
                 tmp.glob("**")
 
-        logging.info('Deploying %s…', target_desc)
-        if not nimp.system.all_map(nimp.system.robocopy, files_to_deploy()):
-            return False
-
-        archive = _Version._create_zip_file(archive_path, env)
+        archive = _Version._create_zip_file(archive_path, env, files_to_deploy)
         _Version._create_torrent(archive_path, archive, torrent_path, env)
 
         return True
 
     @staticmethod
-    def _create_zip_file(archive_path, env):
+    def _create_zip_file(archive_path, env, files_to_deploy):
         archive = nimp.system.sanitize_path(env.format(archive_path))
         archive_tmp = archive + '.tmp'
 
@@ -172,9 +168,8 @@ class _Version(nimp.command.Command):
         if not os.path.isdir(os.path.dirname(archive)):
             nimp.system.safe_makedirs(os.path.dirname(archive))
 
-        publish = nimp.system.map_files(env)
-        publish.to('.').load_set('version')
-        to_zip_alt, to_zip = itertools.tee(publish())
+        files_to_deploy.load_set('version')
+        to_zip_alt, to_zip = itertools.tee(files_to_deploy())
         all_zips = False
         for src, dst in to_zip_alt:
             if os.path.isfile(src):
