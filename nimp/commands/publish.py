@@ -154,6 +154,9 @@ class _Version(nimp.command.Command):
                 tmp.glob("**")
 
         archive = _Version._create_zip_file(archive_path, env, files_to_deploy)
+        if not archive:
+            return False
+
         _Version._create_torrent(archive_path, archive, torrent_path, env)
 
         return True
@@ -179,11 +182,17 @@ class _Version(nimp.command.Command):
                     break
         compression = zipfile.ZIP_STORED if all_zips else zipfile.ZIP_DEFLATED
         fd = zipfile.ZipFile(archive_tmp, 'w', compression)
+        is_empty = True
         for src, dst in to_zip:
             if os.path.isfile(src):
                 logging.info('Adding %s as %s', src, dst)
                 fd.write(src, dst)
+                is_empty = False
         fd.close()
+        if is_empty:
+            logging.error("Archive is empty")
+            os.remove(archive_tmp)
+            return None
         shutil.move(archive_tmp, archive)
         return archive
 
