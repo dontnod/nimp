@@ -154,7 +154,7 @@ class _Version(nimp.command.Command):
                 tmp.glob("**")
 
         archive = _Version._create_zip_file(archive_path, env, files_to_deploy)
-        if not archive:
+        if archive:
             _Version._create_torrent(archive_path, archive, torrent_path, env)
 
         return True
