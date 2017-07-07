@@ -154,8 +154,10 @@ class _Version(nimp.command.Command):
                 tmp.glob("**")
 
         archive = _Version._create_zip_file(archive_path, env, files_to_deploy)
-        if archive:
-            _Version._create_torrent(archive_path, archive, torrent_path, env)
+        if not archive:
+            return False
+
+        _Version._create_torrent(archive_path, archive, torrent_path, env)
 
         return True
 
@@ -188,7 +190,7 @@ class _Version(nimp.command.Command):
                 is_empty = False
         fd.close()
         if is_empty:
-            logging.warning("Archive is empty")
+            logging.error("Archive is empty")
             os.remove(archive_tmp)
             return None
         shutil.move(archive_tmp, archive)
