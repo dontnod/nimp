@@ -10,3 +10,6 @@ doc/pages/_generated
 htmlcov
 nimp.egg-info/
 nimp_cli.egg-info/
+
+# Visual Studio Code
+.vscode/
