@@ -38,7 +38,6 @@ class UploadFileset(nimp.command.Command):
         nimp.command.add_common_arguments(parser, 'platform', 'revision', 'free_parameters')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to upload')
         parser.add_argument('-c', '--configuration_list', metavar = '<target/configuration>', nargs = '+', help = 'target and configuration pairs to upload')
-        parser.add_argument('--source', default = '.', metavar = '<source>', help = 'source path from where to upload the fileset')
         parser.add_argument('--archive', default = False, action = 'store_true', help = 'upload the files as a zip archive')
         parser.add_argument('--compress', default = False, action = 'store_true', help = 'if uploading as an archive, compress it')
         parser.add_argument('--torrent', default = False, action = 'store_true', help = 'create a torrent for the uploaded fileset')
@@ -64,7 +63,7 @@ class UploadFileset(nimp.command.Command):
                 configuration = target_configuration_pair if target_configuration_pair not in ['editor', 'tools'] else 'devel'
                 target = target_configuration_pair if target_configuration_pair in ['editor', 'tools'] else 'game'
             files_override = files_to_deploy.override(configuration = configuration, target = target)
-            files_override.src(env.source).to('.' if env.archive else output_path).load_set(env.fileset)
+            files_override.to('.' if env.archive else output_path).load_set(env.fileset)
 
         if env.archive:
             compression = zipfile.ZIP_DEFLATED if env.compress else zipfile.ZIP_STORED
