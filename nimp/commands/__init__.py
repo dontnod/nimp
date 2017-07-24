@@ -27,6 +27,7 @@ __all__ = [
     'commandlet',
     'deploy',
     'dev',
+    'download_fileset',
     'fileset',
     'p4',
     'publish',
