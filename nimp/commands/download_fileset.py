@@ -49,10 +49,10 @@ class DownloadFileset(nimp.command.Command):
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'revision', 'platform', 'target', 'configuration', 'free_parameters')
 
-        parser.add_argument('--max-revision',
+        parser.add_argument('--max_revision',
                             help = 'Find a revision <= to this',
                             metavar = '<revision>')
-        parser.add_argument('--min-revision',
+        parser.add_argument('--min_revision',
                             help = 'Find a revision >= to this',
                             metavar = '<revision>')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to download')
