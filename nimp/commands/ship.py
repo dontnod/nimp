@@ -62,6 +62,8 @@ class Ship(nimp.command.Command):
         if not env.check_config('publish_ship'):
             return False
 
+        nimp.environment.execute_hook('preship', env)
+
         loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
         exe_path = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), 'Engine/Binaries/DotNET/AutomationTool.exe'))
         # Use heartbeat because this sometimes compiles shaders in the background

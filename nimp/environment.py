@@ -62,7 +62,7 @@ class Environment:
         command_list = list(cmd_dict.values())
         localpath = os.path.abspath(os.path.join(self.root_dir, '.nimp'))
         if localpath not in sys.path:
-            sys.path.append(localpath)
+            sys.path.insert(0, localpath)
         try:
             #pylint: disable=import-error
             import commands
