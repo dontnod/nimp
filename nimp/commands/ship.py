@@ -65,7 +65,7 @@ class Ship(nimp.command.Command):
         nimp.environment.execute_hook('preship', env)
 
         loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
-        exe_path = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), 'Engine/Binaries/DotNET/AutomationTool.exe'))
+        exe_path = nimp.system.sanitize_path(env.format('{root}/Engine/Binaries/DotNET/AutomationTool.exe'))
         # Use heartbeat because this sometimes compiles shaders in the background
         cmd = [ exe_path,
                 'BuildCookRun',
@@ -86,39 +86,6 @@ class Ship(nimp.command.Command):
         if env.map:
             cmd += [ env.format('-mapstocook={map}') ]
 
-        if "shipping" not in env.ue4_config:
-            Ship._tweak_default_game_ini(env)
         success = nimp.sys.process.call(cmd, heartbeat = 30) == 0
         return success
 
-    @staticmethod
-    def _tweak_default_game_ini(env):
-        original_default_game_ini = Ship._get_default_game_ini_path(env)
-        if os.access(original_default_game_ini, os.W_OK):
-            tweaked_default_game_ini = os.path.splitext(original_default_game_ini)[0] + '.tweaked.ini'
-            tweaked_project_version = 'ProjectVersion=%s' % Ship._get_project_version_string(env)
-            tweaked_line = tweaked_project_version + '\n'
-            with open(tweaked_default_game_ini, 'w') as tweaked_ini:
-                with open(original_default_game_ini, 'r') as original_ini:
-                    for line in original_ini:
-                        if line.lower().startswith('projectversion='):
-                            tweaked_ini.write(tweaked_line)
-                        else:
-                            tweaked_ini.write(line)
-            shutil.move(tweaked_default_game_ini, original_default_game_ini)
-            logging.info('%s has been tweaked (with %s)', original_default_game_ini, tweaked_project_version)
-        else:
-            logging.warning('%s is not writable!', original_default_game_ini)
-
-    @staticmethod
-    def _get_default_game_ini_path(env):
-        return nimp.system.sanitize_path(os.path.abspath(os.path.join(env.root_dir, env.game, 'Config', 'DefaultGame.ini')))
-
-    @staticmethod
-    def _get_project_version_string(env):
-        last_deployed_revision = str(nimp.system.load_last_deployed_revision(env)) or '??????'
-        return '%s.%s.%s.%s' % (re.sub(r'^0*([0-9])', r'\1', last_deployed_revision[0:3]),
-                                re.sub(r'^0*([0-9])', r'\1', last_deployed_revision[3:6]),
-                                re.sub(r'^0*([0-9])', r'\1', env.revision[0:3]),
-                                re.sub(r'^0*([0-9])', r'\1', env.revision[3:6]))
-        #return 'e%s-d%s' % (last_deployed_revision, env.revision)
