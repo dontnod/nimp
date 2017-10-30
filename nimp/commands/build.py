@@ -76,6 +76,11 @@ class Build(nimp.command.Command):
             if hasattr(env, 'configuration') and env.configuration is not None:
                 config = env.configuration
 
+            if hasattr(env, 'bootstrap') and env.bootstrap:
+                command = [ 'nuget.exe', 'restore', sln ]
+                if nimp.sys.process.call(command) != 0:
+                    logging.warning('NuGet could not restore packages.')
+
             contents = open(sln).read()
             vsver = '14'
             if '# Visual Studio 2012' in contents:
