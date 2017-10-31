@@ -53,6 +53,10 @@ class Ship(nimp.command.Command):
                             default = '',
                             metavar = '<map>')
 
+        parser.add_argument('--iterate',
+                            help = 'iterative cooking',
+                            action = 'store_true')
+
         return True
 
     def is_available(self, env):
@@ -80,9 +84,10 @@ class Ship(nimp.command.Command):
                 '-pak',
                 '-prereqs',
                 '-nodebuginfo',
-                '-iterative',
                 env.format('-targetplatform={ue4_platform}'),
                 '-utf8output' ]
+        if hasattr(env, 'iterate') and env.iterate:
+            cmd += [ '-iterativecooking' ]
         if env.map:
             cmd += [ env.format('-mapstocook={map}') ]
 
