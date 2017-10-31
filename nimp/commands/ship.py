@@ -65,7 +65,7 @@ class Ship(nimp.command.Command):
         nimp.environment.execute_hook('preship', env)
 
         loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
-        exe_path = nimp.system.sanitize_path(env.format('{root}/Engine/Binaries/DotNET/AutomationTool.exe'))
+        exe_path = nimp.system.sanitize_path(env.format('{root_dir}/Engine/Binaries/DotNET/AutomationTool.exe'))
         # Use heartbeat because this sometimes compiles shaders in the background
         cmd = [ exe_path,
                 'BuildCookRun',
