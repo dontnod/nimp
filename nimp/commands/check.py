@@ -21,13 +21,13 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Environment check command '''
 
+import abc
 import logging
 import os
 import platform
 import re
 import shutil
 import time
-import abc
 
 import nimp.command
 import nimp.sys.platform
@@ -136,7 +136,7 @@ class _Processes(CheckCommand):
         # We get to try 5 times just in case
         for _ in range(5):
             found_problem = False
-            processes = self._list_windows_processes()
+            processes = _Processes._list_windows_processes()
             for pid, info in processes.items():
                 if not info[0].lower().startswith(prefix):
                     continue
@@ -162,7 +162,8 @@ class _Processes(CheckCommand):
 
         return False
 
-    def _list_windows_processes(self):
+    @staticmethod
+    def _list_windows_processes():
         processes = {}
         # List all processes
         cmd = ['wmic', 'process', 'get', 'executablepath,parentprocessid,processid', '/value']

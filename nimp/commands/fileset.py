@@ -23,9 +23,8 @@
 
 import abc
 import hashlib
-import os.path
-
 import logging
+import os
 
 import nimp.command
 import nimp.system

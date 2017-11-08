@@ -21,11 +21,11 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Build commands '''
 
+import logging
 import os
-import os.path
 
-import nimp.command
 import nimp.build
+import nimp.command
 import nimp.environment
 import nimp.unreal
 

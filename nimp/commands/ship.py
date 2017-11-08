@@ -21,11 +21,6 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Commands related to version packaging and shipping '''
 
-import os
-import re
-import shutil
-import logging
-
 import nimp.commands
 import nimp.environment
 import nimp.system
@@ -93,4 +88,3 @@ class Ship(nimp.command.Command):
 
         success = nimp.sys.process.call(cmd, heartbeat = 30) == 0
         return success
-

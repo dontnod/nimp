@@ -24,7 +24,6 @@
 import io
 import logging
 import os
-import os.path
 import stat
 import tempfile
 import zipfile
