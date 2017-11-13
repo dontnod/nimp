@@ -145,7 +145,8 @@ def _ue4_build(env):
         if env.platform != 'mac':
             tools += [ 'UnrealLightmass', ] # doesn’t build (yet?)
 
-        if env.platform == 'linux':
+        # No longer needed in UE 4.16
+        if env.platform == 'linux' and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/CrossCompilerTool/CrossCompilerTool.Build.cs'))):
             tools += [ 'CrossCompilerTool', ]
 
         if env.platform == 'win64':
