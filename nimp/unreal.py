@@ -132,6 +132,7 @@ def _ue4_build(env):
     # Some tools are necessary even when not building tools...
     need_ps4devkitutil = False
     need_ps4mapfileutil = env.platform == 'ps4'
+    need_ps4symboltool = env.platform == 'ps4'
     need_xboxonepdbfileutil = env.platform == 'xboxone'
 
     if env.target == 'tools':
@@ -155,6 +156,7 @@ def _ue4_build(env):
                        'SymbolDebugger' ]
             need_ps4devkitutil = True
             need_ps4mapfileutil = True
+            need_ps4symboltool = True
             need_xboxonepdbfileutil = True
 
     # Some tools are necessary even when not building tools...
@@ -163,6 +165,9 @@ def _ue4_build(env):
 
     if need_ps4mapfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
         tools += [ 'PS4MapFileUtil' ]
+
+    if need_ps4symboltool and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.Build.cs'))):
+        tools += [ 'PS4SymbolTool' ]
 
     if need_xboxonepdbfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
         tools += [ 'XboxOnePDBFileUtil' ]
