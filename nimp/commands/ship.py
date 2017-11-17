@@ -52,6 +52,10 @@ class Ship(nimp.command.Command):
                             help = 'iterative cooking',
                             action = 'store_true')
 
+        parser.add_argument('--compress',
+                            help = 'compress Pak file',
+                            action = 'store_true')
+
         return True
 
     def is_available(self, env):
@@ -83,8 +87,11 @@ class Ship(nimp.command.Command):
                 '-utf8output' ]
         if hasattr(env, 'iterate') and env.iterate:
             cmd += [ '-iterativecooking' ]
+        if hasattr(env, 'compress') and env.compress:
+            cmd += [ '-compressed' ]
         if env.map:
             cmd += [ env.format('-mapstocook={map}') ]
 
         success = nimp.sys.process.call(cmd, heartbeat = 30) == 0
         return success
+
