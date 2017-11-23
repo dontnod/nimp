@@ -37,14 +37,18 @@ def vsbuild(solution, platform_name, configuration, project=None,
     if nimp.sys.platform.is_windows():
         devenv_path = _find_devenv_path(vs_version)
         if devenv_path is None:
-            logging.error("Unable to find Visual Studio %s", vs_version)
+            logging.error('Unable to find Visual Studio %s', vs_version)
             return False
         command = [ devenv_path, solution ]
         command = command + [ '/' + target, configuration + '|' + platform_name ]
         if project is not None:
             command = command + [ '/project', project ]
 
-        return nimp.sys.process.call(command) == 0
+        result, output, _ = nimp.sys.process.call(command, capture_output=True)
+        if 'Cannot run if when setup is in progress.' in output:
+            logging.error('Visual Studio appears to have failed')
+            return False
+        return result == 0
 
     else: # Mac and Linux alike
         command = [ 'xbuild', solution, '/verbosity:quiet', '/nologo',
