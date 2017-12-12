@@ -82,15 +82,13 @@ class Build(nimp.command.Command):
                     logging.warning('NuGet could not restore packages.')
 
             contents = open(sln).read()
-            vsver = '14'
-            if '# Visual Studio 2012' in contents:
-                vsver = '11'
-            elif '# Visual Studio 2013' in contents:
-                vsver = '12'
+            vs_version = '14'
+            if 'MinimumVisualStudioVersion = 15' in line:
+                vs_version = '15'
 
             return nimp.build.vsbuild(sln, platform, config,
                                       project=env.target,
-                                      vs_version=vsver,
+                                      vs_version=vs_version,
                                       target='Build')
 
         return False

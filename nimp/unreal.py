@@ -99,23 +99,12 @@ def _ue4_build(env):
             logging.error("Error generating UE4 project files")
             return False
 
-    # Default to VS 2015, The Durango XDK does not support Visual Studio 2013 yet, so if UE4
-    # detected it, it created VS 2012 project files and we have to use that
-    # version to build the tools instead.
+    # Default to VS 2015.
     vs_version = '14'
     try:
         for line in open(env.format(env.solution)):
-            if ('# Visual Studio 2012' in line
-                    or '# Visual Studio 11' in line):
-                vs_version = '11'
-                break
-            if ('# Visual Studio 2013' in line
-                    or '# Visual Studio 12' in line):
-                vs_version = '12'
-                break
-            if ('# Visual Studio 2015' in line
-                    or '# Visual Studio 14' in line):
-                vs_version = '14'
+            if 'MinimumVisualStudioVersion = 15' in line:
+                vs_version = '15'
                 break
     except IOError:
         pass
@@ -238,11 +227,8 @@ def _ue4_build(env):
             tmp = env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
             if os.path.exists(nimp.system.sanitize_path(tmp)):
                 if not nimp.build.vsbuild(tmp, 'x64', 'Development',
-                                          vs_version='11',
-                                          target='Build') \
-                   and not nimp.build.vsbuild(tmp, 'x64', 'Development',
-                                              vs_version='14',
-                                              target='Build'):
+                                          vs_version=vs_version,
+                                          target='Build'):
                     logging.error("Could not build XboxOnePackageNameUtil")
                     success = False
 

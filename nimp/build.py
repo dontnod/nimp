@@ -31,7 +31,7 @@ import nimp.sys.platform
 import nimp.sys.process
 
 def vsbuild(solution, platform_name, configuration, project=None,
-            vs_version='12', target='Build', dotnet_version='4.6'):
+            vs_version='14', target='Build', dotnet_version='4.6'):
     ''' Builds a project with Visual Studio '''
 
     if nimp.sys.platform.is_windows():
