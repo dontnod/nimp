@@ -83,7 +83,7 @@ class Build(nimp.command.Command):
 
             contents = open(sln).read()
             vs_version = '14'
-            if 'MinimumVisualStudioVersion = 15' in line:
+            if 'MinimumVisualStudioVersion = 15' in contents:
                 vs_version = '15'
 
             return nimp.build.vsbuild(sln, platform, config,
