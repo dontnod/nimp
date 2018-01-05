@@ -71,7 +71,7 @@ def add_common_arguments(parser, *arg_ids):
                                 metavar = '<revision>')
 
         elif arg_id == 'free_parameters':
-            parser.add_argument('free_parameters',
+            parser.add_argument('--free-parameters',
                                 help    = 'Add a key/value pair for use in string interpolation',
                                 metavar = '<key>=<value>',
                                 nargs   = '*',
