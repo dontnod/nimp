@@ -32,5 +32,6 @@ __all__ = [
     'upload_fileset',
     'upload',
     'run',
+    'package',
     'ship',
 ]
