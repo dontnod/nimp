@@ -51,41 +51,50 @@ class UploadFileset(nimp.command.Command):
             logging.error('bittornado python module is required but was not found')
             return False
 
-        if len(env.configuration_list) == 1:
-            env.target, env.configuration = env.configuration_list[0].split('/')
         output_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
+        output_path = nimp.system.sanitize_path(env.format(output_path))
+        files_to_upload = nimp.system.map_files(env)
 
-        files_to_deploy = nimp.system.map_files(env)
-        for target_configuration_pair in env.configuration_list:
-            if '/' in target_configuration_pair:
-                target, configuration = target_configuration_pair.split('/')
-            else: # Allow specifying only a target or a configuration, deducing the other
-                configuration = target_configuration_pair if target_configuration_pair not in ['editor', 'tools'] else 'devel'
-                target = target_configuration_pair if target_configuration_pair in ['editor', 'tools'] else 'game'
-            files_override = files_to_deploy.override(configuration = configuration, target = target)
-            files_override.to('.' if env.archive else output_path).load_set(env.fileset)
+        if not env.configuration_list:
+            files_to_upload.to('.' if env.archive else output_path + '.tmp').load_set(env.fileset)
+        else:
+            if len(env.configuration_list) == 1:
+                env.target, env.configuration = env.configuration_list[0].split('/')
+            for target_configuration_pair in env.configuration_list:
+                if '/' in target_configuration_pair:
+                    target, configuration = target_configuration_pair.split('/')
+                else: # Allow specifying only a target or a configuration, deducing the other
+                    configuration = target_configuration_pair if target_configuration_pair not in ['editor', 'tools'] else 'devel'
+                    target = target_configuration_pair if target_configuration_pair in ['editor', 'tools'] else 'game'
+                files_override = files_to_upload.override(configuration = configuration, target = target)
+                files_override.to('.' if env.archive else output_path + '.tmp').load_set(env.fileset)
 
         if env.archive:
-            compression = zipfile.ZIP_DEFLATED if env.compress else zipfile.ZIP_STORED
-            success, archive_path = UploadFileset._create_archive(env, output_path, files_to_deploy(), compression)
-            if success and env.torrent:
+            archive_path = UploadFileset._create_archive(output_path, set(files_to_upload()), env.compress)
+            if env.torrent:
                 torrent_files = nimp.system.map_files(env)
-                torrent_files.src(archive_path).to(os.path.basename(archive_path))
-                success = UploadFileset._create_torrent(env, output_path, torrent_files)
+                torrent_files.src(os.path.dirname(archive_path)).to('.').glob(os.path.basename(archive_path))
+                UploadFileset._create_torrent(output_path, torrent_files, env.torrent_tracker)
+
         else:
-            success = nimp.system.all_map(nimp.system.robocopy, files_to_deploy())
-            if success and env.torrent:
+            copy_success = nimp.system.all_map(nimp.system.robocopy, set(files_to_upload()))
+            if not copy_success:
+                raise RuntimeError('Copy failed')
+            shutil.rmtree(output_path, ignore_errors = True)
+            shutil.move(output_path + '.tmp', output_path)
+            if env.torrent:
                 torrent_files = nimp.system.map_files(env)
-                torrent_files.src(output_path).load_set(env.fileset)
-                success = UploadFileset._create_torrent(env, output_path, torrent_files)
-        return success
+                torrent_files.src(output_path).to('.').glob('**')
+                UploadFileset._create_torrent(output_path, torrent_files, env.torrent_tracker)
+
+        return True
 
     @staticmethod
-    def _create_archive(env, archive_path, file_collection, compression):
-        archive_path = nimp.system.sanitize_path(env.format(archive_path))
+    def _create_archive(archive_path, file_collection, compress):
+        archive_path = nimp.system.sanitize_path(archive_path)
         if not archive_path.endswith('.zip'):
             archive_path += '.zip'
-        archive_tmp = archive_path + '.tmp'
+        compression = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
 
         logging.info('Creating zip archive %s…', archive_path)
 
@@ -93,7 +102,7 @@ class UploadFileset(nimp.command.Command):
             nimp.system.safe_makedirs(os.path.dirname(archive_path))
 
         is_empty = True
-        with zipfile.ZipFile(archive_tmp, 'w', compression = compression) as archive_file:
+        with zipfile.ZipFile(archive_path + '.tmp', 'w', compression = compression) as archive_file:
             for src, dst in file_collection:
                 if os.path.isfile(src):
                     logging.debug('Adding %s as %s', src, dst)
@@ -101,15 +110,14 @@ class UploadFileset(nimp.command.Command):
                     is_empty = False
 
         if is_empty:
-            logging.error("Archive is empty")
-            os.remove(archive_tmp)
-            return False, None
-        shutil.move(archive_tmp, archive_path)
-        return True, archive_path
+            raise RuntimeError('Archive is empty')
+
+        shutil.move(archive_path + '.tmp', archive_path)
+        return archive_path
 
     @staticmethod
-    def _create_torrent(env, torrent_path, file_collection):
-        torrent_path = nimp.system.sanitize_path(env.format(torrent_path))
+    def _create_torrent(torrent_path, file_collection, torrent_tracker):
+        torrent_path = nimp.system.sanitize_path(torrent_path)
         if not torrent_path.endswith('.torrent'):
             torrent_path += '.torrent'
         torrent_tmp = torrent_path + '.tmp'
@@ -119,11 +127,10 @@ class UploadFileset(nimp.command.Command):
         if not os.path.isdir(os.path.dirname(torrent_path)):
             nimp.system.safe_makedirs(os.path.dirname(torrent_path))
 
-        data = nimp.utils.torrent.create(None, env.torrent_tracker, file_collection)
+        data = nimp.utils.torrent.create(None, torrent_tracker, file_collection)
         if not data:
-            logging.error('Torrent is empty')
-            return False
+            raise RuntimeError('Torrent is empty')
+
         with open(torrent_tmp, 'wb') as torrent_file:
             torrent_file.write(data)
         shutil.move(torrent_tmp, torrent_path)
-        return True

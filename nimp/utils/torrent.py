@@ -31,11 +31,14 @@ BT_INFO = nimp.system.try_import('BitTornado.Meta.Info')
 BT_BTTREE = nimp.system.try_import('BitTornado.Meta.BTTree')
 BT_BENCODE = nimp.system.try_import('BitTornado.Meta.bencode')
 
-def create(root, tracker, publish):
+def create(root, tracker, file_mapper):
     ''' Make a single .torrent file for a given list of items '''
 
     # Only publish files, and can’t create an empty torrent
-    tree_list = [BT_BTTREE.BTTree(src, nimp.system.path_to_array(dst)) for src, dst in sorted(set(publish())) if os.path.isfile(src)]
+    tree_list = []
+    for src, dst in sorted(set(file_mapper())):
+        if os.path.isfile(src):
+            tree_list.append(BT_BTTREE.BTTree(src, nimp.system.path_to_array(dst)))
     if not tree_list:
         return None
 
