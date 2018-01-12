@@ -149,15 +149,18 @@ class Package(nimp.command.Command):
                 layout_destination = nimp.system.sanitize_path(stage_directory + '/' + layout_file_name)
                 Package._stage_file(layout_file_path, layout_destination, True, platform, current_configuration)
 
-        # Homogenize binary file name for console packaging
+        # Homogenize binary and symbols file names for console packaging
         if platform == 'PS4':
-            binary_path = nimp.system.sanitize_path(stage_directory + '/' + (project + '/Binaries/PS4/' + project).lower())
-            if os.path.exists(binary_path + '.self'):
-                shutil.move(binary_path + '.self', binary_path + '-ps4-development.self')
+            binary_path = nimp.system.sanitize_path(stage_directory + '/' + (project + '/Binaries/PS4/' + project).lower() + '.self')
+            if os.path.exists(binary_path):
+                shutil.move(binary_path, binary_path.replace(project.lower() + '.self', project.lower() + '-ps4-development.self'))
         elif platform == 'XboxOne':
-            binary_path = nimp.system.sanitize_path(stage_directory + '/' + project + '/Binaries/XboxOne/' + project)
-            if os.path.exists(binary_path + '.exe'):
-                shutil.move(binary_path + '.exe', binary_path + '-XboxOne-Development.exe')
+            binary_path = nimp.system.sanitize_path(stage_directory + '/' + project + '/Binaries/XboxOne/' + project + '.exe')
+            symbols_path = nimp.system.sanitize_path(stage_directory + '/Symbols/' + project + '-symbols.bin')
+            if os.path.exists(binary_path):
+                shutil.move(binary_path, binary_path.replace(project + '.exe', project + '-XboxOne-Development.exe'))
+            if os.path.exists(symbols_path):
+                shutil.move(symbols_path, symbols_path.replace(project + '-symbols.bin', project + '-XboxOne-Development-symbols.bin'))
 
         # Copy the release files to have a complete package
         if patch:
