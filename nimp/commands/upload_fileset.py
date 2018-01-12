@@ -52,7 +52,6 @@ class UploadFileset(nimp.command.Command):
             return False
 
         output_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
-        output_path = nimp.system.sanitize_path(env.format(output_path))
         files_to_upload = nimp.system.map_files(env)
 
         if not env.configuration_list:
@@ -68,6 +67,8 @@ class UploadFileset(nimp.command.Command):
                     target = target_configuration_pair if target_configuration_pair in ['editor', 'tools'] else 'game'
                 files_override = files_to_upload.override(configuration = configuration, target = target)
                 files_override.to('.' if env.archive else output_path + '.tmp').load_set(env.fileset)
+
+        output_path = nimp.system.sanitize_path(env.format(output_path))
 
         if env.archive:
             archive_path = UploadFileset._create_archive(output_path, set(files_to_upload()), env.compress)
