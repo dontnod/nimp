@@ -22,6 +22,7 @@
 ''' Environment check command '''
 
 import abc
+import json
 import logging
 import os
 import platform
@@ -66,45 +67,50 @@ class _Status(CheckCommand):
     def __init__(self):
         super(_Status, self).__init__()
 
+    def configure_arguments(self, env, parser):
+        nimp.command.add_common_arguments(parser, 'free_parameters')
+        return True
+
     def _run_check(self, env):
-        _Status._info_project(env)
-        _Status._info_python()
-        _Status._info_env()
+        print()
+        _Status._show_project_information(env)
+        _Status._show_system_information()
+        _Status._show_user_environment()
+        _Status._show_nimp_environment(env)
         return True
 
     @staticmethod
-    def _info_project(env):
+    def _show_project_information(env):
         print('Project:')
         if hasattr(env, 'game'):
-            print('  game: ', env.game)
+            print('  game: %s' % env.game)
         if hasattr(env, 'project'):
-            print('  project name: ', env.project)
+            print('  project name: %s' % env.project)
         if hasattr(env, 'project_type'):
-            print('  project type: ', env.project_type)
+            print('  project type: %s' % env.project_type)
         if hasattr(env, 'root_dir'):
-            print('  root directory: ', os.path.abspath(env.root_dir))
+            print('  root directory: %s' % os.path.abspath(env.root_dir))
         print()
 
     @staticmethod
-    def _info_python():
-        print('Python:')
-        print('  runtime version: ', platform.python_version())
-        print(('  system:  %s\n' +
-               '  node:  %s\n' +
-               '  release:  %s\n' +
-               '  version:  %s\n' +
-               '  machine:  %s\n' +
-               '  processor:  %s')
-              % platform.uname())
-        print('  directory separator: ', os.sep)
-        print('  path separator: ', os.pathsep)
-        print('')
+    def _show_system_information():
+        print('System:')
+        print('  computer: %s' % platform.node())
+        print('  operating system: %s' % platform.platform())
+        print('  processor: %s' % platform.processor())
+        print('  python version: %s' % platform.python_version())
+        print('  directory separator: %s' % os.sep)
+        print('  path separator: %s' % os.pathsep)
+        print()
 
     @staticmethod
-    def _info_env():
-        print('Environment:')
-        for key, val in sorted(os.environ.items()):
-            print('  ' + key + '=' + val)
+    def _show_user_environment():
+        print('User Environment: %s' % json.dumps(dict(os.environ), default = lambda o: o.__dict__, indent = 2, sort_keys = True))
+        print()
+
+    @staticmethod
+    def _show_nimp_environment(env):
+        print('Nimp Environment: %s' % json.dumps(env, default = lambda o: o.__dict__, indent = 2, sort_keys = True))
         print()
 
 
