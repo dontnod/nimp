@@ -78,6 +78,7 @@ class UploadFileset(nimp.command.Command):
                 UploadFileset._create_torrent(output_path, torrent_files, env.torrent_tracker)
 
         else:
+            shutil.rmtree(output_path + '.tmp', ignore_errors = True)
             copy_success = nimp.system.all_map(nimp.system.robocopy, set(files_to_upload()))
             if not copy_success:
                 raise RuntimeError('Copy failed')
