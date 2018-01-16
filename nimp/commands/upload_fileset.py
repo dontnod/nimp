@@ -52,10 +52,10 @@ class UploadFileset(nimp.command.Command):
             return False
 
         output_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
-        files_to_upload = nimp.system.map_files(env)
+        files_mapper = nimp.system.map_files(env)
 
         if not env.configuration_list:
-            files_to_upload.to('.' if env.archive else output_path + '.tmp').load_set(env.fileset)
+            files_mapper.to('.' if env.archive else output_path + '.tmp').load_set(env.fileset)
         else:
             if len(env.configuration_list) == 1:
                 env.target, env.configuration = env.configuration_list[0].split('/')
@@ -65,13 +65,16 @@ class UploadFileset(nimp.command.Command):
                 else: # Allow specifying only a target or a configuration, deducing the other
                     configuration = target_configuration_pair if target_configuration_pair not in ['editor', 'tools'] else 'devel'
                     target = target_configuration_pair if target_configuration_pair in ['editor', 'tools'] else 'game'
-                files_override = files_to_upload.override(configuration = configuration, target = target)
+                files_override = files_mapper.override(configuration = configuration, target = target)
                 files_override.to('.' if env.archive else output_path + '.tmp').load_set(env.fileset)
 
         output_path = nimp.system.sanitize_path(env.format(output_path))
+        files_to_upload = set(files_mapper())
+        if len(files_to_upload) == 0:
+            raise RuntimeError('Found no files to upload')
 
         if env.archive:
-            archive_path = UploadFileset._create_archive(output_path, set(files_to_upload()), env.compress)
+            archive_path = UploadFileset._create_archive(output_path, files_to_upload, env.compress)
             if env.torrent:
                 torrent_files = nimp.system.map_files(env)
                 torrent_files.src(os.path.dirname(archive_path)).to('.').glob(os.path.basename(archive_path))
@@ -79,7 +82,7 @@ class UploadFileset(nimp.command.Command):
 
         else:
             shutil.rmtree(output_path + '.tmp', ignore_errors = True)
-            copy_success = nimp.system.all_map(nimp.system.robocopy, set(files_to_upload()))
+            copy_success = nimp.system.all_map(nimp.system.robocopy, files_to_upload)
             if not copy_success:
                 raise RuntimeError('Copy failed')
             shutil.rmtree(output_path, ignore_errors = True)
