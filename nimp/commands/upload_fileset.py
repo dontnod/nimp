@@ -24,6 +24,7 @@
 import logging
 import os
 import shutil
+import time
 import zipfile
 
 import nimp.command
@@ -85,24 +86,32 @@ class UploadFileset(nimp.command.Command):
         if not archive_path.endswith('.zip'):
             archive_path += '.zip'
         compression = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
+        attempt_maximum = 5
 
         logging.info('Creating zip archive %s…', archive_path)
 
-        if not os.path.isdir(os.path.dirname(archive_path)):
-            nimp.system.safe_makedirs(os.path.dirname(archive_path))
+        attempt = 1
+        while attempt <= attempt_maximum:
+            try:
+                if not os.path.isdir(os.path.dirname(archive_path)):
+                    nimp.system.safe_makedirs(os.path.dirname(archive_path))
+                with zipfile.ZipFile(archive_path + '.tmp', 'w', compression = compression) as archive_file:
+                    for source, destination in file_collection:
+                        if os.path.isfile(source):
+                            logging.debug('Adding %s as %s', source, destination)
+                            archive_file.write(source, destination)
+                with zipfile.ZipFile(archive_path + '.tmp', 'r') as archive_file:
+                    if archive_file.testzip():
+                        raise RuntimeError('Archive is corrupted')
+                shutil.move(archive_path + '.tmp', archive_path)
+                break
+            except (OSError, RuntimeError) as exception:
+                logging.warning('%s (Attempt %s of %s)', exception, attempt, attempt_maximum)
+                if attempt >= attempt_maximum:
+                    raise exception
+                time.sleep(10)
+                attempt += 1
 
-        is_empty = True
-        with zipfile.ZipFile(archive_path + '.tmp', 'w', compression = compression) as archive_file:
-            for src, dst in file_collection:
-                if os.path.isfile(src):
-                    logging.debug('Adding %s as %s', src, dst)
-                    archive_file.write(src, dst)
-                    is_empty = False
-
-        if is_empty:
-            raise RuntimeError('Archive is empty')
-
-        shutil.move(archive_path + '.tmp', archive_path)
         return archive_path
 
     @staticmethod
