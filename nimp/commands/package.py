@@ -25,6 +25,7 @@ import logging
 import os
 import re
 import shutil
+import xml.etree.ElementTree
 
 import nimp.commands
 import nimp.environment
@@ -32,7 +33,7 @@ import nimp.system
 import nimp.sys.process
 
 
-def get_ini_value(file_path, key):
+def _get_ini_value(file_path, key):
     ''' Retrieves a value from a ini file '''
     file_path = nimp.system.sanitize_path(file_path)
     with open(file_path) as ini_file:
@@ -41,6 +42,24 @@ def get_ini_value(file_path, key):
     if not match:
         raise KeyError('Key {key} was not found in {file_path}'.format(**locals()))
     return match.group('value')
+
+
+def _get_sfo_data(project_directory, title_id):
+    ''' Retrieves data from a sfo file '''
+    orbis_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
+    sfo_file_path = project_directory + '/Saved/StagedBuilds/PS4/sce_sys/' + title_id + '/param.sfo'
+    sfx_file_path = project_directory + '/Saved/Temp/' + title_id + '.param.sfx'
+    sfo_export_command = [ orbis_tool_path, 'sfo_export', sfo_file_path, sfx_file_path ]
+
+    sfo_export_success = nimp.sys.process.call(sfo_export_command)
+    if sfo_export_success != 0:
+        raise RuntimeError('Failed to export sfo data from {sfo_file_path}'.format(**locals()))
+
+    sfx_data = {}
+    for sfx_param in xml.etree.ElementTree.parse(sfx_file_path).getroot():
+        sfx_data[sfx_param.attrib['key']] = sfx_param.text
+    os.remove(sfx_file_path)
+    return sfx_data
 
 
 class Package(nimp.command.Command):
@@ -232,8 +251,8 @@ class Package(nimp.command.Command):
             package_tool_path = nimp.system.sanitize_path(os.environ['DurangoXDK'] + '/bin/MakePkg.exe')
             game_os = nimp.system.sanitize_path(source + '/era.xvd')
             ini_file_path = nimp.system.sanitize_path(project_directory + '/Config/XboxOne/XboxOneEngine.ini')
-            product_id = get_ini_value(ini_file_path, 'ProductId')
-            content_id = get_ini_value(ini_file_path, 'ContentId')
+            product_id = _get_ini_value(ini_file_path, 'ProductId')
+            content_id = _get_ini_value(ini_file_path, 'ContentId')
 
             for current_configuration in configuration.split('+'):
                 current_destination = nimp.system.sanitize_path(destination + '/' + current_configuration)
@@ -262,10 +281,17 @@ class Package(nimp.command.Command):
             package_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
             temporary_directory = nimp.system.sanitize_path(project_directory + '/Saved/Temp')
             ini_file_path = project_directory + '/Config/PS4/PS4Engine.ini'
-            title_id = get_ini_value(ini_file_path, 'TitleID')
+            title_id = _get_ini_value(ini_file_path, 'TitleID')
+            sfo_data = _get_sfo_data(project_directory, title_id)
 
             for current_configuration in configuration.split('+'):
-                destination_file = nimp.system.sanitize_path(destination + '/' + env.game + '-' + current_configuration + '-' + title_id + '.pkg' )
+                current_destination = nimp.system.sanitize_path(destination + '/' + current_configuration)
+                destination_file = '{content_id}-A{application_version}-V{master_version}.pkg'.format(
+                    content_id = sfo_data['CONTENT_ID'],
+                    application_version = sfo_data['APP_VER'].replace('.', ''),
+                    master_version = sfo_data['VERSION'].replace('.', '')
+                )
+                destination_file = nimp.system.sanitize_path(current_destination + '/' + destination_file)
                 layout_file = nimp.system.sanitize_path(source + '/' + project + '-' + current_configuration + '.gp4')
                 package_command = [
                     package_tool_path, 'img_create',
@@ -274,6 +300,7 @@ class Package(nimp.command.Command):
                     layout_file, destination_file
                 ]
 
+                os.mkdir(current_destination)
                 package_success = nimp.sys.process.call(package_command)
                 if package_success != 0:
                     raise RuntimeError('Package failed')
