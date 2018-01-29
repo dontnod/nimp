@@ -105,7 +105,7 @@ class UploadFileset(nimp.command.Command):
                         raise RuntimeError('Archive is corrupted')
                 shutil.move(archive_path + '.tmp', archive_path)
                 break
-            except (OSError, RuntimeError, ValueError) as exception:
+            except (OSError, RuntimeError, ValueError, zipfile.BadZipfile) as exception:
                 logging.warning('%s (Attempt %s of %s)', exception, attempt, attempt_maximum)
                 if attempt >= attempt_maximum:
                     raise exception
