@@ -236,10 +236,10 @@ def execute_hook(hook_name, *args):
     logging.debug('Looking for %s hook in .nimp/hooks', hook_name)
     hook_module = nimp.system.try_import('hooks.' + hook_name)
     if hook_module is None:
-        return
+        return True
     if not hasattr(hook_module, 'run'):
         logging.debug('No "run" method found in .nimp/hooks/%s module', hook_name)
-        return
+        return True
 
     return getattr(hook_module, 'run')(*args)
 
