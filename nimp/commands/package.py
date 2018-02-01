@@ -71,7 +71,7 @@ class Package(nimp.command.Command):
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'revision')
 
-        command_steps = [ 'initialize', 'cook', 'prestage', 'stage', 'package' ]
+        command_steps = [ 'initialize', 'precook', 'cook', 'postcook', 'prestage', 'stage', 'package' ]
         parser.add_argument('--steps', help = 'Only run specified steps instead of all of them',
                             choices = command_steps, default = command_steps, nargs = '+')
         parser.add_argument('--target', help = 'Set the target configuration to use')
@@ -99,6 +99,8 @@ class Package(nimp.command.Command):
             Package._initialize(env)
         if 'cook' in env.steps:
             Package._cook(engine_directory, env.game, ue4_cmd_platform, env.iterate)
+        if 'postcook' in env.steps:
+            Package._postcook(env)
         if 'prestage' in env.steps:
             Package._prestage(env)
         if 'stage' in env.steps:
@@ -118,7 +120,12 @@ class Package(nimp.command.Command):
             if not configuration_success:
                 raise RuntimeError('Initialize failed')
 
+        # Deprecated hook name
         hook_success = nimp.environment.execute_hook('preship', env)
+        if not hook_success:
+            raise RuntimeError('Initialize failed')
+
+        hook_success = nimp.environment.execute_hook('precook', env)
         if not hook_success:
             raise RuntimeError('Initialize failed')
 
@@ -141,6 +148,11 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def _prestage(env):
+        hook_success = nimp.environment.execute_hook('postcook', env)
+        if not hook_success:
+            raise RuntimeError('Post-cook failed')
+
+        # Deprecated hook name
         hook_success = nimp.environment.execute_hook('prestage', env)
         if not hook_success:
             raise RuntimeError('Pre-stage failed')
