@@ -102,7 +102,7 @@ class Package(nimp.command.Command):
         if 'postcook' in env.steps:
             Package._postcook(env)
         if 'prestage' in env.steps:
-            Package._prestage(env)
+            Package._postcook(env)
         if 'stage' in env.steps:
             Package._stage(engine_directory, project_directory, stage_directory, env.game, env.ue4_platform, env.ue4_config, env.layout, env.compress, env.patch)
         if 'package' in env.steps:
@@ -147,7 +147,7 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _prestage(env):
+    def _postcook(env):
         hook_success = nimp.environment.execute_hook('postcook', env)
         if not hook_success:
             raise RuntimeError('Post-cook failed')
