@@ -42,9 +42,9 @@ class SummaryHandler(logging.Handler):
         self._has_warnings = False
 
         error_patterns = [
-            #GCC
-            r'[\/\w\W\-. ]+:\d+:\d+: (fatal )?error: .*', #GCC errors
-            r'[\/\w\W\-. ]+:\d+: undefined reference to .*', #GCC linker error
+            # GCC
+            r'[\/\w\W\-. ]+:\d+:\d+: (fatal )?error: .*', # GCC errors
+            r'[\/\w\W\-. ]+:\d+: undefined reference to .*', # GCC linker error
 
             # Clang
             r'[\/\w\W\-. ]+\(\d+,\d+\): (fatal ?)error : .*',
@@ -56,16 +56,30 @@ class SummaryHandler(logging.Handler):
             #.NET / Mono
             r'[\/\w\W\-. ]+\(\d+,\d+\) : error [A-Z\d]+: .*',
 
-            #MSVC
+            # MSVC
             r'[\/\w\W\-. ]+\(\d+\): error [A-Z\d]+: .*',
             r'[\/\w\W\-. ]+\ : error [A-Z\d]+: unresolved external symbol .*',
+
+            # PS4 SDK (Orbis)
+            r'\[Error\]\t.*',
+
+            # XboxOne SDK
+            r' - Error Code: .*',
+            r'Package was not created, error = .*',
+            r'Chunk [0-9]+ is invalid: it contains 0 files.',
+            r'The layout contained an invalid chunk.',
+            r'Chunks must contain at least 1 non-empty file.',
         ]
 
         warning_patterns = [
             r'[\/\w\W\-.: ]+\(\d+,\d+\) : warning [A-Z\d]+: .*', # MSVC .NET / Mono
             r'[\/\w\W\-.: ]+:\d+:\d+: warning: .*', # GCC
             r'[\/\w\W\-.: ]+\(\d+,\d+\): warning : .*', # Clang
-            r'[\/\w\W\-.: ]+\(\d+\): warning [A-Z\d]+: .*' # MSVC
+            r'[\/\w\W\-.: ]+\(\d+\): warning [A-Z\d]+: .*', # MSVC
+            r'\[Warn\]\t.*', # PS4 SDK (Orbis)
+            r'Warning: .*', # XboxOne SDK
+            r'\*\*\* WARNING: .*', # XboxOne SDK
+            r'  WARNING - .*', # XboxOne SDK
         ]
 
         ignore_patterns = [
