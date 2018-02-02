@@ -158,24 +158,18 @@ class SummaryHandler(logging.Handler):
                 return
 
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
-            self._add_error(record.getMessage())
+            self._add_error(self.format(record))
             self._has_errors = True
             return
         if record.levelno == logging.WARNING:
-            self._add_warning(record.getMessage())
+            self._add_warning(self.format(record))
             self._has_warnings = True
             return
 
-        if SummaryHandler._match_message(self._error_patterns,
-                                         msg,
-                                         self._add_error):
+        if SummaryHandler._match_message(self._error_patterns, msg, self._add_error):
             self._has_errors = True
-
-        elif self._match_message(self._warning_patterns,
-                                 msg,
-                                 self._add_warning):
+        elif self._match_message(self._warning_patterns, msg, self._add_warning):
             self._has_warnings = True
-
         else:
             self._add_notif(msg)
 

@@ -151,9 +151,18 @@ class Environment:
                 logging.error('Error while loading environment parameters')
                 return exit_error
 
-            success = self.command.run(self) if not getattr(self, 'do_nothing') else True
+            success = False
+            if getattr(self, 'do_nothing'):
+                success = True
+            else:
+                try:
+                    success = self.command.run(self)
+                #pylint: disable=broad-except
+                except Exception as exception:
+                    logging.exception(exception)
 
             if not success:
+                logging.error('Command failed')
                 return exit_error
 
             # If command succeed and summary mode is on, we check for captured
