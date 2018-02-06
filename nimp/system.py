@@ -259,6 +259,20 @@ class FileMapper(object):
 
     def load_set(self, set_name):
         ''' Loads a file mapper from a configuration file '''
+        set_module_name = self._format(set_name)
+        set_path = os.path.join(self.root_dir, ".nimp/filesets", set_module_name + ".py")
+
+        if os.path.exists(set_path):
+            set_module = importlib.import_module('filesets.' + set_module_name)
+            set_module.map(self)
+            return self.get_leaves()
+
+        # Fallback deprecated behavior for .txt file
+        return self._load_set_from_txt(set_name)
+
+    # Deprecated
+    def _load_set_from_txt(self, set_name):
+        ''' Loads a file mapper from a configuration file '''
         file_name = self._format(set_name)
         if not os.path.exists(file_name) or not os.path.isfile(file_name):
             # Always hardcode this directory to avoid bloating .nimp.conf.
