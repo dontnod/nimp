@@ -235,8 +235,8 @@ class Package(nimp.command.Command):
             pak_file_path = pak_file_path.lower()
 
         logging.info('Listing files for %s', pak_file_name)
-        file_mapper = nimp.system.map_files(env).override(pak_name = pak_name)
-        file_mapper.load_set('content_pak')
+        file_mapper = nimp.system.map_files(env)
+        file_mapper.override(pak_name = pak_name).load_set('content_pak')
         with open(manifest_file_path, 'w') as manifest_file:
             for src, dst in sorted(file_mapper()):
                 manifest_file.write('"%s" "%s"\n' % (os.path.abspath(src), '../../../' + dst))
