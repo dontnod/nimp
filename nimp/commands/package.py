@@ -104,7 +104,9 @@ class Package(nimp.command.Command):
         if 'prestage' in env.steps:
             Package._postcook(env)
         if 'stage' in env.steps:
-            Package._stage(engine_directory, project_directory, stage_directory, env.game, env.ue4_platform, env.ue4_config, env.layout, env.compress, env.patch)
+            Package._stage(env, engine_directory, project_directory, stage_directory,
+                env.game, env.ue4_platform, env.ue4_config,
+                env.content_paks, env.layout, env.compress, env.patch)
         if 'package' in env.steps:
             Package._package_for_platform(env, project_directory, env.game, env.ue4_platform, env.ue4_config, stage_directory, package_directory, env.final)
 
@@ -159,12 +161,19 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage(engine_directory, project_directory, stage_directory, project, platform, configuration, layout_file_path, compress, patch):
+    def _stage(env, engine_directory, project_directory, stage_directory, project, platform, configuration, content_pak_list, layout_file_path, compress, patch):
+        stage_directory = nimp.system.sanitize_path(stage_directory)
+
+        if os.path.exists(stage_directory):
+            logging.info('Removing %s', stage_directory)
+            shutil.rmtree(stage_directory, ignore_errors = True)
+        os.makedirs(stage_directory)
+
         stage_command = [
             nimp.system.sanitize_path(engine_directory + '/Binaries/DotNET/AutomationTool.exe'),
             'BuildCookRun', '-UE4exe=UE4Editor-Cmd.exe', '-UTF8Output',
             '-Project=' + project, '-TargetPlatform=' + platform, '-ClientConfig=' + configuration,
-            '-SkipCook', '-Stage', '-Pak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
+            '-SkipCook', '-Stage', '-Pak', '-SkipPak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
         ]
         if compress:
             stage_command += [ '-Compressed' ]
@@ -174,6 +183,10 @@ class Package(nimp.command.Command):
         stage_success = nimp.sys.process.call(stage_command)
         if stage_success != 0:
             raise RuntimeError('Stage failed')
+
+        pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**locals())
+        for content_pak in content_pak_list:
+            Package._create_pak_file(env, engine_directory, project_directory, project, platform, content_pak, pak_destination_directory, compress, patch)
 
         if platform == 'XboxOne':
             Package._stage_xbox_manifest(project_directory, stage_directory, configuration)
@@ -208,6 +221,38 @@ class Package(nimp.command.Command):
             release_directory = project_directory + '/Releases/' + patch + '/' + ue4_cmd_platform
             pak_file_name = project + '-' + ue4_cmd_platform + '.pak'
             Package._stage_file(release_directory + '/' + pak_file_name, stage_directory + '/' + project + '/Content/Paks/' + pak_file_name)
+
+
+    @staticmethod
+    def _create_pak_file(env, engine_directory, project_directory, project, platform, pak_name, destination, compress, patch):
+        pak_tool_path = nimp.system.sanitize_path(engine_directory + '/Binaries/Win64/UnrealPak.exe')
+        ue4_cmd_platform = 'WindowsNoEditor' if platform == 'Win64' else platform
+        pak_file_name = project + '-' + ue4_cmd_platform + (('-' + pak_name) if pak_name else '') + ('_P' if patch else '') + '.pak'
+        manifest_file_path = nimp.system.sanitize_path(project_directory + '/Saved/Temp/' + platform + '/' + pak_file_name + '.txt')
+        order_file_path = nimp.system.sanitize_path(project_directory + '/Build/' + ue4_cmd_platform + '/FileOpenOrder/GameOpenOrder.log')
+        pak_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name)
+        if platform == 'PS4':
+            pak_file_path = pak_file_path.lower()
+
+        logging.info('Listing files for %s', pak_file_name)
+        file_mapper = nimp.system.map_files(env).override(pak_name = pak_name)
+        file_mapper.load_set('content_pak')
+        with open(manifest_file_path, 'w') as manifest_file:
+            for src, dst in sorted(file_mapper()):
+                manifest_file.write('"%s" "%s"\n' % (os.path.abspath(src), '../../../' + dst))
+
+        pak_command = [
+            pak_tool_path, os.path.abspath(pak_file_path),
+            '-Create=' + os.path.abspath(manifest_file_path),
+            '-Order=' + os.path.abspath(order_file_path),
+            '-PatchPaddingAlign=2048',
+        ]
+        if compress:
+            pak_command += [ '-Compress' ]
+
+        pak_success = nimp.sys.process.call(pak_command)
+        if pak_success != 0:
+            raise RuntimeError('Pak creation failed')
 
 
     @staticmethod
