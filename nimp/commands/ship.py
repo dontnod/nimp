@@ -56,6 +56,10 @@ class Ship(nimp.command.Command):
                             help = 'compress Pak file',
                             action = 'store_true')
 
+        parser.add_argument('--preship-only',
+                            help = 'Run only preship hook',
+                            action = 'store_true')
+
         return True
 
     def is_available(self, env):
@@ -66,6 +70,9 @@ class Ship(nimp.command.Command):
             return False
 
         nimp.environment.execute_hook('preship', env)
+
+        if hasattr(env, 'preship_only') and env.preship_only:
+            return True
 
         loose_dir = env.format(env.destination) if env.destination else env.format(env.publish_ship)
         exe_path = nimp.system.sanitize_path(env.format('{root_dir}/Engine/Binaries/DotNET/AutomationTool.exe'))
