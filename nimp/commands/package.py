@@ -246,10 +246,17 @@ class Package(nimp.command.Command):
             pak_tool_path, os.path.abspath(pak_file_path),
             '-Create=' + os.path.abspath(manifest_file_path),
             '-Order=' + os.path.abspath(order_file_path),
-            '-PatchPaddingAlign=2048',
         ]
+
         if compress:
             pak_command += [ '-Compress' ]
+
+        if platform == 'Win64':
+            pak_command += [ '-PatchPaddingAlign=2048' ]
+        elif platform == 'PS4':
+            pak_command += [ '-BlockSize=256MB', '-PatchPaddingAlign=65536' ]
+        elif platform == 'XboxOne':
+            pak_command += [ '-BlockSize=4KB', '-BitWindow=12' ]
 
         pak_success = nimp.sys.process.call(pak_command)
         if pak_success != 0:
