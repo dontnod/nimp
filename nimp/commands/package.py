@@ -25,6 +25,7 @@ import logging
 import os
 import re
 import shutil
+import time
 import xml.etree.ElementTree
 
 import nimp.commands
@@ -60,6 +61,27 @@ def _get_sfo_data(project_directory, title_id):
         sfx_data[sfx_param.attrib['key']] = sfx_param.text
     os.remove(sfx_file_path)
     return sfx_data
+
+
+def _safe_remove(file_path):
+    attempt_maximum = 5
+    attempt = 1
+
+    logging.info('Removing %s', file_path)
+    while attempt <= attempt_maximum:
+        try:
+            if os.path.exists(file_path):
+                if os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+                else:
+                    os.remove(file_path)
+            break
+        except OSError as exception:
+            logging.warning('%s (Attempt %s of %s)', exception, attempt, attempt_maximum)
+            if attempt >= attempt_maximum:
+                raise exception
+            time.sleep(10)
+            attempt += 1
 
 
 class Package(nimp.command.Command):
@@ -164,9 +186,7 @@ class Package(nimp.command.Command):
     def _stage(env, engine_directory, project_directory, stage_directory, project, platform, configuration, content_pak_list, layout_file_path, compress, patch):
         stage_directory = nimp.system.sanitize_path(stage_directory)
 
-        if os.path.exists(stage_directory):
-            logging.info('Removing %s', stage_directory)
-            shutil.rmtree(stage_directory, ignore_errors = True)
+        _safe_remove(stage_directory)
         os.makedirs(stage_directory)
 
         stage_command = [
@@ -313,9 +333,7 @@ class Package(nimp.command.Command):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
 
-        if os.path.exists(destination):
-            logging.info('Removing %s', destination)
-            shutil.rmtree(destination, ignore_errors = True)
+        _safe_remove(destination)
         os.makedirs(destination)
 
         if platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
