@@ -185,6 +185,8 @@ class Package(nimp.command.Command):
             raise RuntimeError('Stage failed')
 
         pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**locals())
+        if platform == 'PS4':
+            pak_destination_directory = pak_destination_directory.lower()
         os.makedirs(pak_destination_directory)
         for content_pak in content_pak_list:
             Package._create_pak_file(env, engine_directory, project_directory, project, platform, content_pak, pak_destination_directory, compress, patch)
@@ -232,7 +234,9 @@ class Package(nimp.command.Command):
         manifest_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name + '.txt')
         order_file_path = nimp.system.sanitize_path(project_directory + '/Build/' + ue4_cmd_platform + '/FileOpenOrder/GameOpenOrder.log')
         pak_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name)
+
         if platform == 'PS4':
+            manifest_file_path = manifest_file_path.lower()
             pak_file_path = pak_file_path.lower()
 
         logging.info('Listing files for %s', pak_file_name)
