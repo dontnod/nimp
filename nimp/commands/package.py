@@ -49,7 +49,7 @@ def _get_sfo_data(project_directory, title_id):
     ''' Retrieves data from a sfo file '''
     orbis_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
     sfo_file_path = project_directory + '/Saved/StagedBuilds/PS4/sce_sys/' + title_id + '/param.sfo'
-    sfx_file_path = project_directory + '/Saved/Temp/' + title_id + '.param.sfx'
+    sfx_file_path = sfo_file_path.replace('/param.sfo', '/param.sfx')
     sfo_export_command = [ orbis_tool_path, 'sfo_export', sfo_file_path, sfx_file_path ]
 
     sfo_export_success = nimp.sys.process.call(sfo_export_command)
@@ -376,6 +376,7 @@ class Package(nimp.command.Command):
         elif platform == 'PS4':
             package_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
             temporary_directory = nimp.system.sanitize_path(project_directory + '/Saved/Temp')
+            os.makedirs(temporary_directory, exist_ok = True)
             ini_file_path = project_directory + '/Config/PS4/PS4Engine.ini'
             title_id = _get_ini_value(ini_file_path, 'TitleID')
             sfo_data = _get_sfo_data(project_directory, title_id)
