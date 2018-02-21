@@ -379,6 +379,7 @@ class Package(nimp.command.Command):
             os.makedirs(temporary_directory, exist_ok = True)
             ini_file_path = project_directory + '/Config/PS4/PS4Engine.ini'
             title_id = _get_ini_value(ini_file_path, 'TitleID')
+            title_passcode = _get_ini_value(ini_file_path, 'TitlePasscode')
             sfo_data = _get_sfo_data(project_directory, title_id)
 
             for current_configuration in configuration.split('+'):
@@ -390,7 +391,7 @@ class Package(nimp.command.Command):
                 )
                 destination_file = nimp.system.sanitize_path(current_destination + '/' + destination_file)
                 layout_file = nimp.system.sanitize_path(source + '/' + project + '-' + current_configuration + '.gp4')
-                package_command = [
+                create_package_command = [
                     package_tool_path, 'img_create',
                     '--no_progress_bar',
                     '--tmp_path', temporary_directory,
@@ -398,6 +399,18 @@ class Package(nimp.command.Command):
                 ]
 
                 os.mkdir(current_destination)
-                package_success = nimp.sys.process.call(package_command)
+                package_success = nimp.sys.process.call(create_package_command)
                 if package_success != 0:
                     raise RuntimeError('Package failed')
+
+                if current_configuration == 'Shipping':
+                    verify_package_command = [
+                        package_tool_path, 'img_verify',
+                        '--no_progress_bar',
+                        '--tmp_path', temporary_directory,
+                        '--passcode', title_passcode, destination_file
+                    ]
+                    package_success = nimp.sys.process.call(verify_package_command)
+                    if package_success != 0:
+                        raise RuntimeError('Package failed')
+
