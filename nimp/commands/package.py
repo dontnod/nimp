@@ -351,6 +351,7 @@ class Package(nimp.command.Command):
             ini_file_path = nimp.system.sanitize_path(project_directory + '/Config/XboxOne/XboxOneEngine.ini')
             product_id = _get_ini_value(ini_file_path, 'ProductId')
             content_id = _get_ini_value(ini_file_path, 'ContentId')
+            symbol_path = nimp.system.sanitize_path(project_directory + '/Binaries/XboxOne')
 
             for current_configuration in configuration.split('+'):
                 current_destination = nimp.system.sanitize_path(destination + '/' + current_configuration)
@@ -359,6 +360,7 @@ class Package(nimp.command.Command):
                     package_tool_path, 'pack', '/v', '/gameos', game_os,
                     '/f', layout_file, '/d', source, '/pd', current_destination,
                     '/productid', product_id, '/contentid', content_id,
+                    '/symbolpaths', symbol_path,
                 ]
 
                 if is_final_submission:
