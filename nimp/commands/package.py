@@ -111,7 +111,7 @@ class Package(nimp.command.Command):
 
 
     def run(self, env):
-        ue4_cmd_platform = 'WindowsNoEditor' if env.ue4_platform == 'Win64' else 'LinuxNoEditor' if env.ue4_platform == 'Linux' else env.ue4_platform
+        ue4_cmd_platform = {'Win64': 'WindowsNoEditor', 'Linux': 'LinuxNoEditor'}.get(env.ue4_platform, env.ue4_platform)
         engine_directory = env.format('{root_dir}/Engine')
         project_directory = env.format('{root_dir}/{game}')
         stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/' + ue4_cmd_platform)
@@ -241,7 +241,7 @@ class Package(nimp.command.Command):
 
         # Copy the release files to have a complete package
         if patch:
-            ue4_cmd_platform = 'WindowsNoEditor' if platform == 'Win64' else 'LinuxNoEditor' if platform == 'Linux' else platform
+            ue4_cmd_platform = {'Win64': 'WindowsNoEditor', 'Linux': 'LinuxNoEditor'}.get(platform, platform)
             release_directory = project_directory + '/Releases/' + patch + '/' + ue4_cmd_platform
             pak_file_name = project + '-' + ue4_cmd_platform + '.pak'
             Package._stage_file(release_directory + '/' + pak_file_name, stage_directory + '/' + project + '/Content/Paks/' + pak_file_name)
@@ -251,7 +251,7 @@ class Package(nimp.command.Command):
     def _create_pak_file(env, engine_directory, project_directory, project, platform, pak_name, destination, compress, patch):
         pak_tool = 'Linux/UnrealPak' if platform == 'Linux' else 'Win64/UnrealPak.exe'
         pak_tool_path = nimp.system.sanitize_path(engine_directory + '/Binaries/' + pak_tool)
-        ue4_cmd_platform = 'WindowsNoEditor' if platform == 'Win64' else 'LinuxNoEditor' if platform == 'Linux' else platform
+        ue4_cmd_platform = {'Win64': 'WindowsNoEditor', 'Linux': 'LinuxNoEditor'}.get(platform, platform)
         pak_file_name = project + '-' + ue4_cmd_platform + (('-' + pak_name) if pak_name else '') + ('_P' if patch else '') + '.pak'
         manifest_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name + '.txt')
         order_file_path = nimp.system.sanitize_path(project_directory + '/Build/' + ue4_cmd_platform + '/FileOpenOrder/GameOpenOrder.log')
