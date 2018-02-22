@@ -25,6 +25,7 @@ import abc
 import hashlib
 import logging
 import os
+import shutil
 
 import nimp.command
 import nimp.system
@@ -100,23 +101,22 @@ class _Stash(FilesetCommand):
         super(_Stash, self).__init__()
 
     def _run_fileset(self, env, file_mapper):
-        stash_dir = env.format('{root_dir}/.nimp/stash')
-        nimp.system.safe_makedirs(stash_dir)
+        stash_name = env.format('{fileset}-{platform}-{target}-{configuration}')
+        stash_directory = env.format('{root_dir}/.nimp/stash/' + stash_name)
 
-        stash_file = os.path.join(stash_dir, env.fileset)
-        nimp.system.safe_delete(stash_file)
+        if os.path.exists(stash_directory):
+            logging.info('Removing previous stash %s', stash_name)
+            shutil.rmtree(stash_directory)
 
-        with open(stash_file, 'w') as stash:
+        logging.info('Creating stash %s', stash_name)
+        os.makedirs(stash_directory)
+        with open(os.path.join(stash_directory, '.stash.txt'), 'w') as stash_file:
             for src, _ in file_mapper():
-                src = nimp.system.sanitize_path(src)
-                if not os.path.isfile(src):
-                    continue
-                if src.endswith('.stash'):
-                    continue
-                md5 = hashlib.md5(src.encode('utf8')).hexdigest()
-                os.replace(src, os.path.join(stash_dir, md5))
-                logging.info('Stashing %s as %s', src, md5)
-                stash.write('%s %s\n' % (md5, src))
+                if os.path.isfile(src):
+                    src_hash = hashlib.md5(src.encode('utf8')).hexdigest()
+                    logging.info('Stashing %s as %s', src, src_hash)
+                    shutil.move(src, os.path.join(stash_directory, src_hash))
+                    stash_file.write('%s %s\n' % (src_hash, src))
 
         return True
 
@@ -126,21 +126,32 @@ class _Unstash(FilesetCommand):
         super(_Unstash, self).__init__()
 
     def _run_fileset(self, env, file_mapper):
-        stash_dir = env.format('{root_dir}/.nimp/stash')
-        stash_file = os.path.join(stash_dir, env.fileset)
+        stash_name = env.format('{fileset}-{platform}-{target}-{configuration}')
+        stash_directory = env.format('{root_dir}/.nimp/stash/' + stash_name)
 
+        if not os.path.exists(stash_directory):
+            raise RuntimeError('Stash {stash_name} does not exist'.format(**locals()))
+
+        logging.info('Applying stash %s', stash_name)
         success = True
-        with open(stash_file, 'r') as stash:
-            for dst in stash.readlines():
+        with open(os.path.join(stash_directory, '.stash.txt'), 'r') as stash_file:
+            for dst in stash_file.readlines():
                 try:
                     md5, dst = dst.strip().split()
-                    src = os.path.join(stash_dir, md5)
+                    src = os.path.join(stash_directory, md5)
                     logging.info('Unstashing %s as %s', md5, dst)
-                    nimp.system.safe_delete(dst)
-                    os.replace(src, dst)
-                except Exception as ex: #pylint: disable=broad-except
-                    logging.error(ex)
+                    os.makedirs(os.path.dirname(dst), exist_ok = True)
+                    if os.path.exists(dst):
+                        os.remove(dst)
+                    shutil.move(src, dst)
+                except OSError as exception:
+                    logging.error(exception)
                     success = False
-        nimp.system.safe_delete(stash_file)
 
-        return success
+        if success == False:
+            raise RuntimeError('Unstash failed')
+
+        logging.info('Removing stash %s', stash_name)
+        shutil.rmtree(stash_directory)
+
+        return True
