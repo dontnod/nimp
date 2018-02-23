@@ -408,13 +408,12 @@ class Package(nimp.command.Command):
                     raise RuntimeError('Package failed')
 
                 if current_configuration == 'Shipping':
-                    verify_package_command = [
+                    validate_package_command = [
                         package_tool_path, 'img_verify',
                         '--no_progress_bar',
                         '--tmp_path', temporary_directory,
                         '--passcode', title_passcode, destination_file
                     ]
-                    package_success = nimp.sys.process.call(verify_package_command)
-                    if package_success != 0:
-                        raise RuntimeError('Package failed')
-
+                    validation_success = nimp.sys.process.call(validate_package_command)
+                    if validation_success != 0:
+                        logging.warning('Package validation failed')
