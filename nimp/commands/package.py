@@ -351,7 +351,7 @@ class Package(nimp.command.Command):
             ini_file_path = nimp.system.sanitize_path(project_directory + '/Config/XboxOne/XboxOneEngine.ini')
             product_id = _get_ini_value(ini_file_path, 'ProductId')
             content_id = _get_ini_value(ini_file_path, 'ContentId')
-            symbol_path = nimp.system.sanitize_path(project_directory + '/Binaries/XboxOne')
+            symbol_path = os.path.abspath(nimp.system.sanitize_path(project_directory + '/Binaries/XboxOne'))
 
             for current_configuration in configuration.split('+'):
                 current_destination = nimp.system.sanitize_path(destination + '/' + current_configuration)
