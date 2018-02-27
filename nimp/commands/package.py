@@ -264,8 +264,14 @@ class Package(nimp.command.Command):
         logging.info('Listing files for %s', pak_file_name)
         file_mapper = nimp.system.map_files(env)
         file_mapper.override(pak_name = pak_name).load_set('content_pak')
+        all_files = sorted(file_mapper())
+
+        if len(all_files) == 0:
+            logging.warning("No files for %s", pak_file_name)
+            return
+
         with open(manifest_file_path, 'w') as manifest_file:
-            for src, dst in sorted(file_mapper()):
+            for src, dst in all_files:
                 manifest_file.write('"%s" "%s"\n' % (os.path.abspath(src), '../../../' + dst))
 
         pak_command = [
