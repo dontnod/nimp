@@ -1,18 +1,30 @@
 #!/usr/bin/env python
 
-import os
-import shutil
-import sys
+import subprocess
+
+import setuptools
+
+
+def _try_get_revision():
+    try:
+        output = subprocess.check_output([ 'git', 'rev-parse', '--short=10', 'HEAD' ])
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+    return output.decode('utf-8').strip()
+
 
 # Update version below and:
 #  python3 setup.py bdist
 #  python3 setup.py sdist upload
-VERSION = '0.0.13'
+version_short = '0.1.0'
+
+revision = _try_get_revision()
+version_full = version_short + ('+' + revision if revision else '')
 
 setup_info = dict(
 
     name = 'nimp-cli',
-    version = VERSION,
+    version = version_full,
     description = 'Multipurpose build tool',
     long_description = '' +
         'Nimp is a cross-platform tool that helps maintain, compile, cook, ' +
@@ -21,7 +33,7 @@ setup_info = dict(
     license = 'MIT',
 
     url = 'https://github.com/dontnod/nimp',
-    download_url = 'https://github.com/dontnod/nimp/tarball/' + VERSION,
+    download_url = 'https://github.com/dontnod/nimp/archive/' + version_short + '.tar.gz',
 
     author = 'Dontnod Entertainment',
     author_email = 'root@dont-nod.com',
@@ -68,6 +80,4 @@ setuptools_info = dict(
     zip_safe = True,
 )
 
-from setuptools import setup
-setup(**setup_info)
-
+setuptools.setup(**setup_info)
