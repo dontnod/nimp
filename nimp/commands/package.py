@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Commands related to version packaging '''
 
+import json
 import logging
 import os
 import re
@@ -43,24 +44,6 @@ def _get_ini_value(file_path, key):
     if not match:
         raise KeyError('Key {key} was not found in {file_path}'.format(**locals()))
     return match.group('value')
-
-
-def _get_sfo_data(project_directory, title_id):
-    ''' Retrieves data from a sfo file '''
-    orbis_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
-    sfo_file_path = project_directory + '/Saved/StagedBuilds/PS4/sce_sys/' + title_id + '/param.sfo'
-    sfx_file_path = sfo_file_path.replace('/param.sfo', '/param.sfx')
-    sfo_export_command = [ orbis_tool_path, 'sfo_export', sfo_file_path, sfx_file_path ]
-
-    sfo_export_success = nimp.sys.process.call(sfo_export_command)
-    if sfo_export_success != 0:
-        raise RuntimeError('Failed to export sfo data from {sfo_file_path}'.format(**locals()))
-
-    sfx_data = {}
-    for sfx_param in xml.etree.ElementTree.parse(sfx_file_path).getroot():
-        sfx_data[sfx_param.attrib['key']] = sfx_param.text
-    os.remove(sfx_file_path)
-    return sfx_data
 
 
 def _safe_remove(file_path):
@@ -102,6 +85,8 @@ class Package(nimp.command.Command):
         parser.add_argument('--final', help = 'Enable package options for final submission', action = 'store_true')
         parser.add_argument('--iterate', help = 'Enable iterative cooking', action = 'store_true')
         parser.add_argument('--compress', help = 'Enable pak file compression', action = 'store_true')
+        parser.add_argument('--ps4-title', metavar = '<directory>', nargs = '+',
+            help = 'Set the directory for the target title files (PS4 only, default to Unreal TitleID)')
 
         return True
 
@@ -117,6 +102,10 @@ class Package(nimp.command.Command):
         stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/' + ue4_cmd_platform)
         package_directory = env.format('{root_dir}/{game}/Saved/Packages/' + ue4_cmd_platform)
 
+        if env.ue4_platform == 'PS4' and not env.ps4_title:
+            ini_file_path = project_directory + '/Config/PS4/PS4Engine.ini'
+            env.ps4_title = [ _get_ini_value(ini_file_path, 'TitleID') ]
+
         if 'initialize' in env.steps:
             Package._initialize(env)
         if 'cook' in env.steps:
@@ -127,10 +116,10 @@ class Package(nimp.command.Command):
             Package._postcook(env)
         if 'stage' in env.steps:
             Package._stage(env, engine_directory, project_directory, stage_directory,
-                env.game, env.ue4_platform, env.ue4_config,
-                env.content_paks, env.layout, env.compress, env.patch)
+                           env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title, env.compress, env.patch)
         if 'package' in env.steps:
-            Package._package_for_platform(env, project_directory, env.game, env.ue4_platform, env.ue4_config, stage_directory, package_directory, env.final)
+            Package._package_for_platform(env, project_directory, env.game, env.ue4_platform, env.ue4_config,
+                                          stage_directory, package_directory, env.ps4_title, env.final)
 
         return True
 
@@ -184,8 +173,12 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage(env, engine_directory, project_directory, stage_directory, project, platform, configuration, content_pak_list, layout_file_path, compress, patch):
+    def _stage(env, engine_directory, project_directory, stage_directory,
+               project, platform, configuration, content_pak_list, layout_file_path, ps4_title_collection, compress, patch):
         stage_directory = nimp.system.sanitize_path(stage_directory)
+
+        if platform in [ 'PS4', 'XboxOne' ] and not layout_file_path:
+            raise ValueError('Layout is required to stage for ' + platform)
 
         _safe_remove(stage_directory)
         os.makedirs(stage_directory)
@@ -212,6 +205,16 @@ class Package(nimp.command.Command):
         for content_pak in content_pak_list:
             Package._create_pak_file(env, engine_directory, project_directory, project, platform, content_pak, pak_destination_directory, compress, patch)
 
+        # Stage platform specific files
+        if platform == 'PS4':
+            orbis_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
+            for title_directory in ps4_title_collection:
+                sfo_file_path = stage_directory + '/sce_sys/' + title_directory + '/param.sfo'
+                sfx_file_path = sfo_file_path.replace('/param.sfo', '/param.sfx')
+                sfo_export_command = [ orbis_tool_path, 'sfo_export', sfo_file_path, sfx_file_path ]
+                sfo_export_success = nimp.sys.process.call(sfo_export_command)
+                if sfo_export_success != 0:
+                    raise RuntimeError('Failed to export sfo data from {sfo_file_path}'.format(**locals()))
         if platform == 'XboxOne':
             Package._stage_xbox_manifest(project_directory, stage_directory, configuration)
             # Dummy files for empty chunks
@@ -220,11 +223,25 @@ class Package(nimp.command.Command):
             with open(nimp.system.sanitize_path(stage_directory + '/AlignmentChunk.bin'), 'w') as empty_file:
                 empty_file.write('\0')
 
-        if layout_file_path:
+        # Stage package layout
+        if platform == 'PS4':
+            for title_directory in ps4_title_collection:
+                title_json_path = project_directory + '/Build/PS4/titledata/' + title_directory + '/title.json'
+                with open(title_json_path) as title_json_file:
+                    transform_parameters = json.load(title_json_file)
+                transform_parameters['title_directory'] = title_directory.lower()
+                region = transform_parameters['region'].upper()
+                for current_configuration in configuration.split('+'):
+                    layout_file_name = '{project}-{region}-{current_configuration}.gp4'.format(**locals())
+                    layout_destination = nimp.system.sanitize_path(stage_directory + '/' + layout_file_name)
+                    transform_parameters['configuration'] = current_configuration.lower()
+                    Package._stage_and_transform_file(layout_file_path, layout_destination, current_configuration, transform_parameters)
+        elif platform == 'XboxOne':
             for current_configuration in configuration.split('+'):
-                layout_file_name = project + '-' + current_configuration + '.' + ('gp4' if platform == 'PS4' else 'xml')
+                layout_file_name = '{project}-{current_configuration}.xml'.format(**locals())
                 layout_destination = nimp.system.sanitize_path(stage_directory + '/' + layout_file_name)
-                Package._stage_file(layout_file_path, layout_destination, True, platform, current_configuration)
+                transform_parameters = { 'configuration': current_configuration }
+                Package._stage_and_transform_file(layout_file_path, layout_destination, current_configuration, transform_parameters)
 
         # Homogenize binary and symbols file names for console packaging
         if platform == 'PS4':
@@ -267,7 +284,7 @@ class Package(nimp.command.Command):
         all_files = sorted(file_mapper())
 
         if len(all_files) == 0:
-            logging.warning("No files for %s", pak_file_name)
+            logging.warning('No files for %s', pak_file_name)
             return
 
         with open(manifest_file_path, 'w') as manifest_file:
@@ -304,7 +321,8 @@ class Package(nimp.command.Command):
         for current_configuration in configuration.split('+'):
             current_stage_directory = stage_directory + '/Manifests/' + current_configuration
             os.makedirs(nimp.system.sanitize_path(current_stage_directory))
-            Package._stage_file(manifest_source, current_stage_directory + '/AppxManifest.xml', True, 'XboxOne', current_configuration)
+            transform_parameters = { 'configuration': current_configuration }
+            Package._stage_and_transform_file(manifest_source, current_stage_directory + '/AppxManifest.xml', current_configuration, transform_parameters)
 
             appdata_command = [
                 nimp.system.sanitize_path(os.environ['DurangoXDK'] + '/bin/MakePkg.exe'),
@@ -319,25 +337,30 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage_file(source, destination, apply_transform = False, platform = None, configuration = None):
+    def _stage_file(source, destination):
+        source = nimp.system.sanitize_path(source)
+        destination = nimp.system.sanitize_path(destination)
+        logging.info('Staging %s to %s', source, destination)
+        shutil.copyfile(source, destination)
+
+
+    @staticmethod
+    def _stage_and_transform_file(source, destination, configuration, transform_parameters):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
         logging.info('Staging %s to %s', source, destination)
 
-        if apply_transform:
-            with open(source, 'r') as source_file:
-                file_content = source_file.read()
-            file_content = file_content.format(configuration = (configuration if platform != 'PS4' else configuration.lower()))
-            if configuration == 'Shipping':
-                file_content = re.sub(r'<!-- #if Debug -->(.*?)<!-- #endif Debug -->', '', file_content, 0, re.DOTALL)
-            with open(destination, 'w') as destination_file:
-                destination_file.write(file_content)
-        else:
-            shutil.copyfile(source, destination)
+        with open(source, 'r') as source_file:
+            file_content = source_file.read()
+        file_content = file_content.format(**transform_parameters)
+        if configuration == 'Shipping':
+            file_content = re.sub(r'<!-- #if Debug -->(.*?)<!-- #endif Debug -->', '', file_content, 0, re.DOTALL)
+        with open(destination, 'w') as destination_file:
+            destination_file.write(file_content)
 
 
     @staticmethod
-    def _package_for_platform(env, project_directory, project, platform, configuration, source, destination, is_final_submission):
+    def _package_for_platform(env, project_directory, project, platform, configuration, source, destination, ps4_title_collection, is_final_submission):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
 
@@ -387,39 +410,45 @@ class Package(nimp.command.Command):
             package_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
             temporary_directory = nimp.system.sanitize_path(project_directory + '/Saved/Temp')
             os.makedirs(temporary_directory, exist_ok = True)
-            ini_file_path = project_directory + '/Config/PS4/PS4Engine.ini'
-            title_id = _get_ini_value(ini_file_path, 'TitleID')
-            title_passcode = _get_ini_value(ini_file_path, 'TitlePasscode')
-            sfo_data = _get_sfo_data(project_directory, title_id)
 
-            for current_configuration in configuration.split('+'):
-                current_destination = nimp.system.sanitize_path(destination + '/' + current_configuration)
-                destination_file = '{content_id}-A{application_version}-V{master_version}.pkg'.format(
-                    content_id = sfo_data['CONTENT_ID'],
-                    application_version = sfo_data['APP_VER'].replace('.', ''),
-                    master_version = sfo_data['VERSION'].replace('.', '')
-                )
-                destination_file = nimp.system.sanitize_path(current_destination + '/' + destination_file)
-                layout_file = nimp.system.sanitize_path(source + '/' + project + '-' + current_configuration + '.gp4')
-                create_package_command = [
-                    package_tool_path, 'img_create',
-                    '--no_progress_bar',
-                    '--tmp_path', temporary_directory,
-                    layout_file, destination_file
-                ]
+            for title_directory in ps4_title_collection:
+                title_json_path = source + '/' + title_directory.lower() + '/title.json'
+                with open(title_json_path) as title_json_file:
+                    title_data = json.load(title_json_file)
+                sfx_file_path = source + '/sce_sys/' + title_directory.lower() + '/param.sfx'
+                sfx_data = {}
+                for sfx_parameter in xml.etree.ElementTree.parse(sfx_file_path).getroot():
+                    sfx_data[sfx_parameter.attrib['key']] = sfx_parameter.text
+                region = title_data['region'].upper()
 
-                os.mkdir(current_destination)
-                package_success = nimp.sys.process.call(create_package_command)
-                if package_success != 0:
-                    raise RuntimeError('Package failed')
-
-                if current_configuration == 'Shipping':
-                    validate_package_command = [
-                        package_tool_path, 'img_verify',
+                for current_configuration in configuration.split('+'):
+                    current_destination = nimp.system.sanitize_path(destination + '/' + region + '-' + current_configuration)
+                    destination_file = '{content_id}-A{application_version}-V{master_version}.pkg'.format(
+                        content_id = sfx_data['CONTENT_ID'],
+                        application_version = sfx_data['APP_VER'].replace('.', ''),
+                        master_version = sfx_data['VERSION'].replace('.', '')
+                    )
+                    destination_file = nimp.system.sanitize_path(current_destination + '/' + destination_file)
+                    layout_file = nimp.system.sanitize_path(source + '/' + project + '-' + region + '-' + current_configuration + '.gp4')
+                    create_package_command = [
+                        package_tool_path, 'img_create',
                         '--no_progress_bar',
                         '--tmp_path', temporary_directory,
-                        '--passcode', title_passcode, destination_file
+                        layout_file, destination_file
                     ]
-                    validation_success = nimp.sys.process.call(validate_package_command)
-                    if validation_success != 0:
-                        logging.warning('Package validation failed')
+
+                    os.mkdir(current_destination)
+                    package_success = nimp.sys.process.call(create_package_command)
+                    if package_success != 0:
+                        raise RuntimeError('Package failed')
+
+                    if current_configuration == 'Shipping':
+                        validate_package_command = [
+                            package_tool_path, 'img_verify',
+                            '--no_progress_bar',
+                            '--tmp_path', temporary_directory,
+                            '--passcode', title_data['title_passcode'], destination_file
+                        ]
+                        validation_success = nimp.sys.process.call(validate_package_command)
+                        if validation_success != 0:
+                            logging.warning('Package validation failed')
