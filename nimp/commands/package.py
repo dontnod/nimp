@@ -215,6 +215,10 @@ class Package(nimp.command.Command):
                 if sfo_export_success != 0:
                     raise RuntimeError('Failed to export sfo data from {sfo_file_path}'.format(**locals()))
         if platform == 'XboxOne':
+            for current_configuration in configuration.split('+'):
+                pdb_file_name = project + (('-XboxOne-' + current_configuration) if current_configuration != 'Development' else '') + '.pdb'
+                Package._stage_file(project_directory + '/Binaries/XboxOne/' + pdb_file_name,
+                                    stage_directory + '/' + project + '/Binaries/XboxOne/' + pdb_file_name)
             Package._stage_xbox_manifest(project_directory, stage_directory, configuration)
             # Dummy files for empty chunks
             with open(nimp.system.sanitize_path(stage_directory + '/LaunchChunk.bin'), 'w') as empty_file:
@@ -379,7 +383,7 @@ class Package(nimp.command.Command):
             ini_file_path = nimp.system.sanitize_path(project_directory + '/Config/XboxOne/XboxOneEngine.ini')
             product_id = _get_ini_value(ini_file_path, 'ProductId')
             content_id = _get_ini_value(ini_file_path, 'ContentId')
-            symbol_path = os.path.abspath(nimp.system.sanitize_path(project_directory + '/Binaries/XboxOne'))
+            symbol_path = source + '/' + project + '/Binaries/XboxOne'
 
             for current_configuration in configuration.split('+'):
                 current_destination = destination + '/' + current_configuration + ('-Final' if is_final_submission else '')
