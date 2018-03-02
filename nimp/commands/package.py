@@ -27,7 +27,6 @@ import os
 import re
 import shutil
 import time
-import xml.etree.ElementTree
 
 import nimp.commands
 import nimp.environment
@@ -119,7 +118,7 @@ class Package(nimp.command.Command):
                            env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title, env.compress, env.patch)
         if 'package' in env.steps:
             Package._package_for_platform(env, project_directory, env.game, env.ue4_platform, env.ue4_config,
-                                          stage_directory, package_directory, env.ps4_title, env.final)
+                                          stage_directory, package_directory, env.ps4_title, env.final, env.patch)
 
         return True
 
@@ -360,7 +359,8 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _package_for_platform(env, project_directory, project, platform, configuration, source, destination, ps4_title_collection, is_final_submission):
+    def _package_for_platform(env, project_directory, project, platform, configuration,
+                              source, destination, ps4_title_collection, is_final_submission, patch):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
 
@@ -376,17 +376,16 @@ class Package(nimp.command.Command):
 
         elif platform == 'XboxOne':
             package_tool_path = nimp.system.sanitize_path(os.environ['DurangoXDK'] + '/bin/MakePkg.exe')
-            game_os = nimp.system.sanitize_path(source + '/era.xvd')
             ini_file_path = nimp.system.sanitize_path(project_directory + '/Config/XboxOne/XboxOneEngine.ini')
             product_id = _get_ini_value(ini_file_path, 'ProductId')
             content_id = _get_ini_value(ini_file_path, 'ContentId')
             symbol_path = os.path.abspath(nimp.system.sanitize_path(project_directory + '/Binaries/XboxOne'))
 
             for current_configuration in configuration.split('+'):
-                current_destination = nimp.system.sanitize_path(destination + '/' + current_configuration)
-                layout_file = nimp.system.sanitize_path(source + '/' + project + '-' + current_configuration + '.xml')
+                current_destination = destination + '/' + current_configuration + ('-Final' if is_final_submission else '')
+                layout_file = source + '/' + project + '-' + current_configuration + '.xml'
                 package_command = [
-                    package_tool_path, 'pack', '/v', '/gameos', game_os,
+                    package_tool_path, 'pack', '/v', '/gameos', source + '/era.xvd',
                     '/f', layout_file, '/d', source, '/pd', current_destination,
                     '/productid', product_id, '/contentid', content_id,
                     '/symbolpaths', symbol_path,
@@ -415,26 +414,23 @@ class Package(nimp.command.Command):
                 title_json_path = source + '/' + title_directory.lower() + '/title.json'
                 with open(title_json_path) as title_json_file:
                     title_data = json.load(title_json_file)
-                sfx_file_path = source + '/sce_sys/' + title_directory.lower() + '/param.sfx'
-                sfx_data = {}
-                for sfx_parameter in xml.etree.ElementTree.parse(sfx_file_path).getroot():
-                    sfx_data[sfx_parameter.attrib['key']] = sfx_parameter.text
                 region = title_data['region'].upper()
 
                 for current_configuration in configuration.split('+'):
-                    current_destination = nimp.system.sanitize_path(destination + '/' + region + '-' + current_configuration)
-                    destination_file = '{content_id}-A{application_version}-V{master_version}.pkg'.format(
-                        content_id = sfx_data['CONTENT_ID'],
-                        application_version = sfx_data['APP_VER'].replace('.', ''),
-                        master_version = sfx_data['VERSION'].replace('.', '')
-                    )
-                    destination_file = nimp.system.sanitize_path(current_destination + '/' + destination_file)
-                    layout_file = nimp.system.sanitize_path(source + '/' + project + '-' + region + '-' + current_configuration + '.gp4')
+                    current_destination = destination + '/' + region + '-' + current_configuration + ('-Final' if is_final_submission else '')
+                    layout_file = source + '/' + project + '-' + region + '-' + current_configuration + '.gp4'
+                    output_format = 'pkg'
+                    if is_final_submission:
+                        if not patch and title_data['storagetype'].startswith('bd'):
+                            output_format += '+iso'
+                        output_format += '+subitem'
+
                     create_package_command = [
                         package_tool_path, 'img_create',
                         '--no_progress_bar',
                         '--tmp_path', temporary_directory,
-                        layout_file, destination_file
+                        '--oformat', output_format,
+                        layout_file, current_destination
                     ]
 
                     os.mkdir(current_destination)
@@ -442,13 +438,22 @@ class Package(nimp.command.Command):
                     if package_success != 0:
                         raise RuntimeError('Package failed')
 
-                    if current_configuration == 'Shipping':
+                    # The img_create command already does the check when invoked for submission
+                    # Configurations other than Shipping always output errors because of debug binaries
+                    if not is_final_submission and current_configuration == 'Shipping':
+                        package_files = []
+                        for file_name in os.listdir(current_destination):
+                            if file_name.endswith('.pkg'):
+                                package_files.append(current_destination + '/' + file_name)
+
                         validate_package_command = [
                             package_tool_path, 'img_verify',
                             '--no_progress_bar',
                             '--tmp_path', temporary_directory,
-                            '--passcode', title_data['title_passcode'], destination_file
+                            '--passcode', title_data['title_passcode'],
                         ]
+                        validate_package_command += package_files
+                        
                         validation_success = nimp.sys.process.call(validate_package_command)
                         if validation_success != 0:
                             logging.warning('Package validation failed')
