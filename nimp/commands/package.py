@@ -368,10 +368,9 @@ class Package(nimp.command.Command):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
 
-        _safe_remove(destination)
-        os.makedirs(destination)
-
         if platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
+            _safe_remove(destination)
+            os.makedirs(destination)
             package_fileset = nimp.system.map_files(env)
             package_fileset.src(source[ len(env.root_dir) + 1 : ]).to(destination).glob('**')
             package_success = nimp.system.all_map(nimp.system.robocopy, package_fileset())
@@ -396,7 +395,8 @@ class Package(nimp.command.Command):
                 if is_final_submission:
                     package_command += [ '/l' ]
 
-                os.mkdir(current_destination)
+                _safe_remove(current_destination)
+                os.makedirs(current_destination)
                 manifest_file_collection = os.listdir(nimp.system.sanitize_path(source + '/Manifests/' + current_configuration))
                 for manifest_file in manifest_file_collection:
                     shutil.copyfile(nimp.system.sanitize_path(source + '/Manifests/' + current_configuration + '/' + manifest_file),
@@ -435,7 +435,8 @@ class Package(nimp.command.Command):
                         layout_file, current_destination
                     ]
 
-                    os.mkdir(current_destination)
+                    _safe_remove(current_destination)
+                    os.makedirs(current_destination)
                     package_success = nimp.sys.process.call(create_package_command)
                     if package_success != 0:
                         raise RuntimeError('Package failed')
