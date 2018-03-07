@@ -45,6 +45,19 @@ def load_arguments(env):
 
     return True
 
+def get_cook_platform(ue4_platform):
+    platforms = {
+        "Android": "Android",
+        "IOS": "IOS",
+        "Linux": "LinuxNoEditor",
+        "Mac": "MacNoEditor",
+        "PS4": "PS4",
+        "Win32": "WindowsNoEditor",
+        "Win64": "WindowsNoEditor",
+        "XboxOne": "XboxOne",
+    }
+    return platforms[ue4_platform]
+
 def build(env):
     ''' Builds an Unreal Engine Project. config and platform arguments should
         be set on environment in order to call this function. You can use
@@ -326,7 +339,7 @@ def _ue4_load_arguments(env):
                       "linux"   : "Linux",
                       "android" : "Android",
                       "mac"     : "Mac",
-                      "ios"     : "iOS", }
+                      "ios"     : "IOS", }
         if in_platform not in platforms:
             logging.warning('Unsupported UE4 build platform “%s”', in_platform)
             return None

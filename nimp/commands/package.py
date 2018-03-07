@@ -95,11 +95,10 @@ class Package(nimp.command.Command):
 
 
     def run(self, env):
-        ue4_cmd_platform = {'Win64': 'WindowsNoEditor', 'Linux': 'LinuxNoEditor'}.get(env.ue4_platform, env.ue4_platform)
         engine_directory = env.format('{root_dir}/Engine')
         project_directory = env.format('{root_dir}/{game}')
-        stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/' + ue4_cmd_platform)
-        package_directory = env.format('{root_dir}/{game}/Saved/Packages/' + ue4_cmd_platform)
+        stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/' + nimp.unreal.get_cook_platform(env.ue4_platform))
+        package_directory = env.format('{root_dir}/{game}/Saved/Packages/' + nimp.unreal.get_cook_platform(env.ue4_platform))
 
         if env.ue4_platform == 'PS4' and not env.ps4_title:
             ini_file_path = project_directory + '/Config/PS4/PS4Engine.ini'
@@ -108,7 +107,7 @@ class Package(nimp.command.Command):
         if 'initialize' in env.steps:
             Package._initialize(env)
         if 'cook' in env.steps:
-            Package._cook(engine_directory, env.game, ue4_cmd_platform, env.iterate)
+            Package._cook(engine_directory, env.game, env.ue4_platform, env.iterate)
         if 'postcook' in env.steps:
             Package._postcook(env)
         if 'prestage' in env.steps:
@@ -144,10 +143,10 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def _cook(engine_directory, project, platform, iterate):
-        editor = 'Linux/UE4Editor' if platform == 'LinuxNoEditor' else 'Win64/UE4Editor-Cmd.exe'
+        editor = 'Linux/UE4Editor' if platform == 'Linux' else 'Win64/UE4Editor-Cmd.exe'
         cook_command = [
             nimp.system.sanitize_path(engine_directory + '/Binaries/' + editor),
-            project, '-Run=Cook', '-TargetPlatform=' + platform,
+            project, '-Run=Cook', '-TargetPlatform=' + nimp.unreal.get_cook_platform(platform),
             '-BuildMachine', '-Unattended', '-StdOut', '-UTF8Output',
         ]
         if iterate:
@@ -261,9 +260,8 @@ class Package(nimp.command.Command):
 
         # Copy the release files to have a complete package
         if patch:
-            ue4_cmd_platform = {'Win64': 'WindowsNoEditor', 'Linux': 'LinuxNoEditor'}.get(platform, platform)
-            release_directory = project_directory + '/Releases/' + patch + '/' + ue4_cmd_platform
-            pak_file_name = project + '-' + ue4_cmd_platform + '.pak'
+            release_directory = project_directory + '/Releases/' + patch + '/' + nimp.unreal.get_cook_platform(platform)
+            pak_file_name = project + '-' + nimp.unreal.get_cook_platform(platform) + '.pak'
             Package._stage_file(release_directory + '/' + pak_file_name, stage_directory + '/' + project + '/Content/Paks/' + pak_file_name)
 
 
@@ -271,10 +269,9 @@ class Package(nimp.command.Command):
     def _create_pak_file(env, engine_directory, project_directory, project, platform, pak_name, destination, compress, patch):
         pak_tool = 'Linux/UnrealPak' if platform == 'Linux' else 'Win64/UnrealPak.exe'
         pak_tool_path = nimp.system.sanitize_path(engine_directory + '/Binaries/' + pak_tool)
-        ue4_cmd_platform = {'Win64': 'WindowsNoEditor', 'Linux': 'LinuxNoEditor'}.get(platform, platform)
-        pak_file_name = project + '-' + ue4_cmd_platform + (('-' + pak_name) if pak_name else '') + ('_P' if patch else '') + '.pak'
+        pak_file_name = project + '-' + nimp.unreal.get_cook_platform(platform) + (('-' + pak_name) if pak_name else '') + ('_P' if patch else '') + '.pak'
         manifest_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name + '.txt')
-        order_file_path = nimp.system.sanitize_path(project_directory + '/Build/' + ue4_cmd_platform + '/FileOpenOrder/GameOpenOrder.log')
+        order_file_path = nimp.system.sanitize_path(project_directory + '/Build/' + nimp.unreal.get_cook_platform(platform) + '/FileOpenOrder/GameOpenOrder.log')
         pak_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name)
 
         if platform == 'PS4':
