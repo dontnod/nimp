@@ -368,10 +368,11 @@ class Package(nimp.command.Command):
         destination = nimp.system.sanitize_path(destination)
 
         if platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
+            destination += '/' + ('Final' if is_final_submission else 'Default')
             _safe_remove(destination)
             os.makedirs(destination)
             package_fileset = nimp.system.map_files(env)
-            package_fileset.src(source[ len(env.root_dir) + 1 : ]).to(destination).glob('**')
+            package_fileset.src(source[ len(env.root_dir) + 1 : ]).to(destination).load_set('stage_to_package')
             package_success = nimp.system.all_map(nimp.system.robocopy, package_fileset())
             if not package_success:
                 raise RuntimeError('Package failed')
