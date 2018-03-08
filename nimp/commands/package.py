@@ -80,7 +80,7 @@ class Package(nimp.command.Command):
                             choices = command_steps, default = command_steps, nargs = '+')
         parser.add_argument('--target', help = 'Set the target configuration to use')
         parser.add_argument('--layout', help = 'Set the layout file to use for the package (for consoles)')
-        parser.add_argument('--patch', help = 'Create a patch based on the specified release', metavar = '<version>')
+        parser.add_argument('--patch', help = 'Create a patch based on previously staged data', action = 'store_true')
         parser.add_argument('--final', help = 'Enable package options for final submission', action = 'store_true')
         parser.add_argument('--iterate', help = 'Enable iterative cooking', action = 'store_true')
         parser.add_argument('--compress', help = 'Enable pak file compression', action = 'store_true')
@@ -117,7 +117,7 @@ class Package(nimp.command.Command):
                            env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title, env.compress, env.patch)
         if 'package' in env.steps:
             Package._package_for_platform(env, project_directory, env.game, env.ue4_platform, env.ue4_config,
-                                          stage_directory, package_directory, env.ps4_title, env.final, env.patch)
+                                          stage_directory, package_directory, env.ps4_title, env.final)
 
         return True
 
@@ -189,19 +189,23 @@ class Package(nimp.command.Command):
         ]
         if compress:
             stage_command += [ '-Compressed' ]
-        if patch:
-            stage_command += [ '-GeneratePatch', '-BasedOnReleaseVersion=' + patch ]
 
         stage_success = nimp.sys.process.call(stage_command)
         if stage_success != 0:
             raise RuntimeError('Stage failed')
 
+        pak_source_directory = None
+        if patch:
+            pak_source_directory = '{stage_directory}-PatchBase/{project}/Content/Paks'.format(**locals())
+            if platform == 'PS4':
+                pak_source_directory = pak_source_directory.lower()
         pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**locals())
         if platform == 'PS4':
             pak_destination_directory = pak_destination_directory.lower()
         os.makedirs(pak_destination_directory)
         for content_pak in content_pak_list:
-            Package._create_pak_file(env, engine_directory, project_directory, project, platform, content_pak, pak_destination_directory, compress, patch)
+            Package._create_pak_file(env, engine_directory, project_directory, project, platform,
+                                     content_pak, pak_source_directory, pak_destination_directory, compress)
 
         # Stage platform specific files
         if platform == 'PS4':
@@ -258,21 +262,15 @@ class Package(nimp.command.Command):
             if os.path.exists(symbols_path):
                 shutil.move(symbols_path, symbols_path.replace(project + '-symbols.bin', project + '-XboxOne-Development-symbols.bin'))
 
-        # Copy the release files to have a complete package
-        if patch:
-            release_directory = project_directory + '/Releases/' + patch + '/' + nimp.unreal.get_cook_platform(platform)
-            pak_file_name = project + '-' + nimp.unreal.get_cook_platform(platform) + '.pak'
-            Package._stage_file(release_directory + '/' + pak_file_name, stage_directory + '/' + project + '/Content/Paks/' + pak_file_name)
-
 
     @staticmethod
-    def _create_pak_file(env, engine_directory, project_directory, project, platform, pak_name, destination, compress, patch):
+    def _create_pak_file(env, engine_directory, project_directory, project, platform, pak_name, source, destination, compress):
         pak_tool = 'Linux/UnrealPak' if platform == 'Linux' else 'Win64/UnrealPak.exe'
         pak_tool_path = nimp.system.sanitize_path(engine_directory + '/Binaries/' + pak_tool)
-        pak_file_name = project + '-' + nimp.unreal.get_cook_platform(platform) + (('-' + pak_name) if pak_name else '') + ('_P' if patch else '') + '.pak'
-        manifest_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name + '.txt')
+        pak_file_name = project + '-' + nimp.unreal.get_cook_platform(platform) + (('-' + pak_name) if pak_name else '')
+        manifest_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name + '.pak.txt')
         order_file_path = nimp.system.sanitize_path(project_directory + '/Build/' + nimp.unreal.get_cook_platform(platform) + '/FileOpenOrder/GameOpenOrder.log')
-        pak_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name)
+        pak_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name + ('_P' if source else '') + '.pak')
 
         if platform == 'PS4':
             manifest_file_path = manifest_file_path.lower()
@@ -306,6 +304,10 @@ class Package(nimp.command.Command):
             pak_command += [ '-BlockSize=256MB', '-PatchPaddingAlign=65536' ]
         elif platform == 'XboxOne':
             pak_command += [ '-BlockSize=4KB', '-BitWindow=12' ]
+
+        if source:
+            pak_source_file_path = nimp.system.sanitize_path(source + '/' + pak_file_name + '.pak')
+            pak_command += [ '-GeneratePatch=' + os.path.abspath(pak_source_file_path) ]
 
         pak_success = nimp.sys.process.call(pak_command)
         if pak_success != 0:
@@ -361,7 +363,7 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def _package_for_platform(env, project_directory, project, platform, configuration,
-                              source, destination, ps4_title_collection, is_final_submission, patch):
+                              source, destination, ps4_title_collection, is_final_submission):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
 
@@ -420,7 +422,7 @@ class Package(nimp.command.Command):
                     layout_file = source + '/' + project + '-' + region + '-' + current_configuration + '.gp4'
                     output_format = 'pkg'
                     if is_final_submission:
-                        if not patch and title_data['storagetype'].startswith('bd'):
+                        if title_data['storagetype'].startswith('bd'):
                             output_format += '+iso'
                         output_format += '+subitem'
 
@@ -453,7 +455,7 @@ class Package(nimp.command.Command):
                             '--passcode', title_data['title_passcode'],
                         ]
                         validate_package_command += package_files
-                        
+
                         validation_success = nimp.sys.process.call(validate_package_command)
                         if validation_success != 0:
                             logging.warning('Package validation failed')
