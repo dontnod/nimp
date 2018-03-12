@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2014—2016 Dontnod Entertainment
+# Copyright © 2014-2018 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -33,6 +33,7 @@ import requests
 #from pyremotezip import RemoteZip
 # (would be nice, but pyremotezip is python2 for now)
 
+import nimp.artifacts
 import nimp.command
 import nimp.environment
 import nimp.system
@@ -84,7 +85,8 @@ class DownloadFileset(nimp.command.Command):
         if env.revision is None and env.max_revision is not None and env.min_revision is not None and int(env.max_revision) == int(env.min_revision):
             env.revision = env.max_revision # speeding things up
 
-        revision_info = nimp.system.get_latest_available_revision(env, env.artifact_repository_source + '/' + env.artifact_collection[env.fileset] + '.zip', **vars(env))
+        artifact_uri_pattern = env.artifact_repository_source + '/' + env.artifact_collection[env.fileset] + '.zip'
+        revision_info = nimp.artifacts.get_latest_available_revision(env, artifact_uri_pattern, **vars(env))
 
         env.revision = revision_info['revision']
         archive_location = revision_info['location']
@@ -116,7 +118,7 @@ class DownloadFileset(nimp.command.Command):
             else:
                 archive_object = open(nimp.system.sanitize_path(archive_location), 'rb')
             DownloadFileset._decompress(archive_object, env, handle_zip_of_zips=True)
-            nimp.system.save_last_deployed_revision(env)
+            nimp.artifacts.save_last_deployed_revision(env)
 
             return True
         except Exception as ex: #pylint: disable=broad-except
