@@ -70,6 +70,8 @@ def main(argv = None):
         nimp_monitor = nimp.sys.process.Monitor()
         nimp_monitor.start()
 
+        logging.getLogger('urllib3').setLevel(logging.INFO)
+
         _clean_environment_variables()
 
         nimp.environment.Environment.config_loaders += [nimp.unreal.load_config]
