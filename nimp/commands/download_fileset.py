@@ -21,163 +21,76 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Downloads a previously uploaded fileset to the local workspace '''
 
-import io
+
+import copy
 import logging
-import os
-import stat
-import tempfile
-import zipfile
-
-import requests
-
-#from pyremotezip import RemoteZip
-# (would be nice, but pyremotezip is python2 for now)
+import shutil
 
 import nimp.artifacts
 import nimp.command
-import nimp.environment
-import nimp.system
-import nimp.sys.platform
 
-MAGIC = nimp.system.try_import('magic')
 
 class DownloadFileset(nimp.command.Command):
     ''' Downloads a previously uploaded fileset to the local workspace '''
+
+
     def __init__(self):
         super(DownloadFileset, self).__init__()
 
-    def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'revision', 'platform', 'target', 'configuration', 'free_parameters')
 
-        parser.add_argument('--max_revision',
-                            help = 'Find a revision <= to this',
-                            metavar = '<revision>')
-        parser.add_argument('--min_revision',
-                            help = 'Find a revision >= to this',
-                            metavar = '<revision>')
+    def configure_arguments(self, env, parser):
+        nimp.command.add_common_arguments(parser, 'free_parameters')
+
+        parser.add_argument('--revision', help = 'Find a revision equal to this one', metavar = '<revision>')
+        parser.add_argument('--max-revision', help = 'Find a revision older or equal to this one', metavar = '<revision>')
+        parser.add_argument('--min-revision', help = 'Find a revision newer or equal to this one', metavar = '<revision>')
+        parser.add_argument('--destination', help = 'Set a destination relative to the workspace', metavar = '<path>')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to download')
 
         return True
 
-    def is_available(self, env):
-        if nimp.sys.platform.is_windows():
-            return True, ''
 
-        return (MAGIC is not None and hasattr(MAGIC, 'from_file'),
-                ('The python-magic module was not found on your system and is '
-                 'required by this command.'))
+    def is_available(self, env):
+        return True, ''
+
 
     def run(self, env):
-        # Early exit, options harmonizing etc:
-        incompatible_options = ((env.max_revision is not None and env.min_revision is not None and int(env.max_revision) < int(env.min_revision))
-                                or (env.revision is not None and env.min_revision is not None and int(env.revision) < int(env.min_revision))
-                                or (env.max_revision is not None and env.revision is not None and int(env.max_revision) < int(env.revision)))
-        if incompatible_options:
-            error_message = 'Incompatible options'
-            if env.revision is not None:
-                error_message += ' - requested revision = %s' % env.revision
-            if env.max_revision is not None:
-                error_message += ' - specified max revision = %s' % env.max_revision
-            if env.min_revision is not None:
-                error_message += ' - specified min revision = %s' % env.min_revision
-            logging.error(error_message)
-            return False
-        if env.revision is None and env.max_revision is not None and env.min_revision is not None and int(env.max_revision) == int(env.min_revision):
-            env.revision = env.max_revision # speeding things up
+        artifact_uri_pattern = env.artifact_repository_source + '/' + env.artifact_collection[env.fileset]
+        install_directory = env.root_dir + ('/' + env.format(env.destination) if env.destination else '')
+        format_arguments = copy.deepcopy(vars(env))
+        format_arguments['revision'] = '*'
 
-        artifact_uri_pattern = env.artifact_repository_source + '/' + env.artifact_collection[env.fileset] + '.zip'
-        revision_info = nimp.artifacts.get_latest_available_revision(env, artifact_uri_pattern, **vars(env))
+        logging.info('Searching %s', artifact_uri_pattern.format(**format_arguments))
+        all_artifacts = nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments)
+        artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision)
 
-        env.revision = revision_info['revision']
-        archive_location = revision_info['location']
-        if env.revision is None or archive_location is None:
-            logging.error("No artifact found")
-            return False
+        logging.info('Downloading %s', artifact_to_download['uri'])
+        local_artifact_path = nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri'])
 
-        logging.info("Downloading " + revision_info['location'])
+        logging.info('Installing %s', artifact_to_download['uri'])
+        nimp.artifacts.install_artifact(local_artifact_path, install_directory)
+        shutil.rmtree(local_artifact_path)
 
-        # Now decompress the archive
-        archive_object = None
+        env.revision = artifact_to_download['revision']
+        nimp.artifacts.save_last_deployed_revision(env)
+
+        return True
+
+
+    # TODO: Handle revision comparison when identified by a hash
+    @staticmethod
+    def _find_matching_artifact(all_artifacts, exact_revision, minimum_revision, maximum_revision):
+        all_artifacts = sorted(all_artifacts, key = lambda artifact: int(artifact['revision']), reverse = True)
+
         try:
-            if revision_info['is_http']:
-                # (pyremotezip would be nice here (snippets below), but it's python2 for now)
-                # snippets: rz = RemoteZip(archive_location); toc = rz.getTableOfContents(); output = rz.extractFile(toc[2]['filename'])
-                get_request = requests.get(archive_location, stream=True)
-                # TODO: test get_request.ok and/or get_request.status_code...
-                archive_size = int(get_request.headers['content-length'])
-                tmp_download_directory = nimp.system.sanitize_path(env.format(os.path.join(env.root_dir, env.game, 'Intermediate', 'Downloads')))
-                nimp.system.safe_makedirs(tmp_download_directory) # As NamedTemporaryFile apparently needs an existing dir when the parameter is passed
-                archive_object = tempfile.NamedTemporaryFile(prefix='tmp_', suffix='.zip', dir=tmp_download_directory)
-                logging.info('Download of %s is starting.', archive_location)
-                try:
-                    DownloadFileset._custom_copyfileobj(get_request.raw, archive_object, archive_size)
-                    logging.info('Download of %s is done!', archive_location)
-                except OSError as ex:
-                    logging.error('Download of %s has failed: %s', archive_location, ex)
-                    raise Exception('Download has failed') from ex
-            else:
-                archive_object = open(nimp.system.sanitize_path(archive_location), 'rb')
-            DownloadFileset._decompress(archive_object, env, handle_zip_of_zips=True)
-            nimp.artifacts.save_last_deployed_revision(env)
-
-            return True
-        except Exception as ex: #pylint: disable=broad-except
-            logging.error('Decompression of archive %s has failed: %s', archive_location, ex)
-            return False
-        finally:
-            if archive_object is not None:
-                archive_object.close()
-
-    @staticmethod
-    def _decompress(file, env, handle_zip_of_zips=False):
-        zip_file = zipfile.ZipFile(file)
-        go_deeper = False
-        if handle_zip_of_zips:
-            go_deeper = True
-            for name in zip_file.namelist():
-                if not name.endswith('.zip'):
-                    go_deeper = False
-                    break
-        for name in zip_file.namelist():
-            if go_deeper:
-                DownloadFileset._decompress(io.BytesIO(zip_file.read(name)), env)
-            else:
-                logging.info('Extracting %s to %s', name, env.root_dir)
-                zip_file.extract(name, nimp.system.sanitize_path(env.format(env.root_dir)))
-                filename = nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), name))
-                DownloadFileset._make_executable_if_needed(filename)
-
-    @staticmethod
-    def _custom_copyfileobj(fsrc, fdst, source_size, length=16*1024):
-        ''' Custom version of shutil.copyfileobj tailored to add progress logging
-            for our streaming/download/http copyfileobj case '''
-        copied = 0
-        copied_perc = 0
-        download_log_perc_interval = 5
-        while 1:
-            buf = fsrc.read(length)
-            if not buf:
-                break
-            fdst.write(buf)
-            copied += len(buf)
-            new_copied_perc = int(copied * 100 / source_size)
-            if new_copied_perc >= copied_perc + download_log_perc_interval:
-                copied_perc = new_copied_perc
-                logging.info('%d%% downloaded', copied_perc)
-
-    @staticmethod
-    def _make_executable_if_needed(filename):
-        # If this is an executable or a script, make it +x
-        if MAGIC is not None:
-            filetype = MAGIC.from_file(filename)
-            if isinstance(filetype, bytes):
-                # Older versions of python-magic return bytes instead of a string
-                filetype = filetype.decode('ascii')
-
-            if 'executable' in filetype or 'script' in filetype:
-                try:
-                    logging.info('Making executable because of file type: %s', filetype)
-                    file_stat = os.stat(filename)
-                    os.chmod(filename, file_stat.st_mode | stat.S_IEXEC)
-                except Exception: #pylint: disable=broad-except
-                    pass
+            if exact_revision is not None:
+                return next(a for a in all_artifacts if a['revision'] == exact_revision)
+            if minimum_revision is not None and maximum_revision is not None:
+                return next(a for a in all_artifacts if int(a['revision']) >= int(minimum_revision) and int(a['revision']) <= int(maximum_revision))
+            if minimum_revision is not None:
+                return next(a for a in all_artifacts if int(a['revision']) >= int(minimum_revision))
+            if maximum_revision is not None:
+                return next(a for a in all_artifacts if int(a['revision']) <= int(maximum_revision))
+            return next(a for a in all_artifacts)
+        except StopIteration:
+            raise ValueError('Matching artifact not found')
