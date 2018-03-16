@@ -47,6 +47,20 @@ def try_import(module_name):
             logging.warning('%s', ex)
         return None
 
+def try_execute(message, action, exception_types, attempt_maximum = 5, retry_delay = 10):
+    ''' Attempts to execute an action, and retries when catching one of the specified exceptions '''
+    logging.info(message)
+    attempt = 1
+    while attempt <= attempt_maximum:
+        try:
+            return action()
+        except exception_types as exception:
+            logging.warning('%s (Attempt %s of %s)', exception, attempt, attempt_maximum)
+            if attempt >= attempt_maximum:
+                raise exception
+            time.sleep(retry_delay)
+            attempt += 1
+
 def split_path(path):
     ''' Returns an array of path elements '''
     splitted_path = []
