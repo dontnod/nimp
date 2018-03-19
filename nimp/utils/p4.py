@@ -29,6 +29,7 @@ import os.path
 import re
 
 import nimp.sys.process
+import nimp.system
 
 _CREATE_CHANGELIST_FORM_TEMPLATE = "\
 Change: new\n\
@@ -229,9 +230,15 @@ class P4:
         desc, = next(self._parse_command_output(["describe", cl_number], r"\.\.\. desc (.*)"))
         return desc
 
+    def get_current_changelist(self, path):
+        ''' Returns the current changelist for the workspace '''
+        perforce_path = (nimp.system.sanitize_path(path) + '/...') if path else '...'
+        cl_number, = next(self._parse_command_output(['changes', '--max', '1', perforce_path + '#have'], r'\.\.\. change (\d+)'))
+        return cl_number
+
     def get_last_synced_changelist(self):
         ''' Returns the last synced changelist '''
-        cl_number, = next(self._parse_command_output(['changes', '-s', "submitted", '-m 1'], r'\.\.\. change (\d+)'))
+        cl_number, = next(self._parse_command_output(['changes', '-s', 'submitted', '-m 1'], r'\.\.\. change (\d+)'))
 
         if cl_number is None:
             return None
