@@ -73,7 +73,7 @@ class Package(nimp.command.Command):
 
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'revision')
+        nimp.command.add_common_arguments(parser, 'configuration', 'platform')
 
         command_steps = [ 'initialize', 'precook', 'cook', 'postcook', 'prestage', 'stage', 'package' ]
         parser.add_argument('--steps', help = 'Only run specified steps instead of all of them',
