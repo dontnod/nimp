@@ -33,5 +33,4 @@ __all__ = [
     'upload',
     'run',
     'package',
-    'ship',
 ]
