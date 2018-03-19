@@ -45,6 +45,7 @@ class DownloadFileset(nimp.command.Command):
         parser.add_argument('--max-revision', help = 'Find a revision older or equal to this one', metavar = '<revision>')
         parser.add_argument('--min-revision', help = 'Find a revision newer or equal to this one', metavar = '<revision>')
         parser.add_argument('--destination', help = 'Set a destination relative to the workspace', metavar = '<path>')
+        parser.add_argument('--track', help = 'Track the installed revision in the workspace status', choices = [ 'binaries', 'symbols' ])
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to download')
 
         return True
@@ -75,8 +76,12 @@ class DownloadFileset(nimp.command.Command):
         nimp.artifacts.install_artifact(local_artifact_path, install_directory)
         shutil.rmtree(local_artifact_path)
 
-        env.revision = artifact_to_download['revision']
-        nimp.artifacts.save_last_deployed_revision(env)
+        if env.track:
+            workspace_status = nimp.system.load_status(env)
+            old_revision = workspace_status[env.track][env.platform] if env.platform in workspace_status[env.track] else None
+            logging.info('Tracking for %s: %s => %s', env.track, old_revision, artifact_to_download['revision'])
+            workspace_status[env.track][env.platform] = artifact_to_download['revision']
+            nimp.system.save_status(env, workspace_status)
 
         return True
 

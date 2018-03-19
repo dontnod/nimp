@@ -188,28 +188,3 @@ def _try_make_executable(file_path):
                 os.chmod(file_path, file_stat.st_mode | stat.S_IEXEC)
             except OSError as exception:
                 logging.warning('Failed to make file executable: %s (FilePath: %s)', exception, file_path)
-
-
-def load_or_save_last_deployed_revision(env, mode):
-    ''' Loads or saves the last deployed revision '''
-    last_deployed_revision = env.revision if mode == 'save' else None
-    memo_path = nimp.system.sanitize_path(os.path.abspath(os.path.join(env.root_dir, '.nimp', 'utils', 'last_deployed_revision.txt')))
-    if mode == 'save':
-        nimp.system.safe_makedirs(os.path.dirname(memo_path))
-        with open(memo_path, 'w') as memo_file:
-            memo_file.write(last_deployed_revision)
-    elif mode == 'load':
-        if os.path.isfile(memo_path):
-            with open(memo_path, 'r') as memo_file:
-                last_deployed_revision = memo_file.read()
-    return last_deployed_revision
-
-
-def save_last_deployed_revision(env):
-    ''' Saves the last deployed revision '''
-    load_or_save_last_deployed_revision(env, 'save')
-
-
-def load_last_deployed_revision(env):
-    ''' Loads the last deployed revision '''
-    return load_or_save_last_deployed_revision(env, 'load')

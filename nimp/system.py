@@ -22,6 +22,7 @@
 ''' System utilities (paths, processes) '''
 
 import fnmatch
+import json
 import logging
 import os
 import re
@@ -471,3 +472,19 @@ class FileMapper(object):
 
 def _identity_mapper(src, dest):
     yield src, dest
+
+
+def load_status(env):
+    ''' Loads the workspace status '''
+    status_file_path = os.path.join(env.root_dir, '.nimp', 'status.json')
+    if not os.path.exists(status_file_path):
+        return { 'binaries': {}, 'symbols': {}, }
+    with open(status_file_path) as status_file:
+        return json.load(status_file)
+
+
+def save_status(env, status):
+    ''' Saves the workspace status '''
+    status_file_path = os.path.join(env.root_dir, '.nimp', 'status.json')
+    with open(status_file_path, 'w') as status_file:
+        return json.dump(status, status_file, indent = 4)
