@@ -22,6 +22,7 @@
 ''' Provides functions for build artifacts '''
 
 import copy
+import hashlib
 import logging
 import os
 import re
@@ -97,9 +98,11 @@ def download_artifact(workspace_directory, artifact_uri):
 
     download_directory = os.path.join(workspace_directory, '.nimp', 'downloads')
     artifact_name = os.path.basename(artifact_uri.rstrip('/'))
-    local_artifact_path = os.path.join(download_directory, artifact_name)
-    if local_artifact_path.endswith('.zip'):
-        local_artifact_path = local_artifact_path[:-4]
+    if artifact_name.endswith('.zip'):
+        artifact_name = artifact_name[:-4]
+    # Use a hash instead of the artifact name to reduce path length
+    artifact_hash = hashlib.md5(artifact_name.encode('utf-8')).hexdigest()
+    local_artifact_path = os.path.join(download_directory, artifact_hash[:10])
 
     if os.path.exists(local_artifact_path + '.zip'):
         os.remove(local_artifact_path + '.zip')
