@@ -236,9 +236,9 @@ class Package(nimp.command.Command):
                 with open(title_json_path) as title_json_file:
                     transform_parameters = json.load(title_json_file)
                 transform_parameters['title_directory'] = title_directory.lower()
-                region = transform_parameters['region'].upper()
+                transform_parameters['region'] = transform_parameters['region'].upper()
                 for current_configuration in configuration.split('+'):
-                    layout_file_name = '{project}-{region}-{current_configuration}.gp4'.format(**locals())
+                    layout_file_name = '{project}-{transform_parameters[region]}-{current_configuration}.gp4'.format(**locals())
                     layout_destination = nimp.system.sanitize_path(stage_directory + '/' + layout_file_name)
                     transform_parameters['configuration'] = current_configuration.lower()
                     Package._stage_and_transform_file(layout_file_path, layout_destination, current_configuration, transform_parameters)
