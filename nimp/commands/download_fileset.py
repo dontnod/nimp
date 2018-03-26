@@ -72,14 +72,14 @@ class DownloadFileset(nimp.command.Command):
             lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']),
             OSError)
 
-        logging.info('Installing %s', artifact_to_download['uri'])
+        logging.info('Installing %s in %s', artifact_to_download['uri'], install_directory)
         nimp.artifacts.install_artifact(local_artifact_path, install_directory)
         shutil.rmtree(local_artifact_path)
 
         if env.track:
             workspace_status = nimp.system.load_status(env)
             old_revision = workspace_status[env.track][env.platform] if env.platform in workspace_status[env.track] else None
-            logging.info('Tracking for %s: %s => %s', env.track, old_revision, artifact_to_download['revision'])
+            logging.info('Tracking for %s %s: %s => %s', env.track, env.platform, old_revision, artifact_to_download['revision'])
             workspace_status[env.track][env.platform] = artifact_to_download['revision']
             nimp.system.save_status(env, workspace_status)
 
