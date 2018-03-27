@@ -117,7 +117,7 @@ class Package(nimp.command.Command):
                            env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title, env.compress, env.patch)
         if 'package' in env.steps:
             Package._package_for_platform(env, project_directory, env.game, env.ue4_platform, env.ue4_config,
-                                          stage_directory, package_directory, env.ps4_title, env.final)
+                                          stage_directory, package_directory, env.ps4_title, env.final, env.patch)
 
         return True
 
@@ -172,7 +172,7 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def _stage(env, engine_directory, project_directory, stage_directory,
-               project, platform, configuration, content_pak_list, layout_file_path, ps4_title_collection, compress, patch):
+               project, platform, configuration, content_pak_list, layout_file_path, ps4_title_collection, compress, is_patch):
         stage_directory = nimp.system.sanitize_path(stage_directory)
 
         if platform in [ 'PS4', 'XboxOne' ] and not layout_file_path:
@@ -195,7 +195,7 @@ class Package(nimp.command.Command):
             raise RuntimeError('Stage failed')
 
         pak_source_directory = None
-        if patch:
+        if is_patch:
             pak_source_directory = '{stage_directory}-PatchBase/{project}/Content/Paks'.format(**locals())
             if platform == 'PS4':
                 pak_source_directory = pak_source_directory.lower()
@@ -363,7 +363,7 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def _package_for_platform(env, project_directory, project, platform, configuration,
-                              source, destination, ps4_title_collection, is_final_submission):
+                              source, destination, ps4_title_collection, is_final_submission, is_patch):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
 
@@ -423,7 +423,7 @@ class Package(nimp.command.Command):
                     layout_file = source + '/' + project + '-' + region + '-' + current_configuration + '.gp4'
                     output_format = 'pkg'
                     if is_final_submission:
-                        if title_data['storagetype'].startswith('bd'):
+                        if not is_patch and title_data['storagetype'].startswith('bd'):
                             output_format += '+iso'
                         output_format += '+subitem'
 
