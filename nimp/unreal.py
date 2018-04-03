@@ -45,8 +45,25 @@ def load_arguments(env):
 
     return True
 
+def get_configuration_platform(ue4_platform):
+    ''' Gets the platform name used for configuration files '''
+    # From PlatformProperties IniPlatformName
+    platform_map = {
+        "Android": "Android",
+        "IOS": "IOS",
+        "Linux": "Linux",
+        "Mac": "Mac",
+        "PS4": "PS4",
+        "Win32": "Windows",
+        "Win64": "Windows",
+        "XboxOne": "XboxOne",
+    }
+    return platform_map[ue4_platform]
+
 def get_cook_platform(ue4_platform):
-    platforms = {
+    ''' Gets the platform name used for cooking assets '''
+    # From Automation GetCookPlatform
+    platform_map = {
         "Android": "Android",
         "IOS": "IOS",
         "Linux": "LinuxNoEditor",
@@ -56,7 +73,7 @@ def get_cook_platform(ue4_platform):
         "Win64": "WindowsNoEditor",
         "XboxOne": "XboxOne",
     }
-    return platforms[ue4_platform]
+    return platform_map[ue4_platform]
 
 def build(env):
     ''' Builds an Unreal Engine Project. config and platform arguments should
