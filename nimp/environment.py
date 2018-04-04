@@ -242,15 +242,12 @@ class Environment:
 
 def execute_hook(hook_name, *args):
     ''' Executes a hook in the .nimp/hooks directory '''
-    logging.debug('Looking for %s hook in .nimp/hooks', hook_name)
     hook_module = nimp.system.try_import('hooks.' + hook_name)
     if hook_module is None:
+        logging.info('No hook %s', hook_name)
         return True
-    if not hasattr(hook_module, 'run'):
-        logging.debug('No "run" method found in .nimp/hooks/%s module', hook_name)
-        return True
-
-    return getattr(hook_module, 'run')(*args)
+    logging.info('Running hook %s', hook_name)
+    return hook_module.run(*args)
 
 def read_config_file(filename):
     ''' Reads a config file and returns a dictionary with values defined in it '''

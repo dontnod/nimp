@@ -29,8 +29,9 @@ __all__ = [
     'download_fileset',
     'fileset',
     'p4',
-    'upload_fileset',
-    'upload',
-    'run',
     'package',
+    'run',
+    'run_hook',
+    'upload',
+    'upload_fileset',
 ]
