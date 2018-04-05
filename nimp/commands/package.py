@@ -96,20 +96,25 @@ class Package(nimp.command.Command):
     def run(self, env):
         engine_directory = env.format('{root_dir}/Engine')
         project_directory = env.format('{root_dir}/{game}')
+        configuration_directory = env.format('{root_dir}/{game}/Config')
         stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/' + nimp.unreal.get_cook_platform(env.ue4_platform))
         package_directory = env.format('{root_dir}/{game}/Saved/Packages/' + nimp.unreal.get_cook_platform(env.ue4_platform))
 
+        variant_configuration_directory = configuration_directory + '/Variants/Active'
+        if os.path.exists(variant_configuration_directory):
+            configuration_directory = variant_configuration_directory
+
         if env.ue4_platform == 'PS4' and not env.ps4_title:
-            ini_file_path = project_directory + '/Config/PS4/PS4Engine.ini'
+            ini_file_path = configuration_directory + '/PS4/PS4Engine.ini'
             env.ps4_title = [ _get_ini_value(ini_file_path, 'TitleID') ]
 
         if 'cook' in env.steps:
             Package._cook(env, engine_directory, env.game, env.ue4_platform, env.iterate)
         if 'stage' in env.steps:
-            Package._stage(env, engine_directory, project_directory, stage_directory,
+            Package._stage(env, engine_directory, project_directory, configuration_directory, stage_directory,
                            env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title, env.compress, env.patch)
         if 'package' in env.steps:
-            Package._package_for_platform(env, project_directory, env.game, env.ue4_platform, env.ue4_config,
+            Package._package_for_platform(env, project_directory, configuration_directory, env.game, env.ue4_platform, env.ue4_config,
                                           stage_directory, package_directory, env.ps4_title, env.final, env.patch)
 
         return True
@@ -141,7 +146,7 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage(env, engine_directory, project_directory, stage_directory,
+    def _stage(env, engine_directory, project_directory, configuration_directory, stage_directory,
                project, platform, configuration, content_pak_list, layout_file_path, ps4_title_collection, compress, is_patch):
         stage_directory = nimp.system.sanitize_path(stage_directory)
         logging.info('=== Stage ===')
@@ -193,7 +198,7 @@ class Package(nimp.command.Command):
                 pdb_file_name = project + (('-XboxOne-' + current_configuration) if current_configuration != 'Development' else '') + '.pdb'
                 Package._stage_file(project_directory + '/Binaries/XboxOne/' + pdb_file_name,
                                     stage_directory + '/' + project + '/Binaries/XboxOne/' + pdb_file_name)
-            Package._stage_xbox_manifest(project_directory, stage_directory, configuration)
+            Package._stage_xbox_manifest(configuration_directory, stage_directory, configuration)
             # Dummy files for empty chunks
             with open(nimp.system.sanitize_path(stage_directory + '/LaunchChunk.bin'), 'w') as empty_file:
                 empty_file.write('\0')
@@ -288,11 +293,11 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage_xbox_manifest(project_directory, stage_directory, configuration):
+    def _stage_xbox_manifest(configuration_directory, stage_directory, configuration):
         os.remove(nimp.system.sanitize_path(stage_directory + '/AppxManifest.xml'))
         os.remove(nimp.system.sanitize_path(stage_directory + '/appdata.bin'))
 
-        manifest_source = project_directory + '/Config/XboxOne/AppxManifest.xml'
+        manifest_source = configuration_directory + '/XboxOne/AppxManifest.xml'
         for current_configuration in configuration.split('+'):
             current_stage_directory = stage_directory + '/Manifests/' + current_configuration
             os.makedirs(nimp.system.sanitize_path(current_stage_directory))
@@ -335,7 +340,7 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _package_for_platform(env, project_directory, project, platform, configuration,
+    def _package_for_platform(env, project_directory, configuration_directory, project, platform, configuration,
                               source, destination, ps4_title_collection, is_final_submission, is_patch):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
@@ -353,7 +358,7 @@ class Package(nimp.command.Command):
 
         elif platform == 'XboxOne':
             package_tool_path = nimp.system.sanitize_path(os.environ['DurangoXDK'] + '/bin/MakePkg.exe')
-            ini_file_path = nimp.system.sanitize_path(project_directory + '/Config/XboxOne/XboxOneEngine.ini')
+            ini_file_path = nimp.system.sanitize_path(configuration_directory + '/XboxOne/XboxOneEngine.ini')
             product_id = _get_ini_value(ini_file_path, 'ProductId')
             content_id = _get_ini_value(ini_file_path, 'ContentId')
 
