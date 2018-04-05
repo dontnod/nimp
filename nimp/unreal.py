@@ -169,6 +169,9 @@ def _ue4_build(env):
         if env.platform == 'linux' and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/CrossCompilerTool/CrossCompilerTool.Build.cs'))):
             tools += [ 'CrossCompilerTool', ]
 
+        if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
+            tools += [ 'DNEAssetRegistryQuery', ]
+
         if env.platform == 'win64':
             tools += [ 'DotNETUtilities',
                        'AutomationTool',
