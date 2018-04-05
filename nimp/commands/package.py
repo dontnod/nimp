@@ -75,17 +75,16 @@ class Package(nimp.command.Command):
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'free_parameters')
 
-        command_steps = [ 'initialize', 'precook', 'cook', 'postcook', 'prestage', 'stage', 'package' ]
+        command_steps = [ 'cook', 'stage', 'package' ]
         parser.add_argument('--steps', help = 'Only run specified steps instead of all of them',
                             choices = command_steps, default = command_steps, nargs = '+')
-        parser.add_argument('--target', help = 'Set the target configuration to use')
         parser.add_argument('--layout', help = 'Set the layout file to use for the package (for consoles)')
         parser.add_argument('--patch', help = 'Create a patch based on previously staged data', action = 'store_true')
         parser.add_argument('--final', help = 'Enable package options for final submission', action = 'store_true')
         parser.add_argument('--iterate', help = 'Enable iterative cooking', action = 'store_true')
         parser.add_argument('--compress', help = 'Enable pak file compression', action = 'store_true')
         parser.add_argument('--ps4-title', metavar = '<directory>', nargs = '+',
-            help = 'Set the directory for the target title files (PS4 only, default to Unreal TitleID)')
+                            help = 'Set the directory for the target title files (PS4 only, default to Unreal TitleID)')
 
         return True
 
@@ -104,14 +103,8 @@ class Package(nimp.command.Command):
             ini_file_path = project_directory + '/Config/PS4/PS4Engine.ini'
             env.ps4_title = [ _get_ini_value(ini_file_path, 'TitleID') ]
 
-        if 'initialize' in env.steps:
-            Package._initialize(env)
         if 'cook' in env.steps:
-            Package._cook(engine_directory, env.game, env.ue4_platform, env.iterate)
-        if 'postcook' in env.steps:
-            Package._postcook(env)
-        if 'prestage' in env.steps:
-            Package._postcook(env)
+            Package._cook(env, engine_directory, env.game, env.ue4_platform, env.iterate)
         if 'stage' in env.steps:
             Package._stage(env, engine_directory, project_directory, stage_directory,
                            env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title, env.compress, env.patch)
@@ -123,26 +116,10 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _initialize(env):
-        if env.target:
-            configuration_fileset = nimp.system.map_files(env)
-            configuration_fileset.src('{game}/Config.{target}').to('{root_dir}/{game}/Config').glob('**')
-            configuration_success = nimp.system.all_map(nimp.system.robocopy, configuration_fileset())
-            if not configuration_success:
-                raise RuntimeError('Initialize failed')
+    def _cook(env, engine_directory, project, platform, iterate):
 
-        # Deprecated hook name
-        hook_success = nimp.environment.execute_hook('preship', env)
-        if not hook_success:
-            raise RuntimeError('Initialize failed')
+        nimp.environment.execute_hook('precook', env)
 
-        hook_success = nimp.environment.execute_hook('precook', env)
-        if not hook_success:
-            raise RuntimeError('Initialize failed')
-
-
-    @staticmethod
-    def _cook(engine_directory, project, platform, iterate):
         editor = 'Linux/UE4Editor' if platform == 'Linux' else 'Win64/UE4Editor-Cmd.exe'
         cook_command = [
             nimp.system.sanitize_path(engine_directory + '/Binaries/' + editor),
@@ -157,17 +134,7 @@ class Package(nimp.command.Command):
         if cook_success != 0:
             raise RuntimeError('Cook failed')
 
-
-    @staticmethod
-    def _postcook(env):
-        hook_success = nimp.environment.execute_hook('postcook', env)
-        if not hook_success:
-            raise RuntimeError('Post-cook failed')
-
-        # Deprecated hook name
-        hook_success = nimp.environment.execute_hook('prestage', env)
-        if not hook_success:
-            raise RuntimeError('Pre-stage failed')
+        nimp.environment.execute_hook('postcook', env)
 
 
     @staticmethod
