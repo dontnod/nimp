@@ -117,6 +117,7 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def _cook(env, engine_directory, project, platform, iterate):
+        logging.info('=== Cook ===')
 
         nimp.environment.execute_hook('precook', env)
 
@@ -136,11 +137,14 @@ class Package(nimp.command.Command):
 
         nimp.environment.execute_hook('postcook', env)
 
+        logging.info('')
+
 
     @staticmethod
     def _stage(env, engine_directory, project_directory, stage_directory,
                project, platform, configuration, content_pak_list, layout_file_path, ps4_title_collection, compress, is_patch):
         stage_directory = nimp.system.sanitize_path(stage_directory)
+        logging.info('=== Stage ===')
 
         if platform in [ 'PS4', 'XboxOne' ] and not layout_file_path:
             raise ValueError('Layout is required to stage for ' + platform)
@@ -228,6 +232,8 @@ class Package(nimp.command.Command):
                 shutil.move(binary_path, binary_path.replace(project + '.exe', project + '-XboxOne-Development.exe'))
             if os.path.exists(symbols_path):
                 shutil.move(symbols_path, symbols_path.replace(project + '-symbols.bin', project + '-XboxOne-Development-symbols.bin'))
+
+        logging.info('')
 
 
     @staticmethod
@@ -333,6 +339,7 @@ class Package(nimp.command.Command):
                               source, destination, ps4_title_collection, is_final_submission, is_patch):
         source = nimp.system.sanitize_path(source)
         destination = nimp.system.sanitize_path(destination)
+        logging.info('=== Package ===')
 
         if platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
             destination += '/' + ('Final' if is_final_submission else 'Default')
@@ -342,7 +349,7 @@ class Package(nimp.command.Command):
             package_fileset.src(source[ len(env.root_dir) + 1 : ]).to(destination).load_set('stage_to_package')
             package_success = nimp.system.all_map(nimp.system.robocopy, package_fileset())
             if not package_success:
-                raise RuntimeError('Package failed')
+                raise RuntimeError('Package generation failed')
 
         elif platform == 'XboxOne':
             package_tool_path = nimp.system.sanitize_path(os.environ['DurangoXDK'] + '/bin/MakePkg.exe')
@@ -372,7 +379,7 @@ class Package(nimp.command.Command):
                 for manifest_file in manifest_file_collection:
                     os.remove(nimp.system.sanitize_path(source + '/' + manifest_file))
                 if package_success != 0:
-                    raise RuntimeError('Package failed')
+                    raise RuntimeError('Package generation failed')
 
         elif platform == 'PS4':
             package_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
@@ -406,7 +413,7 @@ class Package(nimp.command.Command):
                     os.makedirs(current_destination)
                     package_success = nimp.sys.process.call(create_package_command)
                     if package_success != 0:
-                        raise RuntimeError('Package failed')
+                        raise RuntimeError('Package generation failed')
 
                     # The img_create command already does the check when invoked for submission
                     # Configurations other than Shipping always output errors because of debug binaries
@@ -427,3 +434,5 @@ class Package(nimp.command.Command):
                         validation_success = nimp.sys.process.call(validate_package_command)
                         if validation_success != 0:
                             logging.warning('Package validation failed')
+
+    logging.info('')
