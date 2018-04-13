@@ -45,6 +45,16 @@ def load_arguments(env):
 
     return True
 
+def get_host_platform():
+    ''' Get the Unreal platform for the host platform '''
+    if platform.system() == 'Windows':
+        return 'Win64'
+    elif platform.system() == 'Linux':
+        return 'Linux'
+    elif platform.system() == 'Darwin':
+        return 'Mac'
+    raise ValueError('Unsupported platform: ' + platform.system())
+
 def get_configuration_platform(ue4_platform):
     ''' Gets the platform name used for configuration files '''
     # From PlatformProperties IniPlatformName

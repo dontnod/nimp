@@ -109,7 +109,7 @@ class Package(nimp.command.Command):
             env.ps4_title = [ _get_ini_value(ini_file_path, 'TitleID') ]
 
         if 'cook' in env.steps:
-            Package._cook(env, engine_directory, env.game, env.ue4_platform, env.iterate)
+            Package._cook(env, engine_directory, project_directory, configuration_directory, env.game, env.ue4_platform, env.iterate)
         if 'stage' in env.steps:
             Package._stage(env, engine_directory, project_directory, configuration_directory, stage_directory,
                            env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title, env.compress, env.patch)
@@ -121,24 +121,42 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _cook(env, engine_directory, project, platform, iterate):
+    def _cook(env, engine_directory, project_directory, configuration_directory, project, platform, iterate):
         logging.info('=== Cook ===')
 
         nimp.environment.execute_hook('precook', env)
 
-        editor = 'Linux/UE4Editor' if platform == 'Linux' else 'Win64/UE4Editor-Cmd.exe'
         cook_command = [
-            nimp.system.sanitize_path(engine_directory + '/Binaries/' + editor),
+            engine_directory + '/Binaries/' + nimp.unreal.get_host_platform() + '/UE4Editor',
             project, '-Run=Cook', '-TargetPlatform=' + nimp.unreal.get_cook_platform(platform),
             '-BuildMachine', '-Unattended', '-StdOut', '-UTF8Output',
         ]
         if iterate:
             cook_command += [ '-Iterate', '-IterateHash' ]
 
-        # Heartbeart for background shader compilation and existing cook verification
-        cook_success = nimp.sys.process.call(cook_command, heartbeat = 60)
-        if cook_success != 0:
-            raise RuntimeError('Cook failed')
+        configuration_file_path = configuration_directory + '/DefaultEngine.ini'
+        sdb_path = project_directory + '/Saved/ShaderDebugInfo/' + platform
+
+        if not os.path.exists(sdb_path):
+            os.makedirs(sdb_path)
+        shutil.move(configuration_file_path, configuration_file_path + '.bak')
+        shutil.copyfile(configuration_file_path + '.bak', configuration_file_path)
+
+        try:
+            with open(configuration_file_path, 'a') as configuration_file:
+                configuration_file.write('\n')
+                configuration_file.write('[DevOptions.Shaders]\n')
+                configuration_file.write('ShaderPDBRoot=' + os.path.abspath(sdb_path) + '\n')
+                configuration_file.write('\n')
+
+            # Heartbeart for background shader compilation and existing cook verification
+            cook_success = nimp.sys.process.call(cook_command, heartbeat = 60)
+            if cook_success != 0:
+                raise RuntimeError('Cook failed')
+
+        finally:
+            os.remove(configuration_file_path)
+            shutil.move(configuration_file_path + '.bak', configuration_file_path)
 
         nimp.environment.execute_hook('postcook', env)
 
