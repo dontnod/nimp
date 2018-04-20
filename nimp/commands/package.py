@@ -108,11 +108,14 @@ class Package(nimp.command.Command):
             ini_file_path = configuration_directory + '/PS4/PS4Engine.ini'
             env.ps4_title = [ _get_ini_value(ini_file_path, 'TitleID') ]
 
+        compression_exclusions = env.content_compression_exclusions if hasattr(env, 'content_compression_exclusions') else []
+
         if 'cook' in env.steps:
             Package._cook(env, engine_directory, project_directory, configuration_directory, env.game, env.ue4_platform, env.iterate)
         if 'stage' in env.steps:
             Package._stage(env, engine_directory, project_directory, configuration_directory, stage_directory,
-                           env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title, env.compress, env.patch)
+                           env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title,
+                           env.compress, compression_exclusions, env.patch)
         if 'package' in env.steps:
             Package._package_for_platform(env, project_directory, configuration_directory, env.game, env.ue4_platform, env.ue4_config,
                                           stage_directory, package_directory, env.ps4_title, env.final, env.patch)
@@ -165,7 +168,8 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def _stage(env, engine_directory, project_directory, configuration_directory, stage_directory,
-               project, platform, configuration, content_pak_list, layout_file_path, ps4_title_collection, compress, is_patch):
+               project, platform, configuration, content_pak_list, layout_file_path, ps4_title_collection,
+               compress, compression_exclusions, is_patch):
         stage_directory = nimp.system.sanitize_path(stage_directory)
         logging.info('=== Stage ===')
 
@@ -181,8 +185,6 @@ class Package(nimp.command.Command):
             '-Project=' + project, '-TargetPlatform=' + platform, '-ClientConfig=' + configuration,
             '-SkipCook', '-Stage', '-Pak', '-SkipPak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
         ]
-        if compress:
-            stage_command += [ '-Compressed' ]
 
         stage_success = nimp.sys.process.call(stage_command)
         if stage_success != 0:
@@ -199,7 +201,8 @@ class Package(nimp.command.Command):
         os.makedirs(pak_destination_directory)
         for content_pak in content_pak_list:
             Package._create_pak_file(env, engine_directory, project_directory, project, platform,
-                                     content_pak, pak_source_directory, pak_destination_directory, compress)
+                                     content_pak, pak_source_directory, pak_destination_directory,
+                                     compress, compression_exclusions)
 
         # Stage platform specific files
         if platform == 'PS4':
@@ -260,7 +263,7 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _create_pak_file(env, engine_directory, project_directory, project, platform, pak_name, source, destination, compress):
+    def _create_pak_file(env, engine_directory, project_directory, project, platform, pak_name, source, destination, compress, compression_exclusions):
         pak_tool = 'Linux/UnrealPak' if platform == 'Linux' else 'Win64/UnrealPak.exe'
         pak_tool_path = nimp.system.sanitize_path(engine_directory + '/Binaries/' + pak_tool)
         pak_file_name = project + '-' + nimp.unreal.get_cook_platform(platform) + (('-' + pak_name) if pak_name else '')
@@ -283,16 +286,14 @@ class Package(nimp.command.Command):
 
         with open(manifest_file_path, 'w') as manifest_file:
             for src, dst in all_files:
-                manifest_file.write('"%s" "%s"\n' % (os.path.abspath(src), '../../../' + dst))
+                options = '-Compress' if compress and os.path.basename(src) not in compression_exclusions else ''
+                manifest_file.write('"%s" "%s" %s\n' % (os.path.abspath(src), '../../../' + dst, options))
 
         pak_command = [
             pak_tool_path, os.path.abspath(pak_file_path),
             '-Create=' + os.path.abspath(manifest_file_path),
             '-Order=' + os.path.abspath(order_file_path),
         ]
-
-        if compress:
-            pak_command += [ '-Compress' ]
 
         if platform == 'Win64':
             pak_command += [ '-PatchPaddingAlign=2048' ]
