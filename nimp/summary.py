@@ -24,8 +24,13 @@ values and command line parameters set for this nimp execution '''
 
 import collections
 import logging
+import os
 import re
 import sys
+
+if "NIMP_LOG_FILE" in os.environ:
+    from logging.handlers import WatchedFileHandler as DNELogAlllHandler
+
 
 class SummaryHandler(logging.Handler):
     """ Base class for summary handler.
@@ -33,6 +38,12 @@ class SummaryHandler(logging.Handler):
         a comprehensive summary of what went wrong """
     def __init__(self, env):
         super().__init__(logging.DEBUG)
+
+        if "NIMP_LOG_FILE" in os.environ:
+            self.log_all_handler = DNELogAlllHandler(os.environ["NIMP_LOG_FILE"])
+            self.log_all_handler.setLevel(logging.DEBUG)
+            self.log_all_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+
         self._env = env
         self._ignore_patterns = []
         self._error_patterns = []
@@ -137,11 +148,15 @@ class SummaryHandler(logging.Handler):
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(logging.Formatter('%(message)s'))
         child_processes_logger.addHandler(handler)
+        if hasattr(handler, "log_all_handler"):
+            child_processes_logger.addHandler(handler.log_all_handler)
 
         # Enables warnings and errors recording
         if self._env.summary is not None:
             root_logger.addHandler(self)
             child_processes_logger.addHandler(self)
+            if hasattr(self, "log_all_handler"):
+                child_processes_logger.addHandler(self.log_all_handler)
 
         return self
 

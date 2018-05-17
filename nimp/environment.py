@@ -139,6 +139,10 @@ class Environment:
 
         summary_format = getattr(self, 'summary_format')
         with _SUMMARY_HANDLERS[summary_format](self) as log_handler:
+            if "NIMP_LOG_FILE" in os.environ:
+                # PATCHING ROOT LOGGER
+                logging.getLogger().addHandler(log_handler.log_all_handler)
+
             if hasattr(self, 'environment'):
                 for key, val in self.environment.items():
                     os.environ[key] = val
