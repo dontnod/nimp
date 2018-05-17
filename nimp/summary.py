@@ -29,7 +29,7 @@ import re
 import sys
 
 if "NIMP_LOG_FILE" in os.environ:
-    from logging.handlers import WatchedFileHandler as DNELogAlllHandler
+    from logging.handlers import WatchedFileHandler
 
 
 class SummaryHandler(logging.Handler):
@@ -40,7 +40,7 @@ class SummaryHandler(logging.Handler):
         super().__init__(logging.DEBUG)
 
         if "NIMP_LOG_FILE" in os.environ:
-            self.log_all_handler = DNELogAlllHandler(os.environ["NIMP_LOG_FILE"])
+            self.log_all_handler = WatchedFileHandler(os.environ["NIMP_LOG_FILE"])
             self.log_all_handler.setLevel(logging.DEBUG)
             self.log_all_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
 
