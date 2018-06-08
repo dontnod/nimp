@@ -318,21 +318,9 @@ class Package(nimp.command.Command):
 
         manifest_source = configuration_directory + '/XboxOne/AppxManifest.xml'
         for current_configuration in configuration.split('+'):
-            current_stage_directory = stage_directory + '/Manifests/' + current_configuration
-            os.makedirs(nimp.system.sanitize_path(current_stage_directory))
+            manifest_destination = stage_directory + '/AppxManifest-%s.xml' % current_configuration
             transform_parameters = { 'configuration': current_configuration }
-            Package._stage_and_transform_file(manifest_source, current_stage_directory + '/AppxManifest.xml', current_configuration, transform_parameters)
-
-            appdata_command = [
-                nimp.system.sanitize_path(os.environ['DurangoXDK'] + '/bin/MakePkg.exe'),
-                'appdata',
-                '/f', nimp.system.sanitize_path(current_stage_directory +  '/AppxManifest.xml'),
-                '/pd', nimp.system.sanitize_path(current_stage_directory),
-            ]
-
-            appdata_success = nimp.sys.process.call(appdata_command)
-            if appdata_success != 0:
-                raise RuntimeError('Stage failed')
+            Package._stage_and_transform_file(manifest_source, manifest_destination, current_configuration, transform_parameters)
 
 
     @staticmethod
@@ -385,7 +373,7 @@ class Package(nimp.command.Command):
                 current_destination = destination + '/' + current_configuration + ('-Final' if is_final_submission else '')
                 layout_file = source + '/' + project + '-' + current_configuration + '.xml'
                 package_command = [
-                    package_tool_path, 'pack', '/v', '/gameos', source + '/era.xvd',
+                    package_tool_path, 'pack', '/v', '/genappdata', '/gameos', source + '/era.xvd',
                     '/f', layout_file, '/d', source, '/pd', current_destination,
                     '/productid', product_id, '/contentid', content_id,
                 ]
@@ -395,13 +383,10 @@ class Package(nimp.command.Command):
 
                 _safe_remove(current_destination)
                 os.makedirs(current_destination)
-                manifest_file_collection = os.listdir(nimp.system.sanitize_path(source + '/Manifests/' + current_configuration))
-                for manifest_file in manifest_file_collection:
-                    shutil.copyfile(nimp.system.sanitize_path(source + '/Manifests/' + current_configuration + '/' + manifest_file),
-                                    nimp.system.sanitize_path(source + '/' + manifest_file))
+                shutil.copyfile(source + '/AppxManifest-%s.xml' % current_configuration, source + '/AppxManifest.xml')
                 package_success = nimp.sys.process.call(package_command)
-                for manifest_file in manifest_file_collection:
-                    os.remove(nimp.system.sanitize_path(source + '/' + manifest_file))
+                os.remove(source + '/AppxManifest.xml')
+
                 if package_success != 0:
                     raise RuntimeError('Package generation failed')
 
