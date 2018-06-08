@@ -373,11 +373,15 @@ class Package(nimp.command.Command):
                 current_destination = destination + '/' + current_configuration + ('-Final' if is_final_submission else '')
                 layout_file = source + '/' + project + '-' + current_configuration + '.xml'
                 package_command = [
-                    package_tool_path, 'pack', '/v', '/genappdata', '/gameos', source + '/era.xvd',
+                    package_tool_path, 'pack', '/v',
                     '/f', layout_file, '/d', source, '/pd', current_destination,
                     '/productid', product_id, '/contentid', content_id,
                 ]
 
+                with open(source + '/AppxManifest-%s.xml' % current_configuration) as manifest_file:
+                    manifest_content = manifest_file.read()
+                if not re.search(r'<mx:ContentPackage>true</mx:ContentPackage>', manifest_content):
+                    package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
                 if is_final_submission:
                     package_command += [ '/l' ]
 
