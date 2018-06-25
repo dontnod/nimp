@@ -226,14 +226,6 @@ def _ue4_build(env):
             logging.error("Could not build NetworkProfiler")
             success = False
 
-        if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/CrashReport/CrashReport.sln'),
-                                  'Any CPU', 'Release',
-                                  project='AutoReporter',
-                                  vs_version=vs_version,
-                                  target='Build'):
-            logging.error("Could not build AutoReporter")
-            success = False
-
         if env.platform != 'win64':
             # On Windows this is part of the main .sln, but not on Linux…
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/AutomationTool/AutomationTool_Mono.sln'),
