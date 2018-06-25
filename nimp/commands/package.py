@@ -280,7 +280,7 @@ class Package(nimp.command.Command):
         file_mapper.override(pak_name = pak_name).load_set('content_pak')
         all_files = sorted(file_mapper())
 
-        if len(all_files) == 0:
+        if (len(all_files) == 0) or (all_files == [(".", None)]):
             logging.warning('No files for %s', pak_file_name)
             return
 
