@@ -390,6 +390,7 @@ class Package(nimp.command.Command):
                 shutil.copyfile(source + '/AppxManifest-%s.xml' % current_configuration, source + '/AppxManifest.xml')
                 package_success = nimp.sys.process.call(package_command)
                 os.remove(source + '/AppxManifest.xml')
+                os.remove(source + '/appdata.bin')
 
                 if package_success != 0:
                     raise RuntimeError('Package generation failed')

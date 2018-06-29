@@ -83,6 +83,7 @@ class SummaryHandler(logging.Handler):
         ]
 
         ignore_patterns = [
+            r'  WARNING - appdata.bin is being created automatically for this package',
         ]
 
         self._compile_patterns(ignore_patterns,
