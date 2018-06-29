@@ -58,10 +58,8 @@ def _clean_environment_variables():
         del os.environ[key]
         os.environ[key] = val
 
-def main(argv = None):
+def main(argv = sys.argv):
     ''' Nimp entry point '''
-    if argv is None:
-        argv = sys.argv
 
     start = time.time()
 
