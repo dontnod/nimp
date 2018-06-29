@@ -278,7 +278,9 @@ class Package(nimp.command.Command):
         logging.info('Listing files for %s', pak_file_name)
         file_mapper = nimp.system.map_files(env)
         file_mapper.override(pak_name = pak_name).load_set('content_pak')
-        all_files = sorted(file_mapper())
+
+        # Normalize and sort paths to have a deterministic result across systems
+        all_files = sorted((src.replace('\\', '/'), dst.replace('\\', '/')) for src, dst in file_mapper())
 
         if (len(all_files) == 0) or (all_files == [(".", None)]):
             logging.warning('No files for %s', pak_file_name)
@@ -287,7 +289,7 @@ class Package(nimp.command.Command):
         with open(manifest_file_path, 'w') as manifest_file:
             for src, dst in all_files:
                 options = '-Compress' if compress and os.path.basename(src) not in compression_exclusions else ''
-                manifest_file.write('"%s" "%s" %s\n' % (os.path.abspath(src), '../../../' + dst, options))
+                manifest_file.write('"%s" "%s" %s\n' % (os.path.abspath(src).replace('\\', '/'), '../../../' + dst, options))
 
         pak_command = [
             pak_tool_path, os.path.abspath(pak_file_path),
