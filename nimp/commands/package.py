@@ -78,6 +78,7 @@ class Package(nimp.command.Command):
         command_steps = [ 'cook', 'stage', 'package' ]
         parser.add_argument('--steps', help = 'Only run specified steps instead of all of them',
                             choices = command_steps, default = command_steps, nargs = '+')
+        parser.add_argument('--variant', help = 'Set the configuration variant to use')
         parser.add_argument('--layout', help = 'Set the layout file to use for the package (for consoles)')
         parser.add_argument('--patch', help = 'Create a patch based on previously staged data', action = 'store_true')
         parser.add_argument('--final', help = 'Enable package options for final submission', action = 'store_true')
@@ -107,6 +108,14 @@ class Package(nimp.command.Command):
         if env.ue4_platform == 'PS4' and not env.ps4_title:
             ini_file_path = configuration_directory + '/PS4/PS4Engine.ini'
             env.ps4_title = [ _get_ini_value(ini_file_path, 'TitleID') ]
+
+        if env.variant:
+            env.content_paks = env.content_paks_by_variant[env.variant]
+            if not env.layout and env.platform in [ 'ps4', 'xboxone' ]:
+                layout_type = 'PatchLayout' if env.patch else 'PackageLayout'
+                layout_file_extension = 'gp4' if env.platform == 'ps4' else '.xml'
+                layout_file_name = '{type}.{variant}.{extension}'.format(type = layout_type, variant = env.variant, extension = layout_file_extension)
+                env.layout = env.format('{root_dir}/{game}/Build/{ue4_platform}/' + layout_file_name)
 
         compression_exclusions = env.content_compression_exclusions if hasattr(env, 'content_compression_exclusions') else []
 
@@ -359,6 +368,8 @@ class Package(nimp.command.Command):
             destination += '/' + ('Final' if is_final_submission else 'Default')
             _safe_remove(destination)
             os.makedirs(destination)
+
+            logging.info('Copying from %s to %s', source, destination)
             package_fileset = nimp.system.map_files(env)
             package_fileset.src(source[ len(env.root_dir) + 1 : ]).to(destination).load_set('stage_to_package')
             package_success = nimp.system.all_map(nimp.system.robocopy, package_fileset())
