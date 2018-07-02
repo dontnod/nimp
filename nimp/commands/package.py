@@ -113,7 +113,7 @@ class Package(nimp.command.Command):
             env.content_paks = env.content_paks_by_variant[env.variant]
             if not env.layout and env.platform in [ 'ps4', 'xboxone' ]:
                 layout_type = 'PatchLayout' if env.patch else 'PackageLayout'
-                layout_file_extension = 'gp4' if env.platform == 'ps4' else '.xml'
+                layout_file_extension = 'gp4' if env.platform == 'ps4' else 'xml'
                 layout_file_name = '{type}.{variant}.{extension}'.format(type = layout_type, variant = env.variant, extension = layout_file_extension)
                 env.layout = env.format('{root_dir}/{game}/Build/{ue4_platform}/' + layout_file_name)
 
