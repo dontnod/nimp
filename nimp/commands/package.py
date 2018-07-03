@@ -214,15 +214,6 @@ class Package(nimp.command.Command):
                                      compress, compression_exclusions)
 
         # Stage platform specific files
-        if platform == 'PS4':
-            orbis_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
-            for title_directory in ps4_title_collection:
-                sfo_file_path = stage_directory + '/sce_sys/' + title_directory + '/param.sfo'
-                sfx_file_path = sfo_file_path.replace('/param.sfo', '/param.sfx')
-                sfo_export_command = [ orbis_tool_path, 'sfo_export', sfo_file_path, sfx_file_path ]
-                sfo_export_success = nimp.sys.process.call(sfo_export_command)
-                if sfo_export_success != 0:
-                    raise RuntimeError('Failed to export sfo data from {sfo_file_path}'.format(**locals()))
         if platform == 'XboxOne':
             for current_configuration in configuration.split('+'):
                 pdb_file_name = project + (('-XboxOne-' + current_configuration) if current_configuration != 'Development' else '') + '.pdb'
