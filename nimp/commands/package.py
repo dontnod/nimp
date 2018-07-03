@@ -393,7 +393,9 @@ class Package(nimp.command.Command):
 
                 with open(source + '/AppxManifest-%s.xml' % current_configuration) as manifest_file:
                     manifest_content = manifest_file.read()
-                if not re.search(r'<mx:ContentPackage>true</mx:ContentPackage>', manifest_content):
+                is_dlc = re.search(r'<mx:ContentPackage>true</mx:ContentPackage>', manifest_content) is not None
+
+                if not is_dlc:
                     package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
                 if is_final_submission:
                     package_command += [ '/l' ]
@@ -403,7 +405,8 @@ class Package(nimp.command.Command):
                 shutil.copyfile(source + '/AppxManifest-%s.xml' % current_configuration, source + '/AppxManifest.xml')
                 package_success = nimp.sys.process.call(package_command)
                 os.remove(source + '/AppxManifest.xml')
-                os.remove(source + '/appdata.bin')
+                if not is_dlc:
+                    os.remove(source + '/appdata.bin')
 
                 if package_success != 0:
                     raise RuntimeError('Package generation failed')
