@@ -214,11 +214,12 @@ class Package(nimp.command.Command):
                                      compress, compression_exclusions)
 
         # Stage platform specific files
-        if platform == 'XboxOne':
+        if platform in [ 'Win64', 'XboxOne' ]:
             for current_configuration in configuration.split('+'):
-                pdb_file_name = project + (('-XboxOne-' + current_configuration) if current_configuration != 'Development' else '') + '.pdb'
-                Package._stage_file(project_directory + '/Binaries/XboxOne/' + pdb_file_name,
-                                    stage_directory + '/' + project + '/Binaries/XboxOne/' + pdb_file_name)
+                pdb_suffix = '-{platform}-{current_configuration}' if current_configuration != 'Development' else ''
+                pdb_file_path = 'Binaries/{platform}/{project}{pdb_suffix}.pdb'.format(**locals())
+                Package._stage_file(project_directory + '/' + pdb_file_path, stage_directory + '/' + project + '/' + pdb_file_path)
+        if platform == 'XboxOne':
             Package._stage_xbox_manifest(configuration_directory, stage_directory, configuration)
             # Dummy files for empty chunks
             with open(nimp.system.sanitize_path(stage_directory + '/LaunchChunk.bin'), 'w') as empty_file:
