@@ -53,6 +53,9 @@ class Build(nimp.command.Command):
                             help = 'activate FASTBuild (implies --disable-unity for now)',
                             action = 'store_true')
 
+        parser.add_argument('--vs-version',
+                            help = 'version of Visual Studio to use, if applicable')
+
         return True
 
     def is_available(self, env):
@@ -81,10 +84,13 @@ class Build(nimp.command.Command):
                 if nimp.sys.process.call(command) != 0:
                     logging.warning('NuGet could not restore packages.')
 
-            contents = open(sln).read()
-            vs_version = '14'
-            if 'MinimumVisualStudioVersion = 15' in contents:
-                vs_version = '15'
+            if hasattr(env, 'vs_version') and env.vs_version:
+                vs_version = env.vs_version
+            else:
+                contents = open(sln).read()
+                vs_version = '14'
+                if 'MinimumVisualStudioVersion = 15' in contents:
+                    vs_version = '15'
 
             return nimp.build.vsbuild(sln, platform, config,
                                       project=env.target,
