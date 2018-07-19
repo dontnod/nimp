@@ -81,6 +81,21 @@ def _find_devenv_path(vs_version):
     except Exception:
         pass
 
+    # For VS2017 and later, there is vswhere
+    if not devenv_path:
+        try:
+            vswhere_path = os.path.join(os.environ['ProgramFiles(x86)'], 'Microsoft Visual Studio/Installer/vswhere.exe')
+            result, output, _ = nimp.sys.process.call([vswhere_path], capture_output=True, hide_output=True)
+            for line in output.split('\n'):
+                line = line.strip()
+                if 'installationPath: ' in line:
+                    candidate = line.split(' ', 1)[1]
+                elif 'installationVersion: ' + vs_version in line:
+                    devenv_path = os.path.join(candidate, 'Common7/IDE/devenv.com')
+                    break
+        except Exception:
+            pass
+
     # If the registry key is unhelpful, try the environment variable
     if not devenv_path:
         vstools_path = os.getenv('VS' + vs_version + '0COMNTOOLS')
