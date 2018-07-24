@@ -217,7 +217,7 @@ class Package(nimp.command.Command):
         if platform in [ 'Win64', 'XboxOne' ]:
             for current_configuration in configuration.split('+'):
                 pdb_suffix = '-{platform}-{current_configuration}' if current_configuration != 'Development' else ''
-                pdb_file_path = 'Binaries/{platform}/{project}{pdb_suffix}.pdb'.format(**locals())
+                pdb_file_path = ('Binaries/{platform}/{project}' + pdb_suffix + '.pdb').format(**locals())
                 Package._stage_file(project_directory + '/' + pdb_file_path, stage_directory + '/' + project + '/' + pdb_file_path)
         if platform == 'XboxOne':
             Package._stage_xbox_manifest(configuration_directory, stage_directory, configuration)
