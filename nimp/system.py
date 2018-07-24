@@ -349,7 +349,7 @@ class FileMapper(object):
                 real_pattern = pattern.lower() if ignore_case else pattern
                 if fnmatch.fnmatch(real_src, real_pattern):
                     logging.debug("Excluding file %s", src)
-                    raise StopIteration()
+                    return
             yield (src, dest)
         return self.append(_exclude_mapper)
 
