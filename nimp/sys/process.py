@@ -23,6 +23,7 @@
 
 import ctypes
 import logging
+import locale
 import os
 import os.path
 import struct
@@ -92,14 +93,15 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
         capture_array = all_captures[index]
         if in_pipe is None:
             return
+        force_ascii = locale.getpreferredencoding().lower() != 'utf-8'
         while process is not None:
             logger = logging.getLogger('child_processes')
             # Try to decode as UTF-8 with BOM first; if it fails, try CP850 on
             # Windows, or UTF-8 with BOM and error substitution elsewhere. If
             # it fails again, try CP850 with error substitution.
-            encodings = [('utf-8-sig', 'strict'),
-                         ('cp850',     'strict') if nimp.sys.platform.is_windows() else ('utf-8-sig', 'replace'),
-                         ('cp850',     'replace')]
+            encodings = [('ascii', 'backslashreplace') if force_ascii else ('utf-8-sig', 'strict'),
+                         ('cp850', 'strict') if nimp.sys.platform.is_windows() else ('utf-8-sig', 'replace'),
+                         ('cp850', 'replace')]
             for data in iter(in_pipe.readline, b''):
                 for encoding, errors in encodings:
                     try:
