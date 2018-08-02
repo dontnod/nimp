@@ -84,6 +84,7 @@ class Package(nimp.command.Command):
         parser.add_argument('--final', help = 'Enable package options for final submission', action = 'store_true')
         parser.add_argument('--iterate', help = 'Enable iterative cooking', action = 'store_true')
         parser.add_argument('--compress', help = 'Enable pak file compression', action = 'store_true')
+        parser.add_argument('--trackloadpackage', help = 'Track LoadPackage calls when cooking', action = 'store_true')
         parser.add_argument('--ps4-title', metavar = '<directory>', nargs = '+',
                             help = 'Set the directory for the target title files (PS4 only, default to Unreal TitleID)')
 
@@ -120,7 +121,7 @@ class Package(nimp.command.Command):
         compression_exclusions = env.content_compression_exclusions if hasattr(env, 'content_compression_exclusions') else []
 
         if 'cook' in env.steps:
-            Package._cook(env, engine_directory, project_directory, configuration_directory, env.game, env.ue4_platform, env.iterate)
+            Package._cook(env, engine_directory, project_directory, configuration_directory, env.game, env.ue4_platform, env.iterate, env.trackloadpackage)
         if 'stage' in env.steps:
             Package._stage(env, engine_directory, project_directory, configuration_directory, stage_directory,
                            env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title,
@@ -133,7 +134,7 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _cook(env, engine_directory, project_directory, configuration_directory, project, platform, iterate):
+    def _cook(env, engine_directory, project_directory, configuration_directory, project, platform, iterate, trackloadpackage):
         logging.info('=== Cook ===')
 
         nimp.environment.execute_hook('precook', env)
@@ -145,6 +146,8 @@ class Package(nimp.command.Command):
         ]
         if iterate:
             cook_command += [ '-Iterate', '-IterateHash' ]
+        if trackloadpackage:
+            cook_command += [ '-TrackLoadPackage' ]
 
         configuration_file_path = configuration_directory + '/DefaultEngine.ini'
         sdb_path = project_directory + '/Saved/ShaderDebugInfo/' + platform
