@@ -25,6 +25,7 @@ import copy
 import hashlib
 import logging
 import os
+import platform
 import re
 import shutil
 import stat
@@ -32,10 +33,10 @@ import zipfile
 
 import requests
 
-import nimp.sys.platform
 import nimp.system
 
-magic = nimp.system.try_import('magic')
+if platform.system() != 'Windows':
+    magic = nimp.system.try_import('magic')
 
 
 def list_artifacts(artifact_pattern, format_arguments):
@@ -163,7 +164,7 @@ def install_artifact(artifact_path, destination_directory):
     if not os.path.exists(artifact_path):
         raise ValueError('Artifact does not exist: ' + artifact_path)
 
-    if not nimp.sys.platform.is_windows() and magic is None:
+    if platform.system() != 'Windows' and magic is None:
         logging.warning('python-magic is not available, executable permissions will not be set')
 
     all_files = [ file_path for file_path in _list_files(artifact_path, True) if os.path.isfile(file_path) ]
@@ -179,6 +180,9 @@ def install_artifact(artifact_path, destination_directory):
 
 
 def _try_make_executable(file_path):
+    if platform.system() == 'Windows':
+        return
+
     if magic is not None:
         file_type = magic.from_file(file_path)
         if isinstance(file_type, bytes):
