@@ -16,7 +16,7 @@ def _try_get_revision():
 # Update version below and:
 #  python3 setup.py bdist
 #  python3 setup.py sdist upload
-version_short = '0.6.2'
+version_short = '0.7.0'
 
 revision = _try_get_revision()
 version_full = version_short + ('+' + revision if revision else '')
