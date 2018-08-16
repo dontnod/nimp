@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# Copyright © 2014—2018 Dontnod Entertainment
+# Copyright (c) 2014-2018 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -21,12 +20,12 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Commands related to version packaging '''
 
+import copy
 import json
 import logging
 import os
 import re
 import shutil
-import time
 
 import nimp.commands
 import nimp.environment
@@ -36,7 +35,6 @@ import nimp.sys.process
 
 def _get_ini_value(file_path, key):
     ''' Retrieves a value from a ini file '''
-    file_path = nimp.system.sanitize_path(file_path)
     with open(file_path) as ini_file:
         ini_content = ini_file.read()
     match = re.search('^' + key + r'=(?P<value>.*?)$', ini_content, re.MULTILINE)
@@ -55,7 +53,9 @@ def _try_remove(file_path, simulate):
             if not simulate:
                 os.remove(file_path)
 
-    nimp.system.try_execute('Removing %s' % file_path, _remove, OSError)
+    # Remove can fail if Windows Explorer has a handle on the directory
+    if os.path.exists(file_path):
+        nimp.system.try_execute('Removing %s' % file_path, _remove, OSError)
 
 
 def _try_create_directory(file_path, simulate):
@@ -63,12 +63,50 @@ def _try_create_directory(file_path, simulate):
         os.makedirs(file_path, exist_ok = True)
 
 
+def _copy_file(source, destination, simulate):
+    logging.info('Copying %s to %s', source, destination)
+    if os.path.isdir(source):
+        if not simulate:
+            os.makedirs(destination, exist_ok = True)
+    elif os.path.isfile(source):
+        if not simulate:
+            os.makedirs(os.path.dirname(destination), exist_ok = True)
+            shutil.copyfile(source, destination)
+    else:
+        raise FileNotFoundError(source)
+
+
+class UnrealPackageConfiguration():
+    ''' Configuration to generate a game package from a Unreal project '''
+
+    def __init__(self):
+        self.engine_directory = None
+        self.project_directory = None
+        self.configuration_directory = None
+        self.stage_directory = None
+        self.package_directory = None
+
+        self.project = None
+        self.binary_configuration = None
+        self.worker_platform = None
+        self.cook_platform = None
+        self.target_platform = None
+        self.iterative_cook = False
+        self.cook_extra_options = []
+        self.pak_collection = []
+        self.pak_compression = False
+        self.pak_compression_exclusions = []
+        self.layout_file_path = None
+        self.is_patch = False
+        self.is_final_submission = False
+
+        self.ps4_title_collection = []
+        self.xbox_product_id = None
+        self.xbox_content_id = None
+
 
 class Package(nimp.command.Command):
     ''' Packages an unreal project for release '''
-    def __init__(self):
-        super(Package, self).__init__()
-
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'free_parameters')
@@ -95,61 +133,117 @@ class Package(nimp.command.Command):
 
 
     def run(self, env):
-        engine_directory = env.format('{root_dir}/Engine')
-        project_directory = env.format('{root_dir}/{game}')
-        configuration_directory = env.format('{root_dir}/{game}/Config')
-        stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/' + nimp.unreal.get_cook_platform(env.ue4_platform))
-        package_directory = env.format('{root_dir}/{game}/Saved/Packages/' + nimp.unreal.get_cook_platform(env.ue4_platform))
+        package_configuration = UnrealPackageConfiguration()
 
-        variant_configuration_directory = configuration_directory + '/Variants/Active'
+        env.root_dir = env.root_dir.replace('\\', '/')
+        package_configuration.engine_directory = env.format('{root_dir}/Engine')
+        package_configuration.project_directory = env.format('{root_dir}/{game}')
+        package_configuration.configuration_directory = env.format('{root_dir}/{game}/Config')
+        package_configuration.stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/' + nimp.unreal.get_cook_platform(env.ue4_platform))
+        package_configuration.package_directory = env.format('{root_dir}/{game}/Saved/Packages/' + nimp.unreal.get_cook_platform(env.ue4_platform))
+
+        variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
         if os.path.exists(variant_configuration_directory):
-            configuration_directory = variant_configuration_directory
+            package_configuration.configuration_directory = variant_configuration_directory
 
-        if env.ue4_platform == 'PS4' and not env.ps4_title:
-            ini_file_path = configuration_directory + '/PS4/PS4Engine.ini'
-            env.ps4_title = [ _get_ini_value(ini_file_path, 'TitleID') ]
+        package_configuration.project = env.game
+        package_configuration.binary_configuration = env.ue4_config
+        package_configuration.worker_platform = nimp.unreal.get_host_platform()
+        package_configuration.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
+        package_configuration.target_platform = env.ue4_platform
+        package_configuration.pak_collection = [ None ]
+        package_configuration.pak_compression = env.compress
+        package_configuration.layout_file_path = env.layout
+        package_configuration.is_patch = env.patch
+        package_configuration.is_final_submission = env.final
+
+        # Deprecated
+        if hasattr(env, 'content_paks'):
+            package_configuration.pak_collection = env.content_paks
 
         if env.variant:
-            env.content_paks = env.content_paks_by_variant[env.variant]
-            if not env.layout and env.platform in [ 'ps4', 'xboxone' ]:
+            package_configuration.pak_collection = env.content_paks_by_variant[env.variant]
+            if env.platform in [ 'ps4', 'xboxone' ]:
                 layout_type = 'PatchLayout' if env.patch else 'PackageLayout'
                 layout_file_extension = 'gp4' if env.platform == 'ps4' else 'xml'
                 layout_file_name = '{type}.{variant}.{extension}'.format(type = layout_type, variant = env.variant, extension = layout_file_extension)
-                env.layout = env.format('{root_dir}/{game}/Build/{ue4_platform}/' + layout_file_name)
+                package_configuration.layout_file_path = env.format('{root_dir}/{game}/Build/{ue4_platform}/' + layout_file_name)
 
-        compression_exclusions = env.content_compression_exclusions if hasattr(env, 'content_compression_exclusions') else []
+        if hasattr(env, 'content_compression_exclusions'):
+            package_configuration.pak_compression_exclusions = env.content_compression_exclusions
+        if env.layout:
+            package_configuration.layout_file_path = env.layout
+        if env.trackloadpackage:
+            package_configuration.cook_extra_options.append('-TrackLoadPackage')
 
+        Package._load_configuration(package_configuration, env.ps4_title)
+
+        logging.info('')
         if 'cook' in env.steps:
-            Package._cook(env, engine_directory, project_directory, configuration_directory, env.game, env.ue4_platform, env.iterate, env.trackloadpackage)
+            logging.info('=== Cook ===')
+            Package.cook(env, package_configuration)
+            logging.info('')
         if 'stage' in env.steps:
-            Package._stage(env, engine_directory, project_directory, configuration_directory, stage_directory,
-                           env.game, env.ue4_platform, env.ue4_config, env.content_paks, env.layout, env.ps4_title,
-                           env.compress, compression_exclusions, env.patch)
+            logging.info('=== Stage ===')
+            Package.stage(env, package_configuration)
+            logging.info('')
         if 'package' in env.steps:
-            Package._package_for_platform(env, project_directory, configuration_directory, env.game, env.ue4_platform, env.ue4_config,
-                                          stage_directory, package_directory, env.ps4_title, env.final, env.patch)
+            logging.info('=== Package ===')
+            Package.package_for_platform(env, package_configuration)
+            logging.info('')
 
         return True
 
 
     @staticmethod
-    def _cook(env, engine_directory, project_directory, configuration_directory, project, platform, iterate, trackloadpackage):
-        logging.info('=== Cook ===')
+    def _load_configuration(package_configuration, ps4_title_directory_collection):
+        ''' Update configuration with information found in the project files '''
+
+        if package_configuration.target_platform == 'PS4':
+            if not ps4_title_directory_collection:
+                ini_file_path = package_configuration.configuration_directory + '/PS4/PS4Engine.ini'
+                ps4_title_directory_collection = [ _get_ini_value(ini_file_path, 'TitleID') ]
+
+            ps4_title_collection = []
+            for title_directory in ps4_title_directory_collection:
+                title_json_path = package_configuration.project_directory + '/Build/PS4/titledata/' + title_directory + '/title.json'
+                with open(title_json_path) as title_json_file:
+                    title_data = json.load(title_json_file)
+                title_data['region'] = title_data['region'].upper()
+                title_data['title_directory'] = title_directory.lower()
+                ps4_title_collection.append(title_data)
+
+            package_configuration.ps4_title_collection = ps4_title_collection
+
+        if package_configuration.target_platform == 'XboxOne':
+            ini_file_path = package_configuration.configuration_directory + '/XboxOne/XboxOneEngine.ini'
+            package_configuration.xbox_product_id = _get_ini_value(ini_file_path, 'ProductId')
+            package_configuration.xbox_content_id = _get_ini_value(ini_file_path, 'ContentId')
+
+
+    @staticmethod
+    def cook(env, package_configuration):
+        ''' Build the project content for the target platform '''
+
+        logging.info('Cooking content for %s', package_configuration.target_platform)
+        logging.info('')
 
         nimp.environment.execute_hook('precook', env)
 
+        engine_binaries_directory = package_configuration.engine_directory + '/Binaries/' + package_configuration.worker_platform
+        editor_path = engine_binaries_directory + '/UE4Editor' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
+
         cook_command = [
-            engine_directory + '/Binaries/' + nimp.unreal.get_host_platform() + '/UE4Editor',
-            project, '-Run=Cook', '-TargetPlatform=' + nimp.unreal.get_cook_platform(platform),
+            editor_path, package_configuration.project,
+            '-Run=Cook', '-TargetPlatform=' + package_configuration.cook_platform,
             '-BuildMachine', '-Unattended', '-StdOut', '-UTF8Output',
         ]
-        if iterate:
+        if package_configuration.iterative_cook:
             cook_command += [ '-Iterate', '-IterateHash' ]
-        if trackloadpackage:
-            cook_command += [ '-TrackLoadPackage' ]
+        cook_command += package_configuration.cook_extra_options
 
-        configuration_file_path = configuration_directory + '/DefaultEngine.ini'
-        sdb_path = project_directory + '/Saved/ShaderDebugInfo/' + platform
+        configuration_file_path = package_configuration.configuration_directory + '/DefaultEngine.ini'
+        sdb_path = package_configuration.project_directory + '/Saved/ShaderDebugInfo/' + package_configuration.target_platform
 
         if not env.simulate:
             if not os.path.isdir(sdb_path):
@@ -177,26 +271,26 @@ class Package(nimp.command.Command):
 
         nimp.environment.execute_hook('postcook', env)
 
-        logging.info('')
-
 
     @staticmethod
-    def _stage(env, engine_directory, project_directory, configuration_directory, stage_directory,
-               project, platform, configuration, content_pak_list, layout_file_path, ps4_title_collection,
-               compress, compression_exclusions, is_patch):
-        logging.info('=== Stage ===')
+    def stage(env, package_configuration):
+        ''' Gather the files required to generate a package '''
 
-        if platform in [ 'PS4', 'XboxOne' ] and not layout_file_path:
-            raise ValueError('Layout is required to stage for ' + platform)
+        logging.info('Staging package files for %s (Destination: %s)', package_configuration.target_platform, package_configuration.stage_directory)
+        logging.info('')
 
-        stage_directory = nimp.system.sanitize_path(stage_directory)
-        _try_remove(stage_directory, env.simulate)
-        _try_create_directory(stage_directory, env.simulate)
+        if package_configuration.target_platform in [ 'PS4', 'XboxOne' ] and not package_configuration.layout_file_path:
+            raise ValueError('Layout is required to stage for ' + package_configuration.target_platform)
+
+        _try_remove(package_configuration.stage_directory, env.simulate)
+        _try_create_directory(package_configuration.stage_directory, env.simulate)
 
         stage_command = [
-            nimp.system.sanitize_path(engine_directory + '/Binaries/DotNET/AutomationTool.exe'),
+            package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
             'BuildCookRun', '-UE4exe=UE4Editor-Cmd.exe', '-UTF8Output',
-            '-Project=' + project, '-TargetPlatform=' + platform, '-ClientConfig=' + configuration,
+            '-Project=' + package_configuration.project,
+            '-TargetPlatform=' + package_configuration.target_platform,
+            '-ClientConfig=' + package_configuration.binary_configuration,
             '-SkipCook', '-Stage', '-Pak', '-SkipPak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
         ]
 
@@ -204,86 +298,49 @@ class Package(nimp.command.Command):
         if stage_success != 0:
             raise RuntimeError('Stage failed')
 
-        pak_source_directory = None
-        if is_patch:
-            pak_source_directory = '{stage_directory}-PatchBase/{project}/Content/Paks'.format(**locals())
-            if platform == 'PS4':
-                pak_source_directory = pak_source_directory.lower()
-        pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**locals())
-        if platform == 'PS4':
-            pak_destination_directory = pak_destination_directory.lower()
-        if not env.simulate:
-            os.makedirs(pak_destination_directory)
-        for content_pak in content_pak_list:
-            Package._create_pak_file(env, engine_directory, project_directory, project, platform,
-                                     content_pak, pak_source_directory, pak_destination_directory,
-                                     compress, compression_exclusions)
+        pak_patch_base = '{stage_directory}-PatchBase/{project}/Content/Paks'.format(**vars(package_configuration)) if package_configuration.is_patch else ''
+        pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
+        for pak_name in package_configuration.pak_collection:
+            Package.create_pak_file(env, package_configuration, pak_name, pak_destination_directory, pak_patch_base)
 
-        # Stage platform specific files
-        if platform in [ 'Win64', 'XboxOne' ]:
-            for current_configuration in configuration.split('+'):
-                pdb_suffix = '-{platform}-{current_configuration}' if current_configuration != 'Development' else ''
-                pdb_file_path = ('Binaries/{platform}/{project}' + pdb_suffix + '.pdb').format(**locals())
-                Package._stage_file(project_directory + '/' + pdb_file_path, stage_directory + '/' + project + '/' + pdb_file_path, env.simulate)
-        if platform == 'XboxOne':
-            Package._stage_xbox_manifest(configuration_directory, stage_directory, configuration, env.simulate)
+        if package_configuration.target_platform == 'XboxOne':
+            Package._stage_xbox_manifest(package_configuration, env.simulate)
+
+        Package._stage_symbols(package_configuration, env.simulate)
+        Package._stage_layout(package_configuration, env.simulate)
+        Package._homogenize_binary_names(package_configuration, env.simulate)
+
+        if package_configuration.target_platform == 'XboxOne':
             if not env.simulate:
                 # Dummy files for empty chunks
-                with open(nimp.system.sanitize_path(stage_directory + '/LaunchChunk.bin'), 'w') as empty_file:
+                with open(package_configuration.stage_directory + '/LaunchChunk.bin', 'w') as empty_file:
                     empty_file.write('\0')
-                with open(nimp.system.sanitize_path(stage_directory + '/AlignmentChunk.bin'), 'w') as empty_file:
+                with open(package_configuration.stage_directory + '/AlignmentChunk.bin', 'w') as empty_file:
                     empty_file.write('\0')
-
-        # Stage package layout
-        if platform == 'PS4':
-            for title_directory in ps4_title_collection:
-                title_json_path = project_directory + '/Build/PS4/titledata/' + title_directory + '/title.json'
-                with open(title_json_path) as title_json_file:
-                    transform_parameters = json.load(title_json_file)
-                transform_parameters['title_directory'] = title_directory.lower()
-                transform_parameters['region'] = transform_parameters['region'].upper()
-                for current_configuration in configuration.split('+'):
-                    layout_file_name = '{project}-{transform_parameters[region]}-{current_configuration}.gp4'.format(**locals())
-                    layout_destination = nimp.system.sanitize_path(stage_directory + '/' + layout_file_name)
-                    transform_parameters['configuration'] = current_configuration.lower()
-                    Package._stage_and_transform_file(layout_file_path, layout_destination, current_configuration, transform_parameters, env.simulate)
-        elif platform == 'XboxOne':
-            for current_configuration in configuration.split('+'):
-                layout_file_name = '{project}-{current_configuration}.xml'.format(**locals())
-                layout_destination = nimp.system.sanitize_path(stage_directory + '/' + layout_file_name)
-                transform_parameters = { 'configuration': current_configuration }
-                Package._stage_and_transform_file(layout_file_path, layout_destination, current_configuration, transform_parameters, env.simulate)
-
-        # Homogenize binary and symbols file names for console packaging
-        if platform == 'PS4':
-            binary_path = nimp.system.sanitize_path(stage_directory + '/' + (project + '/Binaries/PS4/' + project).lower() + '.self')
-            if os.path.exists(binary_path) and not env.simulate:
-                shutil.move(binary_path, binary_path.replace(project.lower() + '.self', project.lower() + '-ps4-development.self'))
-        elif platform == 'XboxOne':
-            binary_path = nimp.system.sanitize_path(stage_directory + '/' + project + '/Binaries/XboxOne/' + project + '.exe')
-            symbols_path = nimp.system.sanitize_path(stage_directory + '/Symbols/' + project + '-symbols.bin')
-            if os.path.exists(binary_path) and not env.simulate:
-                shutil.move(binary_path, binary_path.replace(project + '.exe', project + '-XboxOne-Development.exe'))
-            if os.path.exists(symbols_path) and not env.simulate:
-                shutil.move(symbols_path, symbols_path.replace(project + '-symbols.bin', project + '-XboxOne-Development-symbols.bin'))
-
-        logging.info('')
 
 
     @staticmethod
-    def _create_pak_file(env, engine_directory, project_directory, project, platform, pak_name, source, destination, compress, compression_exclusions):
-        pak_tool = 'Linux/UnrealPak' if platform == 'Linux' else 'Win64/UnrealPak.exe'
-        pak_tool_path = nimp.system.sanitize_path(engine_directory + '/Binaries/' + pak_tool)
-        pak_file_name = project + '-' + nimp.unreal.get_cook_platform(platform) + (('-' + pak_name) if pak_name else '')
-        manifest_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name + '.pak.txt')
-        order_file_path = nimp.system.sanitize_path(project_directory + '/Build/' + nimp.unreal.get_cook_platform(platform) + '/FileOpenOrder/GameOpenOrder.log')
-        pak_file_path = nimp.system.sanitize_path(destination + '/' + pak_file_name + ('_P' if source else '') + '.pak')
+    def create_pak_file(env, package_configuration, pak_name, destination, patch_base):
+        ''' Creates a content archive using the Unreal pak format '''
 
-        if platform == 'PS4':
+        engine_binaries_directory = package_configuration.engine_directory + '/Binaries/' + package_configuration.worker_platform
+        pak_tool_path = engine_binaries_directory + '/UnrealPak' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
+        pak_file_name = package_configuration.project + '-' + package_configuration.cook_platform + (('-' + pak_name) if pak_name else '')
+        pak_file_path = destination + '/' + pak_file_name + ('_P' if patch_base else '') + '.pak'
+        manifest_file_path = destination + '/' + pak_file_name + '.pak.txt'
+        order_file_path = package_configuration.project_directory + '/Build/' + package_configuration.cook_platform + '/FileOpenOrder/GameOpenOrder.log'
+
+        if package_configuration.target_platform == 'PS4':
+            if patch_base:
+                patch_base = patch_base.lower()
+            destination = destination.lower()
             manifest_file_path = manifest_file_path.lower()
             pak_file_path = pak_file_path.lower()
 
-        logging.info('Listing files for %s', pak_file_name)
+        if not env.simulate:
+            os.makedirs(destination, exist_ok = True)
+
+        logging.info('Listing files for pak %s', pak_file_name)
         file_mapper = nimp.system.map_files(env)
         file_mapper.override(pak_name = pak_name).load_set('content_pak')
 
@@ -294,28 +351,31 @@ class Package(nimp.command.Command):
             logging.warning('No files for %s', pak_file_name)
             return
 
+        logging.info('Creating manifest for pak %s', pak_file_name)
         if not env.simulate:
             with open(manifest_file_path, 'w') as manifest_file:
-                for src, dst in all_files:
-                    options = '-Compress' if compress and os.path.basename(src) not in compression_exclusions else ''
-                    manifest_file.write('"%s" "%s" %s\n' % (os.path.abspath(src).replace('\\', '/'), '../../../' + dst, options))
+                for source_file, destination_file in all_files:
+                    allow_compression = os.path.basename(source_file) not in package_configuration.pak_compression_exclusions
+                    options = '-Compress' if package_configuration.pak_compression and allow_compression else ''
+                    manifest_file.write('"%s" "%s" %s\n' % (os.path.abspath(source_file).replace('\\', '/'), '../../../' + destination_file, options))
 
+        logging.info('Creating pak %s', pak_file_name)
         pak_command = [
             pak_tool_path, os.path.abspath(pak_file_path),
             '-Create=' + os.path.abspath(manifest_file_path),
             '-Order=' + os.path.abspath(order_file_path),
         ]
 
-        if platform == 'Win64':
+        # From AutomationTool GetPlatformPakCommandLine
+        if package_configuration.target_platform == 'Win64':
             pak_command += [ '-PatchPaddingAlign=2048' ]
-        elif platform == 'PS4':
+        elif package_configuration.target_platform == 'PS4':
             pak_command += [ '-BlockSize=256MB', '-PatchPaddingAlign=65536' ]
-        elif platform == 'XboxOne':
+        elif package_configuration.target_platform == 'XboxOne':
             pak_command += [ '-BlockSize=4KB', '-BitWindow=12' ]
 
-        if source:
-            pak_source_file_path = nimp.system.sanitize_path(source + '/' + pak_file_name + '.pak')
-            pak_command += [ '-GeneratePatch=' + os.path.abspath(pak_source_file_path) ]
+        if patch_base:
+            pak_command += [ '-GeneratePatch=' + os.path.abspath(patch_base + '/' + pak_file_name + '.pak') ]
 
         pak_success = nimp.sys.process.call(pak_command, simulate = env.simulate)
         if pak_success != 0:
@@ -323,94 +383,155 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage_xbox_manifest(configuration_directory, stage_directory, configuration, simulate):
+    def _stage_xbox_manifest(package_configuration, simulate):
         if not simulate:
-            os.remove(nimp.system.sanitize_path(stage_directory + '/AppxManifest.xml'))
-            os.remove(nimp.system.sanitize_path(stage_directory + '/appdata.bin'))
+            os.remove(package_configuration.stage_directory + '/AppxManifest.xml')
+            os.remove(package_configuration.stage_directory + '/appdata.bin')
 
-        manifest_source = configuration_directory + '/XboxOne/AppxManifest.xml'
-        for current_configuration in configuration.split('+'):
-            manifest_destination = stage_directory + '/AppxManifest-%s.xml' % current_configuration
-            transform_parameters = { 'configuration': current_configuration }
-            Package._stage_and_transform_file(manifest_source, manifest_destination, current_configuration, transform_parameters, simulate)
+        manifest_source = package_configuration.configuration_directory + '/XboxOne/AppxManifest.xml'
+        for binary_configuration in package_configuration.binary_configuration.split('+'):
+            manifest_destination = 'AppxManifest-%s.xml' % binary_configuration
+            transform_parameters = { 'configuration': binary_configuration }
+            Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
 
 
     @staticmethod
-    def _stage_file(source, destination, simulate):
-        source = nimp.system.sanitize_path(source)
-        destination = nimp.system.sanitize_path(destination)
-        logging.info('Staging %s to %s', source, destination)
-        if not simulate:
-            shutil.copyfile(source, destination)
+    def _stage_symbols(package_configuration, simulate):
+        source = '{project_directory}/Binaries/{target_platform}'.format(**vars(package_configuration))
+        destination = '{project}/Binaries/{target_platform}'.format(**vars(package_configuration))
+        format_parameters = { 'project': package_configuration.project, 'platform': package_configuration.target_platform }
+
+        if package_configuration.target_platform in [ 'Win64', 'XboxOne' ]:
+            for binary_configuration in package_configuration.binary_configuration.split('+'):
+                format_parameters['configuration'] = binary_configuration
+                pdb_suffix = '-{platform}-{configuration}' if binary_configuration != 'Development' else ''
+                pdb_file_name = ('{project}' + pdb_suffix + '.pdb').format(**format_parameters)
+                Package._stage_file(package_configuration.stage_directory, source + '/' + pdb_file_name, destination + '/' + pdb_file_name, simulate)
 
 
     @staticmethod
-    def _stage_and_transform_file(source, destination, configuration, transform_parameters, simulate):
-        source = nimp.system.sanitize_path(source)
-        destination = nimp.system.sanitize_path(destination)
-        logging.info('Staging %s to %s', source, destination)
+    def _stage_layout(package_configuration, simulate):
+        if package_configuration.target_platform not in [ 'PS4', 'XboxOne' ]:
+            return
+
+        source = package_configuration.layout_file_path
+        format_parameters = { 'project': package_configuration.project, 'platform': package_configuration.target_platform }
+
+        if package_configuration.target_platform == 'PS4':
+            for title_data in package_configuration.ps4_title_collection:
+                transform_parameters = copy.deepcopy(title_data)
+                for binary_configuration in package_configuration.binary_configuration.split('+'):
+                    format_parameters['configuration'] = binary_configuration
+                    format_parameters['region'] = title_data['region']
+                    destination = '{project}-{region}-{configuration}.gp4'.format(**format_parameters).lower()
+                    transform_parameters['configuration'] = binary_configuration.lower()
+                    Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
+
+        elif package_configuration.target_platform == 'XboxOne':
+            for binary_configuration in package_configuration.binary_configuration.split('+'):
+                format_parameters['configuration'] = binary_configuration
+                destination = '{project}-{configuration}.xml'.format(**format_parameters)
+                transform_parameters = { 'configuration': binary_configuration }
+                Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
+
+
+    @staticmethod
+    def _stage_file(stage_directory, source, destination, simulate):
+        logging.info('Staging %s as %s', source, destination)
+        if not simulate:
+            shutil.copyfile(source, stage_directory + '/' + destination)
+
+
+    @staticmethod
+    def _stage_and_transform_file(stage_directory, source, destination, transform_parameters, simulate):
+        logging.info('Staging %s as %s', source, destination)
 
         with open(source, 'r') as source_file:
             file_content = source_file.read()
         file_content = file_content.format(**transform_parameters)
-        if configuration == 'Shipping':
+        if transform_parameters['configuration'] == 'Shipping':
             file_content = re.sub(r'<!-- #if Debug -->(.*?)<!-- #endif Debug -->', '', file_content, 0, re.DOTALL)
 
         if not simulate:
-            with open(destination, 'w') as destination_file:
+            with open(stage_directory + '/' + destination, 'w') as destination_file:
                 destination_file.write(file_content)
 
 
     @staticmethod
-    def _package_for_platform(env, project_directory, configuration_directory, project, platform, configuration,
-                              source, destination, ps4_title_collection, is_final_submission, is_patch):
-        source = nimp.system.sanitize_path(source)
-        destination = nimp.system.sanitize_path(destination)
-        logging.info('=== Package ===')
+    def _homogenize_binary_names(package_configuration, simulate):
+        ''' Homogenize Unreal binary names by adding the suffix to the development binaries and symbols '''
+        # Only on consoles because it breaks the bootstrap executable
 
-        if platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
-            destination += '/' + ('Final' if is_final_submission else 'Default')
+        if package_configuration.target_platform == 'PS4':
+            project = package_configuration.project.lower()
+            directory = package_configuration.stage_directory + '/' + project + '/binaries/ps4'
+            if os.path.exists(directory + '/' + project + '.self' ) and not simulate:
+                shutil.move(directory + '/' + project + '.self', directory + '/' + project + '-ps4-development.self' )
+
+        elif package_configuration.target_platform == 'XboxOne':
+            project = package_configuration.project
+            directory = package_configuration.stage_directory + '/' + project + '/Binaries/XboxOne/'
+            if os.path.exists(directory + '/' + project + '.exe') and not simulate:
+                shutil.move(directory + '/' + project + '.exe', directory + '/' + project + '-XboxOne-Development.exe')
+            if os.path.exists(directory + '/' + project + '.pdb') and not simulate:
+                shutil.move(directory + '/' + project + '.pdb', directory + '/' + project + '-XboxOne-Development.pdb')
+            directory = package_configuration.stage_directory + '/Symbols'
+            if os.path.exists(directory + '/' + project + '-symbols.bin') and not simulate:
+                shutil.move(directory + '/' + project + '-symbols.bin', directory + '/' + project + '-XboxOne-Development-symbols.bin')
+
+
+    @staticmethod
+    def package_for_platform(env, package_configuration):
+        ''' Generate a package for a target platform '''
+
+        logging.info('Packaging for %s (Source: %s, Destination: %s', package_configuration.target_platform,
+                     package_configuration.stage_directory, package_configuration.package_directory)
+        logging.info('')
+
+        source = package_configuration.stage_directory
+
+        if package_configuration.target_platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
+            destination = 'Final' if package_configuration.is_final_submission else 'Default'
+            destination = package_configuration.package_directory + '/' + destination
             _try_remove(destination, env.simulate)
             _try_create_directory(destination, env.simulate)
 
-            logging.info('Copying from %s to %s', source, destination)
+            logging.info('Listing package files')
             package_fileset = nimp.system.map_files(env)
             package_fileset.src(source[ len(env.root_dir) + 1 : ]).to(destination).load_set('stage_to_package')
+            all_files = package_fileset()
 
-            if not env.simulate:
-                package_success = nimp.system.all_map(nimp.system.robocopy, package_fileset())
-                if not package_success:
-                    raise RuntimeError('Package generation failed')
+            for source_file, destination_file in all_files:
+                _copy_file(source_file, destination_file, env.simulate)
 
-        elif platform == 'XboxOne':
-            package_tool_path = nimp.system.sanitize_path(os.environ['DurangoXDK'] + '/bin/MakePkg.exe')
-            ini_file_path = nimp.system.sanitize_path(configuration_directory + '/XboxOne/XboxOneEngine.ini')
-            product_id = _get_ini_value(ini_file_path, 'ProductId')
-            content_id = _get_ini_value(ini_file_path, 'ContentId')
+        elif package_configuration.target_platform == 'XboxOne':
+            package_tool_path = os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePkg.exe')
 
-            for current_configuration in configuration.split('+'):
-                current_destination = destination + '/' + current_configuration + ('-Final' if is_final_submission else '')
-                layout_file = source + '/' + project + '-' + current_configuration + '.xml'
+            for binary_configuration in package_configuration.binary_configuration.split('+'):
+                destination = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+                destination = package_configuration.package_directory + '/' + destination
+                layout_file = source + '/' + package_configuration.project + '-' + binary_configuration + '.xml'
                 package_command = [
                     package_tool_path, 'pack', '/v',
-                    '/f', layout_file, '/d', source, '/pd', current_destination,
-                    '/productid', product_id, '/contentid', content_id,
+                    '/f', layout_file, '/d', source, '/pd', destination,
+                    '/productid', package_configuration.xbox_product_id,
+                    '/contentid', package_configuration.xbox_content_id,
                 ]
 
-                with open(source + '/AppxManifest-%s.xml' % current_configuration) as manifest_file:
+                with open(source + '/AppxManifest-%s.xml' % binary_configuration) as manifest_file:
                     manifest_content = manifest_file.read()
                 is_dlc = re.search(r'<mx:ContentPackage>true</mx:ContentPackage>', manifest_content) is not None
 
                 if not is_dlc:
                     package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
-                if is_final_submission:
+                if package_configuration.is_final_submission:
                     package_command += [ '/l' ]
 
-                _try_remove(current_destination, env.simulate)
-                _try_create_directory(current_destination, env.simulate)
+                _try_remove(destination, env.simulate)
+                _try_create_directory(destination, env.simulate)
 
                 if not env.simulate:
-                    shutil.copyfile(source + '/AppxManifest-%s.xml' % current_configuration, source + '/AppxManifest.xml')
+                    shutil.copyfile(source + '/AppxManifest-%s.xml' % binary_configuration, source + '/AppxManifest.xml')
 
                 package_success = nimp.sys.process.call(package_command, simulate = env.simulate)
 
@@ -422,37 +543,32 @@ class Package(nimp.command.Command):
                 if package_success != 0:
                     raise RuntimeError('Package generation failed')
 
-        elif platform == 'PS4':
-            package_tool_path = nimp.system.sanitize_path(os.environ['SCE_ROOT_DIR'] + '/ORBIS/Tools/Publishing Tools/bin/orbis-pub-cmd.exe')
-            temporary_directory = nimp.system.sanitize_path(project_directory + '/Saved/Temp')
-            if not env.simulate:
-                os.makedirs(temporary_directory, exist_ok = True)
+        elif package_configuration.target_platform == 'PS4':
+            package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
 
-            for title_directory in ps4_title_collection:
-                title_json_path = source + '/' + title_directory.lower() + '/title.json'
-                with open(title_json_path) as title_json_file:
-                    title_data = json.load(title_json_file)
-                region = title_data['region'].upper()
-
-                for current_configuration in configuration.split('+'):
-                    current_destination = destination + '/' + region + '-' + current_configuration + ('-Final' if is_final_submission else '')
-                    layout_file = source + '/' + project + '-' + region + '-' + current_configuration + '.gp4'
+            for title_data in package_configuration.ps4_title_collection:
+                for binary_configuration in package_configuration.binary_configuration.split('+'):
+                    destination = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+                    destination = package_configuration.package_directory + '/' + destination
+                    layout_file = source + '/' + package_configuration.project + '-' + title_data['region'] + '-' + binary_configuration + '.gp4'
                     output_format = 'pkg'
-                    if is_final_submission:
-                        if not is_patch and title_data['storagetype'].startswith('bd'):
+                    if package_configuration.is_final_submission:
+                        if not package_configuration.is_patch and title_data['storagetype'].startswith('bd'):
                             output_format += '+iso'
                         output_format += '+subitem'
+
+                    _try_remove(destination, env.simulate)
+                    _try_remove(destination + '-Temporary', env.simulate)
+                    _try_create_directory(destination, env.simulate)
+                    _try_create_directory(destination + '-Temporary', env.simulate)
 
                     create_package_command = [
                         package_tool_path, 'img_create',
                         '--no_progress_bar',
-                        '--tmp_path', temporary_directory,
+                        '--tmp_path', destination + '-Temporary',
                         '--oformat', output_format,
-                        layout_file, current_destination
+                        layout_file, destination
                     ]
-
-                    _try_remove(current_destination, env.simulate)
-                    _try_create_directory(current_destination, env.simulate)
 
                     package_success = nimp.sys.process.call(create_package_command, simulate = env.simulate)
                     if package_success != 0:
@@ -460,16 +576,16 @@ class Package(nimp.command.Command):
 
                     # The img_create command already does the check when invoked for submission
                     # Configurations other than Shipping always output errors because of debug binaries
-                    if not is_final_submission and current_configuration == 'Shipping':
+                    if not package_configuration.is_final_submission and binary_configuration == 'Shipping':
                         package_files = []
-                        for file_name in os.listdir(current_destination):
+                        for file_name in os.listdir(destination):
                             if file_name.endswith('.pkg'):
-                                package_files.append(current_destination + '/' + file_name)
+                                package_files.append(destination + '/' + file_name)
 
                         validate_package_command = [
                             package_tool_path, 'img_verify',
                             '--no_progress_bar',
-                            '--tmp_path', temporary_directory,
+                            '--tmp_path', destination + '-Temporary',
                             '--passcode', title_data['title_passcode'],
                         ]
                         validate_package_command += package_files
@@ -478,4 +594,4 @@ class Package(nimp.command.Command):
                         if validation_success != 0:
                             logging.warning('Package validation failed')
 
-    logging.info('')
+                    _try_remove(destination + '-Temporary', env.simulate)
