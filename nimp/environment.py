@@ -264,7 +264,7 @@ def read_config_file(filename):
     try:
         local_vars = {}
         #pylint: disable=exec-used
-        exec(compile(conf, filename, 'exec'), None, local_vars)
+        exec(compile(conf, filename, 'exec'), local_vars)
         if "config" in local_vars:
             return local_vars["config"]
         logging.error("Configuration file %s has no 'config' section.", filename)
