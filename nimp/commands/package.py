@@ -103,13 +103,13 @@ class UnrealPackageConfiguration():
         self.worker_platform = None
         self.cook_platform = None
         self.target_platform = None
+        self.package_type = None
         self.iterative_cook = False
         self.cook_extra_options = []
         self.pak_collection = []
         self.pak_compression = False
         self.pak_compression_exclusions = []
         self.layout_file_path = None
-        self.is_patch = False
         self.is_final_submission = False
 
         self.ps4_title_collection = []
@@ -130,16 +130,20 @@ class Package(nimp.command.Command):
         parser.add_argument('--steps', nargs = '+', choices = all_steps, default = default_steps, metavar = '<step>',
                             help = 'select the steps to execute\n(%s)' % ', '.join(all_steps))
         parser.add_argument('--variant', metavar = '<variant>', help = 'set the configuration variant to use')
-        parser.add_argument('--layout', metavar = '<file_path>', help = 'set the layout file to use for the package (for consoles)')
-        parser.add_argument('--patch', action = 'store_true', help = 'create a patch based on previously staged data')
-        parser.add_argument('--final', action = 'store_true', help = 'enable package options for final submission')
         parser.add_argument('--iterate', action = 'store_true', help = 'enable iterative cooking')
         parser.add_argument('--compress', action = 'store_true', help = 'enable pak file compression')
+        parser.add_argument('--final', action = 'store_true', help = 'enable package options for final submission')
         parser.add_argument('--trackloadpackage', action = 'store_true', help = 'track LoadPackage calls when cooking')
         parser.add_argument('--cook-extra-options', nargs = '*', default = [], metavar = '<cook_option>',
                             help = 'pass additional options to the cook command')
+        parser.add_argument('--ps4-regions', metavar = '<region>', nargs = '+', help = 'Set the PS4 regions to package for')
+
+        #region Legacy
+        parser.add_argument('--layout', metavar = '<file_path>', help = '(deprecated) set the layout file to use for the package (for consoles)')
+        parser.add_argument('--patch', action = 'store_true', help = '(deprecated) create a patch based on previously staged data')
         parser.add_argument('--ps4-title', nargs = '+', metavar = '<directory>',
-                            help = 'set the directory for the target title files (PS4 only, default to Unreal TitleID)')
+                            help = '(deprecated) set the directory for the target title files (PS4 only, default to Unreal TitleID)')
+        #endregion Legacy
 
         return True
 
@@ -178,32 +182,61 @@ class Package(nimp.command.Command):
         package_configuration.target_platform = env.ue4_platform
         package_configuration.iterative_cook = env.iterate
         package_configuration.cook_extra_options = env.cook_extra_options
+        package_configuration.package_type = 'application'
         package_configuration.pak_collection = [ None ]
         package_configuration.pak_compression = env.compress
-        package_configuration.layout_file_path = env.layout
-        package_configuration.is_patch = env.patch
         package_configuration.is_final_submission = env.final
 
-        # Deprecated
-        if hasattr(env, 'content_paks'):
-            package_configuration.pak_collection = env.content_paks
+        ps4_title_directory_collection = []
 
-        if env.variant:
-            package_configuration.pak_collection = env.content_paks_by_variant[env.variant]
-            if env.platform in [ 'ps4', 'xboxone' ]:
-                layout_file_name = 'PackageLayout.{variant}.{layout_file_extension}'
-                package_configuration.layout_file_path = env.format('{root_dir}/{game}/Build/{ue4_platform}/' + layout_file_name)
+        if hasattr(env, 'package_variants'):
+            if not env.variant:
+                raise ValueError('Variant parameter is required')
 
-        if hasattr(env, 'content_compression_exclusions'):
-            package_configuration.pak_compression_exclusions = env.content_compression_exclusions
+            if 'type' in env.package_variants[env.variant]:
+                package_configuration.package_type = env.package_variants[env.variant]['type']
+            if 'content_paks' in env.package_variants[env.variant]:
+                package_configuration.pak_collection = env.package_variants[env.variant]['content_paks']
+            if 'content_compression_exclusions' in env.package_variants[env.variant]:
+                package_configuration.pak_compression_exclusions = env.package_variants[env.variant]['content_compression_exclusions']
+            if 'layout' in env.package_variants[env.variant]:
+                package_configuration.layout_file_path = env.package_variants[env.variant]['layout']
+            if 'ps4_titles' in env.package_variants[env.variant] and env.ps4_regions:
+                ps4_title_directory_collection = [ env.package_variants[env.variant]['ps4_titles'][region] for region in env.ps4_regions ]
+
+        #region Legacy
+        else:
+            if env.patch:
+                package_configuration.package_type = 'application_patch'
+            if hasattr(env, 'content_paks'):
+                package_configuration.pak_collection = env.content_paks
+            if hasattr(env, 'content_compression_exclusions'):
+                package_configuration.pak_compression_exclusions = env.content_compression_exclusions
+            if env.variant and hasattr(env, 'content_paks_by_variant'):
+                package_configuration.pak_collection = env.content_paks_by_variant[env.variant]
+            if env.variant and env.platform in [ 'ps4', 'xboxone' ]:
+                layout_file_name = ('PatchLayout' if env.patch else 'PackageLayout') + '.{variant}.{layout_file_extension}'
+                package_configuration.layout_file_path = '{root_dir}/{game}/Build/{ue4_platform}/' + layout_file_name
+
         if env.layout:
             package_configuration.layout_file_path = env.layout
+        if env.ps4_title:
+            ps4_title_directory_collection = env.ps4_title
+        #endregion Legacy
+
         if env.trackloadpackage:
             package_configuration.cook_extra_options.append('-TrackLoadPackage')
 
-        Package._load_configuration(package_configuration, env.ps4_title)
+        if env.platform not in [ 'ps4', 'xboxone' ]:
+            package_configuration.layout_file_path = None
+        if package_configuration.layout_file_path:
+            package_configuration.layout_file_path = env.format(package_configuration.layout_file_path)
+        ps4_title_directory_collection = [ env.format(title) for title in ps4_title_directory_collection ]
+
+        Package._load_configuration(package_configuration, ps4_title_directory_collection)
 
         logging.info('')
+
         if 'cook' in env.steps:
             logging.info('=== Cook ===')
             Package.cook(env, package_configuration)
@@ -239,7 +272,7 @@ class Package(nimp.command.Command):
                 with open(title_json_path) as title_json_file:
                     title_data = json.load(title_json_file)
                 title_data['region'] = title_data['region'].upper()
-                title_data['title_directory'] = title_directory.lower()
+                title_data['title_directory'] = title_directory
                 ps4_title_collection.append(title_data)
 
             package_configuration.ps4_title_collection = ps4_title_collection
@@ -253,6 +286,9 @@ class Package(nimp.command.Command):
     @staticmethod
     def cook(env, package_configuration):
         ''' Build the project content for the target platform '''
+
+        if package_configuration.package_type == 'entitlement':
+            return
 
         logging.info('Cooking content for %s', package_configuration.target_platform)
         logging.info('')
@@ -312,9 +348,6 @@ class Package(nimp.command.Command):
         logging.info('Staging package files for %s (Destination: %s)', package_configuration.target_platform, package_configuration.stage_directory)
         logging.info('')
 
-        if package_configuration.target_platform in [ 'PS4', 'XboxOne' ] and not package_configuration.layout_file_path:
-            raise ValueError('Layout is required to stage for ' + package_configuration.target_platform)
-
         _try_remove(package_configuration.stage_directory, env.simulate)
         _try_create_directory(package_configuration.stage_directory, env.simulate)
 
@@ -331,16 +364,17 @@ class Package(nimp.command.Command):
         if stage_success != 0:
             raise RuntimeError('Stage failed')
 
+        if package_configuration.target_platform == 'XboxOne':
+            Package._stage_xbox_manifest(package_configuration, env.simulate)
+        Package._stage_layout(package_configuration, env.simulate)
+
+        if package_configuration.package_type in [ 'application', 'application_patch' ]:
+            Package._stage_symbols(package_configuration, env.simulate)
+
         pak_patch_base = '{patch_base_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
         pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
         for pak_name in package_configuration.pak_collection:
             Package.create_pak_file(env, package_configuration, pak_name, pak_patch_base, pak_destination_directory)
-
-        if package_configuration.target_platform == 'XboxOne':
-            Package._stage_xbox_manifest(package_configuration, env.simulate)
-
-        Package._stage_symbols(package_configuration, env.simulate)
-        Package._stage_layout(package_configuration, env.simulate)
 
         if package_configuration.target_platform == 'XboxOne':
             if not env.simulate:
@@ -359,7 +393,7 @@ class Package(nimp.command.Command):
         pak_tool_path = engine_binaries_directory + '/UnrealPak' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
 
         pak_file_name = package_configuration.project + '-' + package_configuration.cook_platform + (('-' + pak_name) if pak_name else '')
-        pak_file_path = destination + '/' + pak_file_name + ('_P' if package_configuration.is_patch else '') + '.pak'
+        pak_file_path = destination + '/' + pak_file_name + ('_P' if package_configuration.package_type == 'application_patch' else '') + '.pak'
         manifest_file_path = destination + '/' + pak_file_name + '.pak.txt'
         order_file_path = package_configuration.project_directory + '/Build/' + package_configuration.cook_platform + '/FileOpenOrder/GameOpenOrder.log'
 
@@ -407,7 +441,7 @@ class Package(nimp.command.Command):
         elif package_configuration.target_platform == 'XboxOne':
             pak_command += [ '-BlockSize=4KB', '-BitWindow=12' ]
 
-        if package_configuration.is_patch:
+        if package_configuration.package_type == 'application_patch':
             pak_command += [ '-GeneratePatch=' + os.path.abspath(patch_base + '/' + pak_file_name + '.pak') ]
 
         pak_success = nimp.sys.process.call(pak_command, simulate = env.simulate)
@@ -452,6 +486,7 @@ class Package(nimp.command.Command):
         if package_configuration.target_platform == 'PS4':
             for title_data in package_configuration.ps4_title_collection:
                 transform_parameters = copy.deepcopy(title_data)
+                transform_parameters['title_directory'] = transform_parameters['title_directory'].lower()
                 for binary_configuration in package_configuration.binary_configuration.split('+'):
                     format_parameters['configuration'] = binary_configuration
                     format_parameters['region'] = title_data['region']
@@ -538,7 +573,7 @@ class Package(nimp.command.Command):
                     layout_file = source + '/' + package_configuration.project + '-' + title_data['region'] + '-' + binary_configuration + '.gp4'
                     output_format = 'pkg'
                     if package_configuration.is_final_submission:
-                        if not package_configuration.is_patch and title_data['storagetype'].startswith('bd'):
+                        if package_configuration.package_type == 'application' and title_data['storagetype'].startswith('bd'):
                             output_format += '+iso'
                         output_format += '+subitem'
 
@@ -573,11 +608,7 @@ class Package(nimp.command.Command):
                     '/contentid', package_configuration.xbox_content_id,
                 ]
 
-                with open(source + '/AppxManifest-%s.xml' % binary_configuration) as manifest_file:
-                    manifest_content = manifest_file.read()
-                is_dlc = re.search(r'<mx:ContentPackage>true</mx:ContentPackage>', manifest_content) is not None
-
-                if not is_dlc:
+                if package_configuration.package_type in [ 'application', 'application_patch' ]:
                     package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
                 if package_configuration.is_final_submission:
                     package_command += [ '/l' ]
@@ -592,7 +623,7 @@ class Package(nimp.command.Command):
 
                 if not env.simulate:
                     os.remove(source + '/AppxManifest.xml')
-                    if not is_dlc:
+                    if os.path.isfile(source + '/appdata.bin'):
                         os.remove(source + '/appdata.bin')
 
                 if package_success != 0:
