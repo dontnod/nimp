@@ -343,13 +343,14 @@ class Package(nimp.command.Command):
         logging.info('Listing files for pak %s', pak_file_name)
         file_mapper = nimp.system.map_files(env)
         file_mapper.override(pak_name = pak_name).load_set('content_pak')
-
-        # Normalize and sort paths to have a deterministic result across systems
-        all_files = sorted((src.replace('\\', '/'), dst.replace('\\', '/')) for src, dst in file_mapper())
+        all_files = list(file_mapper())
 
         if (len(all_files) == 0) or (all_files == [(".", None)]):
             logging.warning('No files for %s', pak_file_name)
             return
+
+        # Normalize and sort paths to have a deterministic result across systems
+        all_files = sorted((src.replace('\\', '/'), dst.replace('\\', '/')) for src, dst in all_files)
 
         logging.info('Creating manifest for pak %s', pak_file_name)
         if not env.simulate:
