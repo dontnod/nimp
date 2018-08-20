@@ -151,6 +151,7 @@ class Package(nimp.command.Command):
         package_configuration.worker_platform = nimp.unreal.get_host_platform()
         package_configuration.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
         package_configuration.target_platform = env.ue4_platform
+        package_configuration.iterative_cook = env.iterate
         package_configuration.pak_collection = [ None ]
         package_configuration.pak_compression = env.compress
         package_configuration.layout_file_path = env.layout
