@@ -466,7 +466,7 @@ class Package(nimp.command.Command):
         with open(source, 'r') as source_file:
             file_content = source_file.read()
         file_content = file_content.format(**transform_parameters)
-        if transform_parameters['configuration'] == 'Shipping':
+        if transform_parameters['configuration'].lower() == 'shipping':
             file_content = re.sub(r'<!-- #if Debug -->(.*?)<!-- #endif Debug -->', '', file_content, 0, re.DOTALL)
 
         if not simulate:
