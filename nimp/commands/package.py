@@ -83,6 +83,8 @@ class UnrealPackageConfiguration():
         self.engine_directory = None
         self.project_directory = None
         self.configuration_directory = None
+        self.cook_directory = None
+        self.patch_base_directory = None
         self.stage_directory = None
         self.package_directory = None
 
@@ -122,6 +124,7 @@ class Package(nimp.command.Command):
         parser.add_argument('--iterate', help = 'Enable iterative cooking', action = 'store_true')
         parser.add_argument('--compress', help = 'Enable pak file compression', action = 'store_true')
         parser.add_argument('--trackloadpackage', help = 'Track LoadPackage calls when cooking', action = 'store_true')
+        parser.add_argument('--cook-extra-options', nargs = '*', default = [], help = 'Pass additional options to the cook command')
         parser.add_argument('--ps4-title', metavar = '<directory>', nargs = '+',
                             help = 'Set the directory for the target title files (PS4 only, default to Unreal TitleID)')
 
@@ -133,14 +136,23 @@ class Package(nimp.command.Command):
 
 
     def run(self, env):
+        env.root_dir = env.root_dir.replace('\\', '/')
+        env.worker_platform = nimp.unreal.get_host_platform()
+        env.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
+        if env.platform == 'ps4':
+            env.layout_file_extension = 'gp4'
+        elif env.platform == 'xboxone':
+            env.layout_file_extension = 'xml'
+
         package_configuration = UnrealPackageConfiguration()
 
-        env.root_dir = env.root_dir.replace('\\', '/')
         package_configuration.engine_directory = env.format('{root_dir}/Engine')
         package_configuration.project_directory = env.format('{root_dir}/{game}')
         package_configuration.configuration_directory = env.format('{root_dir}/{game}/Config')
-        package_configuration.stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/' + nimp.unreal.get_cook_platform(env.ue4_platform))
-        package_configuration.package_directory = env.format('{root_dir}/{game}/Saved/Packages/' + nimp.unreal.get_cook_platform(env.ue4_platform))
+        package_configuration.cook_directory = env.format('{root_dir}/{game}/Saved/Cooked/{cook_platform}')
+        package_configuration.patch_base_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}-PatchBase')
+        package_configuration.stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}')
+        package_configuration.package_directory = env.format('{root_dir}/{game}/Saved/Packages/{cook_platform}')
 
         variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
         if os.path.exists(variant_configuration_directory):
@@ -148,10 +160,11 @@ class Package(nimp.command.Command):
 
         package_configuration.project = env.game
         package_configuration.binary_configuration = env.ue4_config
-        package_configuration.worker_platform = nimp.unreal.get_host_platform()
-        package_configuration.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
+        package_configuration.worker_platform = env.worker_platform
+        package_configuration.cook_platform = env.cook_platform
         package_configuration.target_platform = env.ue4_platform
         package_configuration.iterative_cook = env.iterate
+        package_configuration.cook_extra_options = env.cook_extra_options
         package_configuration.pak_collection = [ None ]
         package_configuration.pak_compression = env.compress
         package_configuration.layout_file_path = env.layout
@@ -165,9 +178,7 @@ class Package(nimp.command.Command):
         if env.variant:
             package_configuration.pak_collection = env.content_paks_by_variant[env.variant]
             if env.platform in [ 'ps4', 'xboxone' ]:
-                layout_type = 'PatchLayout' if env.patch else 'PackageLayout'
-                layout_file_extension = 'gp4' if env.platform == 'ps4' else 'xml'
-                layout_file_name = '{type}.{variant}.{extension}'.format(type = layout_type, variant = env.variant, extension = layout_file_extension)
+                layout_file_name = 'PackageLayout.{variant}.{layout_file_extension}'
                 package_configuration.layout_file_path = env.format('{root_dir}/{game}/Build/{ue4_platform}/' + layout_file_name)
 
         if hasattr(env, 'content_compression_exclusions'):
@@ -228,6 +239,10 @@ class Package(nimp.command.Command):
 
         logging.info('Cooking content for %s', package_configuration.target_platform)
         logging.info('')
+
+        if not package_configuration.iterative_cook:
+            _try_remove(package_configuration.cook_directory, env.simulate)
+            _try_create_directory(package_configuration.cook_directory, env.simulate)
 
         nimp.environment.execute_hook('precook', env)
 
@@ -299,10 +314,10 @@ class Package(nimp.command.Command):
         if stage_success != 0:
             raise RuntimeError('Stage failed')
 
-        pak_patch_base = '{stage_directory}-PatchBase/{project}/Content/Paks'.format(**vars(package_configuration)) if package_configuration.is_patch else ''
+        pak_patch_base = '{patch_base_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
         pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
         for pak_name in package_configuration.pak_collection:
-            Package.create_pak_file(env, package_configuration, pak_name, pak_destination_directory, pak_patch_base)
+            Package.create_pak_file(env, package_configuration, pak_name, pak_patch_base, pak_destination_directory)
 
         if package_configuration.target_platform == 'XboxOne':
             Package._stage_xbox_manifest(package_configuration, env.simulate)
@@ -321,19 +336,19 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def create_pak_file(env, package_configuration, pak_name, destination, patch_base):
-        ''' Creates a content archive using the Unreal pak format '''
+    def create_pak_file(env, package_configuration, pak_name, patch_base, destination):
+        ''' Create a content archive with the Unreal pak format '''
 
         engine_binaries_directory = package_configuration.engine_directory + '/Binaries/' + package_configuration.worker_platform
         pak_tool_path = engine_binaries_directory + '/UnrealPak' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
+
         pak_file_name = package_configuration.project + '-' + package_configuration.cook_platform + (('-' + pak_name) if pak_name else '')
-        pak_file_path = destination + '/' + pak_file_name + ('_P' if patch_base else '') + '.pak'
+        pak_file_path = destination + '/' + pak_file_name + ('_P' if package_configuration.is_patch else '') + '.pak'
         manifest_file_path = destination + '/' + pak_file_name + '.pak.txt'
         order_file_path = package_configuration.project_directory + '/Build/' + package_configuration.cook_platform + '/FileOpenOrder/GameOpenOrder.log'
 
         if package_configuration.target_platform == 'PS4':
-            if patch_base:
-                patch_base = patch_base.lower()
+            patch_base = patch_base.lower()
             destination = destination.lower()
             manifest_file_path = manifest_file_path.lower()
             pak_file_path = pak_file_path.lower()
@@ -376,7 +391,7 @@ class Package(nimp.command.Command):
         elif package_configuration.target_platform == 'XboxOne':
             pak_command += [ '-BlockSize=4KB', '-BitWindow=12' ]
 
-        if patch_base:
+        if package_configuration.is_patch:
             pak_command += [ '-GeneratePatch=' + os.path.abspath(patch_base + '/' + pak_file_name + '.pak') ]
 
         pak_success = nimp.sys.process.call(pak_command, simulate = env.simulate)
