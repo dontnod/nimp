@@ -324,7 +324,6 @@ class Package(nimp.command.Command):
 
         Package._stage_symbols(package_configuration, env.simulate)
         Package._stage_layout(package_configuration, env.simulate)
-        Package._homogenize_binary_names(package_configuration, env.simulate)
 
         if package_configuration.target_platform == 'XboxOne':
             if not env.simulate:
@@ -406,9 +405,11 @@ class Package(nimp.command.Command):
             os.remove(package_configuration.stage_directory + '/appdata.bin')
 
         manifest_source = package_configuration.configuration_directory + '/XboxOne/AppxManifest.xml'
+        transform_parameters = {}
         for binary_configuration in package_configuration.binary_configuration.split('+'):
             manifest_destination = 'AppxManifest-%s.xml' % binary_configuration
-            transform_parameters = { 'configuration': binary_configuration }
+            transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
+            transform_parameters['configuration'] = binary_configuration
             Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
 
 
@@ -416,13 +417,10 @@ class Package(nimp.command.Command):
     def _stage_symbols(package_configuration, simulate):
         source = '{project_directory}/Binaries/{target_platform}'.format(**vars(package_configuration))
         destination = '{project}/Binaries/{target_platform}'.format(**vars(package_configuration))
-        format_parameters = { 'project': package_configuration.project, 'platform': package_configuration.target_platform }
 
         if package_configuration.target_platform in [ 'Win64', 'XboxOne' ]:
             for binary_configuration in package_configuration.binary_configuration.split('+'):
-                format_parameters['configuration'] = binary_configuration
-                pdb_suffix = '-{platform}-{configuration}' if binary_configuration != 'Development' else ''
-                pdb_file_name = ('{project}' + pdb_suffix + '.pdb').format(**format_parameters)
+                pdb_file_name = Package._get_executable_name(package_configuration, binary_configuration) + '.pdb'
                 Package._stage_file(package_configuration.stage_directory, source + '/' + pdb_file_name, destination + '/' + pdb_file_name, simulate)
 
 
@@ -441,14 +439,17 @@ class Package(nimp.command.Command):
                     format_parameters['configuration'] = binary_configuration
                     format_parameters['region'] = title_data['region']
                     destination = '{project}-{region}-{configuration}.gp4'.format(**format_parameters).lower()
+                    transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration).lower()
                     transform_parameters['configuration'] = binary_configuration.lower()
                     Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
 
         elif package_configuration.target_platform == 'XboxOne':
+            transform_parameters = {}
             for binary_configuration in package_configuration.binary_configuration.split('+'):
                 format_parameters['configuration'] = binary_configuration
                 destination = '{project}-{configuration}.xml'.format(**format_parameters)
-                transform_parameters = { 'configuration': binary_configuration }
+                transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
+                transform_parameters['configuration'] = binary_configuration
                 Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
 
 
@@ -475,26 +476,15 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _homogenize_binary_names(package_configuration, simulate):
-        ''' Homogenize Unreal binary names by adding the suffix to the development binaries and symbols '''
-        # Only on consoles because it breaks the bootstrap executable
+    def _get_executable_name(package_configuration, configuration):
+        format_parameters = {
+            'project': package_configuration.project,
+            'platform': package_configuration.target_platform,
+            'configuration': configuration,
+        }
 
-        if package_configuration.target_platform == 'PS4':
-            project = package_configuration.project.lower()
-            directory = package_configuration.stage_directory + '/' + project + '/binaries/ps4'
-            if os.path.exists(directory + '/' + project + '.self' ) and not simulate:
-                shutil.move(directory + '/' + project + '.self', directory + '/' + project + '-ps4-development.self' )
-
-        elif package_configuration.target_platform == 'XboxOne':
-            project = package_configuration.project
-            directory = package_configuration.stage_directory + '/' + project + '/Binaries/XboxOne/'
-            if os.path.exists(directory + '/' + project + '.exe') and not simulate:
-                shutil.move(directory + '/' + project + '.exe', directory + '/' + project + '-XboxOne-Development.exe')
-            if os.path.exists(directory + '/' + project + '.pdb') and not simulate:
-                shutil.move(directory + '/' + project + '.pdb', directory + '/' + project + '-XboxOne-Development.pdb')
-            directory = package_configuration.stage_directory + '/Symbols'
-            if os.path.exists(directory + '/' + project + '-symbols.bin') and not simulate:
-                shutil.move(directory + '/' + project + '-symbols.bin', directory + '/' + project + '-XboxOne-Development-symbols.bin')
+        suffix = '-{platform}-{configuration}' if configuration != 'Development' else ''
+        return ('{project}' + suffix).format(**format_parameters)
 
 
     @staticmethod
