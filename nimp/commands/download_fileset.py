@@ -61,16 +61,12 @@ class DownloadFileset(nimp.command.Command):
         format_arguments = copy.deepcopy(vars(env))
         format_arguments['revision'] = '*'
 
-        all_artifacts = nimp.system.try_execute(
-            'Searching %s' % artifact_uri_pattern.format(**format_arguments),
-            lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments),
-            OSError)
+        logging.info('Searching %s', artifact_uri_pattern.format(**format_arguments))
+        all_artifacts = nimp.system.try_execute(lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments), OSError)
         artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision)
 
-        local_artifact_path = nimp.system.try_execute(
-            'Downloading %s' % artifact_to_download['uri'],
-            lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']),
-            OSError)
+        logging.info('Downloading %s', artifact_to_download['uri'])
+        local_artifact_path = nimp.system.try_execute(lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']), OSError)
 
         logging.info('Installing %s in %s', artifact_to_download['uri'], install_directory)
         nimp.artifacts.install_artifact(local_artifact_path, install_directory)

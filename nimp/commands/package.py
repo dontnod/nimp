@@ -55,7 +55,8 @@ def _try_remove(file_path, simulate):
 
     # The operation can fail if Windows Explorer has a handle on the directory
     if os.path.exists(file_path):
-        nimp.system.try_execute('Removing %s' % file_path, _remove, OSError)
+        logging.info('Removing %s', file_path)
+        nimp.system.try_execute(_remove, OSError)
 
 
 def _try_create_directory(file_path, simulate):
@@ -67,7 +68,7 @@ def _try_create_directory(file_path, simulate):
 
     # The operation can fail if Windows Explorer has a handle on the directory
     if not os.path.isdir(file_path):
-        nimp.system.try_execute(None, _create_directory, OSError)
+        nimp.system.try_execute(_create_directory, OSError)
 
 
 def _copy_file(source, destination, simulate):

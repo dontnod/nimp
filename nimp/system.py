@@ -48,10 +48,8 @@ def try_import(module_name):
             logging.warning('%s', ex)
         return None
 
-def try_execute(message, action, exception_types, attempt_maximum = 5, retry_delay = 10):
+def try_execute(action, exception_types, attempt_maximum = 5, retry_delay = 10):
     ''' Attempts to execute an action, and retries when catching one of the specified exceptions '''
-    if message:
-        logging.info(message)
     attempt = 1
     while attempt <= attempt_maximum:
         try:

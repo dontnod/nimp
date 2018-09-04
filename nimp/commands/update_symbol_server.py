@@ -77,6 +77,7 @@ class UpdateSymbolServer(nimp.command.Command):
         all_files = _list_files(symbol_source)
         for source in all_files:
             destination = os.path.join(symbol_destination, source[ len(symbol_source) + 1 : ])
-            nimp.system.try_execute('Copying %s to %s' % (source, destination), lambda: _copy_file(source, destination, env.simulate), OSError)
+            logging.info('Copying %s to %s', source, destination)
+            nimp.system.try_execute(lambda: _copy_file(source, destination, env.simulate), OSError)
 
         return True
