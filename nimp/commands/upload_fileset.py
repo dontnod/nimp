@@ -22,9 +22,21 @@
 
 import logging
 import os
+import shutil
 import zipfile
 
 import nimp.command
+
+
+def _try_remove(file_path, simulate):
+    if os.path.isdir(file_path):
+        logging.info('Removing %s', file_path)
+        if not simulate:
+            shutil.rmtree(file_path)
+    if os.path.isfile(file_path):
+        logging.info('Removing %s', file_path)
+        if not simulate:
+            os.remove(file_path)
 
 
 class UploadFileset(nimp.command.Command):
@@ -36,6 +48,7 @@ class UploadFileset(nimp.command.Command):
         parser.add_argument('--archive', action = 'store_true', help = 'upload the files as a zip archive')
         parser.add_argument('--compress', action = 'store_true', help = 'if uploading as an archive, compress it')
         parser.add_argument('--torrent', action = 'store_true', help = 'create a torrent for the uploaded fileset')
+        parser.add_argument('--force', action = 'store_true', help = 'if the artifact already exists, overwrite it')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to upload')
         return True
 
@@ -47,10 +60,18 @@ class UploadFileset(nimp.command.Command):
             logging.error('Failed to import BitTornado module (required for torrent option)')
             return False
 
-        output_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
-        output_path = nimp.system.sanitize_path(env.format(output_path))
+        artifact_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
+        artifact_path = nimp.system.sanitize_path(env.format(artifact_path))
 
-        logging.info('Listing files for %s', output_path)
+        if os.path.isfile(artifact_path + '.zip') or os.path.isdir(artifact_path):
+            if not env.force:
+                raise ValueError('Artifact already exists: %s' % artifact_path)
+            else:
+                _try_remove(artifact_path + '.zip', env.simulate)
+                _try_remove(artifact_path, env.simulate)
+        _try_remove(artifact_path + '.torrent', env.simulate)
+
+        logging.info('Listing files for %s', artifact_path)
         file_mapper = nimp.system.map_files(env)
         file_mapper.load_set(env.fileset)
         all_files = list(file_mapper())
@@ -62,13 +83,13 @@ class UploadFileset(nimp.command.Command):
         all_files = ((src.replace('\\', '/'), dst.replace('\\', '/')) for src, dst in all_files)
         all_files = list(sorted(set(all_files)))
 
-        logging.info('Uploading to %s', output_path)
-        os.makedirs(os.path.dirname(output_path), exist_ok = True)
+        logging.info('Uploading to %s', artifact_path)
+        os.makedirs(os.path.dirname(artifact_path), exist_ok = True)
         nimp.system.try_execute(
-            lambda: nimp.artifacts.create_artifact(output_path, all_files, env.archive, env.compress, env.simulate),
+            lambda: nimp.artifacts.create_artifact(artifact_path, all_files, env.archive, env.compress, env.simulate),
             (OSError, ValueError, zipfile.BadZipFile))
         if env.torrent:
-            logging.info('Creating torrent for %s', output_path)
-            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(output_path, env.simulate), OSError)
+            logging.info('Creating torrent for %s', artifact_path)
+            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(artifact_path, env.simulate), OSError)
 
         return True
