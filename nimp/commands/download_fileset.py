@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# Copyright © 2014-2018 Dontnod Entertainment
+# Copyright (c) 2014-2018 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -34,20 +33,15 @@ class DownloadFileset(nimp.command.Command):
     ''' Downloads a previously uploaded fileset to the local workspace '''
 
 
-    def __init__(self):
-        super(DownloadFileset, self).__init__()
-
-
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'free_parameters')
-
-        parser.add_argument('--revision', help = 'Find a revision equal to this one', metavar = '<revision>')
-        parser.add_argument('--max-revision', help = 'Find a revision older or equal to this one', metavar = '<revision>')
-        parser.add_argument('--min-revision', help = 'Find a revision newer or equal to this one', metavar = '<revision>')
-        parser.add_argument('--destination', help = 'Set a destination relative to the workspace', metavar = '<path>')
-        parser.add_argument('--track', help = 'Track the installed revision in the workspace status', choices = [ 'binaries', 'symbols' ])
+        parser.add_argument('--simulate', action = 'store_true', help = 'perform a test run, without writing changes')
+        parser.add_argument('--revision', metavar = '<revision>', help = 'find a revision equal to this one')
+        parser.add_argument('--max-revision', metavar = '<revision>', help = 'find a revision older or equal to this one')
+        parser.add_argument('--min-revision', metavar = '<revision>', help = 'find a revision newer or equal to this one')
+        parser.add_argument('--destination', metavar = '<path>', help = 'set a destination relative to the workspace')
+        parser.add_argument('--track', choices = [ 'binaries', 'symbols' ], help = 'track the installed revision in the workspace status')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to download')
-
         return True
 
 
@@ -65,19 +59,22 @@ class DownloadFileset(nimp.command.Command):
         all_artifacts = nimp.system.try_execute(lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments), OSError)
         artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision)
 
-        logging.info('Downloading %s', artifact_to_download['uri'])
-        local_artifact_path = nimp.system.try_execute(lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']), OSError)
+        logging.info('Downloading %s' + (' (simulation)' if env.simulate else ''), artifact_to_download['uri'])
+        if not env.simulate:
+            local_artifact_path = nimp.system.try_execute(lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']), OSError)
 
-        logging.info('Installing %s in %s', artifact_to_download['uri'], install_directory)
-        nimp.artifacts.install_artifact(local_artifact_path, install_directory)
-        shutil.rmtree(local_artifact_path)
+        logging.info('Installing %s in %s' + (' (simulation)' if env.simulate else ''), artifact_to_download['uri'], install_directory)
+        if not env.simulate:
+            nimp.artifacts.install_artifact(local_artifact_path, install_directory)
+            shutil.rmtree(local_artifact_path)
 
         if env.track:
             workspace_status = nimp.system.load_status(env)
             old_revision = workspace_status[env.track][env.platform] if env.platform in workspace_status[env.track] else None
             logging.info('Tracking for %s %s: %s => %s', env.track, env.platform, old_revision, artifact_to_download['revision'])
             workspace_status[env.track][env.platform] = artifact_to_download['revision']
-            nimp.system.save_status(env, workspace_status)
+            if not env.simulate:
+                nimp.system.save_status(env, workspace_status)
 
         return True
 

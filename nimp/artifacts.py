@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# Copyright © 2014-2018 Dontnod Entertainment
+# Copyright (c) 2014-2018 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -205,18 +204,25 @@ def _try_make_executable(file_path):
                 logging.warning('Failed to make file executable: %s (FilePath: %s)', exception, file_path)
 
 
-def create_artifact(artifact_path, file_collection, archive, compress):
+def create_artifact(artifact_path, file_collection, archive, compress, simulate):
     ''' Create an artifact '''
 
     if os.path.isfile(artifact_path + '.zip') or os.path.isdir(artifact_path):
         raise ValueError('Artifact already exists: %s' % artifact_path)
 
-    if os.path.isfile(artifact_path + '.zip.tmp'):
-        os.remove(artifact_path + '.zip.tmp')
-    if os.path.isdir(artifact_path + '.tmp'):
-        shutil.rmtree(artifact_path + '.tmp')
+    if not simulate:
+        if os.path.isfile(artifact_path + '.zip.tmp'):
+            os.remove(artifact_path + '.zip.tmp')
+        if os.path.isdir(artifact_path + '.tmp'):
+            shutil.rmtree(artifact_path + '.tmp')
 
-    if archive:
+    if simulate:
+        for source, destination in file_collection:
+            if os.path.isdir(source):
+                pass
+            logging.debug('Adding %s as %s', source, destination)
+
+    elif archive:
         archive_path = artifact_path + '.zip'
         compression = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
         with zipfile.ZipFile(archive_path + '.tmp', 'w', compression = compression) as archive_file:
@@ -241,14 +247,15 @@ def create_artifact(artifact_path, file_collection, archive, compress):
         shutil.move(artifact_path + '.tmp', artifact_path)
 
 
-def create_torrent(artifact_path):
+def create_torrent(artifact_path, simulate):
     ''' Create a torrent for an existing artifact '''
 
     torrent_path = artifact_path + '.torrent'
-    if os.path.isfile(torrent_path + '.tmp'):
-        os.remove(torrent_path + '.tmp')
-    if os.path.isfile(torrent_path):
-        os.remove(torrent_path)
+    if not simulate:
+        if os.path.isfile(torrent_path + '.tmp'):
+            os.remove(torrent_path + '.tmp')
+        if os.path.isfile(torrent_path):
+            os.remove(torrent_path)
 
     if os.path.isfile(artifact_path + '.zip'):
         torrent_name = os.path.basename(artifact_path + '.zip')
@@ -269,6 +276,7 @@ def create_torrent(artifact_path):
         BitTornado.Meta.Info.check_info(torrent_info)
     torrent_metainfo = BitTornado.Meta.Info.MetaInfo(info = torrent_info)
 
-    with open(torrent_path + '.tmp', 'wb') as torrent_file:
-        torrent_file.write(BitTornado.Meta.bencode.bencode(torrent_metainfo))
-    shutil.move(torrent_path + '.tmp', torrent_path)
+    if not simulate:
+        with open(torrent_path + '.tmp', 'wb') as torrent_file:
+            torrent_file.write(BitTornado.Meta.bencode.bencode(torrent_metainfo))
+        shutil.move(torrent_path + '.tmp', torrent_path)

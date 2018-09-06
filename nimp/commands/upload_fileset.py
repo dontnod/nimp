@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-# Copyright © 2014—2017 Dontnod Entertainment
+# Copyright (c) 2014-2018 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -33,10 +32,11 @@ class UploadFileset(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'revision', 'free_parameters')
+        parser.add_argument('--simulate', action = 'store_true', help = 'perform a test run, without writing changes')
+        parser.add_argument('--archive', action = 'store_true', help = 'upload the files as a zip archive')
+        parser.add_argument('--compress', action = 'store_true', help = 'if uploading as an archive, compress it')
+        parser.add_argument('--torrent', action = 'store_true', help = 'create a torrent for the uploaded fileset')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to upload')
-        parser.add_argument('--archive', default = False, action = 'store_true', help = 'upload the files as a zip archive')
-        parser.add_argument('--compress', default = False, action = 'store_true', help = 'if uploading as an archive, compress it')
-        parser.add_argument('--torrent', default = False, action = 'store_true', help = 'create a torrent for the uploaded fileset')
         return True
 
     def is_available(self, env):
@@ -64,9 +64,11 @@ class UploadFileset(nimp.command.Command):
 
         logging.info('Uploading to %s', output_path)
         os.makedirs(os.path.dirname(output_path), exist_ok = True)
-        nimp.system.try_execute(lambda: nimp.artifacts.create_artifact(output_path, all_files, env.archive, env.compress), (OSError, ValueError, zipfile.BadZipFile))
+        nimp.system.try_execute(
+            lambda: nimp.artifacts.create_artifact(output_path, all_files, env.archive, env.compress, env.simulate),
+            (OSError, ValueError, zipfile.BadZipFile))
         if env.torrent:
             logging.info('Creating torrent for %s', output_path)
-            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(output_path), OSError)
+            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(output_path, env.simulate), OSError)
 
         return True
