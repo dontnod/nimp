@@ -23,6 +23,7 @@
 
 import copy
 import hashlib
+import glob
 import logging
 import os
 import platform
@@ -38,9 +39,16 @@ import nimp.system
 if platform.system() != 'Windows':
     magic = nimp.system.try_import('magic')
 
+try:
+    import BitTornado.Meta.Info
+    import BitTornado.Meta.BTTree
+    import BitTornado.Meta.bencode
+except ImportError as exception:
+    logging.warning('Failed to import BitTornado module')
+
 
 def list_artifacts(artifact_pattern, format_arguments):
-    ''' Lists all artifacts and their revision using the provided pattern after formatting '''
+    ''' List all artifacts and their revision using the provided pattern after formatting '''
 
     format_arguments = copy.deepcopy(format_arguments)
     format_arguments['revision'] = '{revision}'
@@ -95,7 +103,7 @@ def _list_files(source, recursive):
 
 
 def download_artifact(workspace_directory, artifact_uri):
-    ''' Downloads an artifact to the workspace '''
+    ''' Download an artifact to the workspace '''
 
     download_directory = os.path.join(workspace_directory, '.nimp', 'downloads')
     artifact_name = os.path.basename(artifact_uri.rstrip('/'))
@@ -159,7 +167,7 @@ def _extract_archive(archive_path, output_path):
 
 
 def install_artifact(artifact_path, destination_directory):
-    ''' Installs an artifact in the workspace '''
+    ''' Install an artifact in the workspace '''
 
     if not os.path.exists(artifact_path):
         raise ValueError('Artifact does not exist: ' + artifact_path)
@@ -195,3 +203,72 @@ def _try_make_executable(file_path):
                 os.chmod(file_path, file_stat.st_mode | stat.S_IEXEC)
             except OSError as exception:
                 logging.warning('Failed to make file executable: %s (FilePath: %s)', exception, file_path)
+
+
+def create_artifact(artifact_path, file_collection, archive, compress):
+    ''' Create an artifact '''
+
+    if os.path.isfile(artifact_path + '.zip') or os.path.isdir(artifact_path):
+        raise ValueError('Artifact already exists: %s' % artifact_path)
+
+    if os.path.isfile(artifact_path + '.zip.tmp'):
+        os.remove(artifact_path + '.zip.tmp')
+    if os.path.isdir(artifact_path + '.tmp'):
+        shutil.rmtree(artifact_path + '.tmp')
+
+    if archive:
+        archive_path = artifact_path + '.zip'
+        compression = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
+        with zipfile.ZipFile(archive_path + '.tmp', 'w', compression = compression) as archive_file:
+            for source, destination in file_collection:
+                if os.path.isdir(source):
+                    pass
+                logging.debug('Adding %s as %s', source, destination)
+                archive_file.write(source, destination)
+        with zipfile.ZipFile(archive_path + '.tmp', 'r') as archive_file:
+            if archive_file.testzip():
+                raise OSError('Archive is corrupted')
+        shutil.move(archive_path + '.tmp', archive_path)
+
+    else:
+        for source, destination in file_collection:
+            if os.path.isdir(source):
+                pass
+            logging.debug('Adding %s as %s', source, destination)
+            destination = os.path.join(artifact_path + '.tmp', destination)
+            os.makedirs(os.path.dirname(destination), exist_ok = True)
+            shutil.copyfile(source, destination)
+        shutil.move(artifact_path + '.tmp', artifact_path)
+
+
+def create_torrent(artifact_path):
+    ''' Create a torrent for an existing artifact '''
+
+    torrent_path = artifact_path + '.torrent'
+    if os.path.isfile(torrent_path + '.tmp'):
+        os.remove(torrent_path + '.tmp')
+    if os.path.isfile(torrent_path):
+        os.remove(torrent_path)
+
+    if os.path.isfile(artifact_path + '.zip'):
+        torrent_name = os.path.basename(artifact_path + '.zip')
+        all_torrent_trees = [ BitTornado.Meta.BTTree.BTTree(artifact_path + '.zip', [ os.path.basename(artifact_path + '.zip') ]) ]
+    elif os.path.isdir(artifact_path):
+        torrent_name = os.path.basename(artifact_path)
+        all_torrent_trees = []
+        for source in glob.glob(os.path.join(artifact_path, '**'), recursive = True):
+            if os.path.isfile(source):
+                destination = os.path.relpath(source, artifact_path)
+                all_torrent_trees.append(BitTornado.Meta.BTTree.BTTree(source, os.path.normpath(destination).split(os.path.sep)))
+    else:
+        raise FileNotFoundError('Artifact not found: %s' % artifact_path)
+
+    torrent_info = BitTornado.Meta.Info.Info(torrent_name, sum(tree.size for tree in all_torrent_trees))
+    for torrent_tree in all_torrent_trees:
+        torrent_tree.addFileToInfos([torrent_info])
+        BitTornado.Meta.Info.check_info(torrent_info)
+    torrent_metainfo = BitTornado.Meta.Info.MetaInfo(info = torrent_info)
+
+    with open(torrent_path + '.tmp', 'wb') as torrent_file:
+        torrent_file.write(BitTornado.Meta.bencode.bencode(torrent_metainfo))
+    shutil.move(torrent_path + '.tmp', torrent_path)
