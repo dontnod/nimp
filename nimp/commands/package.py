@@ -121,7 +121,7 @@ class Package(nimp.command.Command):
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'free_parameters')
 
-        command_steps = [ 'cook', 'stage', 'package' ]
+        command_steps = [ 'cook', 'stage', 'package', 'verify' ]
         parser.add_argument('--simulate', action = 'store_true', help = 'perform a test run, without writing changes')
         parser.add_argument('--steps', nargs = '+', choices = command_steps, default = command_steps, metavar = '<step>',
                             help = 'select the steps to execute\n(%s)' % ', '.join(command_steps))
@@ -211,6 +211,10 @@ class Package(nimp.command.Command):
         if 'package' in env.steps:
             logging.info('=== Package ===')
             Package.package_for_platform(env, package_configuration)
+            logging.info('')
+        if 'verify' in env.steps:
+            logging.info('=== Verify ===')
+            Package.verify(env, package_configuration)
             logging.info('')
 
         return True
@@ -590,24 +594,40 @@ class Package(nimp.command.Command):
                     if package_success != 0:
                         raise RuntimeError('Package generation failed')
 
-                    # The img_create command already does the check when invoked for submission
-                    # Configurations other than Shipping always output errors because of debug binaries
-                    if not package_configuration.is_final_submission and binary_configuration == 'Shipping':
-                        package_files = []
-                        for file_name in os.listdir(destination):
-                            if file_name.endswith('.pkg'):
-                                package_files.append(destination + '/' + file_name)
 
-                        validate_package_command = [
-                            package_tool_path, 'img_verify',
-                            '--no_progress_bar',
-                            '--tmp_path', destination + '-Temporary',
-                            '--passcode', title_data['title_passcode'],
-                        ]
-                        validate_package_command += package_files
+    @staticmethod
+    def verify(env, package_configuration):
+        ''' Verify the generated packages '''
 
-                        validation_success = nimp.sys.process.call(validate_package_command, simulate = env.simulate)
-                        if validation_success != 0:
-                            logging.warning('Package validation failed')
+        logging.info('Verifying packages (Path: %s)', package_configuration.package_directory)
+        logging.info('')
 
-                    _try_remove(destination + '-Temporary', env.simulate)
+        if package_configuration.target_platform == 'PS4':
+            package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
+
+            for title_data in package_configuration.ps4_title_collection:
+                for binary_configuration in package_configuration.binary_configuration.split('+'):
+                    directory = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+                    directory = package_configuration.package_directory + '/' + directory
+
+                    package_files = []
+                    for file_name in os.listdir(directory):
+                        if file_name.endswith('.pkg'):
+                            package_files.append(directory + '/' + file_name)
+
+                    _try_remove(directory + '-Temporary', env.simulate)
+                    _try_create_directory(directory + '-Temporary', env.simulate)
+
+                    validate_package_command = [
+                        package_tool_path, 'img_verify',
+                        '--no_progress_bar',
+                        '--tmp_path', directory + '-Temporary',
+                        '--passcode', title_data['title_passcode'],
+                    ]
+                    validate_package_command += package_files
+
+                    validation_success = nimp.sys.process.call(validate_package_command, simulate = env.simulate)
+                    if validation_success != 0:
+                        logging.warning('Package validation failed')
+
+                    _try_remove(directory + '-Temporary', env.simulate)
