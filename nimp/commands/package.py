@@ -122,19 +122,20 @@ class Package(nimp.command.Command):
         nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'free_parameters')
 
         command_steps = [ 'cook', 'stage', 'package' ]
-        parser.add_argument('--simulate', action = 'store_true', help = 'Perform a test run')
-        parser.add_argument('--steps', help = 'Only run specified steps instead of all of them',
-                            choices = command_steps, default = command_steps, nargs = '+')
-        parser.add_argument('--variant', help = 'Set the configuration variant to use')
-        parser.add_argument('--layout', help = 'Set the layout file to use for the package (for consoles)')
-        parser.add_argument('--patch', help = 'Create a patch based on previously staged data', action = 'store_true')
-        parser.add_argument('--final', help = 'Enable package options for final submission', action = 'store_true')
-        parser.add_argument('--iterate', help = 'Enable iterative cooking', action = 'store_true')
-        parser.add_argument('--compress', help = 'Enable pak file compression', action = 'store_true')
-        parser.add_argument('--trackloadpackage', help = 'Track LoadPackage calls when cooking', action = 'store_true')
-        parser.add_argument('--cook-extra-options', nargs = '*', default = [], help = 'Pass additional options to the cook command')
-        parser.add_argument('--ps4-title', metavar = '<directory>', nargs = '+',
-                            help = 'Set the directory for the target title files (PS4 only, default to Unreal TitleID)')
+        parser.add_argument('--simulate', action = 'store_true', help = 'perform a test run, without writing changes')
+        parser.add_argument('--steps', nargs = '+', choices = command_steps, default = command_steps, metavar = '<step>',
+                            help = 'select the steps to execute\n(%s)' % ', '.join(command_steps))
+        parser.add_argument('--variant', metavar = '<variant>', help = 'set the configuration variant to use')
+        parser.add_argument('--layout', metavar = '<file_path>', help = 'set the layout file to use for the package (for consoles)')
+        parser.add_argument('--patch', action = 'store_true', help = 'create a patch based on previously staged data')
+        parser.add_argument('--final', action = 'store_true', help = 'enable package options for final submission')
+        parser.add_argument('--iterate', action = 'store_true', help = 'enable iterative cooking')
+        parser.add_argument('--compress', action = 'store_true', help = 'enable pak file compression')
+        parser.add_argument('--trackloadpackage', action = 'store_true', help = 'track LoadPackage calls when cooking')
+        parser.add_argument('--cook-extra-options', nargs = '*', default = [], metavar = '<cook_option>',
+                            help = 'pass additional options to the cook command')
+        parser.add_argument('--ps4-title', nargs = '+', metavar = '<directory>',
+                            help = 'set the directory for the target title files (PS4 only, default to Unreal TitleID)')
 
         return True
 
@@ -499,7 +500,7 @@ class Package(nimp.command.Command):
     def package_for_platform(env, package_configuration):
         ''' Generate a package for a target platform '''
 
-        logging.info('Packaging for %s (Source: %s, Destination: %s', package_configuration.target_platform,
+        logging.info('Packaging for %s (Source: %s, Destination: %s)', package_configuration.target_platform,
                      package_configuration.stage_directory, package_configuration.package_directory)
         logging.info('')
 
