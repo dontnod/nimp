@@ -22,10 +22,12 @@
 
 import copy
 import json
+import glob
 import logging
 import os
 import re
 import shutil
+import xml.etree.ElementTree
 
 import nimp.commands
 import nimp.environment
@@ -610,11 +612,6 @@ class Package(nimp.command.Command):
                     directory = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
                     directory = package_configuration.package_directory + '/' + directory
 
-                    package_files = []
-                    for file_name in os.listdir(directory):
-                        if file_name.endswith('.pkg'):
-                            package_files.append(directory + '/' + file_name)
-
                     _try_remove(directory + '-Temporary', env.simulate)
                     _try_create_directory(directory + '-Temporary', env.simulate)
 
@@ -624,10 +621,24 @@ class Package(nimp.command.Command):
                         '--tmp_path', directory + '-Temporary',
                         '--passcode', title_data['title_passcode'],
                     ]
-                    validate_package_command += package_files
+                    validate_package_command += glob.glob(directory + '/*.pkg')
 
                     validation_success = nimp.sys.process.call(validate_package_command, simulate = env.simulate)
                     if validation_success != 0:
                         logging.warning('Package validation failed')
 
                     _try_remove(directory + '-Temporary', env.simulate)
+
+        elif package_configuration.target_platform == 'XboxOne':
+            for binary_configuration in package_configuration.binary_configuration.split('+'):
+                directory = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+                directory = package_configuration.package_directory + '/' + directory
+
+                for validator_path in glob.glob(directory + '/Validator_*.xml'):
+                    logging.info("Reading %s", validator_path)
+                    validator_xml = xml.etree.ElementTree.parse(validator_path).getroot()
+                    for test_result in validator_xml.find('testresults').findall('testresult'):
+                        for failure in test_result.findall('failure'):
+                            logging.error(failure.text)
+                        for warning in test_result.findall('warning'):
+                            logging.warning(warning.text)
