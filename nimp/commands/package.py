@@ -524,6 +524,37 @@ class Package(nimp.command.Command):
             for source_file, destination_file in all_files:
                 _copy_file(source_file, destination_file, env.simulate)
 
+        elif package_configuration.target_platform == 'PS4':
+            package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
+
+            for title_data in package_configuration.ps4_title_collection:
+                for binary_configuration in package_configuration.binary_configuration.split('+'):
+                    destination = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+                    destination = package_configuration.package_directory + '/' + destination
+                    layout_file = source + '/' + package_configuration.project + '-' + title_data['region'] + '-' + binary_configuration + '.gp4'
+                    output_format = 'pkg'
+                    if package_configuration.is_final_submission:
+                        if not package_configuration.is_patch and title_data['storagetype'].startswith('bd'):
+                            output_format += '+iso'
+                        output_format += '+subitem'
+
+                    _try_remove(destination, env.simulate)
+                    _try_remove(destination + '-Temporary', env.simulate)
+                    _try_create_directory(destination, env.simulate)
+                    _try_create_directory(destination + '-Temporary', env.simulate)
+
+                    create_package_command = [
+                        package_tool_path, 'img_create',
+                        '--no_progress_bar',
+                        '--tmp_path', destination + '-Temporary',
+                        '--oformat', output_format,
+                        layout_file, destination
+                    ]
+
+                    package_success = nimp.sys.process.call(create_package_command, simulate = env.simulate)
+                    if package_success != 0:
+                        raise RuntimeError('Package generation failed')
+
         elif package_configuration.target_platform == 'XboxOne':
             package_tool_path = os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePkg.exe')
 
@@ -562,37 +593,6 @@ class Package(nimp.command.Command):
 
                 if package_success != 0:
                     raise RuntimeError('Package generation failed')
-
-        elif package_configuration.target_platform == 'PS4':
-            package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
-
-            for title_data in package_configuration.ps4_title_collection:
-                for binary_configuration in package_configuration.binary_configuration.split('+'):
-                    destination = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
-                    destination = package_configuration.package_directory + '/' + destination
-                    layout_file = source + '/' + package_configuration.project + '-' + title_data['region'] + '-' + binary_configuration + '.gp4'
-                    output_format = 'pkg'
-                    if package_configuration.is_final_submission:
-                        if not package_configuration.is_patch and title_data['storagetype'].startswith('bd'):
-                            output_format += '+iso'
-                        output_format += '+subitem'
-
-                    _try_remove(destination, env.simulate)
-                    _try_remove(destination + '-Temporary', env.simulate)
-                    _try_create_directory(destination, env.simulate)
-                    _try_create_directory(destination + '-Temporary', env.simulate)
-
-                    create_package_command = [
-                        package_tool_path, 'img_create',
-                        '--no_progress_bar',
-                        '--tmp_path', destination + '-Temporary',
-                        '--oformat', output_format,
-                        layout_file, destination
-                    ]
-
-                    package_success = nimp.sys.process.call(create_package_command, simulate = env.simulate)
-                    if package_success != 0:
-                        raise RuntimeError('Package generation failed')
 
 
     @staticmethod
