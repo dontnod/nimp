@@ -123,10 +123,12 @@ class Package(nimp.command.Command):
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'free_parameters')
 
-        command_steps = [ 'cook', 'stage', 'package', 'verify' ]
+        all_steps = [ 'cook', 'stage', 'package', 'verify' ]
+        default_steps = [ 'cook', 'stage', 'package' ]
+
         parser.add_argument('--simulate', action = 'store_true', help = 'perform a test run, without writing changes')
-        parser.add_argument('--steps', nargs = '+', choices = command_steps, default = command_steps, metavar = '<step>',
-                            help = 'select the steps to execute\n(%s)' % ', '.join(command_steps))
+        parser.add_argument('--steps', nargs = '+', choices = all_steps, default = default_steps, metavar = '<step>',
+                            help = 'select the steps to execute\n(%s)' % ', '.join(all_steps))
         parser.add_argument('--variant', metavar = '<variant>', help = 'set the configuration variant to use')
         parser.add_argument('--layout', metavar = '<file_path>', help = 'set the layout file to use for the package (for consoles)')
         parser.add_argument('--patch', action = 'store_true', help = 'create a patch based on previously staged data')
