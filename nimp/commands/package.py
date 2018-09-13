@@ -351,30 +351,31 @@ class Package(nimp.command.Command):
         _try_remove(package_configuration.stage_directory, env.simulate)
         _try_create_directory(package_configuration.stage_directory, env.simulate)
 
-        stage_command = [
-            package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
-            'BuildCookRun', '-UE4exe=UE4Editor-Cmd.exe', '-UTF8Output',
-            '-Project=' + package_configuration.project,
-            '-TargetPlatform=' + package_configuration.target_platform,
-            '-ClientConfig=' + package_configuration.binary_configuration,
-            '-SkipCook', '-Stage', '-Pak', '-SkipPak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
-        ]
+        if package_configuration.package_type in [ 'application', 'application_patch' ]:
+            stage_command = [
+                package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
+                'BuildCookRun', '-UE4exe=UE4Editor-Cmd.exe', '-UTF8Output',
+                '-Project=' + package_configuration.project,
+                '-TargetPlatform=' + package_configuration.target_platform,
+                '-ClientConfig=' + package_configuration.binary_configuration,
+                '-SkipCook', '-Stage', '-Pak', '-SkipPak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
+            ]
 
-        stage_success = nimp.sys.process.call(stage_command, simulate = env.simulate)
-        if stage_success != 0:
-            raise RuntimeError('Stage failed')
+            stage_success = nimp.sys.process.call(stage_command, simulate = env.simulate)
+            if stage_success != 0:
+                raise RuntimeError('Stage failed')
 
-        if package_configuration.target_platform == 'XboxOne':
-            Package._stage_xbox_manifest(package_configuration, env.simulate)
+        Package._stage_title_files(package_configuration, env.simulate)
         Package._stage_layout(package_configuration, env.simulate)
 
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             Package._stage_symbols(package_configuration, env.simulate)
 
-        pak_patch_base = '{patch_base_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
-        pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
-        for pak_name in package_configuration.pak_collection:
-            Package.create_pak_file(env, package_configuration, pak_name, pak_patch_base, pak_destination_directory)
+        if package_configuration.package_type != 'entitlement':
+            pak_patch_base = '{patch_base_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
+            pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
+            for pak_name in package_configuration.pak_collection:
+                Package.create_pak_file(env, package_configuration, pak_name, pak_patch_base, pak_destination_directory)
 
         if package_configuration.target_platform == 'XboxOne':
             if not env.simulate:
@@ -450,18 +451,48 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage_xbox_manifest(package_configuration, simulate):
-        if not simulate:
-            os.remove(package_configuration.stage_directory + '/AppxManifest.xml')
-            os.remove(package_configuration.stage_directory + '/appdata.bin')
+    def _stage_title_files(package_configuration, simulate):
 
-        manifest_source = package_configuration.configuration_directory + '/XboxOne/AppxManifest.xml'
-        transform_parameters = {}
-        for binary_configuration in package_configuration.binary_configuration.split('+'):
-            manifest_destination = 'AppxManifest-%s.xml' % binary_configuration
-            transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
-            transform_parameters['configuration'] = binary_configuration
-            Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
+        if package_configuration.target_platform == 'PS4':
+
+            # The AutomationTool command already stages these files
+            if package_configuration.package_type in [ 'application', 'application_patch']:
+                return
+
+            mapping_collection = [
+                (package_configuration.project_directory + '/Build/PS4/sce_sys/{title_directory}', 'sce_sys/{title_directory}'),
+                (package_configuration.project_directory + '/Build/PS4/titledata/{title_directory}/title.json', '{title_directory}/title.json'),
+            ]
+
+            for title in package_configuration.ps4_title_collection:
+                for source_path, destination_path in mapping_collection:
+                    source_path = source_path.format(title_directory = title['title_directory'])
+                    destination_path = destination_path.format(title_directory = title['title_directory']).lower()
+                    Package._stage_file(package_configuration.stage_directory, source_path, destination_path, simulate)
+
+        elif package_configuration.target_platform == 'XboxOne':
+
+            # The AutomationTool command already stages these files
+            if package_configuration.package_type in [ 'application', 'application_patch'] and not simulate:
+                os.remove(package_configuration.stage_directory + '/AppxManifest.xml')
+                os.remove(package_configuration.stage_directory + '/appdata.bin')
+
+            manifest_source = package_configuration.configuration_directory + '/XboxOne/AppxManifest.xml'
+            transform_parameters = {}
+            for binary_configuration in package_configuration.binary_configuration.split('+'):
+                manifest_destination = 'AppxManifest-%s.xml' % binary_configuration
+                transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
+                transform_parameters['configuration'] = binary_configuration
+                Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
+
+            # The AutomationTool command already stages these files
+            if package_configuration.package_type in [ 'application', 'application_patch']:
+                return
+
+            resources_directory = package_configuration.project_directory + '/Build/XboxOne/Resources'
+            for resource_file in os.listdir(resources_directory):
+                if os.path.isfile(resources_directory + '/' + resource_file):
+                    Package._stage_file(package_configuration.stage_directory, resources_directory + '/' + resource_file, 'Resources/' + resource_file, simulate)
 
 
     @staticmethod
@@ -508,8 +539,15 @@ class Package(nimp.command.Command):
     @staticmethod
     def _stage_file(stage_directory, source, destination, simulate):
         logging.info('Staging %s as %s', source, destination)
-        if not simulate:
-            shutil.copyfile(source, stage_directory + '/' + destination)
+        if os.path.isdir(source):
+            if not simulate:
+                shutil.copytree(source, stage_directory + '/' + destination, copy_function = shutil.copyfile)
+        elif os.path.isfile(source):
+            if not simulate:
+                os.makedirs(os.path.dirname(stage_directory + '/' +destination), exist_ok = True)
+                shutil.copyfile(source, stage_directory + '/' +destination)
+        else:
+            raise FileNotFoundError(source)
 
 
     @staticmethod
