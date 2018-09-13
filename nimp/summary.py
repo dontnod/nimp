@@ -88,9 +88,6 @@ class SummaryHandler(logging.Handler):
             r'[\/\w\W\-.: ]+\(\d+,\d+\): warning : .*', # Clang
             r'[\/\w\W\-.: ]+\(\d+\): warning [A-Z\d]+: .*', # MSVC
             r'\[Warn\]\t.*', # PS4 SDK (Orbis)
-            r'Warning: .*', # XboxOne SDK
-            r'\*\*\* WARNING: .*', # XboxOne SDK
-            r'  WARNING - .*', # XboxOne SDK
         ]
 
         ignore_patterns = [

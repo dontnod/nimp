@@ -110,6 +110,8 @@ class UnrealPackageConfiguration():
         self.pak_compression = False
         self.pak_compression_exclusions = []
         self.layout_file_path = None
+        self.ignored_errors = []
+        self.ignored_warnings = []
         self.is_final_submission = False
 
         self.ps4_title_collection = []
@@ -203,6 +205,10 @@ class Package(nimp.command.Command):
                 package_configuration.layout_file_path = env.package_variants[env.variant]['layout']
             if 'ps4_titles' in env.package_variants[env.variant] and env.ps4_regions:
                 ps4_title_directory_collection = [ env.package_variants[env.variant]['ps4_titles'][region] for region in env.ps4_regions ]
+            if 'ignored_errors' in env.package_variants[env.variant]:
+                package_configuration.ignored_errors = env.package_variants[env.variant]['ignored_errors']
+            if 'ignored_warnings' in env.package_variants[env.variant]:
+                package_configuration.ignored_warnings = env.package_variants[env.variant]['ignored_warnings']
 
         #region Legacy
         else:
@@ -692,7 +698,7 @@ class Package(nimp.command.Command):
                         '--tmp_path', directory + '-Temporary',
                         '--passcode', title_data['title_passcode'],
                     ]
-                    validate_package_command += glob.glob(directory + '/*.pkg')
+                    validate_package_command += [ path.replace('\\', '/') for path in glob.glob(directory + '/*.pkg') ]
 
                     validation_success = nimp.sys.process.call(validate_package_command, simulate = env.simulate)
                     if validation_success != 0:
@@ -705,11 +711,19 @@ class Package(nimp.command.Command):
                 directory = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
                 directory = package_configuration.package_directory + '/' + directory
 
-                for validator_path in glob.glob(directory + '/Validator_*.xml'):
+                validation_success = True
+                for validator_path in [ path.replace('\\', '/') for path in glob.glob(directory + '/Validator_*.xml') ]:
                     logging.info("Reading %s", validator_path)
                     validator_xml = xml.etree.ElementTree.parse(validator_path).getroot()
                     for test_result in validator_xml.find('testresults').findall('testresult'):
-                        for failure in test_result.findall('failure'):
-                            logging.error(failure.text)
-                        for warning in test_result.findall('warning'):
-                            logging.warning(warning.text)
+                        for failure in test_result.findall('.//failure'):
+                            if failure.text not in package_configuration.ignored_errors:
+                                logging.error("%s: %s", test_result.find('component').text, failure.text)
+                                validation_success = False
+                        for warning in test_result.findall('.//warning'):
+                            if warning.text not in package_configuration.ignored_warnings:
+                                logging.warning("%s: %s", test_result.find('component').text, warning.text)
+                                validation_success = False
+
+                if not validation_success:
+                    logging.warning('Package validation failed')
