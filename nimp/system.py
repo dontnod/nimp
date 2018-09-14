@@ -270,44 +270,8 @@ class FileMapper(object):
     def load_set(self, set_name):
         ''' Loads a file mapper from a configuration file '''
         set_module_name = self._format(set_name)
-        set_path = os.path.join(self.root_dir, ".nimp/filesets", set_module_name + ".py")
-
-        if os.path.exists(set_path):
-            set_module = importlib.import_module('filesets.' + set_module_name)
-            set_module.map(self)
-            return self.get_leaves()
-
-        # Fallback deprecated behavior for .txt file
-        return self._load_set_from_txt(set_name)
-
-    # Deprecated
-    def _load_set_from_txt(self, set_name):
-        ''' Loads a file mapper from a configuration file '''
-        file_name = self._format(set_name)
-        if not os.path.exists(file_name) or not os.path.isfile(file_name):
-            # Always hardcode this directory to avoid bloating .nimp.conf.
-            file_name = os.path.join(self.root_dir, ".nimp/filesets", set_name + ".txt")
-            file_name = self._format(file_name)
-        locals_vars = {}
-        try:
-            conf = open(file_name, "rb").read()
-        except IOError as ex:
-            logging.error("Error loading fileset: unable to open file: %s", ex)
-            return None
-
-        try:
-            #pylint: disable=exec-used
-            exec(compile(conf, file_name, 'exec'), None, locals_vars)
-            if "map" not in locals_vars:
-                logging.error("Configuration file %s has no function called 'map'.", file_name)
-                return None
-        #pylint: disable=broad-except
-        except Exception as ex:
-            logging.error("Error loading fileset: unable to load file %s : %s", file_name, str(ex))
-            return None
-
-        locals_vars['map'](self)
-
+        set_module = importlib.import_module('filesets.' + set_module_name)
+        set_module.map(self)
         return self.get_leaves()
 
     def get_leaves(self):
