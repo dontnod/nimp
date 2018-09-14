@@ -357,6 +357,7 @@ class Package(nimp.command.Command):
         _try_remove(package_configuration.stage_directory, env.simulate)
         _try_create_directory(package_configuration.stage_directory, env.simulate)
 
+        # AutomationTool is used here for the staging parts which are not done by nimp itself yet
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             stage_command = [
                 package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
@@ -373,15 +374,8 @@ class Package(nimp.command.Command):
 
         Package._stage_title_files(package_configuration, env.simulate)
         Package._stage_layout(package_configuration, env.simulate)
-
-        if package_configuration.package_type in [ 'application', 'application_patch' ]:
-            Package._stage_symbols(package_configuration, env.simulate)
-
-        if package_configuration.package_type != 'entitlement':
-            pak_patch_base = '{patch_base_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
-            pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
-            for pak_name in package_configuration.pak_collection:
-                Package.create_pak_file(env, package_configuration, pak_name, pak_patch_base, pak_destination_directory)
+        Package._stage_binaries(package_configuration, env.simulate)
+        Package._stage_content(env, package_configuration)
 
         if package_configuration.target_platform == 'XboxOne':
             if not env.simulate:
@@ -461,7 +455,7 @@ class Package(nimp.command.Command):
 
         if package_configuration.target_platform == 'PS4':
 
-            # The AutomationTool command already stages these files
+            # AutomationTool already stages these files
             if package_configuration.package_type in [ 'application', 'application_patch']:
                 return
 
@@ -478,7 +472,7 @@ class Package(nimp.command.Command):
 
         elif package_configuration.target_platform == 'XboxOne':
 
-            # The AutomationTool command already stages these files
+            # AutomationTool already stages these files
             if package_configuration.package_type in [ 'application', 'application_patch'] and not simulate:
                 os.remove(package_configuration.stage_directory + '/AppxManifest.xml')
                 os.remove(package_configuration.stage_directory + '/appdata.bin')
@@ -491,7 +485,7 @@ class Package(nimp.command.Command):
                 transform_parameters['configuration'] = binary_configuration
                 Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
 
-            # The AutomationTool command already stages these files
+            # AutomationTool already stages these files
             if package_configuration.package_type in [ 'application', 'application_patch']:
                 return
 
@@ -502,10 +496,14 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage_symbols(package_configuration, simulate):
+    def _stage_binaries(package_configuration, simulate):
+        if package_configuration.package_type not in [ 'application', 'application_patch' ]:
+            return
+
         source = '{project_directory}/Binaries/{target_platform}'.format(**vars(package_configuration))
         destination = '{project}/Binaries/{target_platform}'.format(**vars(package_configuration))
 
+        # AutomationTool already stages executables and symbol metadata
         if package_configuration.target_platform in [ 'Win64', 'XboxOne' ]:
             for binary_configuration in package_configuration.binary_configuration.split('+'):
                 pdb_file_name = Package._get_executable_name(package_configuration, binary_configuration) + '.pdb'
@@ -540,6 +538,17 @@ class Package(nimp.command.Command):
                 transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
                 transform_parameters['configuration'] = binary_configuration
                 Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
+
+
+    @staticmethod
+    def _stage_content(env, package_configuration):
+        if package_configuration.package_type == 'entitlement':
+            return
+
+        pak_patch_base = '{patch_base_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
+        pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
+        for pak_name in package_configuration.pak_collection:
+            Package.create_pak_file(env, package_configuration, pak_name, pak_patch_base, pak_destination_directory)
 
 
     @staticmethod
