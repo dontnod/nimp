@@ -165,13 +165,13 @@ class Package(nimp.command.Command):
 
         package_configuration = UnrealPackageConfiguration()
 
-        package_configuration.engine_directory = env.format('{root_dir}/Engine')
-        package_configuration.project_directory = env.format('{root_dir}/{game}')
-        package_configuration.configuration_directory = env.format('{root_dir}/{game}/Config')
-        package_configuration.cook_directory = env.format('{root_dir}/{game}/Saved/Cooked/{cook_platform}')
-        package_configuration.patch_base_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}-PatchBase')
-        package_configuration.stage_directory = env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}')
-        package_configuration.package_directory = env.format('{root_dir}/{game}/Saved/Packages/{cook_platform}')
+        package_configuration.engine_directory = nimp.system.standardize_path(env.format('{root_dir}/Engine'))
+        package_configuration.project_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}'))
+        package_configuration.configuration_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Config'))
+        package_configuration.cook_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/Cooked/{cook_platform}'))
+        package_configuration.patch_base_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}-PatchBase'))
+        package_configuration.stage_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}'))
+        package_configuration.package_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/Packages/{cook_platform}'))
 
         variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
         if os.path.exists(variant_configuration_directory):
@@ -408,16 +408,13 @@ class Package(nimp.command.Command):
             os.makedirs(destination, exist_ok = True)
 
         logging.info('Listing files for pak %s', pak_file_name)
-        file_mapper = nimp.system.map_files(env)
+        file_mapper = nimp.system.FileMapper(None, vars(env))
         file_mapper.override(pak_name = pak_name).load_set('content_pak')
-        all_files = list(file_mapper())
+        all_files = file_mapper.to_list(env.root_dir, ".")
 
-        if (len(all_files) == 0) or (all_files == [(".", None)]):
+        if len(all_files) == 0:
             logging.warning('No files for %s', pak_file_name)
             return
-
-        # Normalize and sort paths to have a deterministic result across systems
-        all_files = sorted((src.replace('\\', '/'), dst.replace('\\', '/')) for src, dst in all_files)
 
         logging.info('Creating manifest for pak %s', pak_file_name)
         if not env.simulate:
@@ -609,9 +606,9 @@ class Package(nimp.command.Command):
             _try_create_directory(destination, env.simulate)
 
             logging.info('Listing package files')
-            package_fileset = nimp.system.map_files(env)
-            package_fileset.src(source[ len(env.root_dir) + 1 : ]).to(destination).load_set('stage_to_package')
-            all_files = package_fileset()
+            file_mapper = nimp.system.FileMapper(None, vars(env))
+            file_mapper.load_set('stage_to_package')
+            all_files = file_mapper.to_list(source, destination)
 
             for source_file, destination_file in all_files:
                 _copy_file(source_file, destination_file, env.simulate)

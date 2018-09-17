@@ -37,25 +37,17 @@ class FilesetCommand(nimp.command.Command):
         super(FilesetCommand, self).__init__()
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('fileset',
-                            help    = 'Set name to load (e.g. binaries, version...)',
-                            metavar = '<fileset>')
-
-        nimp.command.add_common_arguments(parser,
-                                          'platform',
-                                          'configuration',
-                                          'target',
-                                          'free_parameters')
+        nimp.command.add_common_arguments(parser, 'platform', 'configuration', 'target', 'free_parameters')
+        parser.add_argument('fileset', metavar = '<fileset>', help = 'select the fileset to load')
         return True
 
     def is_available(self, env):
         return True, ''
 
     def run(self, env):
-        files = nimp.system.map_files(env)
-        files_chain = files
-        files_chain.load_set(env.fileset)
-        return self._run_fileset(env, files_chain)
+        file_mapper = nimp.system.map_files(env)
+        file_mapper.load_set(env.fileset)
+        return self._run_fileset(env, file_mapper)
 
     @abc.abstractmethod
     def _run_fileset(self, env, file_mapper):

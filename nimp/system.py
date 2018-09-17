@@ -81,8 +81,12 @@ def path_to_array(path):
     directory, file = os.path.split(path)
     return path_to_array(directory) + [file] if directory  else [file]
 
+def standardize_path(path):
+    ''' Transform a path to appear the same across operating systems '''
+    return os.path.normpath(path).replace('\\', '/') if path else path
+
 def sanitize_path(path):
-    ''' Perfmorms slash replacement to work on both msys and windows '''
+    ''' Performs slash replacement to work on both msys and windows '''
     if path is None:
         return None
 
@@ -210,7 +214,7 @@ class FileMapper(object):
         self._format_args = format_args if format_args is not None else {}
 
     def __call__(self, src = None, dest = None):
-        results = self._mapper(src, dest)
+        results = self._mapper(src, dest) if self._mapper else [(src, dest)]
         for result in sorted(results, key = lambda t: t[1] or t[0] or ""):
             for next_mapper in self._next:
                 for next_result in next_mapper(*result):
@@ -257,9 +261,9 @@ class FileMapper(object):
                     #raise Exception("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
         return self.append(_glob_mapper)
 
-    def xglob(self, src = '.', dst = '.', pattern = '**'):
+    def xglob(self, src = '.', dest = '.', pattern = '**'):
         ''' More user-friendly glob '''
-        return self.src(src).to(dst).glob(pattern)
+        return self.src(src).to(dest).glob(pattern)
 
     def append(self, mapper, format_args = None):
         ''' Appends a filter / generator function to the end of this mapper '''
@@ -284,6 +288,10 @@ class FileMapper(object):
 
     def override(self, **fmt):
         ''' Inserts a node adding or overriding given format arguments. '''
+
+        def _identity_mapper(src, dest):
+            yield src, dest
+
         format_args = self._format_args.copy()
         # Hackish : We construct a new Environment to load load_arguments so
         # values computed from others parameters are correctly set
@@ -433,9 +441,12 @@ class FileMapper(object):
         except KeyError:
             raise AttributeError(name)
 
-def _identity_mapper(src, dest):
-    yield src, dest
-
+    def to_list(self, mapper_source = None, mapper_destination = None):
+        ''' Helper to execute a file mapper and organize the result '''
+        default_result = [(standardize_path(mapper_source), standardize_path(mapper_destination))]
+        all_files = self(mapper_source, mapper_destination)
+        all_files = list(sorted(set(((standardize_path(src), standardize_path(dest)) for src, dest in all_files))))
+        return all_files if all_files != default_result else []
 
 def load_status(env):
     ''' Loads the workspace status '''

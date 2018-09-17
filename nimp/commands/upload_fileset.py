@@ -72,16 +72,12 @@ class UploadFileset(nimp.command.Command):
         _try_remove(artifact_path + '.torrent', env.simulate)
 
         logging.info('Listing files for %s', artifact_path)
-        file_mapper = nimp.system.map_files(env)
+        file_mapper = nimp.system.FileMapper(None, vars(env))
         file_mapper.load_set(env.fileset)
-        all_files = list(file_mapper())
+        all_files = file_mapper.to_list(env.root_dir, ".")
 
-        if (len(all_files) == 0) or (all_files == [(".", None)]):
+        if len(all_files) == 0:
             raise RuntimeError('Found no files to upload')
-
-        # Normalize and sort paths to have a deterministic result across systems
-        all_files = ((src.replace('\\', '/'), dst.replace('\\', '/')) for src, dst in all_files)
-        all_files = list(sorted(set(all_files)))
 
         logging.info('Uploading to %s', artifact_path)
         os.makedirs(os.path.dirname(artifact_path), exist_ok = True)
