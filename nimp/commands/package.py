@@ -542,6 +542,15 @@ class Package(nimp.command.Command):
         if package_configuration.package_type == 'entitlement':
             return
 
+        try:
+            file_mapper = nimp.system.FileMapper(None, vars(env))
+            file_mapper.load_set('content_other')
+            all_files = file_mapper.to_list(env.root_dir, ".")
+            for source_file, destination_file in all_files:
+                Package._stage_file(package_configuration.stage_directory, source_file, destination_file, env.simulate)
+        except ModuleNotFoundError:
+            pass
+
         pak_patch_base = '{patch_base_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
         pak_destination_directory = '{stage_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
         for pak_name in package_configuration.pak_collection:
