@@ -547,6 +547,8 @@ class Package(nimp.command.Command):
             file_mapper.load_set('content_other')
             all_files = file_mapper.to_list(env.root_dir, ".")
             for source_file, destination_file in all_files:
+                if package_configuration.target_platform == 'PS4':
+                    destination_file = destination_file.lower()
                 Package._stage_file(package_configuration.stage_directory, source_file, destination_file, env.simulate)
         except ModuleNotFoundError:
             pass
