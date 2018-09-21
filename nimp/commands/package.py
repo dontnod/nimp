@@ -104,6 +104,7 @@ class UnrealPackageConfiguration():
         self.cook_platform = None
         self.target_platform = None
         self.package_type = None
+        self.shader_debug_info = False
         self.iterative_cook = False
         self.cook_extra_options = []
         self.pak_collection = []
@@ -133,6 +134,7 @@ class Package(nimp.command.Command):
                             help = 'select the steps to execute\n(%s)' % ', '.join(all_steps))
         parser.add_argument('--variant', metavar = '<variant>', help = 'set the configuration variant to use')
         parser.add_argument('--iterate', action = 'store_true', help = 'enable iterative cooking')
+        parser.add_argument('--shader-debug-info', action = 'store_true', help = 'enable shader debug information generation')
         parser.add_argument('--compress', action = 'store_true', help = 'enable pak file compression')
         parser.add_argument('--final', action = 'store_true', help = 'enable package options for final submission')
         parser.add_argument('--trackloadpackage', action = 'store_true', help = 'track LoadPackage calls when cooking')
@@ -182,6 +184,7 @@ class Package(nimp.command.Command):
         package_configuration.worker_platform = env.worker_platform
         package_configuration.cook_platform = env.cook_platform
         package_configuration.target_platform = env.ue4_platform
+        package_configuration.shader_debug_info = env.shader_debug_info
         package_configuration.iterative_cook = env.iterate
         package_configuration.cook_extra_options = env.cook_extra_options
         package_configuration.package_type = 'application'
@@ -317,18 +320,30 @@ class Package(nimp.command.Command):
             cook_command += [ '-Iterate', '-IterateHash' ]
         cook_command += package_configuration.cook_extra_options
 
-        configuration_file_path = package_configuration.configuration_directory + '/DefaultEngine.ini'
-        sdb_path = package_configuration.project_directory + '/Saved/ShaderDebugInfo/' + package_configuration.target_platform
+        if package_configuration.shader_debug_info:
+            sdb_path = package_configuration.project_directory + '/Saved/ShaderDebugInfo/' + package_configuration.target_platform
+            files_to_modify = [
+                package_configuration.engine_directory + '/Config/ConsoleVariables.ini',
+                package_configuration.configuration_directory + '/DefaultEngine.ini',
+            ]
 
-        if not env.simulate:
-            if not os.path.isdir(sdb_path):
-                os.makedirs(sdb_path)
-            shutil.move(configuration_file_path, configuration_file_path + '.bak')
-            shutil.copyfile(configuration_file_path + '.bak', configuration_file_path)
+            if not env.simulate:
+                os.makedirs(sdb_path, exist_ok = True)
+                for file_path in files_to_modify:
+                    shutil.move(file_path, file_path + '.bak')
+                    shutil.copyfile(file_path + '.bak', file_path)
 
         try:
-            if not env.simulate:
-                with open(configuration_file_path, 'a') as configuration_file:
+            if package_configuration.shader_debug_info and not env.simulate:
+
+                with open(package_configuration.engine_directory + '/Config/ConsoleVariables.ini', 'a') as configuration_file:
+                    configuration_file.write('\n')
+                    configuration_file.write('r.DumpShaderDebugInfo=1\n')
+                    configuration_file.write('r.DumpShaderDebugShortNames=1\n')
+                    configuration_file.write('r.PS4DumpShaderSDB=1\n')
+                    configuration_file.write('\n')
+
+                with open(package_configuration.configuration_directory + '/DefaultEngine.ini', 'a') as configuration_file:
                     configuration_file.write('\n')
                     configuration_file.write('[DevOptions.Shaders]\n')
                     configuration_file.write('ShaderPDBRoot=' + os.path.abspath(sdb_path) + '\n')
@@ -340,9 +355,10 @@ class Package(nimp.command.Command):
                 raise RuntimeError('Cook failed')
 
         finally:
-            if not env.simulate:
-                os.remove(configuration_file_path)
-                shutil.move(configuration_file_path + '.bak', configuration_file_path)
+            if package_configuration.shader_debug_info and not env.simulate:
+                for file_path in files_to_modify:
+                    os.remove(file_path)
+                    shutil.move(file_path + '.bak', file_path)
 
         nimp.environment.execute_hook('postcook', env)
 
