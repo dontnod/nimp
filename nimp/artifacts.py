@@ -219,7 +219,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, simulate)
     if simulate:
         for source, destination in file_collection:
             if os.path.isdir(source):
-                pass
+                continue
             logging.debug('Adding %s as %s', source, destination)
 
     elif archive:
@@ -228,7 +228,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, simulate)
         with zipfile.ZipFile(archive_path + '.tmp', 'w', compression = compression) as archive_file:
             for source, destination in file_collection:
                 if os.path.isdir(source):
-                    pass
+                    continue
                 logging.debug('Adding %s as %s', source, destination)
                 archive_file.write(source, destination)
         with zipfile.ZipFile(archive_path + '.tmp', 'r') as archive_file:
@@ -239,7 +239,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, simulate)
     else:
         for source, destination in file_collection:
             if os.path.isdir(source):
-                pass
+                continue
             logging.debug('Adding %s as %s', source, destination)
             destination = os.path.join(artifact_path + '.tmp', destination)
             os.makedirs(os.path.dirname(destination), exist_ok = True)
