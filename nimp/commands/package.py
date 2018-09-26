@@ -566,7 +566,7 @@ class Package(nimp.command.Command):
                 if package_configuration.target_platform == 'PS4':
                     destination_file = destination_file.lower()
                 Package._stage_file(package_configuration.stage_directory, source_file, destination_file, env.simulate)
-        except ModuleNotFoundError:
+        except ImportError:
             pass
 
         pak_patch_base = '{patch_base_directory}/{project}/Content/Paks'.format(**vars(package_configuration))
