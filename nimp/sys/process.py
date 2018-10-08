@@ -158,6 +158,9 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
         for thread in all_workers:
             thread.join()
 
+    if not hide_output:
+        logging.info('Finished with exit code %d (0x%08x)', exit_code, exit_code)
+
     if capture_output:
         return exit_code, ''.join(all_captures[0]), ''.join(all_captures[1])
     else:
