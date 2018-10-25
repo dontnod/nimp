@@ -68,7 +68,7 @@ class UpdateSymbolServer(nimp.command.Command):
         logging.info('Uploading from %s to %s (Simulate: %s)', symbol_source, symbol_destination, env.simulate)
 
         if not os.path.exists(symbol_source):
-            logging.warning('Symbol source does not exist: %s', symbol_source)
+            logging.info('Symbol source does not exist: %s', symbol_source)
             return True
 
         if not os.path.exists(symbol_destination) and not env.simulate:
