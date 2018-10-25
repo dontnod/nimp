@@ -322,28 +322,21 @@ class Package(nimp.command.Command):
 
         if package_configuration.shader_debug_info:
             sdb_path = package_configuration.project_directory + '/Saved/ShaderDebugInfo/' + package_configuration.target_platform
-            files_to_modify = [
-                package_configuration.engine_directory + '/Config/ConsoleVariables.ini',
-                package_configuration.configuration_directory + '/DefaultEngine.ini',
-            ]
+            engine_configuration_file_path = package_configuration.configuration_directory + '/DefaultEngine.ini'
 
             if not env.simulate:
                 os.makedirs(sdb_path, exist_ok = True)
-                for file_path in files_to_modify:
-                    shutil.move(file_path, file_path + '.bak')
-                    shutil.copyfile(file_path + '.bak', file_path)
+                shutil.move(engine_configuration_file_path, engine_configuration_file_path + '.nimp.bak')
+                shutil.copyfile(engine_configuration_file_path + '.nimp.bak', engine_configuration_file_path)
 
         try:
             if package_configuration.shader_debug_info and not env.simulate:
-
-                with open(package_configuration.engine_directory + '/Config/ConsoleVariables.ini', 'a') as configuration_file:
+                with open(engine_configuration_file_path, 'a') as configuration_file:
                     configuration_file.write('\n')
+                    configuration_file.write('[ConsoleVariables]\n')
                     configuration_file.write('r.DumpShaderDebugInfo=1\n')
                     configuration_file.write('r.DumpShaderDebugShortNames=1\n')
                     configuration_file.write('r.PS4DumpShaderSDB=1\n')
-                    configuration_file.write('\n')
-
-                with open(package_configuration.configuration_directory + '/DefaultEngine.ini', 'a') as configuration_file:
                     configuration_file.write('\n')
                     configuration_file.write('[DevOptions.Shaders]\n')
                     configuration_file.write('ShaderPDBRoot=' + os.path.abspath(sdb_path) + '\n')
@@ -356,9 +349,8 @@ class Package(nimp.command.Command):
 
         finally:
             if package_configuration.shader_debug_info and not env.simulate:
-                for file_path in files_to_modify:
-                    os.remove(file_path)
-                    shutil.move(file_path + '.bak', file_path)
+                os.remove(engine_configuration_file_path)
+                shutil.move(engine_configuration_file_path + '.nimp.bak', engine_configuration_file_path)
 
         nimp.environment.execute_hook('postcook', env)
 
