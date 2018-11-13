@@ -448,7 +448,8 @@ class Package(nimp.command.Command):
             pak_command += [ '-BlockSize=4KB', '-BitWindow=12' ]
 
         if package_configuration.package_type == 'application_patch':
-            pak_command += [ '-GeneratePatch=' + os.path.abspath(patch_base + '/' + pak_file_name + '.pak') ]
+            if os.path.isfile(patch_base + '/' + pak_file_name + '.pak'):
+                pak_command += [ '-GeneratePatch=' + os.path.abspath(patch_base + '/' + pak_file_name + '.pak') ]
 
         pak_success = nimp.sys.process.call(pak_command, simulate = env.simulate)
         if pak_success != 0:
