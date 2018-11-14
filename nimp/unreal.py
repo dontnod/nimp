@@ -139,18 +139,22 @@ def _ue4_build(env):
             logging.error("Error generating UE4 project files")
             return False
 
-    # Default to VS 2015.
-    vs_version = '14'
-    try:
-        for line in open(env.format(env.solution)):
-            if 'MinimumVisualStudioVersion = 15' in line:
-                vs_version = '15'
-                break
-    except IOError:
-        pass
-
     # The main solution file
     solution = env.format(env.solution)
+
+    # Decide which VS version to use
+    if hasattr(env, 'vs_version') and env.vs_version:
+        vs_version = env.vs_version
+    else:
+        # Default to VS 2015.
+        vs_version = '14'
+        try:
+            for line in open(solution):
+                if 'MinimumVisualStudioVersion = 15' in line:
+                    vs_version = '15'
+                    break
+        except IOError:
+            pass
 
     # We’ll try to build all tools even in case of failure
     success = True
