@@ -318,9 +318,17 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
 
 def _ue4_generate_project(env):
     if nimp.sys.platform.is_windows():
-        return nimp.sys.process.call(['cmd', '/c', 'GenerateProjectFiles.bat', '-2015'], cwd=env.root_dir)
+        command = ['cmd', '/c', 'GenerateProjectFiles.bat']
+        if hasattr(env, 'vs_version'):
+            if env.vs_version == '14':
+                command.append('-2015')
+            elif env.vs_version == '15':
+                command.append('-2017')
     else:
-        return nimp.sys.process.call(['/bin/sh', './GenerateProjectFiles.sh'], cwd=env.root_dir)
+        command = ['/bin/sh', './GenerateProjectFiles.sh']
+
+    return nimp.sys.process.call(command, cwd=env.root_dir)
+
 
 def _ue4_build_project(env, sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
