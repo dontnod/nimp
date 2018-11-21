@@ -402,7 +402,13 @@ class Package(nimp.command.Command):
         pak_tool_path = engine_binaries_directory + '/UnrealPak' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
 
         pak_file_name = package_configuration.project + '-' + package_configuration.cook_platform + (('-' + pak_name) if pak_name else '')
-        pak_file_path = destination + '/' + pak_file_name + ('_P' if package_configuration.package_type == 'application_patch' else '') + '.pak'
+
+        # The pak file is created as a patch only if a base pak file exists.
+        # The base package may include only a subset of pak files, additional pak files from the patch package will not use patch logic.
+        # The patch base directory can be stripped of some pak files in order to bypass patch logic and overwrite the base pak file instead.
+        is_patch = (package_configuration.package_type == 'application_patch') and os.path.isfile(patch_base + '/' + pak_file_name + '.pak')
+
+        pak_file_path = destination + '/' + pak_file_name + ('_P' if is_patch else '') + '.pak'
         manifest_file_path = destination + '/' + pak_file_name + '.pak.txt'
         order_file_path = package_configuration.project_directory + '/Build/' + package_configuration.cook_platform + '/FileOpenOrder/GameOpenOrder.log'
 
@@ -447,9 +453,8 @@ class Package(nimp.command.Command):
         elif package_configuration.target_platform == 'XboxOne':
             pak_command += [ '-BlockSize=4KB', '-BitWindow=12' ]
 
-        if package_configuration.package_type == 'application_patch':
-            if os.path.isfile(patch_base + '/' + pak_file_name + '.pak'):
-                pak_command += [ '-GeneratePatch=' + os.path.abspath(patch_base + '/' + pak_file_name + '.pak') ]
+        if is_patch:
+            pak_command += [ '-GeneratePatch=' + os.path.abspath(patch_base + '/' + pak_file_name + '.pak') ]
 
         pak_success = nimp.sys.process.call(pak_command, simulate = env.simulate)
         if pak_success != 0:
