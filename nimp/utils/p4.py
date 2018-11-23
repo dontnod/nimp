@@ -99,7 +99,8 @@ class P4:
         ''' Adds a file to source control '''
         assert isinstance(cl_number, str)
         assert isinstance(path, str)
-        output = self._run("add", "-c", cl_number, path)
+        # Use -f to allow filenames with # * @ % characters
+        output = self._run('add', '-f', '-c', cl_number, self._escape_filename(path))
         return output is not None
 
     def clean_workspace(self):
@@ -129,10 +130,10 @@ class P4:
     def get_files_status(self, *files):
         ''' Returns a tuple containing file name, head action and local action for
             all files given '''
-        files = list(files)
+        files = [self._escape_filename(x) for x in files]
         for i in range(0, len(files)):
             if os.path.isdir(files[i]):
-                files[i] = files[i] + "/..."
+                files[i] = files[i] + '/...'
 
         command = self._get_p4_command('-x', '-', 'fstat')
         _, output, error = nimp.sys.process.call(command, stdin='\n'.join(files), capture_output=True)
@@ -178,7 +179,7 @@ class P4:
                 logging.debug("Ignoring deleted file %s", file_name)
                 continue
             logging.debug("Adding file %s to checkout", file_name)
-            files_to_edit.append(file_name)
+            files_to_edit.append(self._escape_filename(file_name))
 
         edit_input = '\n'.join(files_to_edit)
         output = self._run('-x', '-', "edit", "-c",
@@ -188,6 +189,7 @@ class P4:
     def reconcile(self, cl_number, *files):
         ''' Reconciles given files in given cl '''
 
+        files = [self._escape_filename(x) for x in files]
         ret = True
 
         # List all currently edited depot files in our changelist
@@ -220,7 +222,8 @@ class P4:
             ret = False
 
         # Reconcile files with -a: add missing files to checkout if necessary
-        if self._run('-x', '-', 'reconcile', '-a', '-c', cl_number, stdin='\n'.join(files)) is None:
+        #                  and -f: allow usage of # @ % * characters
+        if self._run('-x', '-', 'reconcile', '-f', '-a', '-c', cl_number, stdin='\n'.join(files)) is None:
             ret = False
 
         return ret
@@ -301,7 +304,7 @@ class P4:
                 logging.debug("Ignoring not checked out file %s", file_name)
                 continue
             logging.debug("Adding file %s to revert", file_name)
-            files_to_revert.append(file_name)
+            files_to_revert.append(self._escape_filename(file_name))
 
         revert_input = '\n'.join(files_to_revert)
         output = self._run('-x', '-', "revert", stdin=revert_input) is None
@@ -336,7 +339,7 @@ class P4:
         ''' Udpate given file '''
         command = ["sync"]
 
-        file_list = list(files)
+        file_list = [self._escape_filename(x) for x in files]
         if cl_number is not None:
             file_list = list(map(file_list, lambda x: '%s@%s' % (x, cl_number)))
 
@@ -357,6 +360,13 @@ class P4:
                                                                r"^\.\.\. headAction(.*)"):
                 filename = os.path.normpath(filename) if filename is not None else ''
                 yield filename, action
+
+    def _escape_filename(self, name):
+        # As per https://www.perforce.com/perforce/r15.1/manuals/cmdref/filespecs.html
+        return name.replace('%', '%25') \
+                   .replace('@', '%40') \
+                   .replace('#', '%23') \
+                   .replace('*', '%2A')
 
     def _get_p4_command(self, *args):
         command = ['p4', '-z', 'tag']
