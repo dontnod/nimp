@@ -163,8 +163,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
 
     if capture_output:
         return exit_code, ''.join(all_captures[0]), ''.join(all_captures[1])
-    else:
-        return exit_code
+    return exit_code
 
 
 def _sanitize_command(command):

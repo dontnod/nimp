@@ -94,10 +94,10 @@ def sanitize_path(path):
         if path[0:1] == '/' and path[1:2].isalpha() and path[2:3] == '/':
             return '%s:\\%s' % (path[1], path[3:].replace('/', '\\'))
 
-    if os.sep is '\\':
+    if os.sep == '\\':
         return path.replace('/', '\\')
 
-    # elif os.sep is '/':
+    # elif os.sep == '/':
     return path.replace('\\', '/')
 
 def safe_makedirs(path):
@@ -202,7 +202,7 @@ def map_files(env):
 
     return FileMapper(_default_mapper, format_args = vars(env))
 
-class FileMapper(object):
+class FileMapper():
     ''' A file mapper is a tree of rules used to enumerate files.
         TODO : Eventuellement utiliser les PurePath, de python 3.4, qui simplifieraient
         quelque trucs, nottament dans les globs.

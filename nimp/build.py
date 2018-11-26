@@ -34,6 +34,7 @@ def vsbuild(solution, platform_name, configuration, project=None,
             vs_version='14', target='Build', dotnet_version='4.6'):
     ''' Builds a project with Visual Studio '''
 
+    # Windows
     if nimp.sys.platform.is_windows():
         devenv_path = _find_devenv_path(vs_version)
         if devenv_path is None:
@@ -50,15 +51,15 @@ def vsbuild(solution, platform_name, configuration, project=None,
             return False
         return result == 0
 
-    else: # Mac and Linux alike
-        command = [ 'xbuild', solution, '/verbosity:quiet', '/nologo',
-                    '/p:Configuration=' + configuration,
-                    '/p:Platform=' + platform_name,
-                    '/p:TargetFrameworkVersion=v' + dotnet_version,
-                    '/p:TargetFrameworkProfile=' ]
-        if project is not None:
-            command = command + [ '/target:' + project ]
-        return nimp.sys.process.call(command) == 0
+    # Mac and Linux alike
+    command = [ 'xbuild', solution, '/verbosity:quiet', '/nologo',
+                '/p:Configuration=' + configuration,
+                '/p:Platform=' + platform_name,
+                '/p:TargetFrameworkVersion=v' + dotnet_version,
+                '/p:TargetFrameworkProfile=' ]
+    if project is not None:
+        command = command + [ '/target:' + project ]
+    return nimp.sys.process.call(command) == 0
 
 def _find_devenv_path(vs_version):
     devenv_path = None
@@ -83,9 +84,9 @@ def _find_devenv_path(vs_version):
 
     # For VS2017 and later, there is vswhere
     if not devenv_path:
-        try:
-            vswhere_path = os.path.join(os.environ['ProgramFiles(x86)'], 'Microsoft Visual Studio/Installer/vswhere.exe')
-            result, output, _ = nimp.sys.process.call([vswhere_path], capture_output=True, hide_output=True)
+        vswhere_path = os.path.join(os.environ['ProgramFiles(x86)'], 'Microsoft Visual Studio/Installer/vswhere.exe')
+        result, output, _ = nimp.sys.process.call([vswhere_path], capture_output=True, hide_output=True)
+        if result == 0:
             for line in output.split('\n'):
                 line = line.strip()
                 if 'installationPath: ' in line:
@@ -93,8 +94,6 @@ def _find_devenv_path(vs_version):
                 elif 'installationVersion: ' + vs_version in line:
                     devenv_path = os.path.join(candidate, 'Common7/IDE/devenv.com')
                     break
-        except Exception:
-            pass
 
     # If the registry key is unhelpful, try the environment variable
     if not devenv_path:

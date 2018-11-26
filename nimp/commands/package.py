@@ -426,7 +426,7 @@ class Package(nimp.command.Command):
         file_mapper.override(pak_name = pak_name).load_set('content_pak')
         all_files = file_mapper.to_list(env.root_dir, ".")
 
-        if len(all_files) == 0:
+        if not all_files:
             logging.warning('No files for %s', pak_file_name)
             return
 

@@ -59,11 +59,11 @@ class DownloadFileset(nimp.command.Command):
         all_artifacts = nimp.system.try_execute(lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments), OSError)
         artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision)
 
-        logging.info('Downloading %s' + (' (simulation)' if env.simulate else ''), artifact_to_download['uri'])
+        logging.info('Downloading %s%s', artifact_to_download['uri'], ' (simulation)' if env.simulate else '')
         if not env.simulate:
             local_artifact_path = nimp.system.try_execute(lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']), OSError)
 
-        logging.info('Installing %s in %s' + (' (simulation)' if env.simulate else ''), artifact_to_download['uri'], install_directory)
+        logging.info('Installing %s in %s%s', artifact_to_download['uri'], install_directory, ' (simulation)' if env.simulate else '')
         if not env.simulate:
             nimp.artifacts.install_artifact(local_artifact_path, install_directory)
             shutil.rmtree(local_artifact_path)

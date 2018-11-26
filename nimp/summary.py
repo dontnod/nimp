@@ -24,13 +24,10 @@ values and command line parameters set for this nimp execution '''
 
 import collections
 import logging
+from logging.handlers import WatchedFileHandler
 import os
 import re
 import sys
-
-if "NIMP_LOG_FILE" in os.environ:
-    from logging.handlers import WatchedFileHandler
-
 
 class SummaryHandler(logging.Handler):
     """ Base class for summary handler.
@@ -146,8 +143,6 @@ class SummaryHandler(logging.Handler):
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(logging.Formatter('%(message)s'))
         child_processes_logger.addHandler(handler)
-        if hasattr(handler, "log_all_handler"):
-            child_processes_logger.addHandler(handler.log_all_handler)
 
         # Enables warnings and errors recording
         if self._env.summary is not None:
@@ -251,14 +246,14 @@ class DefaultSummaryHandler(SummaryHandler):
     def _add_warning(self, msg):
         if len(self._context) == self._context.maxlen:
             self._summary += '\n *********************************************\n'
-            while len(self._context) > 0:
+            while self._context:
                 self._summary += '[  NOTIF  ] %s\n' % (self._context.popleft(),)
         self._summary += '[ WARNING ] %s\n' % (msg,)
 
     def _add_error(self, msg):
         if len(self._context) == self._context.maxlen:
             self._summary += '\n *********************************************\n'
-            while len(self._context) > 0:
+            while self._context:
                 self._summary += '[  NOTIF  ] %s\n' % (self._context.popleft(),)
         self._summary += '[  ERROR  ] %s\n' % (msg,)
 

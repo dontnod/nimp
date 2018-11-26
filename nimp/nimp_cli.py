@@ -45,9 +45,9 @@ def _clean_environment_variables():
     # where only the case differs; we remove any lowercase version we find.
     # The loop is O(n²) but we don’t have that many entries so it’s all right.
     env_vars = [x.lower() for x in os.environ.keys()]
-    for dupe in set([x for x in env_vars if env_vars.count(x) > 1]):
+    for dupe in {x for x in env_vars if env_vars.count(x) > 1}:
         dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
-        logging.warning("Fixing duplicate environment variable: " + '/'.join(dupelist))
+        logging.warning('Fixing duplicate environment variable: %s', '/'.join(dupelist))
         for duplicated in dupelist[1:]:
             del os.environ[duplicated]
     # … But in some cases (Windows Python) the duplicate variables are masked

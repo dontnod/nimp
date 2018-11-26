@@ -35,7 +35,7 @@ import nimp.summary
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
         command-line arguments '''
-    env.is_ue4 = hasattr(env, 'project_type') and env.project_type is 'UE4'
+    env.is_ue4 = hasattr(env, 'project_type') and env.project_type == 'UE4'
     return True
 
 def load_arguments(env):
@@ -49,9 +49,9 @@ def get_host_platform():
     ''' Get the Unreal platform for the host platform '''
     if platform.system() == 'Windows':
         return 'Win64'
-    elif platform.system() == 'Linux':
+    if platform.system() == 'Linux':
         return 'Linux'
-    elif platform.system() == 'Darwin':
+    if platform.system() == 'Darwin':
         return 'Mac'
     raise ValueError('Unsupported platform: ' + platform.system())
 
@@ -407,7 +407,7 @@ _MESSAGE_PATTERNS = [
     (re.compile(r'.*Can\'t find file.* \'\(?P<asset>[^\']\)\'.*'), _cant_find_file)
 ]
 
-class _AssetSummary(object):
+class _AssetSummary():
     def __init__(self, hints, asset_name):
         self._hints = hints
         self._asset_name = asset_name
@@ -424,7 +424,7 @@ class _AssetSummary(object):
 
     def write(self, destination):
         """ Writes summary for this asset into destination """
-        if len(self._errors) == 0 and len(self._warnings) == 0:
+        if not self._errors and not self._warnings:
             return
         destination.write('%s :\n' % self._asset_name)
         for error in self._errors:

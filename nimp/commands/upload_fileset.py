@@ -76,7 +76,7 @@ class UploadFileset(nimp.command.Command):
         file_mapper.load_set(env.fileset)
         all_files = file_mapper.to_list(env.root_dir, ".")
 
-        if len(all_files) == 0:
+        if not all_files:
             raise RuntimeError('Found no files to upload')
 
         logging.info('Uploading to %s', artifact_path)

@@ -131,9 +131,9 @@ class P4:
         ''' Returns a tuple containing file name, head action and local action for
             all files given '''
         files = [self._escape_filename(x) for x in files]
-        for i in range(0, len(files)):
-            if os.path.isdir(files[i]):
-                files[i] = files[i] + '/...'
+        for i, filename in enumerate(files):
+            if os.path.isdir(filename):
+                files[i] = filename + '/...'
 
         command = self._get_p4_command('-x', '-', 'fstat')
         _, output, error = nimp.sys.process.call(command, stdin='\n'.join(files), capture_output=True)
@@ -142,7 +142,7 @@ class P4:
         for file_info in files_infos:
             file_info = file_info.strip()
 
-            if file_info is '':
+            if file_info == '':
                 continue
 
             if "no such file(s)" in file_info or "file(s) not in client" in file_info:
@@ -361,7 +361,8 @@ class P4:
                 filename = os.path.normpath(filename) if filename is not None else ''
                 yield filename, action
 
-    def _escape_filename(self, name):
+    @staticmethod
+    def _escape_filename(name):
         # As per https://www.perforce.com/perforce/r15.1/manuals/cmdref/filespecs.html
         return name.replace('%', '%25') \
                    .replace('@', '%40') \

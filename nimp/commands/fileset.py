@@ -140,7 +140,7 @@ class _Unstash(FilesetCommand):
                     logging.error(exception)
                     success = False
 
-        if success == False:
+        if success is False:
             raise RuntimeError('Unstash failed')
 
         logging.info('Removing stash %s', stash_name)

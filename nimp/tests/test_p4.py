@@ -52,7 +52,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
 
     def add_changelist(self, description, *files_content):
         ''' Adds a fake changelist to this p4 mock '''
-        if len(self._changelists) == 0:
+        if not self._changelists:
             cl_number = '400'
         else:
             cl_number = str(int(max(self._changelists.keys(), key=int)) + 1)
@@ -137,18 +137,19 @@ class P4Mock(nimp.tests.utils.MockCommand):
         parser.set_defaults(command_to_run = _add_command)
 
     def _init_change(self, subparsers):
+        #pylint: disable=inconsistent-return-statements
         def _change_command(args, stdin):
             if hasattr(args, 'd') and args.d is not None:
                 if args.d not in self._changelists:
                     return (1, '', 'Change %s unknown.' % args.d)
                 change = self._changelists[args.d]
-                if len(change.files) != 0:
+                if change.files:
                     error = 'Change %s has %i open file(s) associated with it and can\'t be deleted.'
                     error = error % (change.number, len(change.files))
                     return (1, '', error)
                 del self._changelists[args.d]
                 return (0, 'Change %s deleted.' % args.d, '')
-            elif args.i:
+            if args.i:
                 # TODO : Add better checks on C.L specification
                 desc_lines = None
                 for line in stdin.split('\n'):
@@ -158,7 +159,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
                         desc_lines = []
 
                 description = '\n'.join(desc_lines)
-                if len(self._changelists) == 0:
+                if not self._changelists:
                     cl_number = '400'
                 else:
                     cl_number = str(int(max(self._changelists.keys(), key=int)) + 1)
@@ -273,7 +274,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
                 rel_path = os.path.relpath(it, '/p4')
                 stdout.append('//test_client/%s - opened for edit' % rel_path)
 
-            result = 1 if len(stderr) != 0 else 0
+            result = 1 if stderr else 0
             return (result, '\n'.join(stdout), '\n'.join(stderr))
 
         parser = subparsers.add_parser('edit')
@@ -419,7 +420,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
                     if changelist.status == 'pending':
                         for cl_file, _ in list(changelist.files.items()):
                             _revert(cl_file, args)
-                        assert len(changelist.files) == 0
+                        assert not changelist.files
             else:
                 for cl_number, changelist in self._changelists.items():
                     if args.changelist is not None and cl_number != args.changelist:
@@ -465,7 +466,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
             if args.c is not None:
                 assert args.c in self._changelists
                 changelist = self._changelists[args.c]
-                if len(changelist.files) == 0:
+                if not changelist.files:
                     return (0, '', 'No files to submit.')
                 for filename, (_, action) in changelist.files.items():
                     if action != 'delete':
@@ -535,6 +536,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
 
     @staticmethod
     def _init_user(subparsers):
+        #pylint: disable=inconsistent-return-statements
         def _user_command(args, _):
             if args.o:
                 return (0,

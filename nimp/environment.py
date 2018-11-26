@@ -285,7 +285,7 @@ def _get_instances(module, instance_type):
             sub_module_complete_name = module_name + "." + sub_module_name_it
             try:
                 sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
-            except Exception as ex: # Can be ImportError, but also TabError, and more.
+            except (ImportError, TabError) as ex:
                 logging.warning('Error importing local command %s: %s', sub_module_complete_name, ex)
                 continue
             sub_instances = _get_instances(sub_module_it, instance_type)
