@@ -27,6 +27,7 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 import xml.etree.ElementTree
 
 import nimp.commands
@@ -487,6 +488,7 @@ class Package(nimp.command.Command):
             if package_configuration.package_type in [ 'application', 'application_patch'] and not simulate:
                 os.remove(package_configuration.stage_directory + '/AppxManifest.xml')
                 os.remove(package_configuration.stage_directory + '/appdata.bin')
+                os.remove(package_configuration.stage_directory + '/resources.pri')
 
             manifest_source = package_configuration.configuration_directory + '/XboxOne/AppxManifest.xml'
             transform_parameters = {}
@@ -496,14 +498,23 @@ class Package(nimp.command.Command):
                 transform_parameters['configuration'] = binary_configuration
                 Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
 
-            # AutomationTool already stages these files
-            if package_configuration.package_type in [ 'application', 'application_patch']:
-                return
-
             resources_directory = package_configuration.project_directory + '/Build/XboxOne/Resources'
             for resource_file in os.listdir(resources_directory):
                 if os.path.isfile(resources_directory + '/' + resource_file):
                     Package._stage_file(package_configuration.stage_directory, resources_directory + '/' + resource_file, 'Resources/' + resource_file, simulate)
+
+            makepri_command = [
+                os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePri.exe'), 'new',
+                '/ProjectRoot', package_configuration.stage_directory,
+                '/ConfigXml', package_configuration.project_directory + '/Build/XboxOne/PriConfig.xml',
+                '/Manifest', package_configuration.configuration_directory + '/XboxOne/AppxManifest.xml',
+                '/OutputFile', package_configuration.stage_directory + '/resources.pri',
+                '/IndexLog', package_configuration.stage_directory + '/resources.log.xml',
+            ]
+
+            logging.info('+ %s', ' '.join(makepri_command))
+            if not simulate:
+                subprocess.check_call(makepri_command)
 
 
     @staticmethod
