@@ -94,6 +94,7 @@ class UnrealPackageConfiguration():
         self.engine_directory = None
         self.project_directory = None
         self.configuration_directory = None
+        self.resource_directory = None
         self.cook_directory = None
         self.patch_base_directory = None
         self.stage_directory = None
@@ -171,6 +172,7 @@ class Package(nimp.command.Command):
         package_configuration.engine_directory = nimp.system.standardize_path(env.format('{root_dir}/Engine'))
         package_configuration.project_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}'))
         package_configuration.configuration_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Config'))
+        package_configuration.resource_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Build/{ue4_platform}/Resources'))
         package_configuration.cook_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/Cooked/{cook_platform}'))
         package_configuration.patch_base_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}-PatchBase'))
         package_configuration.stage_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}'))
@@ -179,6 +181,9 @@ class Package(nimp.command.Command):
         variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
         if os.path.exists(variant_configuration_directory):
             package_configuration.configuration_directory = variant_configuration_directory
+        variant_resource_directory = package_configuration.resource_directory + '/Variants/' + env.variant
+        if os.path.exists(variant_resource_directory):
+            package_configuration.resource_directory = variant_resource_directory
 
         package_configuration.project = env.game
         package_configuration.binary_configuration = env.ue4_config
@@ -498,10 +503,12 @@ class Package(nimp.command.Command):
                 transform_parameters['configuration'] = binary_configuration
                 Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
 
-            resources_directory = package_configuration.project_directory + '/Build/XboxOne/Resources'
-            for resource_file in os.listdir(resources_directory):
-                if os.path.isfile(resources_directory + '/' + resource_file):
-                    Package._stage_file(package_configuration.stage_directory, resources_directory + '/' + resource_file, 'Resources/' + resource_file, simulate)
+            resource_file_collection = glob.glob(package_configuration.resource_directory + "/**/*.png", recursive = True)
+            resource_file_collection += glob.glob(package_configuration.resource_directory + "/**/*.resw", recursive = True)
+            resource_file_collection = [ nimp.system.standardize_path(path) for path in resource_file_collection ]
+            for resource_source in resource_file_collection:
+                resource_destination = 'Resources/' + os.path.relpath(resource_source, package_configuration.resource_directory)
+                Package._stage_file(package_configuration.stage_directory, resource_source, resource_destination, simulate)
 
             makepri_command = [
                 os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePri.exe'), 'new',
