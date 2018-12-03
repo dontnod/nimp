@@ -494,6 +494,7 @@ class Package(nimp.command.Command):
                 os.remove(package_configuration.stage_directory + '/AppxManifest.xml')
                 os.remove(package_configuration.stage_directory + '/appdata.bin')
                 os.remove(package_configuration.stage_directory + '/resources.pri')
+                shutil.rmtree(package_configuration.stage_directory + '/Resources')
 
             manifest_source = package_configuration.configuration_directory + '/XboxOne/AppxManifest.xml'
             transform_parameters = {}
