@@ -28,9 +28,6 @@ import nimp.sys.process
 
 class Run(nimp.command.Command):
     ''' Simply runs a command '''
-    def __init__(self):
-        super(Run, self).__init__()
-
     def configure_arguments(self, env, parser):
         parser.add_argument('command_and_args',
                             help = 'Command to run',
@@ -46,4 +43,9 @@ class Run(nimp.command.Command):
         for arg in env.command_and_args:
             cmdline.append(env.format(arg))
 
-        return nimp.sys.process.call(cmdline) == 0
+        nimp.environment.execute_hook('prerun', env)
+        ret = nimp.sys.process.call(cmdline)
+        nimp.environment.execute_hook('postrun', env)
+
+        return ret == 0
+
