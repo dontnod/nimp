@@ -241,7 +241,7 @@ class FileMapper():
                 else:
                     glob_path = os.path.join(src, pattern)
 
-                for glob_source in glob2.glob(glob_path):
+                for glob_source in glob2.glob(glob_path, include_hidden=True):
                     found = True
                     glob_source = str(glob_source)
                     # This is merely equivalent to os.path.relpath(src, self._source_path)
