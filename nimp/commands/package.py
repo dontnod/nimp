@@ -688,6 +688,8 @@ class Package(nimp.command.Command):
                     if package_success != 0:
                         raise RuntimeError('Package generation failed')
 
+                    _try_remove(destination + '-Temporary', env.simulate)
+
         elif package_configuration.target_platform == 'XboxOne':
             package_tool_path = os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePkg.exe')
 
