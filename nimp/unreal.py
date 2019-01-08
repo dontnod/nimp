@@ -348,7 +348,8 @@ def _ue4_build_project(env, sln_file, project, build_platform,
     else:
         host_platform = 'Linux'
 
-    return nimp.sys.process.call(['/bin/sh', './Engine/Build/BatchFiles/%s/Build.sh' % (host_platform),
+    # This file uses bash explicitly
+    return nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (host_platform),
                                   project, build_platform, configuration],
                                  cwd=env.root_dir) == 0
 
