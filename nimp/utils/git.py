@@ -22,6 +22,8 @@
 
 ''' Git utilities '''
 
+import ast
+import os
 import nimp.sys.process
 
 
@@ -56,4 +58,82 @@ def get_version():
             break
         n += 1
     return '.'.join([date, str(n), shorthash])
+
+class Git():
+    def __init__(self, directory, url):
+        self._directory = directory
+        self._url = url
+
+    def set_up(self, branch='master'):
+        ''' Adds a remote of given name pointing to given url, or overwrite remote
+        url if it already exists '''
+
+        if not os.path.isdir(os.path.join(self._directory, '.git')):
+            if self._git('init')[0] != 0:
+                return False
+        elif self._git('status')[0] != 0:
+            if not self._git('init'):
+                return False
+
+        if self._git('remote', 'show', 'origin')[0] != 0:
+            if self._git('remote', 'add', 'origin', self._url)[0] != 0:
+                return False
+        elif self._git('remote', 'set-url', 'origin', self._url)[0] != 0:
+            return False
+
+        if self._git('fetch', 'origin')[0] != 0:
+            return False
+
+        if self._git('checkout', '-f', branch)[0] != 0:
+            return False
+
+        if self._git('reset', '--hard', 'origin/%s' % branch)[0] != 0:
+            return False
+
+        return True
+
+    def have_changes(self):
+        return self._git('diff', '--exit-code')[0] != 0
+
+    def commit_all(self, commit_message, author=None):
+        ''' Commit all modified files to git'''
+        command = ['commit', '.', '-m', commit_message]
+        if author is not None:
+            command += ['--author', author]
+
+        if self._git(*command)[0] != 0:
+            return False
+
+        return True
+
+    def force_set_tag(self, tag, commit, message):
+        ''' Commit all modified files to git'''
+        if self._git('tag', '-a', '-f', '-m', message, tag, commit)[0] != 0:
+            return False
+        return True
+
+    def get_tag(self, tag_name, *fields):
+        ''' Returns a dictionnary containing requested fields of given tag'''
+        format_str = '{'
+        for field in fields:
+            format_str += "'{0}': '%({0})',".format(field)
+        format_str += '}'
+
+        result, output, _ = self._git(
+            'tag', '-l', tag_name,
+            '--format=%s' % format_str
+        )
+
+        if result != 0:
+            return None
+
+        return ast.literal_eval(output)
+
+    def _git(self, *args):
+        return nimp.sys.process.call(
+            ['git'] + list(args),
+            capture_output=True,
+            cwd=self._directory
+        )
+
 

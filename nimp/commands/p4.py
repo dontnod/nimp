@@ -28,7 +28,7 @@ import shutil
 import nimp.command
 import nimp.utils.p4
 
-def _is_p4_available():
+def is_p4_available():
     if shutil.which('p4') is None:
         return False, ('p4 executable was not found on your system, check your'
                        'installation.')
@@ -44,7 +44,7 @@ class P4Command(nimp.command.Command):
         pass
 
     def is_available(self, env):
-        return _is_p4_available()
+        return is_p4_available()
 
     @abc.abstractmethod
     def run(self, env):
@@ -63,7 +63,7 @@ class P4(nimp.command.CommandGroup):
         nimp.utils.p4.add_arguments(parser)
 
     def is_available(self, env):
-        return _is_p4_available()
+        return is_p4_available()
 
 class _RevertWorkspace(P4Command):
     ''' Reverts and deletes all pending changelists '''
@@ -71,7 +71,7 @@ class _RevertWorkspace(P4Command):
         super(_RevertWorkspace, self).__init__()
 
     def is_available(self, env):
-        return _is_p4_available()
+        return is_p4_available()
 
     def run(self, env):
         if not nimp.utils.p4.check_for_p4(env):
@@ -107,7 +107,7 @@ class _Fileset(P4Command):
         return True
 
     def is_available(self, env):
-        return _is_p4_available()
+        return is_p4_available()
 
     def run(self, env):
         if not nimp.utils.p4.check_for_p4(env):
@@ -156,7 +156,7 @@ class _Submit(P4Command):
         return True
 
     def is_available(self, env):
-        return _is_p4_available()
+        return is_p4_available()
 
     def run(self, env):
         if not nimp.utils.p4.check_for_p4(env):

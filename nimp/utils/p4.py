@@ -228,16 +228,16 @@ class P4:
 
         return ret
 
-    def get_changelist_description(self, cl_number):
-        ''' Returns description of given changelist '''
-        desc, = next(self._parse_command_output(["describe", cl_number], r"\.\.\. desc (.*)"))
-        return desc
-
     def get_current_changelist(self, path):
         ''' Returns the current changelist for the workspace '''
         perforce_path = (nimp.system.sanitize_path(path) + '/...') if path else '...'
         cl_number, = next(self._parse_command_output(['changes', '--max', '1', perforce_path + '#have'], r'\.\.\. change (\d+)'))
         return cl_number
+
+    def get_changelists(self, *args):
+        ''' Returns the current changelist for the workspace '''
+        for cl_number, in self._parse_command_output(['changes'] + list(args), r'\.\.\. change (\d+)'):
+            yield cl_number
 
     def get_last_synced_changelist(self):
         ''' Returns the last synced changelist '''
@@ -268,6 +268,23 @@ class P4:
         for changelist, in self._parse_command_output(["change", "-i"], r"Change (\d+) created\.", stdin = change_list_form):
             return changelist
 
+    def get_changelist_description(self, cl_number):
+        ''' Returns description of given changelist '''
+        desc, = next(self._parse_command_output(["describe", cl_number], r"\.\.\. desc (.*)"))
+        return desc
+
+    def get_changelist_author(self, cl_number):
+        ''' Returs a tuple containing user, full name and email of the author of a changelist '''
+        user, = next(self._parse_command_output(["describe", cl_number], r"\.\.\. user (.*)"))
+        name, email = next(
+            self._parse_command_output(
+                ["users", user],
+                r"\.\.\. FullName (.*)",
+                r"\.\.\. Email (.*)"
+            )
+        )
+        return user, name, email
+
     def get_pending_changelists(self):
         ''' Returns pending changelists '''
         workspace = self.get_workspace()
@@ -275,6 +292,11 @@ class P4:
         for changelist, in self._parse_command_output(["changes", "-c", workspace, "-s", "pending"], r"\.\.\. change (\d+)"):
             if changelist is not None:
                 yield changelist
+
+    def get_local_path(self, p4_path):
+        ''' Returns local path of mapped given repository path'''
+        local_path, = next(self._parse_command_output(['where', p4_path], r'\.\.\. path (.+)'))
+        return local_path
 
     def get_user(self):
         ''' Returns current perforce user '''
@@ -286,6 +308,10 @@ class P4:
         if workspace == '*unknown*':
             return None
         return workspace
+
+    def clean_files(self, path="//..."):
+        ''' Cleans files in workspace not in depot, add missing files'''
+        return self._run("clean", '-a', '-d', path) is not None
 
     def is_file_versioned(self, file_path):
         ''' Checks if a file is known by the source control '''
@@ -335,13 +361,16 @@ class P4:
 
         return True
 
-    def sync(self, *files, cl_number = None):
+    def sync(self, *files, cl_number = None, force=False):
         ''' Udpate given file '''
         command = ["sync"]
 
+        if force:
+            command += ['-f']
+
         file_list = [self._escape_filename(x) for x in files]
         if cl_number is not None:
-            file_list = list(map(file_list, lambda x: '%s@%s' % (x, cl_number)))
+            file_list = list(map(lambda x: '%s@%s' % (x, cl_number), file_list))
 
         command.extend(file_list)
 

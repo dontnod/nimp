@@ -28,6 +28,7 @@ __all__ = [
     'dev',
     'download_fileset',
     'fileset',
+    'git_p4',
     'p4',
     'package',
     'run',
