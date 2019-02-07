@@ -89,8 +89,13 @@ class P4:
     ''' P4 Client '''
     #pylint: disable=too-many-public-methods
 
-    def __init__(self, port = None, user = None, password = None, client = None,
-        hide_output = False):
+    def __init__(
+            self,
+            port = None,
+            user = None,
+            password = None,
+            client = None,
+            hide_output = False):
         self._port = port
         self._user = user
         self._password = password
