@@ -295,7 +295,7 @@ class P4:
 
     def get_local_path(self, p4_path):
         ''' Returns local path of mapped given repository path'''
-        for result in self._parse_command_output(['where', p4_path], r'\.\.\. path (.+)'):
+        for result, in self._parse_command_output(['where', p4_path], r'\.\.\. path (.+)'):
             return result
         return None
 
