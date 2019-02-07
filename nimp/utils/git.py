@@ -65,7 +65,7 @@ class Git():
         self._directory = directory
         self._url = url
 
-    def set_up(self, branch='master'):
+    def reset(self, branch='master'):
         ''' Sets correct origin and checkouts / resets the given branch
             to the state of the origin branch. This may overwrite origin
             remote url to the value given in the constructor.'''

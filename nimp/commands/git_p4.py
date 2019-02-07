@@ -81,7 +81,7 @@ class GitP4(nimp.command.Command):
         if not p4.clean_workspace():
             return False
 
-        if not git.set_up(env.branch):
+        if not git.reset(env.branch):
             return False
 
         p4_tag = git.get_tag('p4', 'subject')
