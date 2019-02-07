@@ -64,6 +64,7 @@ class Git():
     def __init__(self, directory, hide_output=False):
         self._directory = directory
         self._hide_output = hide_output
+        self._config = {}
 
     def reset(self, remote, branch='master'):
         ''' Sets correct origin and checkouts / resets the given branch
@@ -99,6 +100,10 @@ class Git():
             return False
 
         return True
+
+    def set_config(self, option, value):
+        ''' Sets the given option for further calls to this Git instance '''
+        self._config[option] = value
 
     def have_changes(self):
         ''' Returns true if there is local changes in the repository '''
@@ -149,8 +154,13 @@ class Git():
         return ast.literal_eval(output)
 
     def _git(self, *args):
+        command = ['git']
+        for option, value in self._config.items():
+            command += ['-c', '%s=%s' % (option, value)]
+        command += list(args)
+
         return nimp.sys.process.call(
-            ['git'] + list(args),
+            command,
             capture_output=True,
             hide_output=self._hide_output,
             cwd=self._directory

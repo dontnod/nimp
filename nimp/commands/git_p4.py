@@ -87,7 +87,10 @@ class GitP4(nimp.command.Command):
             return False
 
         logging.info('Setting up git repository')
-        git = nimp.utils.git.Git(path, hide_output = not env.verbose)
+        git = nimp.utils.git.Git(
+            path,
+            hide_output = not env.verbose)
+        git.set_config('core.fileMode', 'false')
 
         if not git.reset(env.git_repository, env.branch):
             return False
@@ -106,8 +109,6 @@ class GitP4(nimp.command.Command):
         changelists = reversed(list(changelists)[:-1])
 
         for changelist in changelists:
-            if changelist == last_synced_changelist:
-                continue
             description = p4.get_changelist_description(changelist)
             _, name, email = p4.get_changelist_author(changelist)
             author = "'%s <%s>'" % (name, email)
