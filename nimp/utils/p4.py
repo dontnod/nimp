@@ -295,8 +295,9 @@ class P4:
 
     def get_local_path(self, p4_path):
         ''' Returns local path of mapped given repository path'''
-        local_path, = next(self._parse_command_output(['where', p4_path], r'\.\.\. path (.+)'))
-        return local_path
+        for result in self._parse_command_output(['where', p4_path], r'\.\.\. path (.+)'):
+            return result
+        return None
 
     def get_user(self):
         ''' Returns current perforce user '''

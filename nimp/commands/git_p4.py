@@ -42,9 +42,23 @@ class GitP4(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.utils.p4.add_arguments(parser)
-        parser.add_argument('p4_repository', metavar = '<path>', help = 'Root of p4 repository to synchronize with git')
-        parser.add_argument('git_repository', metavar = '<url>', help = 'Url of git repository to sync')
-        parser.add_argument('branch', metavar = '<git-branch>', help = 'Branch to sync with perforce')
+        parser.add_argument(
+            'p4_path',
+            metavar = '<path>',
+            help = 'Root of remote p4 directory to synchronize with git'
+        )
+
+        parser.add_argument(
+            'git_repository',
+            metavar = '<url>',
+            help = 'Url of git repository to sync'
+        )
+
+        parser.add_argument(
+            'branch',
+            metavar = '<git-branch>',
+            help = 'Branch to sync with perforce'
+        )
         return True
 
     def is_available(self, env):
@@ -53,7 +67,16 @@ class GitP4(nimp.command.Command):
     def run(self, env):
         ''' Executes the command '''
         p4 = nimp.utils.p4.P4()
-        path = p4.get_local_path(env.p4_repository)
+        path = p4.get_local_path(env.p4_path)
+
+        if path is None:
+            logging.error(
+                ("Unable to map remote perforce path %s to local path, "
+                 "check that this path is mapped in your P4 client view."),
+                env.p4_path
+            )
+            return False
+
         git = nimp.utils.git.Git(path, env.git_repository)
 
         if not p4.clean_workspace():
@@ -61,7 +84,7 @@ class GitP4(nimp.command.Command):
 
         if not git.set_up(env.branch):
             return False
-        
+
         p4_tag = git.get_tag('p4', 'subject')
         if p4_tag is None:
             logging.error('No p4 tag is defined to mark currently synced C.L')
