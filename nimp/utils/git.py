@@ -61,11 +61,10 @@ class Git():
     ''' Wrapper representing a given git repository cloned in a given
         directory '''
 
-    def __init__(self, directory, url):
+    def __init__(self, directory):
         self._directory = directory
-        self._url = url
 
-    def reset(self, branch='master'):
+    def reset(self, remote, branch='master'):
         ''' Sets correct origin and checkouts / resets the given branch
             to the state of the origin branch. This may overwrite origin
             remote url to the value given in the constructor.'''
@@ -80,10 +79,10 @@ class Git():
         result, output, _ = self._git('remote', 'get-url', 'origin')
 
         if result != 0:
-            if self._git('remote', 'add', 'origin', self._url)[0] != 0:
+            if self._git('remote', 'add', 'origin', remote)[0] != 0:
                 return False
-        elif output.strip() != self._url:
-            if self._git('remote', 'set-url', 'origin', self._url)[0] != 0:
+        elif output.strip() != remote:
+            if self._git('remote', 'set-url', 'origin', remote)[0] != 0:
                 return False
 
         if self._git('fetch', 'origin')[0] != 0:

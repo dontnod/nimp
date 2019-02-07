@@ -81,9 +81,9 @@ class GitP4(nimp.command.Command):
             return False
 
         logging.info('Setting up git repository...')
-        git = nimp.utils.git.Git(path, env.git_repository)
+        git = nimp.utils.git.Git(path)
 
-        if not git.reset(env.branch):
+        if not git.reset(env.git_repository, env.branch):
             return False
 
         p4_tag = git.get_tag('p4', 'subject')
