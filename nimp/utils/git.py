@@ -60,13 +60,17 @@ def get_version():
     return '.'.join([date, str(n), shorthash])
 
 class Git():
+    ''' Wrapper representing a given git repository cloned in a given
+        directory '''
+
     def __init__(self, directory, url):
         self._directory = directory
         self._url = url
 
     def set_up(self, branch='master'):
-        ''' Adds a remote of given name pointing to given url, or overwrite remote
-        url if it already exists '''
+        ''' Sets correct origin and checkouts / resets the given branch
+            to the state of the origin branch. This may overwrite origin
+            remote url to the value given in the constructor.'''
 
         if not os.path.isdir(os.path.join(self._directory, '.git')):
             if self._git('init')[0] != 0:
@@ -93,10 +97,12 @@ class Git():
         return True
 
     def have_changes(self):
+        ''' Returns true if there is local changes in the repository '''
         return self._git('diff', '--exit-code')[0] != 0
 
     def commit_all(self, commit_message, author=None):
-        ''' Commit all modified files to git'''
+        ''' Commmits all untracked changes with the given commit message
+            and given author '''
         command = ['commit', '.', '-m', commit_message]
         if author is not None:
             command += ['--author', author]
@@ -107,13 +113,15 @@ class Git():
         return True
 
     def force_set_tag(self, tag, commit, message):
-        ''' Commit all modified files to git'''
+        ''' Sets the given tag to point on the given commit with the given
+            message, overwrites the tag if it exists '''
         if self._git('tag', '-a', '-f', '-m', message, tag, commit)[0] != 0:
             return False
         return True
 
     def get_tag(self, tag_name, *fields):
-        ''' Returns a dictionnary containing requested fields of given tag'''
+        ''' Returns a dictionnary containing requested fields of given tag.
+            The fields are those allowed in the --format option of git tag '''
         format_str = '{'
         for field in fields:
             format_str += "'{0}': '%({0})',".format(field)
