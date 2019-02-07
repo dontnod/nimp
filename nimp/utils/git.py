@@ -95,6 +95,9 @@ class Git():
         if self._git('reset', '--hard', 'origin/%s' % branch)[0] != 0:
             return False
 
+        if self._git('branch', '-u', 'origin/%s' % branch, branch)[0] != 0:
+            return False
+
         return True
 
     def have_changes(self):
@@ -109,6 +112,13 @@ class Git():
             command += ['--author', author]
 
         if self._git(*command)[0] != 0:
+            return False
+
+        return True
+
+    def push(self):
+        ''' Pushes commit to the remote repository '''
+        if self._git('push', '--tags')[0] != 0:
             return False
 
         return True

@@ -59,6 +59,12 @@ class GitP4(nimp.command.Command):
             metavar = '<git-branch>',
             help = 'Branch to sync with perforce'
         )
+
+        parser.add_argument(
+            '--push',
+            action='store_true',
+            help = 'Push result to git'
+        )
         return True
 
     def is_available(self, env):
@@ -76,11 +82,11 @@ class GitP4(nimp.command.Command):
             )
             return False
 
-        logging.info('Cleaning P4 workspace...')
+        logging.info('Cleaning P4 workspace')
         if not p4.clean_workspace():
             return False
 
-        logging.info('Setting up git repository...')
+        logging.info('Setting up git repository')
         git = nimp.utils.git.Git(path, hide_output = not env.verbose)
 
         if not git.reset(env.git_repository, env.branch):
@@ -88,7 +94,7 @@ class GitP4(nimp.command.Command):
 
         p4_tag = git.get_tag('p4', 'subject')
         if p4_tag is None:
-            logging.error('No p4 tag is defined to mark currently synced C.L')
+            logging.error('No p4 tag is defined to mark currently synced perforce changelist.')
             return False
 
         last_synced_changelist = p4_tag['subject'].split(':')[1]
@@ -96,20 +102,31 @@ class GitP4(nimp.command.Command):
             "%s/...@%s,#head" % (path, last_synced_changelist)
         )
 
-        for changelist in reversed(list(changelists)):
+        # Skipping last C.L as it's last_synced_changelist
+        changelists = reversed(list(changelists)[:-1])
+
+        for changelist in changelists:
+            if changelist == last_synced_changelist:
+                continue
             description = p4.get_changelist_description(changelist)
             _, name, email = p4.get_changelist_author(changelist)
             author = "'%s <%s>'" % (name, email)
             author = ast.literal_eval(author)
             p4_path = path + "/..."
-            logging.info('Syncing changelist %s...', changelist)
+            logging.info('Syncing and commiting changelist %s', changelist)
             if not p4.sync(p4_path, cl_number=changelist):
                 return False
 
-            if git.have_changes() and not git.commit_all(description, author=author):
-                return False
+            if git.have_changes():
+                if not git.commit_all(description, author=author):
+                    return False
+            else:
+                logging.info(' --> No changes detected, skipping')
 
             if not git.force_set_tag('p4', env.branch, 'cl:%s' % changelist):
                 return False
+
+        if env.push and not git.push():
+            return False
 
         return True
