@@ -89,11 +89,13 @@ class P4:
     ''' P4 Client '''
     #pylint: disable=too-many-public-methods
 
-    def __init__(self, port = None, user = None, password = None, client = None):
+    def __init__(self, port = None, user = None, password = None, client = None,
+        hide_output = False):
         self._port = port
         self._user = user
         self._password = password
         self._client = client
+        self._hide_output = hide_output
 
     def add(self, cl_number, path):
         ''' Adds a file to source control '''
@@ -136,7 +138,7 @@ class P4:
                 files[i] = filename + '/...'
 
         command = self._get_p4_command('-x', '-', 'fstat')
-        _, output, error = nimp.sys.process.call(command, stdin='\n'.join(files), capture_output=True)
+        _, output, error = nimp.sys.process.call(command, stdin='\n'.join(files), capture_output=True, hide_output=self._hide_output)
         files_infos = (output .strip()+ '\n\n' + error.strip()).strip().replace('\r', '').split('\n\n')
 
         for file_info in files_infos:
@@ -317,7 +319,7 @@ class P4:
     def is_file_versioned(self, file_path):
         ''' Checks if a file is known by the source control '''
         command = self._get_p4_command("fstat", file_path)
-        _, output, error = nimp.sys.process.call(command, capture_output=True)
+        _, output, error = nimp.sys.process.call(command, capture_output=True, hide_output=self._hide_output)
         # Checks if the file was not added then deleted
         if re.search(r"\.\.\.\s*headAction\s*delete", output) is not None:
             return False
@@ -351,7 +353,7 @@ class P4:
         ''' Submits given changelist '''
         logging.info("Submiting changelist %s...", cl_number)
         command = self._get_p4_command('submit', '-f', 'revertunchanged', '-c', cl_number)
-        _, _, error = nimp.sys.process.call(command, capture_output=True)
+        _, _, error = nimp.sys.process.call(command, capture_output=True, hide_output=self._hide_output)
 
         if error is not None and error != "":
             if "No files to submit." in error:
@@ -376,7 +378,12 @@ class P4:
         command.extend(file_list)
 
         command = self._get_p4_command(*command)
-        result, _, error = nimp.sys.process.call(command, capture_output=True, encoding='cp437')
+        result, _, error = nimp.sys.process.call(
+            command,
+            capture_output=True,
+            encoding='cp437',
+            hide_output=self._hide_output
+        )
         if (result != 0 or error != '') and 'file(s) up-to-date' not in error:
             return False
 
@@ -417,7 +424,13 @@ class P4:
         command = self._get_p4_command(*args)
 
         for _ in range(5):
-            result, output, error = nimp.sys.process.call(command, stdin=stdin, encoding='cp437', capture_output=True)
+            result, output, error = nimp.sys.process.call(
+                command,
+                stdin=stdin,
+                encoding='cp437',
+                capture_output=True,
+                hide_output=self._hide_output
+            )
 
             if 'Operation took too long ' in error:
                 continue

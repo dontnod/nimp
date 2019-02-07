@@ -65,7 +65,7 @@ class GitP4(nimp.command.Command):
         return _is_git_available() and nimp.commands.p4.is_p4_available()
 
     def run(self, env):
-        p4 = nimp.utils.p4.P4()
+        p4 = nimp.utils.p4.P4(hide_output=not env.verbose)
         path = p4.get_local_path(env.p4_path)
 
         if path is None:
@@ -81,7 +81,7 @@ class GitP4(nimp.command.Command):
             return False
 
         logging.info('Setting up git repository...')
-        git = nimp.utils.git.Git(path)
+        git = nimp.utils.git.Git(path, hide_output = not env.verbose)
 
         if not git.reset(env.git_repository, env.branch):
             return False

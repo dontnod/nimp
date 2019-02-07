@@ -61,8 +61,9 @@ class Git():
     ''' Wrapper representing a given git repository cloned in a given
         directory '''
 
-    def __init__(self, directory):
+    def __init__(self, directory, hide_output=False):
         self._directory = directory
+        self._hide_output = hide_output
 
     def reset(self, remote, branch='master'):
         ''' Sets correct origin and checkouts / resets the given branch
@@ -141,5 +142,6 @@ class Git():
         return nimp.sys.process.call(
             ['git'] + list(args),
             capture_output=True,
+            hide_output=self._hide_output,
             cwd=self._directory
         )
