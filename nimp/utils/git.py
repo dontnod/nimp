@@ -66,6 +66,10 @@ class Git():
         self._hide_output = hide_output
         self._config = {}
 
+    def root(self):
+        ''' Returns the root directory of the git repository '''
+        return self._directory
+
     def reset(self, remote, branch='master'):
         ''' Sets correct origin and checkouts / resets the given branch
             to the state of the origin branch. This may overwrite origin
@@ -128,7 +132,7 @@ class Git():
 
         return True
 
-    def force_set_tag(self, tag, commit, message):
+    def force_set_tag(self, tag, message, commit='HEAD'):
         ''' Sets the given tag to point on the given commit with the given
             message, overwrites the tag if it exists '''
         if self._git('tag', '-a', '-f', '-m', message, tag, commit)[0] != 0:
