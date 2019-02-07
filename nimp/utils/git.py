@@ -26,18 +26,16 @@ import ast
 import os
 import nimp.sys.process
 
-
 def get_branch():
     ''' Get the current active branch '''
     command = 'git branch --contains HEAD'
     result, output, _ = nimp.sys.process.call(command.split(' '), capture_output=True)
     if result != 0:
         return None
-    for l in output.splitlines():
-        if l[0:2] == '* ':
-            return l[2:].strip()
+    for line in output.splitlines():
+        if line[0:2] == '* ':
+            return line[2:].strip()
     return None
-
 
 def get_version():
     ''' Build a version string from the date and hash of the last commit '''
@@ -47,17 +45,17 @@ def get_version():
     if result != 0 or '.' not in output:
         return None
     # Parse up to 10 revisions to detect date collisions
-    n = 0
+    line_id = 0
     for line in output.split('\n'):
         new_date, new_shorthash = line.split('.')
         utc_time = datetime.fromtimestamp(float(new_date), timezone.utc)
         new_date = utc_time.astimezone().strftime("%Y%m%d.%H%M")
-        if n == 0:
+        if line_id == 0:
             date, shorthash = new_date, new_shorthash
         elif new_date != date:
             break
-        n += 1
-    return '.'.join([date, str(n), shorthash])
+        line_id += 1
+    return '.'.join([date, str(line_id), shorthash])
 
 class Git():
     ''' Wrapper representing a given git repository cloned in a given
@@ -143,5 +141,3 @@ class Git():
             capture_output=True,
             cwd=self._directory
         )
-
-
