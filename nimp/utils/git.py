@@ -111,7 +111,7 @@ class Git():
 
     def have_changes(self):
         ''' Returns true if there is local changes in the repository '''
-        return self._git('diff', '--exit-code')[0] != 0
+        return self._git('diff', '--quiet', '--exit-code')[0] != 0
 
     def commit_all(self, commit_message, author=None):
         ''' Commmits all untracked changes with the given commit message
