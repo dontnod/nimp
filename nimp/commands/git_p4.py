@@ -37,6 +37,11 @@ def _is_git_available():
                        'installation.')
     return True, ''
 
+def _p4_to_utf8(value):
+    value = value.replace('"', '\\"')
+    value = '"%s"' % value
+    return ast.literal_eval(value)
+
 class GitP4(nimp.command.Command):
     ''' Imports P4 changelist in a git branch '''
 
@@ -110,9 +115,11 @@ class GitP4(nimp.command.Command):
 
         for changelist in changelists:
             description = p4.get_changelist_description(changelist)
+            description = _p4_to_utf8(description)
+
             _, name, email = p4.get_changelist_author(changelist)
-            author = "'%s <%s>'" % (name, email)
-            author = ast.literal_eval(author)
+            author = _p4_to_utf8('%s <%s>' % (name, email))
+
             p4_path = path + "/..."
             logging.info('Syncing and commiting changelist %s', changelist)
             if not p4.sync(p4_path, cl_number=changelist):
