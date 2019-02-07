@@ -76,56 +76,87 @@ class GitP4(nimp.command.Command):
         return _is_git_available() and nimp.commands.p4.is_p4_available()
 
     def run(self, env):
-        p4, git = _set_up_workspaces(env)
-        if not p4 or not git:
+        p4 = nimp.utils.p4.P4(hide_output=not env.verbose)
+        path = p4.get_local_path(env.p4_path)
+
+        if path is None:
+            logging.error(
+                ('Unable to map remote perforce path %s to local path, '
+                 'check that this path is mapped in your P4 client view.'),
+                env.p4_path
+            )
+            return False
+
+        git = nimp.utils.git.Git(path, hide_output=not env.verbose)
+
+        if not _set_up_workspaces(env, p4, git):
             return False
 
         changelists = _get_changelists_to_sync(p4, git)
         if changelists is None:
             return False
 
-        if changelists:
-            return _perforce_to_git(p4, git, changelists)
+        commits = git('log --pretty=format:%H p4..HEAD')
 
-        if env.push and not git.push():
+        if commits is None:
+            return False
+
+        if commits:
+            commits = commits.split('\n')
+
+        if changelists and commits:
+            logging.error(
+                'You have changes on both p4 and git side, refusing to sync.'
+                'Reset your branch to the p4 tag and try again.'
+            )
+        elif changelists:
+            return _perforce_to_git(p4, git, changelists)
+        elif commits:
+            return _git_to_perforce(p4, git, commits)
+        else:
+            logging.info('Nothing to sync')
+
+        if env.push and not git('push'):
             return False
 
         return True
 
-def _set_up_workspaces(env):
-    p4 = nimp.utils.p4.P4(hide_output=not env.verbose)
-    path = p4.get_local_path(env.p4_path)
-
-    if path is None:
-        logging.error(
-            ('Unable to map remote perforce path %s to local path, '
-             'check that this path is mapped in your P4 client view.'),
-            env.p4_path
-        )
-        return None, None
-
+def _set_up_workspaces(env, p4, git):
     logging.info('Cleaning P4 workspace')
     if not p4.clean_workspace():
         return None, None
 
     logging.info('Setting up git repository')
-    git = nimp.utils.git.Git(
-        path,
-        hide_output = not env.verbose)
     git.set_config('core.fileMode', 'false')
 
-    if not git.reset(env.git_repository, env.branch):
-        return None, None
+    if not git('init'):
+        return False
 
-    return p4, git
+    remote = env.git_repository
+    current_remote = git('remote get-url origin')
+    if not (current_remote or git('remote add origin {}', remote) is None):
+        return False
+
+    current_remote = current_remote.strip()
+    if current_remote != remote and git('remote set-url origin {}', remote) is None:
+        return False
+
+    branch = env.branch
+    if (    git('fetch origin') is None or
+            git('checkout -f {}', branch) is None or
+            git('reset --hard origin/{}', branch) is None or
+            git('branch -u origin/{0} {0}', branch) is None):
+        return False
+
+    return True
 
 def _get_changelists_to_sync(p4, git):
-    p4_tag = git.get_tag('p4', 'subject')
+    p4_tag = git('tag -l p4 --format=%(subject)')
     if p4_tag is None:
         logging.error('No p4 tag is defined to mark currently synced perforce changelist.')
         return None
 
-    last_synced_changelist = p4_tag['subject'].split(':')[1]
+    last_synced_changelist = p4_tag.strip().split(':')[1]
     changelists = p4.get_changelists(
         "%s/...@%s,#head" % (git.root(), last_synced_changelist)
     )
@@ -147,12 +178,36 @@ def _perforce_to_git(p4, git, changelists):
             return False
 
         if git.have_changes():
-            if not git.commit_all(description, author=author):
+            if not git('commit . -m "{}" --author="{}")', description, author):
                 return False
         else:
             logging.info(' --> No changes detected, skipping')
 
-        if not git.force_set_tag('p4','cl:%s' % changelist):
+        if not git('tag -a -f -m "{}" p4 HEAD', 'cl:' + changelist):
             return False
 
     return True
+
+def _git_to_perforce(p4, git, commits):
+    for commit in commits:
+        description = git('show', '-s', '--pretty=format:%s', commit)
+        if description is None:
+            return False
+
+        changelist = p4.get_or_create_changelist(description)
+        if changelist is None:
+            return False
+
+        files = git.root() + '/...'
+        if not (p4.edit(changelist, files) and
+                git('checkout', '-f', commit) and
+                git('clean -fdx') and
+                p4.reconcile(changelist, files)):
+            return False
+
+    return True
+
+def _get_commits_to_sync(git):
+    commits = git('log --ancestry-path --pretty=format:%H p4..HEAD')
+    if commits:
+        commits = commits.split('\n')

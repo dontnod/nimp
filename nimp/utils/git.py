@@ -22,8 +22,7 @@
 
 ''' Git utilities '''
 
-import ast
-import os
+import logging
 import nimp.sys.process
 
 def get_branch():
@@ -70,102 +69,25 @@ class Git():
         ''' Returns the root directory of the git repository '''
         return self._directory
 
-    def reset(self, remote, branch='master'):
-        ''' Sets correct origin and checkouts / resets the given branch
-            to the state of the origin branch. This may overwrite origin
-            remote url to the value given in the constructor.'''
-
-        if not os.path.isdir(os.path.join(self._directory, '.git')):
-            if self._git('init')[0] != 0:
-                return False
-        elif self._git('status')[0] != 0:
-            if not self._git('init'):
-                return False
-
-        result, output, _ = self._git('remote', 'get-url', 'origin')
-
-        if result != 0:
-            if self._git('remote', 'add', 'origin', remote)[0] != 0:
-                return False
-        elif output.strip() != remote:
-            if self._git('remote', 'set-url', 'origin', remote)[0] != 0:
-                return False
-
-        if self._git('fetch', 'origin')[0] != 0:
-            return False
-
-        if self._git('checkout', '-f', branch)[0] != 0:
-            return False
-
-        if self._git('reset', '--hard', 'origin/%s' % branch)[0] != 0:
-            return False
-
-        if self._git('branch', '-u', 'origin/%s' % branch, branch)[0] != 0:
-            return False
-
-        return True
-
     def set_config(self, option, value):
         ''' Sets the given option for further calls to this Git instance '''
         self._config[option] = value
 
-    def have_changes(self):
-        ''' Returns true if there is local changes in the repository '''
-        return self._git('diff', '--quiet', '--exit-code')[0] != 0
-
-    def commit_all(self, commit_message, author=None):
-        ''' Commmits all untracked changes with the given commit message
-            and given author '''
-        command = ['commit', '.', '-m', commit_message]
-        if author is not None:
-            command += ['--author', author]
-
-        if self._git(*command)[0] != 0:
-            return False
-
-        return True
-
-    def push(self):
-        ''' Pushes commit to the remote repository '''
-        if self._git('push', '--tags')[0] != 0:
-            return False
-
-        return True
-
-    def force_set_tag(self, tag, message, commit='HEAD'):
-        ''' Sets the given tag to point on the given commit with the given
-            message, overwrites the tag if it exists '''
-        if self._git('tag', '-a', '-f', '-m', message, tag, commit)[0] != 0:
-            return False
-        return True
-
-    def get_tag(self, tag_name, *fields):
-        ''' Returns a dictionnary containing requested fields of given tag.
-            The fields are those allowed in the --format option of git tag '''
-        format_str = '{'
-        for field in fields:
-            format_str += "'{0}': '%({0})',".format(field)
-        format_str += '}'
-
-        result, output, _ = self._git(
-            'tag', '-l', tag_name,
-            '--format=%s' % format_str
-        )
-
-        if result != 0:
-            return None
-
-        return ast.literal_eval(output)
-
-    def _git(self, *args):
+    def __call__(self, git_command, *args, **kwargs):
         command = ['git']
         for option, value in self._config.items():
             command += ['-c', '%s=%s' % (option, value)]
-        command += list(args)
+        command += [it.format(*args, **kwargs) for it in git_command.split(' ')]
 
-        return nimp.sys.process.call(
+        result, output, error = nimp.sys.process.call(
             command,
             capture_output=True,
             hide_output=self._hide_output,
             cwd=self._directory
         )
+
+        if result != 0:
+            logging.error(error)
+            return None
+
+        return output
