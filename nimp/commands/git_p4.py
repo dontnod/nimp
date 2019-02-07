@@ -65,7 +65,6 @@ class GitP4(nimp.command.Command):
         return _is_git_available() and nimp.commands.p4.is_p4_available()
 
     def run(self, env):
-        ''' Executes the command '''
         p4 = nimp.utils.p4.P4()
         path = p4.get_local_path(env.p4_path)
 
