@@ -70,16 +70,18 @@ class GitP4(nimp.command.Command):
 
         if path is None:
             logging.error(
-                ("Unable to map remote perforce path %s to local path, "
-                 "check that this path is mapped in your P4 client view."),
+                ('Unable to map remote perforce path %s to local path, '
+                 'check that this path is mapped in your P4 client view.'),
                 env.p4_path
             )
             return False
 
-        git = nimp.utils.git.Git(path, env.git_repository)
-
+        logging.info('Cleaning P4 workspace...')
         if not p4.clean_workspace():
             return False
+
+        logging.info('Setting up git repository...')
+        git = nimp.utils.git.Git(path, env.git_repository)
 
         if not git.reset(env.branch):
             return False
@@ -100,6 +102,7 @@ class GitP4(nimp.command.Command):
             author = "'%s <%s>'" % (name, email)
             author = ast.literal_eval(author)
             p4_path = path + "/..."
+            logging.info('Syncing changelist %s...', changelist)
             if not p4.sync(p4_path, cl_number=changelist):
                 return False
 

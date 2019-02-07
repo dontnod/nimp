@@ -77,11 +77,14 @@ class Git():
             if not self._git('init'):
                 return False
 
-        if self._git('remote', 'show', 'origin')[0] != 0:
+        result, output, _ = self._git('remote', 'get-url', 'origin')
+
+        if result != 0:
             if self._git('remote', 'add', 'origin', self._url)[0] != 0:
                 return False
-        elif self._git('remote', 'set-url', 'origin', self._url)[0] != 0:
-            return False
+        elif output.strip() != self._url:
+            if self._git('remote', 'set-url', 'origin', self._url)[0] != 0:
+                return False
 
         if self._git('fetch', 'origin')[0] != 0:
             return False
