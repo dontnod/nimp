@@ -166,12 +166,14 @@ def _set_up_workspaces(env, p4, git, last_synced_cl):
 
     remote = env.git_repository
     current_remote = git('remote get-url origin')
-    if not (current_remote or git('remote add origin {remote}', remote=remote) is None):
-        return False
-
-    current_remote = current_remote.strip()
-    if current_remote != remote and git('remote set-url origin {remote}', remote=remote) is None:
-        return False
+    if current_remote is None:
+        if git('remote add origin {remote}', remote=remote) is None:
+            return False
+    else:
+        current_remote = current_remote.strip()
+        if current_remote != remote:
+            if git('remote set-url origin {remote}', remote=remote) is None:
+                return False
 
     branch = env.branch
     if (    git('fetch origin') is None or
@@ -197,8 +199,8 @@ def _perforce_to_git(p4, git, changelists):
 
         if git('status --porcelain'):
             if git('commit . -m {message} --author {author}',
-                    message=description,
-                    author=author) is None:
+                   message=description,
+                   author=author) is None:
                 return False
         else:
             logging.info(' --> No changes detected, skipping')
