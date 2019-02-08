@@ -87,7 +87,7 @@ class Git():
         )
 
         if result != 0:
-            logging.error(error)
+            logging.debug(error)
             return None
 
         return output
