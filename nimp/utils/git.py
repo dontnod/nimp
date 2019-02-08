@@ -73,11 +73,11 @@ class Git():
         ''' Sets the given option for further calls to this Git instance '''
         self._config[option] = value
 
-    def __call__(self, git_command, *args, **kwargs):
+    def __call__(self, git_command, **kwargs):
         command = ['git']
         for option, value in self._config.items():
             command += ['-c', '%s=%s' % (option, value)]
-        command += [it.format(*args, **kwargs) for it in git_command.split(' ')]
+        command += [it.format(**kwargs) for it in git_command.split(' ')]
 
         result, output, error = nimp.sys.process.call(
             command,
