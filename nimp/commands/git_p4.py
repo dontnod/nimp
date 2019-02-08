@@ -118,7 +118,7 @@ class GitP4(nimp.command.Command):
         else:
             logging.info('Nothing to sync')
 
-        if env.push and not git('push'):
+        if env.push and not git('push -f --tags'):
             return False
 
         return True
