@@ -56,6 +56,7 @@ class GitP4(nimp.command.Command):
         parser.add_argument(
             'git_repository',
             metavar = '<url>',
+            type=str,
             help = 'Url of git repository to sync'
         )
 
@@ -95,17 +96,25 @@ class GitP4(nimp.command.Command):
 
         git = nimp.utils.git.Git(path, hide_output=not env.verbose)
 
-        changelists, commits = _prepare(env, p4, git)
+        if not _prepare_git(env, git) and _prepare_p4(p4):
+            return False
+
+        commits = _get_git_changes(git)
+        changelists = _get_p4_changes(env, p4, git)
+
+        if changelists is None or commits is None:
+            return False
 
         if changelists and commits:
             logging.error(
-                'You have changes on both p4 and git side, refusing to sync.'
+                'You have changes on both p4 and git side, refusing to sync. '
                 'Reset your branch to the p4 tag and try again.'
             )
-        elif changelists:
-            return _perforce_to_git(p4, git, changelists)
-        elif commits:
-            return _git_to_perforce(p4, git, commits)
+            return False
+        elif changelists and not _perforce_to_git(p4, git, changelists):
+            return False
+        elif commits and not _git_to_perforce(p4, git, commits):
+            return False
         else:
             logging.info('Nothing to sync')
 
@@ -114,51 +123,8 @@ class GitP4(nimp.command.Command):
 
         return True
 
-def _prepare(env, p4, git):
-    last_synced_cl = _get_last_synced_changelist(env, git)
-
-    if not _set_up_workspaces(env, p4, git, last_synced_cl):
-        return None, None
-
-    path_and_revision = "%s/...@%s,#head" % (git.root(), last_synced_cl)
-    changelists = p4.get_changelists(path_and_revision)
-
-    if changelists is None:
-        return None, None
-
-    # Skipping last C.L as it's last_synced_changelist
-    changelists = reversed(list(changelists)[:-1])
-
-    commits = git('log --pretty=format:%H p4..HEAD')
-
-    if commits is None:
-        return None, None
-
-    if commits:
-        commits = commits.split('\n')
-
-    return changelists, commits
-
-def _get_last_synced_changelist(env, git):
-    if env.changelist is None:
-        p4_tag = git('tag -l p4 --format=%(subject)')
-        if p4_tag is None:
-            logging.error('No p4 tag is defined to mark currently synced perforce changelist.')
-            return None
-
-        return p4_tag.strip().split(':')[1]
-
-    return env.changelist
-
-def _set_up_workspaces(env, p4, git, last_synced_cl):
-    logging.info('Cleaning P4 workspace')
-    if not p4.clean_workspace():
-        return None, None
-
-    if not p4.sync(git.root() + '/...', cl_number=last_synced_cl):
-        return False
-
-    logging.info('Setting up git repository')
+def _prepare_git(env, git):
+    logging.info('Preparing git repository')
     git.set_config('core.fileMode', 'false')
 
     if not git('init'):
@@ -184,6 +150,48 @@ def _set_up_workspaces(env, p4, git, last_synced_cl):
 
     return True
 
+def _prepare_p4(p4):
+    logging.info('Preparing P4 workspace')
+    if not p4.clean_workspace():
+        return False
+
+    return True
+
+def _get_git_changes(git):
+    commits = git('log --pretty=format:%H p4..HEAD')
+
+    if commits is None:
+        return None, None
+
+    if commits:
+        commits = commits.split('\n')
+
+    return commits
+
+def _get_p4_changes(env, p4, git):
+    if env.changelist is None:
+        p4_tag = git('tag -l p4 --format=%(subject)')
+        if p4_tag is None:
+            logging.error('No p4 tag is defined to mark currently synced perforce changelist.')
+            return None
+
+        values = p4_tag.strip().split(':')
+        if len(values) != 2:
+            logging.error('Invalid p4 tag : %s, expected cl:last_synced_cl', p4_tag.strip())
+            return None
+        last_synced_cl = values[1]
+    else:
+        last_synced_cl = env.changelist
+
+    path_and_revision = "%s/...@%s,#head" % (git.root(), last_synced_cl)
+    changelists = p4.get_changelists(path_and_revision)
+
+    if changelists is None:
+        return None
+
+    # Skipping last C.L as it's last_synced_changelist
+    return reversed(list(changelists)[:-1])
+
 def _perforce_to_git(p4, git, changelists):
     for changelist in changelists:
         description = p4.get_changelist_description(changelist)
@@ -198,6 +206,9 @@ def _perforce_to_git(p4, git, changelists):
             return False
 
         if git('status --porcelain'):
+            if git('add .') is None:
+                return False
+
             if git('commit . -m {message} --author {author}',
                    message=description,
                    author=author) is None:

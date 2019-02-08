@@ -22,7 +22,6 @@
 
 ''' Git utilities '''
 
-import logging
 import nimp.sys.process
 
 def get_branch():
@@ -79,7 +78,7 @@ class Git():
             command += ['-c', '%s=%s' % (option, value)]
         command += [it.format(**kwargs) for it in git_command.split(' ')]
 
-        result, output, error = nimp.sys.process.call(
+        result, output, _ = nimp.sys.process.call(
             command,
             capture_output=True,
             hide_output=self._hide_output,
