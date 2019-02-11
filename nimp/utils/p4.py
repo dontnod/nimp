@@ -182,6 +182,8 @@ class P4:
         ''' Open given file for input in given changelist '''
         files_to_edit = []
         for file_name, head_action, _ in self.get_files_status(*files):
+            if('InterpTrack' in file_name):
+                print(file_name)
             if head_action == "delete":
                 logging.debug("Ignoring deleted file %s", file_name)
                 continue
@@ -268,9 +270,14 @@ class P4:
                 return cl_number
 
         user = self.get_user()
+        # C.L form description lines other than the first should start with a space
+        description = description.strip()
+        description = description.replace('\n', '\n ')
         change_list_form = _CREATE_CHANGELIST_FORM_TEMPLATE.format(user        = user,
                                                                    workspace   = self.get_workspace(),
                                                                    description = description)
+        with open("test.txt", 'w') as file:
+            file.write(change_list_form)
 
         for changelist, in self._parse_command_output(["change", "-i"], r"Change (\d+) created\.", stdin = change_list_form):
             return changelist
@@ -320,6 +327,11 @@ class P4:
     def clean_files(self, path="//..."):
         ''' Cleans files in workspace not in depot, add missing files'''
         return self._run("clean", '-a', '-d', path) is not None
+
+    def clean(self, *paths):
+        ''' Cleans files in workspace not in depot, add missing files
+            restore edited files '''
+        return self._run("clean", *paths) is not None
 
     def is_file_versioned(self, file_path):
         ''' Checks if a file is known by the source control '''

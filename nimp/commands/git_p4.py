@@ -22,9 +22,9 @@
 
 ''' Import Perforce Changes in a git repository. '''
 
+import ast
 import logging
 import shutil
-import ast
 
 import nimp.command
 import nimp.commands.p4
@@ -56,13 +56,12 @@ class GitP4(nimp.command.Command):
         parser.add_argument(
             'git_repository',
             metavar = '<url>',
-            type=str,
             help = 'Url of git repository to sync'
         )
 
         parser.add_argument(
             'branch',
-            metavar = '<git-branch>',
+            metavar = '<branch>',
             help = 'Branch to sync with perforce'
         )
 
@@ -73,10 +72,17 @@ class GitP4(nimp.command.Command):
         )
 
         parser.add_argument(
+            '--merge',
+            metavar = '<branch>',
+            help = 'Try to merge this branch after updating P4 and submit the result to P4',
+            default=None
+        )
+
+        parser.add_argument(
             '--changelist',
             type=str,
             default=None,
-            help = 'Sync changes since this changelist'
+            help = 'Sync changes since this changelist (excluded)'
         )
         return True
 
@@ -96,14 +102,25 @@ class GitP4(nimp.command.Command):
 
         git = nimp.utils.git.Git(path, hide_output=not env.verbose)
 
-        if not _prepare_git(env, git) and _prepare_p4(p4):
+        if not _prepare_git(env, git):
+            return False
+
+        last_synced_cl = _get_last_synced_cl(env, git)
+        if last_synced_cl is None:
+            return False
+
+        if not _prepare_p4(p4, git, last_synced_cl):
             return False
 
         commits = _get_git_changes(git)
-        changelists = _get_p4_changes(env, p4, git)
+        changelists = _get_p4_changes(p4, git, last_synced_cl)
 
         if changelists is None or commits is None:
             return False
+
+        if not changelists and not commits and env.merge is None:
+            logging.info('Nothing to sync')
+            return True
 
         if changelists and commits:
             logging.error(
@@ -111,14 +128,24 @@ class GitP4(nimp.command.Command):
                 'Reset your branch to the p4 tag and try again.'
             )
             return False
-        elif changelists and not _perforce_to_git(p4, git, changelists):
-            return False
-        elif commits and not _git_to_perforce(p4, git, commits):
-            return False
-        else:
-            logging.info('Nothing to sync')
 
-        if env.push and not git('push -f --tags'):
+        if changelists and not _perforce_to_git(p4, git, changelists):
+            return False
+
+        if env.merge is not None:
+            if git('merge --no-ff --log=50 {branch}', branch=env.merge) is None:
+                return False
+            commits = _get_git_changes(git)
+            if commits is None:
+                return False
+
+            if not p4.clean(git.root() + '/...'):
+                return False
+
+        if commits and not _git_to_perforce(p4, git, commits):
+            return False
+
+        if env.push and git('push -f --tags origin {branch}', branch=env.branch) is None:
             return False
 
         return True
@@ -141,34 +168,26 @@ def _prepare_git(env, git):
             if git('remote set-url origin {remote}', remote=remote) is None:
                 return False
 
+    if git('submodule init') is None:
+        return False
+
     branch = env.branch
-    if (    git('fetch origin') is None or
-            git('checkout -f {branch}', branch=branch) is None or
-            git('reset --hard origin/{branch}', branch=branch) is None or
-            git('branch -u origin/{branch} {branch}', branch=branch) is None):
+    if git('fetch --tags origin') is None:
+        return False
+
+    if git('rev-parse --verify {branch}', branch=branch) is None:
+        if git('branch {branch} origin/{branch}', branch=branch) is None:
+            return False
+
+    if git('symbolic-ref HEAD refs/heads/{branch}', branch=branch) is None:
+        return False
+
+    if git('reset --quiet --mixed origin/{branch}', branch=branch) is None:
         return False
 
     return True
 
-def _prepare_p4(p4):
-    logging.info('Preparing P4 workspace')
-    if not p4.clean_workspace():
-        return False
-
-    return True
-
-def _get_git_changes(git):
-    commits = git('log --pretty=format:%H p4..HEAD')
-
-    if commits is None:
-        return None, None
-
-    if commits:
-        commits = commits.split('\n')
-
-    return commits
-
-def _get_p4_changes(env, p4, git):
+def _get_last_synced_cl(env, git):
     if env.changelist is None:
         p4_tag = git('tag -l p4 --format=%(subject)')
         if p4_tag is None:
@@ -179,10 +198,36 @@ def _get_p4_changes(env, p4, git):
         if len(values) != 2:
             logging.error('Invalid p4 tag : %s, expected cl:last_synced_cl', p4_tag.strip())
             return None
-        last_synced_cl = values[1]
-    else:
-        last_synced_cl = env.changelist
+        return values[1]
 
+    return env.changelist
+
+def _prepare_p4(p4, git, last_synced_cl):
+    logging.info('Preparing P4 workspace')
+    if not p4.clean_workspace():
+        return False
+
+    root = git.root() + '/...'
+    if not p4.clean(root):
+        return False
+
+    if not p4.sync(root, cl_number=last_synced_cl):
+        return False
+
+    return True
+
+def _get_git_changes(git):
+    commits = git('log --ancestry-path --pretty=format:%H p4..HEAD')
+
+    if commits is None:
+        return None, None
+
+    if commits:
+        commits = commits.split('\n')
+
+    return commits
+
+def _get_p4_changes(p4, git, last_synced_cl):
     path_and_revision = "%s/...@%s,#head" % (git.root(), last_synced_cl)
     changelists = p4.get_changelists(path_and_revision)
 
@@ -190,7 +235,7 @@ def _get_p4_changes(env, p4, git):
         return None
 
     # Skipping last C.L as it's last_synced_changelist
-    return reversed(list(changelists)[:-1])
+    return list(reversed(list(changelists)[:-1]))
 
 def _perforce_to_git(p4, git, changelists):
     for changelist in changelists:
@@ -223,8 +268,14 @@ def _perforce_to_git(p4, git, changelists):
     return True
 
 def _git_to_perforce(p4, git, commits):
+    files = git.root() + '/...'
+
+    if not p4.sync(files):
+        return False
+
     for commit in commits:
-        description = git('show -s --pretty=format:%s {commit}', commit=commit)
+        logging.info('Submiting commit %s', commit)
+        description = git('show -s --pretty=format:%B {commit}', commit=commit)
         if description is None:
             return False
 
@@ -232,11 +283,13 @@ def _git_to_perforce(p4, git, commits):
         if changelist is None:
             return False
 
-        files = git.root() + '/...'
-        if not (p4.edit(changelist, files) and
-                git('checkout', '-f', commit) and
-                git('clean -fdx') and
-                p4.reconcile(changelist, files)):
+        if not p4.edit(changelist, files):
+            return False
+
+        if (git('checkout -q -f {commit}', commit=commit) is None or
+                git('submodule update --init --recursive') is None or
+                git('clean -fdx') is None or
+                not p4.reconcile(changelist, files)):
             return False
 
     return True
