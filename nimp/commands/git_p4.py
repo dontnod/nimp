@@ -172,7 +172,7 @@ def _prepare_git(env, git):
 
     branch = env.branch
     git('submodule init')
-    git('fetch --tags origin')
+    git('fetch -f --tags origin')
 
     if not git.check('rev-parse --verify {branch}', branch=branch):
         git('branch {branch} origin/{branch}', branch=branch)
