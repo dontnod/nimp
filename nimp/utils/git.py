@@ -24,6 +24,14 @@
 
 import nimp.sys.process
 
+class GitError(Exception):
+    ''' Raised when a git command returns an error '''
+    def __init__(self, value):
+        super().__init__(self, value)
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 def get_branch():
     ''' Get the current active branch '''
     command = 'git branch --contains HEAD'
@@ -78,7 +86,7 @@ class Git():
             command += ['-c', '%s=%s' % (option, value)]
         command += [it.format(**kwargs) for it in git_command.split(' ')]
 
-        result, output, _ = nimp.sys.process.call(
+        result, output, error = nimp.sys.process.call(
             command,
             capture_output=True,
             hide_output=self._hide_output,
@@ -86,6 +94,15 @@ class Git():
         )
 
         if result != 0:
-            return None
+            raise GitError(error)
 
         return output
+
+    def check(self, command, **kwargs):
+        ''' Returns true if the command succeed, false otherwise '''
+        try:
+            self(command, **kwargs)
+        except GitError:
+            return False
+
+        return True

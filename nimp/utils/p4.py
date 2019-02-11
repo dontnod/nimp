@@ -182,8 +182,6 @@ class P4:
         ''' Open given file for input in given changelist '''
         files_to_edit = []
         for file_name, head_action, _ in self.get_files_status(*files):
-            if('InterpTrack' in file_name):
-                print(file_name)
             if head_action == "delete":
                 logging.debug("Ignoring deleted file %s", file_name)
                 continue
