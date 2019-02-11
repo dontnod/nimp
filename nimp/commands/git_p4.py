@@ -171,22 +171,26 @@ def _prepare_git(env, git):
             git('remote set-url origin {}', remote)
 
     branch = env.branch
-    git('submodule init')
     git('fetch -f --tags origin')
+    git('submodule init')
 
+    remote_exists = git.check('rev-parse --verify origin/{}', branch)
     if not git.check('rev-parse --verify {}', branch):
-        git('branch {0} origin/{0}', branch)
+        if not remote_exists:
+            git('checkout --orphan {}', branch)
+        else:
+            git('branch {0} origin/{0}', branch)
 
     git('symbolic-ref HEAD refs/heads/{}', branch)
-    git('reset --quiet --mixed origin/{}', branch)
+
+    if remote_exists:
+        git('reset --quiet --mixed origin/{}', branch)
 
 def _get_last_synced_cl(env, git):
     if env.changelist is None:
-        if not git.check('tag -l p4 --format=%(subject)') :
-            logging.error('No p4 tag is defined to mark currently synced'
-                          'perforce changelist. Try to use --changelist'
-                          'parameter')
-            return False
+        if git('tag -l p4').strip() != 'p4':
+            logging.info('p4 tag not found, starting with changelist 0')
+            return 0
         p4_tag = git('tag -l p4 --format=%(subject)')
         values = p4_tag.strip().split(':')
 
@@ -213,6 +217,10 @@ def _prepare_p4(p4, git, last_synced_cl):
     return True
 
 def _get_git_changes(git):
+    # P4 tag not already set, initial import
+    if git('tag -l p4').strip() != 'p4':
+        return []
+
     commits = git('log --ancestry-path --pretty=format:%H p4..HEAD')
 
     if commits:
@@ -281,9 +289,3 @@ def _git_to_perforce(p4, git, commits):
             return False
 
     return True
-
-def _get_commits_to_sync(git):
-    commits = git('log --ancestry-path --pretty=format:%H p4..HEAD')
-    if commits:
-        commits = commits.split('\n')
-    return commits
