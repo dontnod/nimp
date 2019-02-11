@@ -105,7 +105,7 @@ class GitP4(nimp.command.Command):
         try:
             return _sync(env, p4, git)
         except nimp.utils.git.GitError as error:
-            logging.error('Error while running git command : %s', error)
+            logging.error('%s', error)
             return False
 
 def _sync(env, p4, git):

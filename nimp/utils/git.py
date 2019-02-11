@@ -26,11 +26,12 @@ import nimp.sys.process
 
 class GitError(Exception):
     ''' Raised when a git command returns an error '''
-    def __init__(self, value):
-        super().__init__(self, value)
-        self.value = value
+    def __init__(self, command, error):
+        super().__init__(self)
+        self.command = command
+        self.error = error
     def __str__(self):
-        return repr(self.value)
+        return 'Error while running git command %s : %s' % (self.command, self.error)
 
 def get_branch():
     ''' Get the current active branch '''
@@ -94,7 +95,7 @@ class Git():
         )
 
         if result != 0:
-            raise GitError(error)
+            raise GitError(git_command, error)
 
         return output
 
