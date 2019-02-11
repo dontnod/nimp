@@ -22,6 +22,8 @@
 
 ''' Git utilities '''
 
+import shlex
+
 import nimp.sys.process
 
 class GitError(Exception):
@@ -81,11 +83,13 @@ class Git():
         ''' Sets the given option for further calls to this Git instance '''
         self._config[option] = value
 
-    def __call__(self, git_command, **kwargs):
+    def __call__(self, git_command, *args, **kwargs):
         command = ['git']
         for option, value in self._config.items():
             command += ['-c', '%s=%s' % (option, value)]
-        command += [it.format(**kwargs) for it in git_command.split(' ')]
+
+        git_command = git_command.format(*args, **kwargs)
+        command += shlex.split(git_command)
 
         result, output, error = nimp.sys.process.call(
             command,
@@ -99,10 +103,10 @@ class Git():
 
         return output
 
-    def check(self, command, **kwargs):
+    def check(self, command, *args, **kwargs):
         ''' Returns true if the command succeed, false otherwise '''
         try:
-            self(command, **kwargs)
+            self(command, *args, **kwargs)
         except GitError:
             return False
 

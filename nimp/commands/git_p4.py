@@ -139,7 +139,7 @@ def _sync(env, p4, git):
         return False
 
     if env.merge is not None:
-        git('merge --no-ff --log=50 {branch}', branch=env.merge)
+        git('merge --no-ff --log=50 {}', env.merge)
 
         # Cleaning so that we recover a clean P4 state in order to
         # checkout files for synchronization
@@ -152,7 +152,7 @@ def _sync(env, p4, git):
         return False
 
     if env.push:
-        git('push -f --tags origin {branch}', branch=env.branch)
+        git('push -f --tags origin {}', env.branch)
 
     return True
 
@@ -164,21 +164,21 @@ def _prepare_git(env, git):
 
     remote = env.git_repository
     if not git.check('remote get-url origin'):
-        git('remote add origin {remote}', remote=remote)
+        git('remote add origin {}', remote)
     else:
         current_remote = git('remote get-url origin').strip()
         if current_remote != remote:
-            git('remote set-url origin {remote}', remote=remote)
+            git('remote set-url origin {}', remote)
 
     branch = env.branch
     git('submodule init')
     git('fetch -f --tags origin')
 
-    if not git.check('rev-parse --verify {branch}', branch=branch):
-        git('branch {branch} origin/{branch}', branch=branch)
+    if not git.check('rev-parse --verify {}', branch):
+        git('branch {0} origin/{0}', branch)
 
-    git('symbolic-ref HEAD refs/heads/{branch}', branch=branch)
-    git('reset --quiet --mixed origin/{branch}', branch=branch)
+    git('symbolic-ref HEAD refs/heads/{}', branch)
+    git('reset --quiet --mixed origin/{}', branch)
 
 def _get_last_synced_cl(env, git):
     if env.changelist is None:
@@ -245,14 +245,12 @@ def _perforce_to_git(p4, git, changelists):
 
         if git.check('status --porcelain'):
             git('add .')
-            git('commit . -m {message} --author {author}',
-                message=description,
-                author=author)
+            git('commit . -m "{}" --author "{}"', description, author)
         else:
             logging.info(' --> No changes detected, skipping')
 
         message = 'cl:%s' % changelist
-        git('tag -a -f -m {message} p4 HEAD', message=message)
+        git('tag -a -f -m {} p4 HEAD', message)
 
     return True
 
@@ -264,7 +262,7 @@ def _git_to_perforce(p4, git, commits):
 
     for commit in commits:
         logging.info('Submiting commit %s', commit)
-        description = git('show -s --pretty=format:%B {commit}', commit=commit)
+        description = git('show -s --pretty=format:%B {}', commit)
         changelist = p4.get_or_create_changelist(description)
         if changelist is None:
             return False
@@ -272,7 +270,7 @@ def _git_to_perforce(p4, git, commits):
         if not p4.edit(changelist, files):
             return False
 
-        git('checkout -q -f {commit}', commit=commit)
+        git('checkout -q -f {}', commit)
         git('submodule update --init --recursive')
         git('clean -fdx')
 
