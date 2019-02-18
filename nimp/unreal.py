@@ -223,10 +223,12 @@ def _ue4_build(env):
     # Build tools from other solutions or with other flags
     if env.target == 'tools':
 
-        if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln'),
-                                  'Any CPU', 'Development',
-                                  vs_version=vs_version,
-                                  target='Build'):
+        # This moved from 'Any CPU' to 'x64' in UE4.20.
+        sln = env.format('{root_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln')
+        if not nimp.build.vsbuild(sln, 'Any CPU', 'Development',
+                                  vs_version=vs_version, target='Build') and \
+           not nimp.build.vsbuild(sln, 'x64', 'Development',
+                                  vs_version=vs_version, target='Build'):
             logging.error("Could not build NetworkProfiler")
             success = False
 
