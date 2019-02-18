@@ -241,8 +241,11 @@ def _ue4_build(env):
                 logging.error("Could not build AutomationTool")
                 success = False
 
-        if env.platform != 'mac':
+        # These tools seem to be Windows only for now
+        if env.platform == 'win64':
+
             # This also builds AgentInterface.dll, needed by SwarmInterface.sln
+            # This used to compile on Linux but hasn't been revisited for a while
             if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln'),
                                       'Any CPU', 'Development',
                                       vs_version=vs_version,
@@ -256,9 +259,6 @@ def _ue4_build(env):
                                       target='Build'):
                 logging.error("Could not build SwarmInterface")
                 success = False
-
-        # These tools seem to be Windows only for now
-        if env.platform == 'win64':
 
             if not _ue4_build_project(env, solution, 'BootstrapPackagedGame',
                                       'Win64', 'Shipping', vs_version, 'Build'):
