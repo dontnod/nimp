@@ -64,6 +64,14 @@ def vsbuild(solution, platform_name, configuration, project=None,
 def _find_devenv_path(vs_version):
     devenv_path = None
 
+    # Sanitize vs_version
+    if vs_version == '2015':
+        vs_version = '14'
+    if vs_version == '2017':
+        vs_version = '15'
+    if vs_version == '2019':
+        vs_version = '16'
+
     # First try the registry, because the environment variable is unreliable
     # (case of Visual Studio installed on a different drive; it still sets
     # the envvar to point to C:\Program Files even if devenv.com is on D:\)
