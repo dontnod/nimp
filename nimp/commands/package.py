@@ -178,12 +178,13 @@ class Package(nimp.command.Command):
         package_configuration.stage_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/StagedBuilds/{cook_platform}'))
         package_configuration.package_directory = nimp.system.standardize_path(env.format('{root_dir}/{game}/Saved/Packages/{cook_platform}'))
 
-        variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
-        if os.path.exists(variant_configuration_directory):
-            package_configuration.configuration_directory = variant_configuration_directory
-        variant_resource_directory = package_configuration.resource_directory + '/Variants/' + env.variant
-        if os.path.exists(variant_resource_directory):
-            package_configuration.resource_directory = variant_resource_directory
+        if env.variant:
+            variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
+            if os.path.exists(variant_configuration_directory):
+                package_configuration.configuration_directory = variant_configuration_directory
+            variant_resource_directory = package_configuration.resource_directory + '/Variants/' + env.variant
+            if os.path.exists(variant_resource_directory):
+                package_configuration.resource_directory = variant_resource_directory
 
         package_configuration.project = env.game
         package_configuration.binary_configuration = env.ue4_config
