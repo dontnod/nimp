@@ -36,14 +36,17 @@ import requests
 import nimp.system
 
 if platform.system() != 'Windows':
-    magic = nimp.system.try_import('magic')
+    try:
+        import magic
+    except ImportError:
+        magic = None
 
 try:
     import BitTornado.Meta.Info
     import BitTornado.Meta.BTTree
     import BitTornado.Meta.bencode
 except ImportError as exception:
-    logging.warning('Failed to import BitTornado module')
+    BitTornado = None
 
 
 def list_artifacts(artifact_pattern, format_arguments):
@@ -249,6 +252,9 @@ def create_artifact(artifact_path, file_collection, archive, compress, simulate)
 
 def create_torrent(artifact_path, simulate):
     ''' Create a torrent for an existing artifact '''
+
+    if BitTornado is None:
+        raise ImportError('Required module "BitTornado" is not available')
 
     torrent_path = artifact_path + '.torrent'
     if not simulate:
