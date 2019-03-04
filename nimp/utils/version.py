@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2014—2017 Dontnod Entertainment
+# Copyright © 2014—2019 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -20,10 +20,17 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Utility functions '''
+''' Misc utilities '''
 
-__all__ = [
-    'git',
-    'p4',
-    'version',
-]
+
+def is_newer(str_a, str_b):
+
+    tokens_a, tokens_b = str_a.split('.'), str_b.split('.')
+
+    for a, b in zip(tokens_a, tokens_b):
+        if a != b:
+            if a.isdigit() and b.isdigit():
+                return int(a) > int(b)
+            return a > b
+    return len(tokens_a) > len(tokens_b)
+
