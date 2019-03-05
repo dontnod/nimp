@@ -413,7 +413,7 @@ class Package(nimp.command.Command):
         # The pak file is created as a patch only if a base pak file exists.
         # The base package may include only a subset of pak files, additional pak files from the patch package will not use patch logic.
         # The patch base directory can be stripped of some pak files in order to bypass patch logic and overwrite the base pak file instead.
-        is_patch = (package_configuration.package_type == 'application_patch') and os.path.isfile(patch_base + '/' + pak_file_name + '.pak')
+        is_patch = (package_configuration.package_type in [ 'application_patch', 'dlc_patch' ]) and os.path.isfile(patch_base + '/' + pak_file_name + '.pak')
 
         pak_file_path = destination + '/' + pak_file_name + ('_P' if is_patch else '') + '.pak'
         manifest_file_path = destination + '/' + pak_file_name + '.pak.txt'
