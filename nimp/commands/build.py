@@ -42,19 +42,20 @@ class Build(nimp.command.Command):
                                           'revision')
 
         parser.add_argument('--bootstrap',
-                            help = 'bootstrap or regenerate project files, if applicable',
-                            action = 'store_true')
+                            help='bootstrap or regenerate project files, if applicable',
+                            action='store_true')
 
         parser.add_argument('--disable-unity',
-                            help = 'disable unity build',
-                            action = 'store_true')
+                            help='disable unity build',
+                            action='store_true')
 
         parser.add_argument('--fastbuild',
-                            help = 'activate FASTBuild (implies --disable-unity for now)',
-                            action = 'store_true')
+                            help='activate FASTBuild (implies --disable-unity for now)',
+                            action='store_true')
 
         parser.add_argument('--vs-version',
-                            help = 'version of Visual Studio to use, if applicable')
+                            help='version of Visual Studio to use, if applicable',
+                            default=(env.vs_version if hasattr(env, 'vs_version') else None))
 
         return True
 
