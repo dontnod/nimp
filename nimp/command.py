@@ -158,7 +158,11 @@ def add_commands_subparser(commands, parser, env):
         name_array = re.findall('[A-Z][^A-Z]*', command_class.__name__)
         command_name = '-'.join([it.lower() for it in name_array])
 
-        enabled, reason = command_it.is_available(env)
+        try:
+            enabled, reason = command_it.is_available(env)
+        except Exception as ex:
+            enabled, reason = False, 'Unexpected error: ' + str(ex)
+
         description = ''
         command_help = command_class.__doc__ or "NO HELP AVAILABLE, FIX ME!"
         command_help = command_help.split('\n')[0]
@@ -170,7 +174,10 @@ def add_commands_subparser(commands, parser, env):
         command_parser = subparsers.add_parser(command_name,
                                                description = description,
                                                help = command_help)
-        command_it.configure_arguments(env, command_parser)
+        try:
+            command_it.configure_arguments(env, command_parser)
+        except Exception as ex:
+            enabled, reason = False, 'Unexpected error: ' + str(ex)
 
         command_to_run = command_it
         if not enabled:
