@@ -150,8 +150,8 @@ def add_commands_subparser(commands, parser, env):
     command_description = ('Commands marked with /!\\ are currently unavailable.'
                            ' You can issue "nimp <command> -h" to know why '
                            '<command> is currently disabled')
-    subparsers  = parser.add_subparsers(metavar = '<command>',
-                                        description = command_description )
+    subparsers = parser.add_subparsers(metavar = '<command>',
+                                       description = command_description )
 
     for command_it in commands:
         command_class = type(command_it)
