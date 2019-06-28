@@ -100,6 +100,14 @@ def sanitize_path(path):
     # elif os.sep == '/':
     return path.replace('\\', '/')
 
+
+def safe_rmtree(path):
+    def remove_readonly(func, path, excinfo):
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+    shutil.rmtree(parth, onerror=remove_readonly)
+
+
 def safe_makedirs(path):
     ''' This function is necessary because Python’s makedirs cannot create a
         directory such as d:\\data\\foo/bar because it’ll split it as "d:\\data"
