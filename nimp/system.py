@@ -105,7 +105,7 @@ def safe_rmtree(path):
     def remove_readonly(func, path, excinfo):
         os.chmod(path, stat.S_IWRITE)
         func(path)
-    shutil.rmtree(parth, onerror=remove_readonly)
+    shutil.rmtree(path, onerror=remove_readonly)
 
 
 def safe_makedirs(path):
