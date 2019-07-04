@@ -60,6 +60,9 @@ class UploadFileset(nimp.command.Command):
             logging.error('Failed to import BitTornado module (required for torrent option)')
             return False
 
+        if env.torrent and not hasattr(env, 'torrent_tracker_announce'):
+            env.torrent_tracker_announce = None
+
         artifact_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
         artifact_path = nimp.system.sanitize_path(env.format(artifact_path))
 
@@ -67,9 +70,9 @@ class UploadFileset(nimp.command.Command):
             if not env.force:
                 raise ValueError('Artifact already exists: %s' % artifact_path)
             else:
+                _try_remove(artifact_path + '.torrent', env.simulate)
                 _try_remove(artifact_path + '.zip', env.simulate)
                 _try_remove(artifact_path, env.simulate)
-        _try_remove(artifact_path + '.torrent', env.simulate)
 
         logging.info('Listing files for %s', artifact_path)
         file_mapper = nimp.system.FileMapper(None, vars(env))
@@ -86,6 +89,6 @@ class UploadFileset(nimp.command.Command):
             (OSError, ValueError, zipfile.BadZipFile))
         if env.torrent:
             logging.info('Creating torrent for %s', artifact_path)
-            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(artifact_path, env.simulate), OSError)
+            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(artifact_path, env.torrent_tracker_announce, env.simulate), OSError)
 
         return True
