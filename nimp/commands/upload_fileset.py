@@ -80,7 +80,8 @@ class UploadFileset(nimp.command.Command):
             raise RuntimeError('Found no files to upload')
 
         logging.info('Uploading to %s', artifact_path)
-        os.makedirs(os.path.dirname(artifact_path), exist_ok = True)
+        if not env.simulate:
+            os.makedirs(os.path.dirname(artifact_path), exist_ok = True)
         nimp.system.try_execute(
             lambda: nimp.artifacts.create_artifact(artifact_path, all_files, env.archive, env.compress, env.simulate),
             (OSError, ValueError, zipfile.BadZipFile))
