@@ -164,7 +164,7 @@ def upload_symbols(env, symbols, config):
 
         store_root = nimp.system.sanitize_path(env.format(env.publish_symbols))
         transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, config, env.revision)
-        cmd = [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+        cmd = [ "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/symstore.exe",
                 "add",
                 "/r", # Recursive
                 "/f", "@" + index_file,
