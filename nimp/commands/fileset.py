@@ -37,7 +37,7 @@ class FilesetCommand(nimp.command.Command):
         super(FilesetCommand, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'platform', 'configuration', 'target', 'free_parameters')
+        nimp.command.add_common_arguments(parser, 'free_parameters')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'select the fileset to load')
         return True
 
