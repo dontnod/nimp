@@ -21,7 +21,6 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Fileset related commands '''
 
-import abc
 import hashlib
 import logging
 import os
@@ -32,9 +31,6 @@ import nimp.system
 
 class FilesetCommand(nimp.command.Command):
     ''' Perforce command base class '''
-
-    def __init__(self):
-        super(FilesetCommand, self).__init__()
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'free_parameters')
@@ -49,26 +45,19 @@ class FilesetCommand(nimp.command.Command):
         file_mapper.load_set(env.fileset)
         return self._run_fileset(env, file_mapper)
 
-    @abc.abstractmethod
     def _run_fileset(self, env, file_mapper):
         pass
 
 class Fileset(nimp.command.CommandGroup):
     ''' Fileset related commands '''
     def __init__(self):
-        super(Fileset, self).__init__([_List(),
-                                       _Delete(),
-                                       _Stash(),
-                                       _Unstash(),])
+        super().__init__([ _List(), _Delete(), _Stash(), _Unstash() ])
 
     def is_available(self, env):
         return True, ''
 
 class _Delete(FilesetCommand):
     ''' Loads a fileset and delete mapped files '''
-    def __init__(self):
-        super(_Delete, self).__init__()
-
     def _run_fileset(self, env, file_mapper):
         for path, _ in file_mapper():
             logging.info("Deleting %s", path)
@@ -77,21 +66,31 @@ class _Delete(FilesetCommand):
         return True
 
 class _List(FilesetCommand):
-    ''' Loads a fileset and prints mapped files '''
-    def __init__(self):
-        super(_List, self).__init__()
+    ''' Lists mappings from a fileset '''
 
-    def _run_fileset(self, env, file_mapper):
-        for source, destination in file_mapper():
-            logging.info("%s => %s", source, destination)
+    def configure_arguments(self, env, parser):
+        super().configure_arguments(env, parser)
+        parser.add_argument('--format', default = "{src} => {dst}", metavar = '<format>', help = 'set the output format')
+        parser.add_argument('--destination', metavar = '<path>', help = 'write output to a file instead of stdout')
+        return True
+
+    def run(self, env):
+        file_mapper = nimp.system.FileMapper(None, vars(env))
+        file_mapper.load_set(env.fileset)
+        all_files = file_mapper.to_list(env.root_dir, ".")
+
+        if env.destination:
+            with open(env.destination, 'w') as export_file:
+                for source, destination in all_files:
+                    export_file.write(env.format.format(src = source, dst = destination) + '\n')
+        else:
+            for source, destination in all_files:
+                logging.info(env.format.format(src = source, dst = destination))
 
         return True
 
 class _Stash(FilesetCommand):
     ''' Loads a fileset and moves files out of the way '''
-    def __init__(self):
-        super(_Stash, self).__init__()
-
     def _run_fileset(self, env, file_mapper):
         stash_name = env.format('{fileset}-{platform}-{target}-{configuration}')
         stash_directory = env.format('{root_dir}/.nimp/stash/' + stash_name)
@@ -114,9 +113,6 @@ class _Stash(FilesetCommand):
 
 class _Unstash(FilesetCommand):
     ''' Restores a stashed fileset; does not actually use the fileset '''
-    def __init__(self):
-        super(_Unstash, self).__init__()
-
     def _run_fileset(self, env, file_mapper):
         stash_name = env.format('{fileset}-{platform}-{target}-{configuration}')
         stash_directory = env.format('{root_dir}/.nimp/stash/' + stash_name)
