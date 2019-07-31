@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2018 Dontnod Entertainment
+# Copyright (c) 2014-2019 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -431,7 +431,7 @@ class Package(nimp.command.Command):
         logging.info('Listing files for pak %s', pak_file_name)
         file_mapper = nimp.system.FileMapper(None, vars(env))
         file_mapper.override(pak_name = pak_name).load_set('content_pak')
-        all_files = file_mapper.to_list(env.root_dir, ".")
+        all_files = file_mapper.to_list(env.root_dir, '.')
 
         if not all_files:
             logging.warning('No files for %s', pak_file_name)
@@ -505,8 +505,8 @@ class Package(nimp.command.Command):
                 transform_parameters['configuration'] = binary_configuration
                 Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
 
-            resource_file_collection = glob.glob(package_configuration.resource_directory + "/**/*.png", recursive = True)
-            resource_file_collection += glob.glob(package_configuration.resource_directory + "/**/*.resw", recursive = True)
+            resource_file_collection = glob.glob(package_configuration.resource_directory + '/**/*.png', recursive = True)
+            resource_file_collection += glob.glob(package_configuration.resource_directory + '/**/*.resw', recursive = True)
             resource_file_collection = [ nimp.system.standardize_path(path) for path in resource_file_collection ]
             for resource_source in resource_file_collection:
                 resource_destination = 'Resources/' + os.path.relpath(resource_source, package_configuration.resource_directory)
@@ -579,7 +579,7 @@ class Package(nimp.command.Command):
         try:
             file_mapper = nimp.system.FileMapper(None, vars(env))
             file_mapper.load_set('content_other')
-            all_files = file_mapper.to_list(env.root_dir, ".")
+            all_files = file_mapper.to_list(env.root_dir, '.')
             for source_file, destination_file in all_files:
                 if package_configuration.target_platform == 'PS4':
                     destination_file = destination_file.lower()
@@ -642,89 +642,103 @@ class Package(nimp.command.Command):
                      package_configuration.stage_directory, package_configuration.package_directory)
         logging.info('')
 
+        if package_configuration.target_platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
+            Package.package_for_desktop(package_configuration, vars(env), env.simulate)
+        elif package_configuration.target_platform == 'PS4':
+            Package.package_for_ps4(package_configuration, env.simulate)
+        elif package_configuration.target_platform == 'XboxOne':
+            Package.package_for_xboxone(package_configuration, env.simulate)
+
+
+    @staticmethod
+    def package_for_desktop(package_configuration, file_mapper_arguments, simulate):
+        source = package_configuration.stage_directory
+        destination = 'Final' if package_configuration.is_final_submission else 'Default'
+        destination = package_configuration.package_directory + '/' + destination
+        _try_remove(destination, simulate)
+        _try_create_directory(destination, simulate)
+
+        logging.info('Listing package files')
+        file_mapper = nimp.system.FileMapper(None, file_mapper_arguments)
+        file_mapper.load_set('stage_to_package')
+        all_files = file_mapper.to_list(source, destination)
+
+        for source_file, destination_file in all_files:
+            _copy_file(source_file, destination_file, simulate)
+
+
+    @staticmethod
+    def package_for_ps4(package_configuration, simulate):
+        package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
         source = package_configuration.stage_directory
 
-        if package_configuration.target_platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
-            destination = 'Final' if package_configuration.is_final_submission else 'Default'
-            destination = package_configuration.package_directory + '/' + destination
-            _try_remove(destination, env.simulate)
-            _try_create_directory(destination, env.simulate)
-
-            logging.info('Listing package files')
-            file_mapper = nimp.system.FileMapper(None, vars(env))
-            file_mapper.load_set('stage_to_package')
-            all_files = file_mapper.to_list(source, destination)
-
-            for source_file, destination_file in all_files:
-                _copy_file(source_file, destination_file, env.simulate)
-
-        elif package_configuration.target_platform == 'PS4':
-            package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
-
-            for title_data in package_configuration.ps4_title_collection:
-                for binary_configuration in package_configuration.binary_configuration.split('+'):
-                    destination = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
-                    destination = package_configuration.package_directory + '/' + destination
-                    layout_file = source + '/' + package_configuration.project + '-' + title_data['region'] + '-' + binary_configuration + '.gp4'
-                    output_format = 'pkg'
-                    if package_configuration.is_final_submission:
-                        if package_configuration.package_type == 'application' and title_data['storagetype'].startswith('bd'):
-                            output_format += '+iso'
-                        output_format += '+subitem'
-
-                    _try_remove(destination, env.simulate)
-                    _try_remove(destination + '-Temporary', env.simulate)
-                    _try_create_directory(destination, env.simulate)
-                    _try_create_directory(destination + '-Temporary', env.simulate)
-
-                    create_package_command = [
-                        package_tool_path, 'img_create',
-                        '--no_progress_bar',
-                        '--tmp_path', destination + '-Temporary',
-                        '--oformat', output_format,
-                        layout_file, destination
-                    ]
-
-                    package_success = nimp.sys.process.call(create_package_command, simulate = env.simulate)
-                    if package_success != 0:
-                        raise RuntimeError('Package generation failed')
-
-                    _try_remove(destination + '-Temporary', env.simulate)
-
-        elif package_configuration.target_platform == 'XboxOne':
-            package_tool_path = os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePkg.exe')
-
+        for title_data in package_configuration.ps4_title_collection:
             for binary_configuration in package_configuration.binary_configuration.split('+'):
-                destination = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+                destination = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
                 destination = package_configuration.package_directory + '/' + destination
-                layout_file = source + '/' + package_configuration.project + '-' + binary_configuration + '.xml'
-                package_command = [
-                    package_tool_path, 'pack', '/v',
-                    '/f', layout_file, '/d', source, '/pd', destination,
-                    '/productid', package_configuration.xbox_product_id,
-                    '/contentid', package_configuration.xbox_content_id,
+                layout_file = source + '/' + package_configuration.project + '-' + title_data['region'] + '-' + binary_configuration + '.gp4'
+                output_format = 'pkg'
+                if package_configuration.is_final_submission:
+                    if package_configuration.package_type == 'application' and title_data['storagetype'].startswith('bd'):
+                        output_format += '+iso'
+                    output_format += '+subitem'
+
+                _try_remove(destination, simulate)
+                _try_remove(destination + '-Temporary', simulate)
+                _try_create_directory(destination, simulate)
+                _try_create_directory(destination + '-Temporary', simulate)
+
+                create_package_command = [
+                    package_tool_path, 'img_create',
+                    '--no_progress_bar',
+                    '--tmp_path', destination + '-Temporary',
+                    '--oformat', output_format,
+                    layout_file, destination
                 ]
 
-                if package_configuration.package_type in [ 'application', 'application_patch' ]:
-                    package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
-                if package_configuration.is_final_submission:
-                    package_command += [ '/l' ]
-
-                _try_remove(destination, env.simulate)
-                _try_create_directory(destination, env.simulate)
-
-                if not env.simulate:
-                    shutil.copyfile(source + '/AppxManifest-%s.xml' % binary_configuration, source + '/AppxManifest.xml')
-
-                package_success = nimp.sys.process.call(package_command, simulate = env.simulate)
-
-                if not env.simulate:
-                    os.remove(source + '/AppxManifest.xml')
-                    if os.path.isfile(source + '/appdata.bin'):
-                        os.remove(source + '/appdata.bin')
-
+                package_success = nimp.sys.process.call(create_package_command, simulate = simulate)
                 if package_success != 0:
                     raise RuntimeError('Package generation failed')
+
+                _try_remove(destination + '-Temporary', simulate)
+
+
+    @staticmethod
+    def package_for_xboxone(package_configuration, simulate):
+        package_tool_path = os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePkg.exe')
+        source = package_configuration.stage_directory
+
+        for binary_configuration in package_configuration.binary_configuration.split('+'):
+            destination = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+            destination = package_configuration.package_directory + '/' + destination
+            layout_file = source + '/' + package_configuration.project + '-' + binary_configuration + '.xml'
+            package_command = [
+                package_tool_path, 'pack', '/v',
+                '/f', layout_file, '/d', source, '/pd', destination,
+                '/productid', package_configuration.xbox_product_id,
+                '/contentid', package_configuration.xbox_content_id,
+            ]
+
+            if package_configuration.package_type in [ 'application', 'application_patch' ]:
+                package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
+            if package_configuration.is_final_submission:
+                package_command += [ '/l' ]
+
+            _try_remove(destination, simulate)
+            _try_create_directory(destination, simulate)
+
+            if not simulate:
+                shutil.copyfile(source + '/AppxManifest-%s.xml' % binary_configuration, source + '/AppxManifest.xml')
+
+            package_success = nimp.sys.process.call(package_command, simulate = simulate)
+
+            if not simulate:
+                os.remove(source + '/AppxManifest.xml')
+                if os.path.isfile(source + '/appdata.bin'):
+                    os.remove(source + '/appdata.bin')
+
+            if package_success != 0:
+                raise RuntimeError('Package generation failed')
 
 
     @staticmethod
@@ -735,48 +749,57 @@ class Package(nimp.command.Command):
         logging.info('')
 
         if package_configuration.target_platform == 'PS4':
-            package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
-
-            for title_data in package_configuration.ps4_title_collection:
-                for binary_configuration in package_configuration.binary_configuration.split('+'):
-                    directory = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
-                    directory = package_configuration.package_directory + '/' + directory
-
-                    _try_remove(directory + '-Temporary', env.simulate)
-                    _try_create_directory(directory + '-Temporary', env.simulate)
-
-                    validate_package_command = [
-                        package_tool_path, 'img_verify',
-                        '--no_progress_bar',
-                        '--tmp_path', directory + '-Temporary',
-                        '--passcode', title_data['title_passcode'],
-                    ]
-                    validate_package_command += [ path.replace('\\', '/') for path in glob.glob(directory + '/*.pkg') ]
-
-                    validation_success = nimp.sys.process.call(validate_package_command, simulate = env.simulate)
-                    if validation_success != 0:
-                        logging.warning('Package validation failed')
-
-                    _try_remove(directory + '-Temporary', env.simulate)
-
+            Package.verify_for_ps4(package_configuration, env.simulate)
         elif package_configuration.target_platform == 'XboxOne':
+            Package.verify_for_xboxone(package_configuration)
+
+
+    @staticmethod
+    def verify_for_ps4(package_configuration, simulate):
+        package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
+
+        for title_data in package_configuration.ps4_title_collection:
             for binary_configuration in package_configuration.binary_configuration.split('+'):
-                directory = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+                directory = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
                 directory = package_configuration.package_directory + '/' + directory
 
-                validation_success = True
-                for validator_path in [ path.replace('\\', '/') for path in glob.glob(directory + '/Validator_*.xml') ]:
-                    logging.info("Reading %s", validator_path)
-                    validator_xml = xml.etree.ElementTree.parse(validator_path).getroot()
-                    for test_result in validator_xml.find('testresults').findall('testresult'):
-                        for failure in test_result.findall('.//failure'):
-                            if failure.text not in package_configuration.ignored_errors:
-                                logging.error("%s: %s", test_result.find('component').text, failure.text)
-                                validation_success = False
-                        for warning in test_result.findall('.//warning'):
-                            if warning.text not in package_configuration.ignored_warnings:
-                                logging.warning("%s: %s", test_result.find('component').text, warning.text)
-                                validation_success = False
+                _try_remove(directory + '-Temporary', simulate)
+                _try_create_directory(directory + '-Temporary', simulate)
 
-                if not validation_success:
+                validate_package_command = [
+                    package_tool_path, 'img_verify',
+                    '--no_progress_bar',
+                    '--tmp_path', directory + '-Temporary',
+                    '--passcode', title_data['title_passcode'],
+                ]
+                validate_package_command += [ path.replace('\\', '/') for path in glob.glob(directory + '/*.pkg') ]
+
+                validation_success = nimp.sys.process.call(validate_package_command, simulate = simulate)
+                if validation_success != 0:
                     logging.warning('Package validation failed')
+
+                _try_remove(directory + '-Temporary', simulate)
+
+
+    @staticmethod
+    def verify_for_xboxone(package_configuration):
+        for binary_configuration in package_configuration.binary_configuration.split('+'):
+            directory = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
+            directory = package_configuration.package_directory + '/' + directory
+
+            validation_success = True
+            for validator_path in [ path.replace('\\', '/') for path in glob.glob(directory + '/Validator_*.xml') ]:
+                logging.info('Reading %s', validator_path)
+                validator_xml = xml.etree.ElementTree.parse(validator_path).getroot()
+                for test_result in validator_xml.find('testresults').findall('testresult'):
+                    for failure in test_result.findall('.//failure'):
+                        if failure.text not in package_configuration.ignored_errors:
+                            logging.error('%s: %s', test_result.find('component').text, failure.text)
+                            validation_success = False
+                    for warning in test_result.findall('.//warning'):
+                        if warning.text not in package_configuration.ignored_warnings:
+                            logging.warning('%s: %s', test_result.find('component').text, warning.text)
+                            validation_success = False
+
+            if not validation_success:
+                logging.warning('Package validation failed')
