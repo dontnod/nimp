@@ -189,6 +189,7 @@ def _ue4_build(env):
         if env.platform == 'win64':
             tools += [ 'DotNETUtilities',
                        'AutomationTool',
+                       'UnrealCEFSubProcess',
                        'SymbolDebugger' ]
             need_ps4devkitutil = True
             need_ps4mapfileutil = True
@@ -360,7 +361,69 @@ def _ue4_build_project(env, sln_file, project, build_platform,
                                  cwd=env.root_dir) == 0
 
 
-def _ue4_load_arguments(env):
+def _ue4_sanitize_arguments(env):
+
+    if hasattr(env, "platform") and env.platform is not None:
+        def sanitize_platform(platform):
+            ''' Sanitizes platform '''
+            std_platforms = { "ps4"       : "ps4",
+                              "orbis"     : "ps4",
+                              "xboxone"   : "xboxone",
+                              "dingo"     : "xboxone",
+                              "win32"     : "win32",
+                              "pcconsole" : "win32",
+                              "win64"     : "win64",
+                              "pc"        : "win64",
+                              "windows"   : "win64",
+                              "xbox360"   : "xbox360",
+                              "x360"      : "xbox360",
+                              "ps3"       : "ps3",
+                              "linux"     : "linux",
+                              "android"   : "android",
+                              "mac"       : "mac",
+                              "macos"     : "mac",
+                              "ios"       : "ios" }
+
+            if platform.lower() not in std_platforms:
+                return platform
+            return std_platforms[platform.lower()]
+
+        env.platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
+
+        env.is_win32   = 'win32'   in env.platform.split('+')
+        env.is_win64   = 'win64'   in env.platform.split('+')
+        env.is_ps3     = 'ps3'     in env.platform.split('+')
+        env.is_ps4     = 'ps4'     in env.platform.split('+')
+        env.is_x360    = 'xbox360' in env.platform.split('+')
+        env.is_xone    = 'xboxone' in env.platform.split('+')
+        env.is_linux   = 'linux'   in env.platform.split('+')
+        env.is_android = 'android' in env.platform.split('+')
+        env.is_mac     = 'mac'     in env.platform.split('+')
+        env.is_ios     = 'ios'     in env.platform.split('+')
+
+        env.is_microsoft_platform = env.is_win32 or env.is_win64 or env.is_x360 or env.is_xone
+        env.is_sony_platform      = env.is_ps3 or env.is_ps4
+        env.is_mobile_platform    = env.is_ios or env.is_android
+
+    if hasattr(env, 'configuration') and env.configuration is not None:
+        def sanitize_config(config):
+            ''' Sanitizes config '''
+            std_configs = { 'debug'    : 'debug',
+                            'devel'    : 'devel',
+                            'release'  : 'release',
+                            'test'     : 'test',
+                            'shipping' : 'shipping',
+                          }
+
+            if config.lower() not in std_configs:
+                return ""
+            return std_configs[config.lower()]
+
+        env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
+
+
+def _ue4_set_env(env):
+
     ''' Sets some variables for use with unreal 4 '''
     def _get_ue4_config(config):
         configs = { "debug"    : "Debug",
@@ -394,6 +457,12 @@ def _ue4_load_arguments(env):
             env.configuration = 'devel'
         env.ue4_config = '+'.join(map(_get_ue4_config, env.configuration.split('+')))
 
+
+def _ue4_load_arguments(env):
+
+    _ue4_sanitize_arguments(env)
+    _ue4_set_env(env)
+
     if not hasattr(env, 'target') or env.target is None and env.is_ue4:
         if env.platform in ['win64', 'mac', 'linux']:
             env.target = 'editor'
@@ -401,6 +470,7 @@ def _ue4_load_arguments(env):
             env.target = 'game'
 
     return True
+
 
 def _cant_find_file(_, group_dict):
     assert 'asset' in group_dict
