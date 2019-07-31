@@ -74,9 +74,10 @@ class SummaryHandler(logging.Handler):
             # XboxOne SDK
             r' - Error Code: .*',
             r'Package was not created, error = .*',
-            r'Chunk [0-9]+ is invalid: it contains 0 files.',
-            r'The layout contained an invalid chunk.',
-            r'Chunks must contain at least 1 non-empty file.',
+            r'Chunk [0-9]+ is invalid: it contains 0 files\.',
+            r'The layout contained an invalid chunk\.',
+            r'Chunks must contain at least 1 non-empty file\.',
+            r'FileGroup .* did not match any files\.',
         ]
 
         warning_patterns = [
