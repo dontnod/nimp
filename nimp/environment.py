@@ -31,6 +31,7 @@ import time
 
 import nimp.command
 import nimp.summary
+import nimp.system
 import nimp.unreal
 
 _LOG_FORMATS = {
@@ -226,21 +227,17 @@ class Environment:
         ''' Applies environment variables from .nimp.conf '''
 
     def _load_nimp_conf(self):
-        nimp_conf_dir = "."
-        nimp_conf_file = ".nimp.conf"
-        while os.path.abspath(os.sep) != os.path.abspath(nimp_conf_dir):
-            if os.path.exists(os.path.join(nimp_conf_dir, nimp_conf_file)):
-                break
-            nimp_conf_dir = os.path.join("..", nimp_conf_dir)
+        nimp_conf_file = '.nimp.conf'
+        nimp_conf_dir = nimp.system.find_dir_containing_file(nimp_conf_file)
 
-        self.root_dir = nimp_conf_dir
-
-        if not os.path.isfile(os.path.join(nimp_conf_dir, nimp_conf_file)):
+        if not nimp_conf_dir:
             return True
 
         if not self.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
-            logging.error("Error loading %s", nimp_conf_file)
+            logging.error('Error loading %s', nimp_conf_file)
             return False
+
+        self.root_dir = nimp_conf_dir
 
         return True
 

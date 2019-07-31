@@ -191,6 +191,21 @@ def all_map(mapper, fileset):
             return False
     return True
 
+
+def find_dir_containing_file(filename):
+    ''' Recursively search parent directories for a file '''
+    search_dir = '.'
+    while os.path.abspath(os.sep) != os.path.abspath(search_dir):
+        if os.path.exists(os.path.join(search_dir, filename)):
+            break
+        search_dir = os.path.join('..', search_dir)
+
+    if not os.path.isfile(os.path.join(search_dir, filename)):
+        return None
+
+    return search_dir
+
+
 def load_arguments(env):
     '''Sets default platform '''
     if not hasattr(env, 'platform') or env.platform is None:
