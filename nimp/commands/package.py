@@ -117,6 +117,7 @@ class UnrealPackageConfiguration():
         self.ignored_warnings = []
         self.is_final_submission = False
 
+        self.msixvc = False
         self.ps4_title_collection = []
         self.xbox_product_id = None
         self.xbox_content_id = None
@@ -142,7 +143,8 @@ class Package(nimp.command.Command):
         parser.add_argument('--trackloadpackage', action = 'store_true', help = 'track LoadPackage calls when cooking')
         parser.add_argument('--cook-extra-options', nargs = '*', default = [], metavar = '<cook_option>',
                             help = 'pass additional options to the cook command')
-        parser.add_argument('--ps4-regions', metavar = '<region>', nargs = '+', help = 'Set the PS4 regions to package for')
+        parser.add_argument('--msixvc', action = 'store_true', help = 'create a MSIXVC package')
+        parser.add_argument('--ps4-regions', metavar = '<region>', nargs = '+', help = 'set the PS4 regions to package for')
 
         #region Legacy
         parser.add_argument('--layout', metavar = '<file_path>', help = '(deprecated) set the layout file to use for the package (for consoles)')
@@ -162,9 +164,11 @@ class Package(nimp.command.Command):
         env.root_dir = env.root_dir.replace('\\', '/')
         env.worker_platform = nimp.unreal.get_host_platform()
         env.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
+
+        env.layout_file_extension = 'txt'
         if env.platform == 'ps4':
             env.layout_file_extension = 'gp4'
-        elif env.platform == 'xboxone':
+        if env.platform == 'xboxone' or env.msixvc:
             env.layout_file_extension = 'xml'
 
         package_configuration = UnrealPackageConfiguration()
@@ -198,6 +202,7 @@ class Package(nimp.command.Command):
         package_configuration.pak_collection = [ None ]
         package_configuration.pak_compression = env.compress
         package_configuration.is_final_submission = env.final
+        package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
 
         ps4_title_directory_collection = []
 
@@ -243,8 +248,6 @@ class Package(nimp.command.Command):
         if env.trackloadpackage:
             package_configuration.cook_extra_options.append('-TrackLoadPackage')
 
-        if env.platform not in [ 'ps4', 'xboxone' ]:
-            package_configuration.layout_file_path = None
         if package_configuration.layout_file_path:
             package_configuration.layout_file_path = env.format(package_configuration.layout_file_path)
         ps4_title_directory_collection = [ env.format(title) for title in ps4_title_directory_collection ]
@@ -392,7 +395,7 @@ class Package(nimp.command.Command):
         Package._stage_binaries(package_configuration, env.simulate)
         Package._stage_content(env, package_configuration)
 
-        if package_configuration.target_platform == 'XboxOne':
+        if package_configuration.msixvc:
             if not env.simulate:
                 # Dummy files for empty chunks
                 with open(package_configuration.stage_directory + '/LaunchChunk.bin', 'w') as empty_file:
@@ -525,6 +528,44 @@ class Package(nimp.command.Command):
             if not simulate:
                 subprocess.check_call(makepri_command)
 
+        elif package_configuration.target_platform == 'Win64' and package_configuration.msixvc:
+
+            if os.path.exists(package_configuration.configuration_directory + '/Windows/AppxManifest.xml'):
+                manifest_source = package_configuration.configuration_directory + '/Windows/AppxManifest.xml'
+                manifest_destination_format = 'AppxManifest-{configuration}.xml'
+            elif os.path.exists(package_configuration.configuration_directory + '/Windows/MicrosoftGame.config'):
+                manifest_source = package_configuration.configuration_directory + '/Windows/MicrosoftGame.config'
+                manifest_destination_format = 'MicrosoftGame-{configuration}.config'
+            else:
+                raise FileNotFoundError("MSIXVC packaging requires 'AppxManifest.xml' or 'MicrosoftGame.config'")
+
+            transform_parameters = {}
+            for binary_configuration in package_configuration.binary_configuration.split('+'):
+                manifest_destination = manifest_destination_format.format(configuration = binary_configuration)
+                transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
+                transform_parameters['configuration'] = binary_configuration
+                Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
+
+            resource_file_collection = glob.glob(package_configuration.resource_directory + '/**/*.png', recursive = True)
+            resource_file_collection += glob.glob(package_configuration.resource_directory + '/**/*.resw', recursive = True)
+            resource_file_collection = [ nimp.system.standardize_path(path) for path in resource_file_collection ]
+            for resource_source in resource_file_collection:
+                resource_destination = 'Resources/' + os.path.relpath(resource_source, package_configuration.resource_directory)
+                Package._stage_file(package_configuration.stage_directory, resource_source, resource_destination, simulate)
+
+            makepri_command = [
+                os.path.join(os.environ['GamingSDK'], 'bin', 'MakePri.exe'), 'new',
+                '/ProjectRoot', package_configuration.stage_directory,
+                '/ConfigXml', package_configuration.project_directory + '/Build/Win64/PriConfig.xml',
+                '/IndexName', xml.etree.ElementTree.parse(manifest_source).getroot().find('Identity').get('Name'),
+                '/OutputFile', package_configuration.stage_directory + '/resources.pri',
+                '/IndexLog', package_configuration.stage_directory + '/resources.log.xml',
+            ]
+
+            logging.info('+ %s', ' '.join(makepri_command))
+            if not simulate:
+                subprocess.check_call(makepri_command)
+
 
     @staticmethod
     def _stage_binaries(package_configuration, simulate):
@@ -543,9 +584,6 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def _stage_layout(package_configuration, simulate):
-        if package_configuration.target_platform not in [ 'PS4', 'XboxOne' ]:
-            return
-
         source = package_configuration.layout_file_path
         format_parameters = { 'project': package_configuration.project, 'platform': package_configuration.target_platform }
 
@@ -561,7 +599,7 @@ class Package(nimp.command.Command):
                     transform_parameters['configuration'] = binary_configuration.lower()
                     Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
 
-        elif package_configuration.target_platform == 'XboxOne':
+        elif package_configuration.msixvc:
             transform_parameters = {}
             for binary_configuration in package_configuration.binary_configuration.split('+'):
                 format_parameters['configuration'] = binary_configuration
@@ -643,7 +681,10 @@ class Package(nimp.command.Command):
         logging.info('')
 
         if package_configuration.target_platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
-            Package.package_for_desktop(package_configuration, vars(env), env.simulate)
+            if package_configuration.target_platform == 'Win64' and package_configuration.msixvc:
+                Package.package_for_windows_msixvc(package_configuration, env.simulate)
+            else:
+                Package.package_for_desktop(package_configuration, vars(env), env.simulate)
         elif package_configuration.target_platform == 'PS4':
             Package.package_for_ps4(package_configuration, env.simulate)
         elif package_configuration.target_platform == 'XboxOne':
@@ -653,7 +694,7 @@ class Package(nimp.command.Command):
     @staticmethod
     def package_for_desktop(package_configuration, file_mapper_arguments, simulate):
         source = package_configuration.stage_directory
-        destination = 'Final' if package_configuration.is_final_submission else 'Default'
+        destination = 'Default-Final' if package_configuration.is_final_submission else 'Default'
         destination = package_configuration.package_directory + '/' + destination
         _try_remove(destination, simulate)
         _try_create_directory(destination, simulate)
@@ -711,18 +752,18 @@ class Package(nimp.command.Command):
         for binary_configuration in package_configuration.binary_configuration.split('+'):
             destination = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
             destination = package_configuration.package_directory + '/' + destination
-            layout_file = source + '/' + package_configuration.project + '-' + binary_configuration + '.xml'
-            package_command = [
-                package_tool_path, 'pack', '/v',
-                '/f', layout_file, '/d', source, '/pd', destination,
-                '/productid', package_configuration.xbox_product_id,
-                '/contentid', package_configuration.xbox_content_id,
-            ]
+            layout_file_path = source + '/' + package_configuration.project + '-' + binary_configuration + '.xml'
+
+            Package.verify_msixvc_files(source, layout_file_path)
+
+            package_command = [ package_tool_path, 'pack', '/v' ]
+            package_command += [ '/f', layout_file_path, '/d', source, '/pd', destination ]
+            package_command += [ '/productid', package_configuration.xbox_product_id ]
+            package_command += [ '/contentid', package_configuration.xbox_content_id ]
+            package_command += [ '/l' ] if package_configuration.is_final_submission else []
 
             if package_configuration.package_type in [ 'application', 'application_patch' ]:
                 package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
-            if package_configuration.is_final_submission:
-                package_command += [ '/l' ]
 
             _try_remove(destination, simulate)
             _try_create_directory(destination, simulate)
@@ -742,13 +783,71 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
+    def package_for_windows_msixvc(package_configuration, simulate):
+        package_tool_path = os.path.join(os.environ['GamingSDK'], 'bin', 'MakePkg.exe')
+        source = package_configuration.stage_directory
+
+        for binary_configuration in package_configuration.binary_configuration.split('+'):
+            destination = 'MSIXVC' + '-' + binary_configuration + ('-' + 'Final' if package_configuration.is_final_submission else '')
+            destination = package_configuration.package_directory + '/' + destination
+            layout_file_path = source + '/' + package_configuration.project + '-' + binary_configuration + '.xml'
+
+            Package.verify_msixvc_files(source, layout_file_path)
+
+            package_command = [ package_tool_path, 'pack', '/v', '/pc' ]
+            package_command += [ '/f', layout_file_path, '/d', source, '/pd', destination ]
+            package_command += [ '/l' ] if package_configuration.is_final_submission else []
+
+            _try_remove(destination, simulate)
+            _try_create_directory(destination, simulate)
+
+            if not simulate:
+                if os.path.isfile(source + '/AppxManifest-%s.xml' % binary_configuration):
+                    shutil.copyfile(source + '/AppxManifest-%s.xml' % binary_configuration, source + '/AppxManifest.xml')
+                if os.path.isfile(source + '/MicrosoftGame-%s.config' % binary_configuration):
+                    shutil.copyfile(source + '/MicrosoftGame-%s.config' % binary_configuration, source + '/MicrosoftGame.config')
+
+            package_success = nimp.sys.process.call(package_command, simulate = simulate)
+
+            if not simulate:
+                if os.path.isfile(source + '/AppxManifest.xml'):
+                    os.remove(source + '/AppxManifest.xml')
+                if os.path.isfile(source + '/appdata.bin'):
+                    os.remove(source + '/appdata.bin')
+                if os.path.isfile(source + '/MicrosoftGame.config'):
+                    os.remove(source + '/MicrosoftGame.config')
+
+            if package_success != 0:
+                raise RuntimeError('Package generation failed')
+
+
+    @staticmethod
+    def verify_msixvc_files(stage_directory, layout_file_path):
+        layout_xml = xml.etree.ElementTree.parse(layout_file_path).getroot()
+
+        file_not_found = False
+        for chunk in layout_xml.findall('Chunk'):
+            for file_group in chunk.findall('FileGroup'):
+                if file_group.get("Include").lower() in [ "microsoftgame.config", "appxmanifest.xml", "appdata.bin" ]:
+                    continue
+                file_pattern = stage_directory + "/" + file_group.get('SourcePath') + "/" + file_group.get("Include")
+                if not glob.glob(file_pattern):
+                    file_not_found = True
+                    logging.error("Files not found: '%s'", file_pattern)
+        if file_not_found:
+            raise FileNotFoundError
+
+
+    @staticmethod
     def verify(env, package_configuration):
         ''' Verify the generated packages '''
 
         logging.info('Verifying packages (Path: %s)', package_configuration.package_directory)
         logging.info('')
 
-        if package_configuration.target_platform == 'PS4':
+        if package_configuration.target_platform == 'Win64':
+            Package.verify_for_windows(package_configuration)
+        elif package_configuration.target_platform == 'PS4':
             Package.verify_for_ps4(package_configuration, env.simulate)
         elif package_configuration.target_platform == 'XboxOne':
             Package.verify_for_xboxone(package_configuration)
@@ -784,22 +883,35 @@ class Package(nimp.command.Command):
     @staticmethod
     def verify_for_xboxone(package_configuration):
         for binary_configuration in package_configuration.binary_configuration.split('+'):
-            directory = binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
-            directory = package_configuration.package_directory + '/' + directory
+            package_directory = binary_configuration + ('-' + 'Final' if package_configuration.is_final_submission else '')
+            package_directory = package_configuration.package_directory + '/' + package_directory
+            Package.verify_msixvc(package_directory, package_configuration.ignored_errors, package_configuration.ignored_warnings)
 
-            validation_success = True
-            for validator_path in [ path.replace('\\', '/') for path in glob.glob(directory + '/Validator_*.xml') ]:
-                logging.info('Reading %s', validator_path)
-                validator_xml = xml.etree.ElementTree.parse(validator_path).getroot()
-                for test_result in validator_xml.find('testresults').findall('testresult'):
-                    for failure in test_result.findall('.//failure'):
-                        if failure.text not in package_configuration.ignored_errors:
-                            logging.error('%s: %s', test_result.find('component').text, failure.text)
-                            validation_success = False
-                    for warning in test_result.findall('.//warning'):
-                        if warning.text not in package_configuration.ignored_warnings:
-                            logging.warning('%s: %s', test_result.find('component').text, warning.text)
-                            validation_success = False
 
-            if not validation_success:
-                logging.warning('Package validation failed')
+    @staticmethod
+    def verify_for_windows(package_configuration):
+        if package_configuration.msixvc:
+            for binary_configuration in package_configuration.binary_configuration.split('+'):
+                package_directory = 'MSIXVC' + '-' + binary_configuration + ('-' + 'Final' if package_configuration.is_final_submission else '')
+                package_directory = package_configuration.package_directory + '/' + package_directory
+                Package.verify_msixvc(package_directory, package_configuration.ignored_errors, package_configuration.ignored_warnings)
+
+
+    @staticmethod
+    def verify_msixvc(package_directory, ignored_errors, ignored_warnings):
+        validation_success = True
+        for validator_path in [ path.replace('\\', '/') for path in glob.glob(package_directory + '/Validator_*.xml') ]:
+            logging.info('Reading %s', validator_path)
+            validator_xml = xml.etree.ElementTree.parse(validator_path).getroot()
+            for test_result in validator_xml.find('testresults').findall('testresult'):
+                for failure in test_result.findall('.//failure'):
+                    if failure.text not in ignored_errors:
+                        logging.error('%s: %s', test_result.find('component').text, failure.text)
+                        validation_success = False
+                for warning in test_result.findall('.//warning'):
+                    if warning.text not in ignored_warnings:
+                        logging.warning('%s: %s', test_result.find('component').text, warning.text)
+                        validation_success = False
+
+        if not validation_success:
+            logging.warning('Package validation failed')
