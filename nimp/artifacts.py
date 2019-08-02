@@ -250,7 +250,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, simulate)
         shutil.move(artifact_path + '.tmp', artifact_path)
 
 
-def create_torrent(artifact_path, simulate):
+def create_torrent(artifact_path, announce, simulate):
     ''' Create a torrent for an existing artifact '''
 
     if BitTornado is None:
@@ -280,7 +280,10 @@ def create_torrent(artifact_path, simulate):
     for torrent_tree in all_torrent_trees:
         torrent_tree.addFileToInfos([torrent_info])
         BitTornado.Meta.Info.check_info(torrent_info)
-    torrent_metainfo = BitTornado.Meta.Info.MetaInfo(info = torrent_info)
+
+    torrent_metainfo_parameters = { 'announce': announce }
+    torrent_metainfo_parameters = { key: value for key, value in torrent_metainfo_parameters.items() if value is not None }
+    torrent_metainfo = BitTornado.Meta.Info.MetaInfo(info = torrent_info, **torrent_metainfo_parameters)
 
     if not simulate:
         with open(torrent_path + '.tmp', 'wb') as torrent_file:
