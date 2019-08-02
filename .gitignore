@@ -1,5 +1,3 @@
-**/__pycache__/
-*.pyc
 .coverage
 .idea/*
 .vs/*
@@ -8,8 +6,14 @@ dist/
 doc/_build
 doc/pages/_generated
 htmlcov
-nimp.egg-info/
-nimp_cli.egg-info/
+
+# Python
+__pycache__/
+*.egg-info/
+*.pyc
+
+# Python virtual environment
+.venv/
 
 # Visual Studio Code
 .vscode/
