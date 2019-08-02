@@ -103,7 +103,7 @@ def add_commands_subparser(commands, parser, env):
 
         try:
             enabled, reason = command_it.is_available(env)
-        except Exception as ex:
+        except Exception as ex: # pylint: disable = broad-except
             enabled, reason = False, 'Unexpected error: ' + str(ex)
 
         description = ''
@@ -119,7 +119,7 @@ def add_commands_subparser(commands, parser, env):
                                                help = command_help)
         try:
             command_it.configure_arguments(env, command_parser)
-        except Exception as ex:
+        except Exception as ex: # pylint: disable = broad-except
             enabled, reason = False, 'Unexpected error: ' + str(ex)
 
         command_to_run = command_it

@@ -31,10 +31,6 @@ class RunHook(nimp.command.Command):
     ''' Execute a hook on its own '''
 
 
-    def __init__(self):
-        super(RunHook, self).__init__()
-
-
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'free_parameters')
         parser.add_argument('hook', metavar = '<hook>', help = 'Select the hook to execute')

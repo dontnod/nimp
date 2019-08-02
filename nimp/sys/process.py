@@ -189,26 +189,27 @@ def _sanitize_command(command):
 
 
 if nimp.sys.platform.is_windows():
-    _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None
+    _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None # pylint: disable = invalid-name
     _KERNEL32.MapViewOfFile.restype = ctypes.c_void_p
     _KERNEL32.UnmapViewOfFile.argtypes = [ctypes.c_void_p]
 
-    INVALID_HANDLE_VALUE = -1 # Should be c_void_p(-1).value but doesn’t work
+     # Should be c_void_p(-1).value but doesn’t work
+    INVALID_HANDLE_VALUE = -1 # pylint: disable = invalid-name
 
-    WAIT_OBJECT_0 = 0x00000000
-    WAIT_OBJECT_1 = 0x00000001
-    INFINITE      = 0xFFFFFFFF
+    WAIT_OBJECT_0 = 0x00000000 # pylint: disable = invalid-name
+    WAIT_OBJECT_1 = 0x00000001 # pylint: disable = invalid-name
+    INFINITE      = 0xFFFFFFFF # pylint: disable = invalid-name
 
-    PAGE_READWRITE = 0x4
+    PAGE_READWRITE = 0x4 # pylint: disable = invalid-name
 
-    FILE_MAP_READ = 0x0004
+    FILE_MAP_READ = 0x0004 # pylint: disable = invalid-name
 
-    SEM_FAILCRITICALERRORS = 0x0001
-    SEM_NOGPFAULTERRORBOX  = 0x0002
-    SEM_NOOPENFILEERRORBOX = 0x8000
+    SEM_FAILCRITICALERRORS = 0x0001 # pylint: disable = invalid-name
+    SEM_NOGPFAULTERRORBOX  = 0x0002 # pylint: disable = invalid-name
+    SEM_NOOPENFILEERRORBOX = 0x8000 # pylint: disable = invalid-name
 
-    PROCESS_QUERY_INFORMATION = 0x0400
-    PROCESS_SYNCHRONIZE = 0x00100000
+    PROCESS_QUERY_INFORMATION = 0x0400 # pylint: disable = invalid-name
+    PROCESS_SYNCHRONIZE = 0x00100000 # pylint: disable = invalid-name
 
     def _disable_win32_dialogs():
         ''' Disable “Entry Point Not Found” and “Application Error” dialogs for

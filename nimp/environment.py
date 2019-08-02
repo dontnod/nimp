@@ -34,11 +34,11 @@ import nimp.command
 import nimp.summary
 import nimp.unreal
 
-_LOG_FORMATS = {
+_LOG_FORMATS = { # pylint: disable = invalid-name
     'standard': '%(asctime)s [%(levelname)s] %(message)s'
 }
 
-_SUMMARY_HANDLERS = {
+_SUMMARY_HANDLERS = { # pylint: disable = invalid-name
     'default': nimp.summary.DefaultSummaryHandler,
     'unreal': nimp.unreal.UnrealSummaryHandler
 }

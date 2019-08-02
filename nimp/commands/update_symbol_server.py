@@ -55,10 +55,6 @@ class UpdateSymbolServer(nimp.command.Command):
     ''' Update the symbol server '''
 
 
-    def __init__(self):
-        super(UpdateSymbolServer, self).__init__()
-
-
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'free_parameters')
         parser.add_argument('--symbol-type', required = True, metavar = '<type>', help = 'Set the type of symbols to upload')
@@ -99,6 +95,6 @@ class UpdateSymbolServer(nimp.command.Command):
         for source in all_files:
             destination = os.path.join(symbol_destination, source[ len(symbol_source) + 1 : ])
             logging.info('Copying %s to %s', source, destination)
-            nimp.system.try_execute(lambda: _copy_file(source, destination, env.simulate), OSError)
+            nimp.system.try_execute(lambda: _copy_file(source, destination, env.simulate), OSError) # pylint: disable = cell-var-from-loop
 
         return True
