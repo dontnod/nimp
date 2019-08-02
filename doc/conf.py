@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Nimp'
-copyright = '2016, Dontnod Entertainment'
+copyright = '2014-2019, Dontnod Entertainment'
 author = 'Dontnod Entertainment'
 
 # The version info for the project you're documenting, acts as replacement for

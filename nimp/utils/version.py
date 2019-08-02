@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright © 2014—2019 Dontnod Entertainment
+# Copyright (c) 2014-2019 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -33,4 +33,3 @@ def is_newer(str_a, str_b):
                 return int(a) > int(b)
             return a > b
     return len(tokens_a) > len(tokens_b)
-
