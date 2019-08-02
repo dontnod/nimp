@@ -4,7 +4,7 @@ import subprocess
 def load_configuration(environment):
     configuration = {
         "project": "nimp",
-        "project_version": { "identifier": "0.12.0" },
+        "project_version": { "identifier": "0.13.0" },
         "distribution": "nimp-cli",
     }
 
