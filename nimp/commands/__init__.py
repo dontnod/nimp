@@ -33,6 +33,7 @@ __all__ = [
     'package',
     'run',
     'run_hook',
+    'symbol_server',
     'update_symbol_server',
     'upload',
     'upload_fileset',

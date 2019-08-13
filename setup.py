@@ -41,6 +41,7 @@ setup_info = dict(
     packages = [
         'nimp',
         'nimp/commands',
+        'nimp/model',
         'nimp/sys',
         'nimp/utils',
     ],
