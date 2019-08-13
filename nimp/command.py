@@ -88,13 +88,12 @@ def load_arguments(env):
 
     return True
 
-def add_commands_subparser(commands, parser, env):
+def add_commands_subparser(commands, parser, env, required = False):
     ''' Adds a list of commands to a subparser '''
     command_description = ('Commands marked with /!\\ are currently unavailable.'
                            ' You can issue "nimp <command> -h" to know why '
                            '<command> is currently disabled')
-    subparsers = parser.add_subparsers(metavar = '<command>',
-                                       description = command_description )
+    subparsers = parser.add_subparsers(metavar = '<command>', description = command_description, required = required)
 
     for command_it in commands:
         command_class = type(command_it)
@@ -134,7 +133,7 @@ class CommandGroup(Command):
         self._sub_commands = sub_commands
 
     def configure_arguments(self, env, parser):
-        add_commands_subparser(self._sub_commands, parser, env)
+        add_commands_subparser(self._sub_commands, parser, env, True)
 
     @abc.abstractmethod
     def is_available(self, env):
