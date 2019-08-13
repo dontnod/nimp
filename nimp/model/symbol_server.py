@@ -27,48 +27,68 @@ import glob
 import os
 import shutil
 
+import nimp.system
+
 
 def configure_symbol_server(env, identifier):
     symbol_server = env.symbol_servers[identifier]
 
     if isinstance(symbol_server, str):
-        return { "path": symbol_server }
-    return symbol_server
+        symbol_server = {
+            "type": identifier,
+            "path": symbol_server,
+        }
+
+    return SymbolServer(
+        server_type = symbol_server["type"],
+        server_path = nimp.system.sanitize_path(env.format(symbol_server["path"])),
+        expiration = symbol_server.get("expiration", None),
+    )
 
 
-def list_symbols(path):
-    symbols = []
-    symbols += glob.glob(os.path.join(path, "*.exe", "*"))
-    symbols += glob.glob(os.path.join(path, "*.dll", "*"))
-    symbols += glob.glob(os.path.join(path, "*.pdb", "*"))
-
-    symbols.sort()
-
-    return symbols
+class SymbolServer:
 
 
-def list_symbols_to_clean(all_symbols, expiration):
-    now = datetime.datetime.now()
+    def __init__(self, server_type, server_path, expiration):
+        self.server_type = server_type
+        self.server_path = server_path
+        self.expiration = expiration
 
-    symbols_to_clean = []
-    for symbol_path in all_symbols:
-        symbol_files = glob.glob(os.path.join(symbol_path, "*"))
-        if len(symbol_files) == 0: # pylint: disable = len-as-condition
-            symbols_to_clean.append(symbol_path)
 
-        elif expiration is not None:
-            modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(symbol_files[0]))
-            if now - modification_time > expiration:
+    def list_symbols(self):
+        symbols = []
+
+        if self.server_type == "program":
+            symbols += glob.glob(os.path.join(self.server_path, "*.exe", "*"))
+            symbols += glob.glob(os.path.join(self.server_path, "*.dll", "*"))
+            symbols += glob.glob(os.path.join(self.server_path, "*.pdb", "*"))
+
+        symbols.sort()
+        return symbols
+
+
+    def list_symbols_to_clean(self, all_symbols):
+        now = datetime.datetime.now()
+
+        symbols_to_clean = []
+        for symbol_path in all_symbols:
+            symbol_files = glob.glob(os.path.join(symbol_path, "*"))
+            if len(symbol_files) == 0: # pylint: disable = len-as-condition
                 symbols_to_clean.append(symbol_path)
 
-    return symbols_to_clean
+            elif self.expiration is not None:
+                modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(symbol_files[0]))
+                if now - modification_time > self.expiration:
+                    symbols_to_clean.append(symbol_path)
+
+        return symbols_to_clean
 
 
-def clean_symbols(symbols_to_clean, simulate):
-    for symbol_path in symbols_to_clean:
-        logging.info("Removing '%s'", symbol_path)
-        if not simulate:
-            try:
-                shutil.rmtree(symbol_path)
-            except OSError:
-                logging.warning("Failed to remove '%s'", symbol_path, exc_info = True)
+    def clean_symbols(self, symbols_to_clean, simulate): # pylint: disable = no-self-use
+        for symbol_path in symbols_to_clean:
+            logging.info("Removing '%s'", symbol_path)
+            if not simulate:
+                try:
+                    shutil.rmtree(symbol_path)
+                except OSError:
+                    logging.warning("Failed to remove '%s'", symbol_path, exc_info = True)

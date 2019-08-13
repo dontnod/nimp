@@ -25,7 +25,6 @@ import logging
 
 import nimp.command
 import nimp.model.symbol_server
-import nimp.system
 
 
 class SymbolServer(nimp.command.CommandGroup):
@@ -63,11 +62,10 @@ class Status(nimp.command.Command):
 
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
-        symbol_server_path = nimp.system.sanitize_path(env.format(symbol_server["path"]))
 
-        logging.info("Status for symbol server at '%s'", symbol_server_path)
+        logging.info("Status for symbol server at '%s'", symbol_server.server_path)
 
-        all_symbols = nimp.model.symbol_server.list_symbols(symbol_server_path)
+        all_symbols = symbol_server.list_symbols()
         logging.info("Symbol count: %s", len(all_symbols))
 
         return True
@@ -88,13 +86,12 @@ class Clean(nimp.command.Command):
 
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
-        symbol_server_path = nimp.system.sanitize_path(env.format(symbol_server["path"]))
 
-        logging.info("Cleaning symbol server at '%s'%s", symbol_server_path, " (Simulation)" if env.simulate else "")
+        logging.info("Cleaning symbol server at '%s'%s", symbol_server.server_path, " (Simulation)" if env.simulate else "")
 
-        all_symbols = nimp.model.symbol_server.list_symbols(symbol_server_path)
-        symbols_to_clean = nimp.model.symbol_server.list_symbols_to_clean(all_symbols, symbol_server.get("expiration", None))
-        nimp.model.symbol_server.clean_symbols(symbols_to_clean, env.simulate)
+        all_symbols = symbol_server.list_symbols()
+        symbols_to_clean = symbol_server.list_symbols_to_clean(all_symbols)
+        symbol_server.clean_symbols(symbols_to_clean, env.simulate)
 
         logging.info("Symbol count: %s => %s", len(all_symbols), len(all_symbols) - len(symbols_to_clean))
 
