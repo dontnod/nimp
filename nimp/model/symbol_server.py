@@ -42,6 +42,7 @@ def configure_symbol_server(env, identifier):
     return SymbolServer(
         server_type = symbol_server["type"],
         server_path = nimp.system.sanitize_path(env.format(symbol_server["path"])),
+        platform = env.platform,
         expiration = symbol_server.get("expiration", None),
     )
 
@@ -49,9 +50,10 @@ def configure_symbol_server(env, identifier):
 class SymbolServer:
 
 
-    def __init__(self, server_type, server_path, expiration):
+    def __init__(self, server_type, server_path, platform, expiration):
         self.server_type = server_type
         self.server_path = server_path
+        self.platform = platform
         self.expiration = expiration
 
 
@@ -62,6 +64,12 @@ class SymbolServer:
             symbols += glob.glob(os.path.join(self.server_path, "*.exe", "*"))
             symbols += glob.glob(os.path.join(self.server_path, "*.dll", "*"))
             symbols += glob.glob(os.path.join(self.server_path, "*.pdb", "*"))
+
+        if self.server_type == "shaders":
+            if self.platform == "ps4":
+                symbols += glob.glob(os.path.join(self.server_path, "*.sdb"))
+            if self.platform == "xboxone":
+                symbols += glob.glob(os.path.join(self.server_path, "**", "*.pdb"), recursive = True)
 
         symbols.sort()
         return symbols
@@ -87,15 +95,24 @@ class SymbolServer:
         now = datetime.datetime.now()
 
         symbols_to_clean = []
-        for symbol_path in all_symbols:
-            symbol_files = glob.glob(os.path.join(symbol_path, "*"))
-            if len(symbol_files) == 0: # pylint: disable = len-as-condition
-                symbols_to_clean.append(symbol_path)
 
-            elif self.expiration is not None:
-                modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(symbol_files[0]))
-                if now - modification_time > self.expiration:
+        if self.server_type == "program":
+            for symbol_path in all_symbols:
+                symbol_files = glob.glob(os.path.join(symbol_path, "*"))
+                if len(symbol_files) == 0: # pylint: disable = len-as-condition
                     symbols_to_clean.append(symbol_path)
+
+                elif self.expiration is not None:
+                    modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(symbol_files[0]))
+                    if now - modification_time > self.expiration:
+                        symbols_to_clean.append(symbol_path)
+
+        if self.server_type == "shaders":
+            for symbol_path in all_symbols:
+                if self.expiration is not None:
+                    modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(symbol_path))
+                    if now - modification_time > self.expiration:
+                        symbols_to_clean.append(symbol_path)
 
         return symbols_to_clean
 
@@ -105,6 +122,9 @@ class SymbolServer:
             logging.info("Removing '%s'", symbol_path)
             if not simulate:
                 try:
-                    shutil.rmtree(symbol_path)
+                    if os.path.isdir(symbol_path):
+                        shutil.rmtree(symbol_path)
+                    elif os.path.isfile(symbol_path):
+                        os.remove(symbol_path)
                 except OSError:
                     logging.warning("Failed to remove '%s'", symbol_path, exc_info = True)
