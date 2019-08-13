@@ -32,7 +32,7 @@ class SymbolServer(nimp.command.CommandGroup):
 
 
     def __init__(self):
-        super().__init__([ Status(), Clean() ])
+        super().__init__([ Status(), Update(), Clean() ])
 
 
     def is_available(self, env):
@@ -71,6 +71,34 @@ class Status(nimp.command.Command):
         logging.info("Symbol count: %s", len(all_symbols))
 
         return True
+
+
+class Update(nimp.command.Command):
+    ''' Update the symbol server '''
+
+
+    def configure_arguments(self, env, parser):
+        parser.add_argument("--simulate", action = "store_true", help = "perform the command as a simulation")
+        return True
+
+
+    def is_available(self, env):
+        if not hasattr(env, 'symbol_servers'):
+            return False, 'Symbol servers are not configured'
+        return True, ''
+
+
+    def run(self, env):
+        symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
+
+        if symbol_server.server_type == 'shaders' and env.project_type == 'UE4':
+            symbol_source = '{root_dir}/{game}/Saved/ShaderDebugInfo'
+            symbol_source += '/' + ('SF_PS4/sdb' if env.ue4_platform == 'PS4' else env.ue4_platform)
+            symbol_source = nimp.system.sanitize_path(env.format(symbol_source))
+            symbol_server.update_symbols(symbol_source, env.simulate)
+
+        return True
+
 
 
 class Clean(nimp.command.Command):

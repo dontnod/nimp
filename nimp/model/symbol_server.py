@@ -67,6 +67,22 @@ class SymbolServer:
         return symbols
 
 
+    def update_symbols(self, source, simulate):
+        if self.server_type == "shaders":
+            logging.info("Uploading from '%s' to '%s'%s", source, self.server_path, " (Simulation)" if simulate else "")
+
+            all_files = glob.glob(os.path.join(source, "**"), recursive = True)
+            all_files = [ path for path in all_files if os.path.isfile(path) ]
+
+            for source_file in all_files:
+                destination_file = os.path.join(self.server_path, os.path.relpath(source_file, source))
+                logging.info("Copying '%s' to '%s'", source_file, destination_file)
+
+                if not simulate:
+                    os.makedirs(os.path.dirname(destination_file), exist_ok = True)
+                    shutil.copyfile(source_file, destination_file)
+
+
     def list_symbols_to_clean(self, all_symbols):
         now = datetime.datetime.now()
 
