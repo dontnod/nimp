@@ -37,7 +37,7 @@ class SymbolServer(nimp.command.CommandGroup):
 
     def is_available(self, env):
         if not hasattr(env, 'symbol_servers'):
-            return False, 'symbol_servers is not defined'
+            return False, 'Symbol servers are not configured'
         return True, ''
 
 
@@ -57,6 +57,8 @@ class Status(nimp.command.Command):
 
 
     def is_available(self, env):
+        if not hasattr(env, 'symbol_servers'):
+            return False, 'Symbol servers are not configured'
         return True, ''
 
 
@@ -81,6 +83,8 @@ class Clean(nimp.command.Command):
 
 
     def is_available(self, env):
+        if not hasattr(env, 'symbol_servers'):
+            return False, 'Symbol servers are not configured'
         return True, ''
 
 
