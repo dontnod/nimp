@@ -22,11 +22,11 @@
 
 ''' Command to update the symbol server '''
 
-import logging
 import os
 import shutil
 
 import nimp.command
+import nimp.model.symbol_server
 import nimp.system
 
 
@@ -70,31 +70,12 @@ class UpdateSymbolServer(nimp.command.Command):
 
 
     def run(self, env):
+        symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.symbol_type)
 
-        if env.symbol_type == 'program':
-            raise NotImplementedError('Program symbols not handled, use upload command')
-        elif env.symbol_type == 'shaders':
+        if symbol_server.server_type == 'shaders' and env.project_type == 'UE4':
             symbol_source = '{root_dir}/{game}/Saved/ShaderDebugInfo'
             symbol_source += '/' + ('SF_PS4/sdb' if env.ue4_platform == 'PS4' else env.ue4_platform)
-        else:
-            raise ValueError('Unexpected symbol type: ' + env.symbol_type)
-
-        symbol_source = nimp.system.sanitize_path(env.format(symbol_source))
-        symbol_destination = nimp.system.sanitize_path(env.format(env.symbol_servers[env.symbol_type]))
-
-        logging.info('Uploading from %s to %s (Simulate: %s)', symbol_source, symbol_destination, env.simulate)
-
-        if not os.path.exists(symbol_source):
-            logging.info('Symbol source does not exist: %s', symbol_source)
-            return True
-
-        if not os.path.exists(symbol_destination) and not env.simulate:
-            os.makedirs(symbol_destination)
-
-        all_files = _list_files(symbol_source)
-        for source in all_files:
-            destination = os.path.join(symbol_destination, source[ len(symbol_source) + 1 : ])
-            logging.info('Copying %s to %s', source, destination)
-            nimp.system.try_execute(lambda: _copy_file(source, destination, env.simulate), OSError) # pylint: disable = cell-var-from-loop
+            symbol_source = nimp.system.sanitize_path(env.format(symbol_source))
+            symbol_server.update_symbols(symbol_source, env.simulate)
 
         return True
