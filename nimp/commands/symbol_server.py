@@ -32,7 +32,7 @@ class SymbolServer(nimp.command.CommandGroup):
 
 
     def __init__(self):
-        super().__init__([ Status(), Update(), Clean() ])
+        super().__init__([ _Status(), _Update(), _Clean() ])
 
 
     def is_available(self, env):
@@ -48,7 +48,7 @@ class SymbolServer(nimp.command.CommandGroup):
         super().configure_arguments(env, parser)
 
 
-class Status(nimp.command.Command):
+class _Status(nimp.command.Command):
     ''' Show the symbol server status '''
 
 
@@ -73,7 +73,7 @@ class Status(nimp.command.Command):
         return True
 
 
-class Update(nimp.command.Command):
+class _Update(nimp.command.Command):
     ''' Update the symbol server '''
 
 
@@ -101,7 +101,7 @@ class Update(nimp.command.Command):
 
 
 
-class Clean(nimp.command.Command):
+class _Clean(nimp.command.Command):
     ''' Clean the symbol server '''
 
 
