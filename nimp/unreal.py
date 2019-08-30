@@ -36,14 +36,14 @@ import nimp.summary
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
         command-line arguments '''
-    ue4_file = 'UE4Games.uprojectdirs'
+    ue4_file = 'Engine/Build/Build.version'
     ue4_dir = nimp.system.find_dir_containing_file(ue4_file)
     if not ue4_dir:
         return True
 
     env.is_ue4 = True
 
-    with open('%s/Engine/Build/Build.version' % (ue4_dir)) as version_file:
+    with open('%s/%s' % (ue4_dir, ue4_file)) as version_file:
         data = json.load(version_file)
         env.ue4_major = data['MajorVersion']
         env.ue4_minor = data['MinorVersion']
