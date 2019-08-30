@@ -51,7 +51,6 @@ class Environment:
 
     def __init__(self):
         self.command = None
-        self.root_dir = '.'
         self.environment = {}
         self.dry_run = False
         self.summary = None
@@ -130,6 +129,9 @@ class Environment:
             if not config_loader(self):
                 logging.error('Error while loading nimp config')
                 return exit_error
+
+        if not hasattr(self, 'root_dir') or not self.root_dir:
+            self.root_dir = '.'
 
         # Loads argument parser, parses argv with it and adds command line para
         # meters as properties of the environment

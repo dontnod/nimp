@@ -55,6 +55,9 @@ def load_config(env):
         else:
             env.vs_version = '15'
 
+    if not hasattr(env, 'root_dir') or env.root_dir is None:
+        env.root_dir = ue4_dir
+
     logging.debug('Found UE4 project %s.%s.%s in %s' % (env.ue4_major, env.ue4_minor, env.ue4_patch, ue4_dir))
 
     return True
