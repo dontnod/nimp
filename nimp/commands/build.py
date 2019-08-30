@@ -27,7 +27,7 @@ import os
 import nimp.build
 import nimp.command
 import nimp.environment
-import nimp.unreal
+import nimp.ue4.build
 
 class Build(nimp.command.Command):
     ''' Builds a project binaries '''
@@ -70,7 +70,7 @@ class Build(nimp.command.Command):
 
         if env.is_ue4:
             nimp.build.install_distcc_and_ccache()
-            return nimp.unreal.build(env)
+            return nimp.ue4.build.build(env)
 
         sln = Build._find_vs_solution()
         if sln is not None:

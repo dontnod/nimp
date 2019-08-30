@@ -20,12 +20,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Main Nimp modules '''
+''' UE4 functions '''
 
 __all__ = [
-    "nimp_cli",
-    "commands",
-    "sys",
-    "ue4",
-    "tests",
+    'build',
 ]
