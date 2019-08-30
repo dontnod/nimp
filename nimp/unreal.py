@@ -35,12 +35,20 @@ import nimp.summary
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
         command-line arguments '''
-    env.is_ue4 = hasattr(env, 'project_type') and env.project_type == 'UE4'
+    ue4_file = 'UE4Games.uprojectdirs'
+    ue4_dir = nimp.system.find_dir_containing_file(ue4_file)
+    if not ue4_dir:
+        return True
+
+    logging.debug('Detected UE4 project in %s' % (ue4_dir))
+    env.is_ue4 = True
+
     return True
+
 
 def load_arguments(env):
     ''' Loads Unreal specific environment parameters. '''
-    if hasattr(env, 'project_type') and env.project_type == 'UE4':
+    if env.is_ue4:
         return _ue4_load_arguments(env)
 
     return True
@@ -140,7 +148,7 @@ def _ue4_build(env):
             return False
 
     # The main solution file
-    solution = env.format(env.solution)
+    solution = env.format('{root_dir}/UE4.sln')
 
     # Decide which VS version to use
     if hasattr(env, 'vs_version') and env.vs_version:
@@ -463,7 +471,7 @@ def _ue4_load_arguments(env):
     _ue4_sanitize_arguments(env)
     _ue4_set_env(env)
 
-    if not hasattr(env, 'target') or env.target is None and env.is_ue4:
+    if not hasattr(env, 'target') or env.target is None:
         if env.platform in ['win64', 'mac', 'linux']:
             env.target = 'editor'
         else:
