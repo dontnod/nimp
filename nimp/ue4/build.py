@@ -252,7 +252,7 @@ def _ue4_list_common_tools(env):
             tools += [ 'UnrealLightmass', ] # doesn’t build (yet?)
 
         # No longer needed in UE 4.16
-        if env.platform == 'linux' and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/CrossCompilerTool/CrossCompilerTool.Build.cs'))):
+        if env.platform == 'linux' and env.ue4_minor < 16:
             tools += [ 'CrossCompilerTool', ]
 
         if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):

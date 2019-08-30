@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ''' Unreal Engine 4 related stuff '''
 
+import json
 import logging
 import os
 import platform
@@ -40,8 +41,21 @@ def load_config(env):
     if not ue4_dir:
         return True
 
-    logging.debug('Detected UE4 project in %s' % (ue4_dir))
     env.is_ue4 = True
+
+    with open('%s/Engine/Build/Build.version' % (ue4_dir)) as version_file:
+        data = json.load(version_file)
+        env.ue4_major = data['MajorVersion']
+        env.ue4_minor = data['MinorVersion']
+        env.ue4_patch = data['PatchVersion']
+
+    if not hasattr(env, 'vs_version') or env.vs_version is None:
+        if env.ue4_minor < 20:
+            env.vs_version = '14'
+        else:
+            env.vs_version = '15'
+
+    logging.debug('Found UE4 project %s.%s.%s in %s' % (env.ue4_major, env.ue4_minor, env.ue4_patch, ue4_dir))
 
     return True
 
