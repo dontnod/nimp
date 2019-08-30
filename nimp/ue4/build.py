@@ -156,11 +156,12 @@ def _ue4_build_game(env, solution, vs_version):
 
 
 def _ue4_build_editor(env, solution, vs_version):
+    game = env.game if hasattr(env, 'game') else 'UE4'
     if env.platform in ['linux', 'mac']:
-        project = env.game + 'Editor'
+        project = game + 'Editor'
         config = env.ue4_config
     else:
-        project = env.game
+        project = game
         config = env.ue4_config + ' Editor'
 
     if not _ue4_build_project(env, solution, project, env.ue4_platform,
