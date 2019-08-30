@@ -99,8 +99,23 @@ def build(env):
 
 
 def _ue4_generate_project(env):
+
+    # Check for prerequisites
+    if env.ue4_minor < 22:
+        has_prereq = os.path.exists(env.format('{root_dir}/Engine/Binaries/DotNET/RPCUtility.exe'))
+    else:
+        has_prereq = os.path.exists(env.format('{root_dir}/Engine/Build/BinaryPrerequisitesMarker.dat'))
+    if not has_prereq:
+        if nimp.sys.platform.is_windows():
+            command = ['cmd', '/c', 'Setup.bat', '<nul']
+        else:
+            command = ['/bin/sh', './Setup.sh']
+        if not nimp.sys.process.call(command, cwd=env.root_dir):
+            return False
+
+    # Generate project files
     if nimp.sys.platform.is_windows():
-        command = ['cmd', '/c', 'GenerateProjectFiles.bat']
+        command = ['cmd', '/c', 'GenerateProjectFiles.bat', '<nul']
         if hasattr(env, 'vs_version'):
             if env.vs_version == '14':
                 command.append('-2015')
