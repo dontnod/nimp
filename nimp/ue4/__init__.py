@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2014-2019 Dontnod Entertainment
+# Copyright © 2014—2017 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -20,12 +20,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Main Nimp modules '''
+''' UE4 functions '''
 
 __all__ = [
-    "nimp_cli",
-    "commands",
-    "sys",
-    "ue4",
-    "tests",
+    'build',
 ]

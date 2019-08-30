@@ -22,6 +22,7 @@
 
 ''' Unreal Engine 4 related stuff '''
 
+import json
 import logging
 import os
 import platform
@@ -36,12 +37,36 @@ import nimp.summary
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
         command-line arguments '''
-    env.is_ue4 = hasattr(env, 'project_type') and env.project_type == 'UE4'
+    ue4_file = 'Engine/Build/Build.version'
+    ue4_dir = nimp.system.find_dir_containing_file(ue4_file)
+    if not ue4_dir:
+        return True
+
+    env.is_ue4 = True
+
+    with open('%s/%s' % (ue4_dir, ue4_file)) as version_file:
+        data = json.load(version_file)
+        env.ue4_major = data['MajorVersion']
+        env.ue4_minor = data['MinorVersion']
+        env.ue4_patch = data['PatchVersion']
+
+    if not hasattr(env, 'vs_version') or env.vs_version is None:
+        if env.ue4_minor < 20:
+            env.vs_version = '14'
+        else:
+            env.vs_version = '15'
+
+    if not hasattr(env, 'root_dir') or env.root_dir is None:
+        env.root_dir = ue4_dir
+
+    logging.debug('Found UE4 project %s.%s.%s in %s' % (env.ue4_major, env.ue4_minor, env.ue4_patch, ue4_dir))
+
     return True
+
 
 def load_arguments(env):
     ''' Loads Unreal specific environment parameters. '''
-    if hasattr(env, 'project_type') and env.project_type == 'UE4':
+    if env.is_ue4:
         return _ue4_load_arguments(env)
 
     return True
@@ -86,14 +111,6 @@ def get_cook_platform(ue4_platform):
     }
     return platform_map[ue4_platform]
 
-def build(env):
-    ''' Builds an Unreal Engine Project. config and platform arguments should
-        be set on environment in order to call this function. You can use
-        `nimp.environment.add_arguments` and `nimp.build.add_arguments` to do
-        so.'''
-    if not _check_for_unreal(env):
-        return False
-    return _ue4_build(env)
 
 def commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an Unreal Engine commandlet. It can be usefull to run it through
@@ -120,191 +137,6 @@ def _check_for_unreal(env):
         return False
     return True
 
-def _ue4_build(env):
-    assert hasattr(env, 'ue4_config')
-    assert env.ue4_config is not None
-
-    if env.disable_unity:
-        os.environ['UBT_bUseUnityBuild'] = 'false'
-
-    if env.fastbuild:
-        os.environ['UBT_bAllowFastBuild'] = 'true'
-        os.environ['UBT_bUseUnityBuild'] = 'false'
-
-    nimp.environment.execute_hook('prebuild', env)
-
-    # Bootstrap if necessary
-    if hasattr(env, 'bootstrap') and env.bootstrap:
-        # Now generate project files
-        if _ue4_generate_project(env) != 0:
-            logging.error("Error generating UE4 project files")
-            return False
-
-    # The main solution file
-    solution = env.format(env.solution)
-
-    # Decide which VS version to use
-    if hasattr(env, 'vs_version') and env.vs_version:
-        vs_version = env.vs_version
-    else:
-        # Default to VS 2015.
-        vs_version = '14'
-        try:
-            for line in open(solution):
-                if 'MinimumVisualStudioVersion = 15' in line:
-                    vs_version = '15'
-                    break
-        except IOError:
-            pass
-
-    # We’ll try to build all tools even in case of failure
-    success = True
-
-    # List of tools to build
-    tools = [ 'UnrealHeaderTool' ]
-
-    # Some tools are necessary even when not building tools...
-    need_ps4devkitutil = False
-    need_ps4mapfileutil = env.platform == 'ps4'
-    need_ps4symboltool = env.platform == 'ps4'
-    need_xboxonepdbfileutil = env.platform == 'xboxone'
-
-    if env.target == 'tools':
-
-        tools += [ 'UnrealFrontend',
-                   'UnrealFileServer',
-                   'ShaderCompileWorker',
-                   'UnrealPak',
-                   'CrashReportClient' ]
-
-        if env.platform != 'mac':
-            tools += [ 'UnrealLightmass', ] # doesn’t build (yet?)
-
-        # No longer needed in UE 4.16
-        if env.platform == 'linux' and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/CrossCompilerTool/CrossCompilerTool.Build.cs'))):
-            tools += [ 'CrossCompilerTool', ]
-
-        if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
-            tools += [ 'DNEAssetRegistryQuery', ]
-
-        if env.platform == 'win64':
-            tools += [ 'DotNETUtilities',
-                       'AutomationTool',
-                       'UnrealCEFSubProcess',
-                       'SymbolDebugger' ]
-            need_ps4devkitutil = True
-            need_ps4mapfileutil = True
-            need_ps4symboltool = True
-            need_xboxonepdbfileutil = True
-
-    # Some tools are necessary even when not building tools...
-    if need_ps4devkitutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
-        tools += [ 'PS4DevKitUtil' ]
-
-    if need_ps4mapfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
-        tools += [ 'PS4MapFileUtil' ]
-
-    if need_ps4symboltool and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj'))):
-        tools += [ 'PS4SymbolTool' ]
-
-    if need_xboxonepdbfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
-        tools += [ 'XboxOnePDBFileUtil' ]
-
-    # Build tools from the main solution
-    for tool in tools:
-        if not _ue4_build_project(env, solution, tool,
-                                  'Mac' if env.platform == 'mac'
-                                  else 'Linux' if env.platform == 'linux'
-                                  else 'Win64',
-                                  'Shipping' if tool == 'CrashReportClient'
-                                  else 'Development',
-                                  vs_version, 'Build'):
-            logging.error("Could not build %s", tool)
-            success = False
-
-    # Build tools from other solutions or with other flags
-    if env.target == 'tools':
-
-        # This moved from 'Any CPU' to 'x64' in UE4.20.
-        sln = env.format('{root_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln')
-        if not nimp.build.vsbuild(sln, 'Any CPU', 'Development',
-                                  vs_version=vs_version, target='Build') and \
-           not nimp.build.vsbuild(sln, 'x64', 'Development',
-                                  vs_version=vs_version, target='Build'):
-            logging.error("Could not build NetworkProfiler")
-            success = False
-
-        if env.platform != 'win64':
-            # On Windows this is part of the main .sln, but not on Linux…
-            if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/AutomationTool/AutomationTool_Mono.sln'),
-                                      'Any CPU', 'Development',
-                                      vs_version=vs_version,
-                                      target='Build'):
-                logging.error("Could not build AutomationTool")
-                success = False
-
-        if env.platform != 'mac':
-
-            # This also builds AgentInterface.dll, needed by SwarmInterface.sln
-            # This used to compile on Linux but hasn't been revisited for a while
-            sln1 = env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln')
-            sln2 = env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
-            if not nimp.build.vsbuild(sln1, 'Any CPU', 'Development',
-                                      vs_version=vs_version, target='Build') and \
-               not nimp.build.vsbuild(sln2, 'Any CPU', 'Development',
-                                      vs_version=vs_version, target='Build'):
-                logging.error("Could not build UnrealSwarm")
-                success = False
-
-        # These tools seem to be Windows only for now
-        if env.platform == 'win64':
-
-            if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
-                                      'Any CPU', 'Development',
-                                      vs_version=vs_version,
-                                      target='Build'):
-                logging.error("Could not build SwarmInterface")
-                success = False
-
-            if not _ue4_build_project(env, solution, 'BootstrapPackagedGame',
-                                      'Win64', 'Shipping', vs_version, 'Build'):
-                logging.error("Could not build BootstrapPackagedGame")
-                success = False
-
-            tmp = env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
-            if os.path.exists(nimp.system.sanitize_path(tmp)):
-                if not nimp.build.vsbuild(tmp, 'x64', 'Development',
-                                          vs_version=vs_version,
-                                          target='Build'):
-                    logging.error("Could not build XboxOnePackageNameUtil")
-                    success = False
-
-    if not success:
-        return success
-
-    if env.target == 'game':
-        if not _ue4_build_project(env, solution, env.game, env.ue4_platform,
-                                  env.ue4_config, vs_version, 'Build'):
-            logging.error("Could not build game project")
-            success = False
-
-    if env.target == 'editor':
-        if env.platform in ['linux', 'mac']:
-            project = env.game + 'Editor'
-            config = env.ue4_config
-        else:
-            project = env.game
-            config = env.ue4_config + ' Editor'
-
-        if not _ue4_build_project(env, solution, project, env.ue4_platform,
-                                  config, vs_version, 'Build'):
-            logging.error("Could not build editor project")
-            success = False
-
-    if success:
-        nimp.environment.execute_hook('postbuild', env)
-
-    return success
 
 def _ue4_commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an UE4 commandlet '''
@@ -326,40 +158,6 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
     #cmdline += ['-forcelogflush']
 
     return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
-
-
-def _ue4_generate_project(env):
-    if nimp.sys.platform.is_windows():
-        command = ['cmd', '/c', 'GenerateProjectFiles.bat']
-        if hasattr(env, 'vs_version'):
-            if env.vs_version == '14':
-                command.append('-2015')
-            elif env.vs_version == '15':
-                command.append('-2017')
-    else:
-        command = ['/bin/sh', './GenerateProjectFiles.sh']
-
-    return nimp.sys.process.call(command, cwd=env.root_dir)
-
-
-def _ue4_build_project(env, sln_file, project, build_platform,
-                       configuration, vs_version, target = 'Rebuild'):
-
-    if nimp.sys.platform.is_windows():
-        return nimp.build.vsbuild(sln_file, build_platform, configuration,
-                                  project=project,
-                                  vs_version=vs_version,
-                                  target=target)
-
-    if platform.system() == 'Darwin':
-        host_platform = 'Mac'
-    else:
-        host_platform = 'Linux'
-
-    # This file uses bash explicitly
-    return nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (host_platform),
-                                  project, build_platform, configuration],
-                                 cwd=env.root_dir) == 0
 
 
 def _ue4_sanitize_arguments(env):
@@ -464,7 +262,7 @@ def _ue4_load_arguments(env):
     _ue4_sanitize_arguments(env)
     _ue4_set_env(env)
 
-    if not hasattr(env, 'target') or env.target is None and env.is_ue4:
+    if not hasattr(env, 'target') or env.target is None:
         if env.platform in ['win64', 'mac', 'linux']:
             env.target = 'editor'
         else:

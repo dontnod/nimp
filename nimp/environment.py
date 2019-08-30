@@ -32,6 +32,7 @@ import time
 
 import nimp.command
 import nimp.summary
+import nimp.system
 import nimp.unreal
 
 _LOG_FORMATS = { # pylint: disable = invalid-name
@@ -51,7 +52,6 @@ class Environment:
 
     def __init__(self):
         self.command = None
-        self.root_dir = '.'
         self.environment = {}
         self.dry_run = False
         self.summary = None
@@ -130,6 +130,9 @@ class Environment:
             if not config_loader(self):
                 logging.error('Error while loading nimp config')
                 return exit_error
+
+        if not hasattr(self, 'root_dir') or not self.root_dir:
+            self.root_dir = '.'
 
         # Loads argument parser, parses argv with it and adds command line para
         # meters as properties of the environment
@@ -227,21 +230,17 @@ class Environment:
         ''' Applies environment variables from .nimp.conf '''
 
     def _load_nimp_conf(self):
-        nimp_conf_dir = "."
-        nimp_conf_file = ".nimp.conf"
-        while os.path.abspath(os.sep) != os.path.abspath(nimp_conf_dir):
-            if os.path.exists(os.path.join(nimp_conf_dir, nimp_conf_file)):
-                break
-            nimp_conf_dir = os.path.join("..", nimp_conf_dir)
+        nimp_conf_file = '.nimp.conf'
+        nimp_conf_dir = nimp.system.find_dir_containing_file(nimp_conf_file)
 
-        self.root_dir = nimp_conf_dir
-
-        if not os.path.isfile(os.path.join(nimp_conf_dir, nimp_conf_file)):
+        if not nimp_conf_dir:
             return True
 
         if not self.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
-            logging.error("Error loading %s", nimp_conf_file)
+            logging.error('Error loading %s', nimp_conf_file)
             return False
+
+        self.root_dir = nimp_conf_dir
 
         return True
 

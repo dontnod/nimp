@@ -43,6 +43,7 @@ setup_info = dict(
         'nimp/commands',
         'nimp/model',
         'nimp/sys',
+        'nimp/ue4',
         'nimp/utils',
     ],
 
