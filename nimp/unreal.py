@@ -105,8 +105,14 @@ def load_config(env):
 
 def load_arguments(env):
     ''' Loads Unreal specific environment parameters. '''
-    if env.is_ue4:
-        return _ue4_load_arguments(env)
+    _ue4_sanitize_arguments(env)
+    _ue4_set_env(env)
+
+    if not hasattr(env, 'target') or env.target is None:
+        if env.platform in ['win64', 'mac', 'linux']:
+            env.target = 'editor'
+        else:
+            env.target = 'game'
 
     return True
 
@@ -270,7 +276,8 @@ def _ue4_set_env(env):
                     "test"     : "Test",
                     "shipping" : "Shipping", }
         if config not in configs:
-            logging.warning('Unsupported UE4 build config “%s”', config)
+            if env.is_ue4:
+                logging.warning('Unsupported UE4 build config “%s”', config)
             return None
         return configs[config]
 
@@ -284,7 +291,8 @@ def _ue4_set_env(env):
                       "mac"     : "Mac",
                       "ios"     : "IOS", }
         if in_platform not in platforms:
-            logging.warning('Unsupported UE4 build platform “%s”', in_platform)
+            if env.is_ue4:
+                logging.warning('Unsupported UE4 build platform “%s”', in_platform)
             return None
         return platforms[in_platform]
 
@@ -295,20 +303,6 @@ def _ue4_set_env(env):
         if env.configuration is None:
             env.configuration = 'devel'
         env.ue4_config = '+'.join(map(_get_ue4_config, env.configuration.split('+')))
-
-
-def _ue4_load_arguments(env):
-
-    _ue4_sanitize_arguments(env)
-    _ue4_set_env(env)
-
-    if not hasattr(env, 'target') or env.target is None:
-        if env.platform in ['win64', 'mac', 'linux']:
-            env.target = 'editor'
-        else:
-            env.target = 'game'
-
-    return True
 
 
 def _cant_find_file(_, group_dict):
