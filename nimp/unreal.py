@@ -270,16 +270,16 @@ def _ue4_sanitize_arguments(env):
 def _ue4_set_env(env):
 
     ''' Sets some variables for use with unreal 4 '''
-    def _get_ue4_config(config):
+    def _get_ue4_config(in_config):
         configs = { "debug"    : "Debug",
                     "devel"    : "Development",
                     "test"     : "Test",
                     "shipping" : "Shipping", }
-        if config not in configs:
+        if in_config not in configs:
             if env.is_ue4:
-                logging.warning('Unsupported UE4 build config “%s”', config)
-            return None
-        return configs[config]
+                logging.warning('Unsupported UE4 build config “%s”', in_config)
+            return in_config
+        return configs[in_config]
 
     def _get_ue4_platform(in_platform):
         platforms = { "ps4"     : "PS4",
@@ -293,7 +293,7 @@ def _ue4_set_env(env):
         if in_platform not in platforms:
             if env.is_ue4:
                 logging.warning('Unsupported UE4 build platform “%s”', in_platform)
-            return None
+            return in_platform
         return platforms[in_platform]
 
     if hasattr(env, 'platform'):
