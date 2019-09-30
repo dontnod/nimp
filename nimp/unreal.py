@@ -303,16 +303,16 @@ def _ue4_set_env(env):
         return platforms[in_platform]
 
     if hasattr(env, 'platform') and env.platform is not None:
-        platforms = map(_get_ue4_platform, env.platform.split('+'))
-        if None not in platforms:
-            env.ue4_platform = '+'.join(platforms)
+        platform_list = list(map(_get_ue4_platform, env.platform.split('+')))
+        if None not in platform_list:
+            env.ue4_platform = '+'.join(platform_list)
 
     # Transform configuration list, default to 'devel'
     if hasattr(env, 'configuration') and env.configuration is not None:
         config = env.configuration
     else:
         config = 'devel'
-    config_list = map(_get_ue4_config, config.split('+'))
+    config_list = list(map(_get_ue4_config, config.split('+')))
     if None not in config_list:
         env.ue4_config = '+'.join(config_list)
 
