@@ -105,10 +105,13 @@ def load_config(env):
 
 def load_arguments(env):
     ''' Loads Unreal specific environment parameters. '''
-    _ue4_sanitize_arguments(env)
+
+    if env.is_ue4:
+        _ue4_sanitize_arguments(env)
+
+    # This is safe even when we failed to detect UE4
     _ue4_set_env(env)
 
-    # FIXME: use ue4_target maybe?
     if env.is_ue4:
         if not hasattr(env, 'target') or env.target is None:
             if env.platform in ['win64', 'mac', 'linux']:
@@ -272,16 +275,17 @@ def _ue4_sanitize_arguments(env):
 def _ue4_set_env(env):
 
     ''' Sets some variables for use with unreal 4 '''
-    def _get_ue4_config(in_config):
+    def _get_ue4_config(config):
         configs = { "debug"    : "Debug",
                     "devel"    : "Development",
                     "test"     : "Test",
                     "shipping" : "Shipping", }
-        if in_config not in configs:
+        if config not in configs:
             if env.is_ue4:
-                logging.warning('Unsupported UE4 build config “%s”', in_config)
-            return in_config
-        return configs[in_config]
+                logging.warning('Unsupported UE4 build config “%s”', config)
+                return None
+            return ''
+        return configs[config]
 
     def _get_ue4_platform(in_platform):
         platforms = { "ps4"     : "PS4",
@@ -295,7 +299,8 @@ def _ue4_set_env(env):
         if in_platform not in platforms:
             if env.is_ue4:
                 logging.warning('Unsupported UE4 build platform “%s”', in_platform)
-            return in_platform
+                return None
+            return ''
         return platforms[in_platform]
 
     if hasattr(env, 'platform'):
