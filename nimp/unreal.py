@@ -108,11 +108,13 @@ def load_arguments(env):
     _ue4_sanitize_arguments(env)
     _ue4_set_env(env)
 
-    if not hasattr(env, 'target') or env.target is None:
-        if env.platform in ['win64', 'mac', 'linux']:
-            env.target = 'editor'
-        else:
-            env.target = 'game'
+    # FIXME: use ue4_target maybe?
+    if env.is_ue4:
+        if not hasattr(env, 'target') or env.target is None:
+            if env.platform in ['win64', 'mac', 'linux']:
+                env.target = 'editor'
+            else:
+                env.target = 'game'
 
     return True
 
