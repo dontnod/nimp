@@ -255,7 +255,7 @@ def _ue4_sanitize_arguments(env):
         env.is_sony_platform      = env.is_ps3 or env.is_ps4
         env.is_mobile_platform    = env.is_ios or env.is_android
 
-    if hasattr(env, 'configuration') and env.configuration is not None:
+    if hasattr(env, 'configuration'):
         def sanitize_config(config):
             ''' Sanitizes config '''
             std_configs = { 'debug'    : 'debug',
@@ -269,7 +269,8 @@ def _ue4_sanitize_arguments(env):
                 return ""
             return std_configs[config.lower()]
 
-        env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
+        if env.configuration is not None:
+            env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
 
 
 def _ue4_set_env(env):
@@ -283,8 +284,7 @@ def _ue4_set_env(env):
         if config not in configs:
             if env.is_ue4:
                 logging.warning('Unsupported UE4 build config “%s”', config)
-                return None
-            return ''
+            return None
         return configs[config]
 
     def _get_ue4_platform(in_platform):
@@ -299,17 +299,22 @@ def _ue4_set_env(env):
         if in_platform not in platforms:
             if env.is_ue4:
                 logging.warning('Unsupported UE4 build platform “%s”', in_platform)
-                return None
-            return ''
+            return None
         return platforms[in_platform]
 
-    if hasattr(env, 'platform'):
-        env.ue4_platform = '+'.join(map(_get_ue4_platform, env.platform.split('+')))
+    if hasattr(env, 'platform') and env.platform is not None:
+        platforms = map(_get_ue4_platform, env.platform.split('+'))
+        if None not in platforms:
+            env.ue4_platform = '+'.join(platforms)
 
-    if hasattr(env, 'configuration'):
-        if env.configuration is None:
-            env.configuration = 'devel'
-        env.ue4_config = '+'.join(map(_get_ue4_config, env.configuration.split('+')))
+    # Transform configuration list, default to 'devel'
+    if hasattr(env, 'configuration') and env.configuration is not None:
+        config = env.configuration
+    else:
+        config = 'devel'
+    config_list = map(_get_ue4_config, config.split('+'))
+    if None not in config_list:
+        env.ue4_config = '+'.join(config_list)
 
 
 def _cant_find_file(_, group_dict):
