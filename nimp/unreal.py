@@ -41,6 +41,7 @@ def load_config(env):
     ue4_file = 'Engine/Build/Build.version'
     ue4_dir = nimp.system.find_dir_containing_file(ue4_file)
     if not ue4_dir:
+        env.is_ue4 = False
         return True
 
     env.is_ue4 = True
