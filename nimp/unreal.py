@@ -27,6 +27,7 @@ import logging
 import os
 import platform
 import re
+import glob
 
 import nimp.build
 import nimp.system
@@ -57,9 +58,46 @@ def load_config(env):
             env.vs_version = '15'
 
     if not hasattr(env, 'root_dir') or env.root_dir is None:
-        env.root_dir = ue4_dir
+        env.root_dir = os.path.normpath(ue4_dir)
 
-    logging.debug('Found UE4 project %s.%s.%s in %s' % (env.ue4_major, env.ue4_minor, env.ue4_patch, ue4_dir))
+    logging.debug('Found UE4 engine %s.%s.%s in %s' % (env.ue4_major, env.ue4_minor, env.ue4_patch, ue4_dir))
+
+    # Forward compatibility (TODO: remove later)
+    if hasattr(env, 'game'):
+        env.uproject = env.game
+    if hasattr(env, 'game_dir'):
+        env.uproject_dir = env.game_dir
+
+    # If no uproject information is provided, look for one
+    if not hasattr(env, 'uproject_dir') or not hasattr(env, 'uproject'):
+        patterns = set()
+        for upd in glob.glob(ue4_dir + '/*.uprojectdirs'):
+            with open(upd, 'r') as upd_file:
+                for pattern in upd_file.readlines():
+                    if pattern.startswith(';'):
+                        continue
+                    patterns.add(pattern.strip())
+        for pat in patterns:
+            for ufile in glob.glob('%s/%s/*/*.uproject' % (ue4_dir, pat)):
+                uproject = os.path.splitext(os.path.basename(ufile))[0]
+                # Prefer anything over template and engine test directories as default uproject
+                if not hasattr(env, 'uproject') or 'TP_' in env.uproject or 'EngineTest' in env.uproject:
+                    env.uproject = uproject
+                if uproject == env.uproject:
+                    env.uproject_dir = os.path.normpath(os.path.dirname(ufile))
+
+    # Do not throw here, as it *could* be on purpose to not have any uproject
+    #if not hasattr(env, 'uproject_dir'):
+    #    raise KeyError('No uproject found.')
+
+    # Backwards compatibility (TODO: remove later)
+    if hasattr(env, 'uproject'):
+        env.game = env.uproject
+    if hasattr(env, 'uproject_dir'):
+        env.game_dir = env.uproject_dir
+
+    if hasattr(env, 'uproject') and hasattr(env, 'uproject_dir'):
+        logging.debug('Found UE4 project %s in %s' % (env.uproject, env.uproject_dir))
 
     return True
 
@@ -70,6 +108,7 @@ def load_arguments(env):
         return _ue4_load_arguments(env)
 
     return True
+
 
 def get_host_platform():
     ''' Get the Unreal platform for the host platform '''
