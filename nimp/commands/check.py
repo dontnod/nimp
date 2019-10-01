@@ -87,8 +87,6 @@ class _Status(CheckCommand):
             print('  game: %s' % env.game)
         if hasattr(env, 'project'):
             print('  project name: %s' % env.project)
-        if hasattr(env, 'project_type'):
-            print('  project type: %s' % env.project_type)
         if hasattr(env, 'root_dir'):
             print('  root directory: %s' % os.path.abspath(env.root_dir))
         print()
@@ -133,7 +131,7 @@ class _Processes(CheckCommand):
             return True
 
         # Irrelevant if we’re not a UE4 project
-        if not hasattr(env, 'project_type') or env.project_type not in [ 'UE4' ]:
+        if not hasattr(env, 'is_ue4') or not env.is_ue4:
             return True
 
         prefix = os.path.abspath(env.root_dir).replace('/', '\\').lower()
