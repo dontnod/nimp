@@ -106,10 +106,8 @@ def load_config(env):
 def load_arguments(env):
     ''' Loads Unreal specific environment parameters. '''
 
-    if env.is_ue4:
-        _ue4_sanitize_arguments(env)
-
     # This is safe even when we failed to detect UE4
+    _ue4_sanitize_arguments(env)
     _ue4_set_env(env)
 
     if env.is_ue4:
@@ -238,24 +236,27 @@ def _ue4_sanitize_arguments(env):
                 return platform
             return std_platforms[platform.lower()]
 
-        env.platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
+        ue4_platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
 
-        env.is_win32   = 'win32'   in env.platform.split('+')
-        env.is_win64   = 'win64'   in env.platform.split('+')
-        env.is_ps3     = 'ps3'     in env.platform.split('+')
-        env.is_ps4     = 'ps4'     in env.platform.split('+')
-        env.is_x360    = 'xbox360' in env.platform.split('+')
-        env.is_xone    = 'xboxone' in env.platform.split('+')
-        env.is_linux   = 'linux'   in env.platform.split('+')
-        env.is_android = 'android' in env.platform.split('+')
-        env.is_mac     = 'mac'     in env.platform.split('+')
-        env.is_ios     = 'ios'     in env.platform.split('+')
+        env.is_win32   = 'win32'   in ue4_platform.split('+')
+        env.is_win64   = 'win64'   in ue4_platform.split('+')
+        env.is_ps3     = 'ps3'     in ue4_platform.split('+')
+        env.is_ps4     = 'ps4'     in ue4_platform.split('+')
+        env.is_x360    = 'xbox360' in ue4_platform.split('+')
+        env.is_xone    = 'xboxone' in ue4_platform.split('+')
+        env.is_linux   = 'linux'   in ue4_platform.split('+')
+        env.is_android = 'android' in ue4_platform.split('+')
+        env.is_mac     = 'mac'     in ue4_platform.split('+')
+        env.is_ios     = 'ios'     in ue4_platform.split('+')
 
         env.is_microsoft_platform = env.is_win32 or env.is_win64 or env.is_x360 or env.is_xone
         env.is_sony_platform      = env.is_ps3 or env.is_ps4
         env.is_mobile_platform    = env.is_ios or env.is_android
 
-    if hasattr(env, 'configuration'):
+        if env.is_ue4:
+            env.platform = ue4_platform
+
+    if hasattr(env, 'configuration') and env.configuration is not None:
         def sanitize_config(config):
             ''' Sanitizes config '''
             std_configs = { 'debug'    : 'debug',
@@ -269,8 +270,10 @@ def _ue4_sanitize_arguments(env):
                 return ""
             return std_configs[config.lower()]
 
-        if env.configuration is not None:
-            env.configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
+        ue4_configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
+
+        if env.is_ue4:
+            env.configuration = ue4_configuration
 
 
 def _ue4_set_env(env):
