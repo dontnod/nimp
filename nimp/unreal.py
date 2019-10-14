@@ -228,6 +228,8 @@ def _ue4_sanitize_arguments(env):
                               "ps3"       : "ps3",
                               "linux"     : "linux",
                               "android"   : "android",
+                              "switch"    : "switch",
+                              "nx"        : "switch",
                               "mac"       : "mac",
                               "macos"     : "mac",
                               "ios"       : "ios" }
@@ -248,6 +250,7 @@ def _ue4_sanitize_arguments(env):
         env.is_android = 'android' in ue4_platform.split('+')
         env.is_mac     = 'mac'     in ue4_platform.split('+')
         env.is_ios     = 'ios'     in ue4_platform.split('+')
+        env.is_switch  = 'switch'  in ue4_platform.split('+')
 
         env.is_microsoft_platform = env.is_win32 or env.is_win64 or env.is_x360 or env.is_xone
         env.is_sony_platform      = env.is_ps3 or env.is_ps4
@@ -297,6 +300,7 @@ def _ue4_set_env(env):
                       "win32"   : "Win32",
                       "linux"   : "Linux",
                       "android" : "Android",
+                      "switch"  : "Switch",
                       "mac"     : "Mac",
                       "ios"     : "IOS", }
         if in_platform not in platforms:
