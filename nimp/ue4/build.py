@@ -61,7 +61,10 @@ def build(env):
             return False
 
     # The main solution file
-    solution = env.format('{root_dir}/UE4.sln')
+    if env.is_dne_legacy_ue4:
+        solution = env.format('{root_dir}/UE4.sln')
+    else:
+        solution = env.format('{root_dir}/DNE.sln')
 
     # Decide which VS version to use
     if hasattr(env, 'vs_version') and env.vs_version:
