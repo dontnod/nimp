@@ -38,10 +38,19 @@ import nimp.summary
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
         command-line arguments '''
-    ue4_file = 'Engine/Build/Build.version'
+    ue4_file = 'UE4/Engine/Build/Build.version'
     ue4_dir = nimp.system.find_dir_containing_file(ue4_file)
+
+    ''' Retry by looking for a Engine/ folder if failed to find UE4/ (pre-reboot compatibility) '''
+    ue4_file = 'Engine/Build/Build.version'
+    if not ue4_dir:
+        ue4_dir = nimp.system.find_dir_containing_file(ue4_file)
+    else:
+        ue4_dir = os.path.join(ue4_dir, 'UE4') # (backward compatibility)
+
     if not ue4_dir:
         env.is_ue4 = False
+        env.is_dne_legacy_ue4 = True
         return True
 
     env.is_ue4 = True
@@ -57,6 +66,10 @@ def load_config(env):
             env.vs_version = '14'
         else:
             env.vs_version = '15'
+
+    env.ue4_dir = ue4_dir
+    # Backward compatibility (TODO: remove later)
+    env.is_dne_legacy_ue4 = (env.ue4_minor < 22)
 
     if not hasattr(env, 'root_dir') or env.root_dir is None:
         env.root_dir = os.path.normpath(ue4_dir)
