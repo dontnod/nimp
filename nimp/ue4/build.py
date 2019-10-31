@@ -117,10 +117,12 @@ def _ue4_generate_project(env):
     if nimp.sys.platform.is_windows():
         command = ['cmd', '/c', 'GenerateProjectFiles.bat', '<nul']
         if hasattr(env, 'vs_version'):
-            if env.vs_version == '14':
+            if env.vs_version in ['14', '2015']:
                 command.append('-2015')
-            elif env.vs_version == '15':
+            elif env.vs_version in ['15', '2017']:
                 command.append('-2017')
+            elif env.vs_version in ['16', '2019']:
+                command.append('-2015')
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
 
