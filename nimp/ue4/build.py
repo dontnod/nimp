@@ -104,17 +104,17 @@ def build(env):
 def _ue4_generate_project(env):
 
     # Check for prerequisites
-    if env.ue4_minor < 22:
+    if env.is_dne_legacy_ue4:
         has_prereq = os.path.exists(env.format('{root_dir}/Engine/Binaries/DotNET/RPCUtility.exe'))
+        if not has_prereq:
+            if nimp.sys.platform.is_windows():
+                command = ['cmd', '/c', 'Setup.bat', '<nul']
+            else:
+                command = ['/bin/sh', './Setup.sh']
+            if not nimp.sys.process.call(command, cwd=env.root_dir):
+                return False
     else:
-        has_prereq = os.path.exists(env.format('{root_dir}/Engine/Build/BinaryPrerequisitesMarker.dat'))
-    if not has_prereq:
-        if nimp.sys.platform.is_windows():
-            command = ['cmd', '/c', 'Setup.bat', '<nul']
-        else:
-            command = ['/bin/sh', './Setup.sh']
-        if not nimp.sys.process.call(command, cwd=env.root_dir):
-            return False
+        logging.debug("Skipping prereqs for the reboot")
 
     # Generate project files
     if nimp.sys.platform.is_windows():
