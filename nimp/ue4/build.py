@@ -112,6 +112,7 @@ def _ue4_vsversion_to_ubt(vs_version):
     else:
         return []
 
+
 def _ue4_generate_project(env):
     # Check for prerequisites
     if env.is_dne_legacy_ue4:
@@ -136,12 +137,13 @@ def _ue4_generate_project(env):
 
     return nimp.sys.process.call(command, cwd=env.root_dir)
 
+
 def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=None, flags=None):
     if nimp.sys.platform.is_windows():
-        command = ['cmd', '/c', 'Build.bat']
+        command = ['cmd', '/c', 'Engine\\Build\\BatchFiles\\Build.bat']
         command += _ue4_vsversion_to_ubt(vs_version)
     else:
-        command = ['/bin/bash', './Build.sh']
+        command = ['/bin/bash', './Engine/Build/BatchFiles/Build.sh']
 
     command += [ target, build_platform, build_configuration ]
 
@@ -149,6 +151,7 @@ def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=No
         command += flags
 
     return nimp.sys.process.call(command, cwd=env.root_dir) == 0
+
 
 def _ue4_run_uat(env, target, build_platforms, flags=None):
     if nimp.sys.platform.is_windows():
@@ -165,6 +168,7 @@ def _ue4_run_uat(env, target, build_platforms, flags=None):
         command += flags
 
     return nimp.sys.process.call(command, cwd=env.root_dir) == 0
+
 
 ### Targets
 
