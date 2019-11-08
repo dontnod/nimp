@@ -49,10 +49,6 @@ def load_config(env):
         ue4_dir = os.path.join(ue4_dir, 'UE4') # (backward compatibility)
 
     if not ue4_dir:
-        ue4_dir = nimp.system.find_dir_containing_file('UE4/' + ue4_file)
-        if ue4_dir:
-            ue4_dir += '/UE4'
-    if not ue4_dir:
         env.is_ue4 = False
         env.is_dne_legacy_ue4 = True
         return True
