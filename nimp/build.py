@@ -31,6 +31,48 @@ import nimp.system
 import nimp.sys.platform
 import nimp.sys.process
 
+def msbuild(project_file, platform_name, configuration, project=None,
+            vs_version='14', dotnet_version='4.6', additional_flags=None ):
+    ''' Builds a project with MSBuild '''
+
+    # Windows
+    if nimp.sys.platform.is_windows():
+        msbuild_path = _find_msbuild_path(vs_version)
+        if msbuild_path is None:
+            return False
+
+        needCapture = True
+
+    # Mac and Linux alike
+    else:
+        msbuild_path = 'xbuild'
+        needCapture = False
+
+    command = [ msbuild_path, project_file,
+                '/verbosity:minimal',
+                '/nologo',
+                '/p:TargetFrameworkVersion=v' + dotnet_version,
+                '/p:TargetFrameworkProfile=' ]
+
+    if project is not None:
+        command.append('/target:' + project)
+    if platform_name is not None:
+        platform_name = '"' + platform_name + '"' if ' ' in platform_name else platform_name
+        command.append('/p:Platform=' + platform_name)
+    if configuration is not None:
+        configuration = '"' + configuration + '"' if ' ' in configuration else configuration
+        command.append('/p:Configuration=' + configuration)
+    if additional_flags is not None:
+        command += additional_flags
+
+    result, output, _ = nimp.sys.process.call(command, capture_output=needCapture)
+
+    if nimp.sys.platform.is_windows() and 'Cannot run if when setup is in progress.' in output:
+        logging.error('Visual Studio appears to have failed')
+        return False
+
+    return result == 0
+
 def vsbuild(solution, platform_name, configuration, project=None,
             vs_version='14', target='Build', dotnet_version='4.6'):
     ''' Builds a project with Visual Studio '''
@@ -50,6 +92,7 @@ def vsbuild(solution, platform_name, configuration, project=None,
         if 'Cannot run if when setup is in progress.' in output:
             logging.error('Visual Studio appears to have failed')
             return False
+
         return result == 0
 
     # Mac and Linux alike
@@ -61,6 +104,36 @@ def vsbuild(solution, platform_name, configuration, project=None,
     if project is not None:
         command = command + [ '/target:' + project ]
     return nimp.sys.process.call(command) == 0
+
+def _find_msbuild_path(vs_version):
+    msbuild_path = None
+
+    # Sanitize vs_version
+    if vs_version == '2015':
+        vs_version = '14'
+    if vs_version == '2017':
+        vs_version = '15'
+    if vs_version == '2019':
+        vs_version = '16'
+
+    # For VS2017 and later, there is vswhere
+    vswhere_cmd = [ os.path.join(os.environ['ProgramFiles(x86)'], 'Microsoft Visual Studio/Installer/vswhere.exe') ]
+    vswhere_cmd += [ '-products', '*', '-requires', 'Microsoft.Component.MSBuild', '-property', 'installationPath' ]
+    result, output, _ = nimp.sys.process.call(vswhere_cmd, capture_output=True, hide_output=True)
+    if result == 0:
+        for line in output.split('\n'):
+            line = line.strip()
+            msbuild_path = os.path.join(line, 'MSBuild', vs_version + '.0', 'Bin', 'MSBuild.exe')
+            if os.path.exists(msbuild_path):
+                break
+
+    if not os.path.exists(msbuild_path):
+        logging.error('Unable to find MSBuild %s (%s)', vs_version, msbuild_path)
+        return None
+
+    msbuild_path = os.path.normpath(msbuild_path)
+    return msbuild_path
+
 
 def _find_devenv_path(vs_version):
     devenv_path = None
@@ -116,6 +189,7 @@ def _find_devenv_path(vs_version):
     if not devenv_path or not os.path.exists(devenv_path):
         return None
 
+    devenv_path = os.path.normpath(devenv_path)
     logging.info("Found Visual Studio at %s", devenv_path)
     return devenv_path
 
