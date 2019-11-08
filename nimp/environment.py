@@ -64,6 +64,11 @@ class Environment:
         localpath = os.path.abspath(os.path.join(self.root_dir, '.nimp'))
         if localpath not in sys.path:
             sys.path.insert(0, localpath)
+        if hasattr(self, 'uproject_dir'):
+            uproject_dir = os.path.abspath(os.path.join(self.uproject_dir, '.nimp'))
+            if uproject_dir not in sys.path:
+                sys.path.insert(0, uproject_dir)
+
         try:
             #pylint: disable=import-error
             import commands
