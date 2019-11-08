@@ -51,7 +51,9 @@ def build(env):
         os.environ['UBT_bAllowFastBuild'] = 'true'
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
-    nimp.environment.execute_hook('prebuild', env)
+    # Pre-reboot run prebuild *BEFORE* GenerateProjectFiles.bat
+    if env.is_dne_legacy_ue4:
+        nimp.environment.execute_hook('prebuild', env)
 
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
@@ -60,11 +62,12 @@ def build(env):
             logging.error("Error generating UE4 project files")
             return False
 
+    # Pre-reboot run prebuild *AFTER* GenerateProjectFiles.bat
+    if not env.is_dne_legacy_ue4:
+        nimp.environment.execute_hook('prebuild', env)
+
     # The main solution file
-    if env.is_dne_legacy_ue4:
-        solution = env.format('{root_dir}/UE4.sln')
-    else:
-        solution = env.format('{root_dir}/DNE.sln')
+    solution = env.format('{ue4_dir}/UE4.sln')
 
     # Decide which VS version to use
     if hasattr(env, 'vs_version') and env.vs_version:
@@ -135,7 +138,7 @@ def _ue4_generate_project(env):
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
 
-    return nimp.sys.process.call(command, cwd=env.root_dir)
+    return nimp.sys.process.call(command, cwd=env.ue4_dir)
 
 
 def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=None, flags=None):
@@ -143,19 +146,24 @@ def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=No
         command = ['cmd', '/c', 'Engine\\Build\\BatchFiles\\Build.bat']
         command += _ue4_vsversion_to_ubt(vs_version)
     else:
-        command = ['/bin/bash', './Engine/Build/BatchFiles/Build.sh']
+        if platform.system() == 'Darwin':
+            host_platform = 'Mac'
+        else:
+            host_platform = 'Linux'
+
+        command = ['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % host_platform]
 
     command += [ target, build_platform, build_configuration ]
 
     if flags is not None:
         command += flags
 
-    return nimp.sys.process.call(command, cwd=env.root_dir) == 0
+    return nimp.sys.process.call(command, cwd=env.ue4_dir) == 0
 
 
 def _ue4_run_uat(env, target, build_platforms, flags=None):
     if nimp.sys.platform.is_windows():
-        command = ['cmd', '/c', 'RunUAT.bat']
+        command = ['cmd', '/c', 'Engine\\Build\\BatchFiles\\RunUAT.bat']
     else:
         command = ['/bin/bash', './RunUAT.sh']
 
@@ -167,7 +175,7 @@ def _ue4_run_uat(env, target, build_platforms, flags=None):
     if flags is not None:
         command += flags
 
-    return nimp.sys.process.call(command, cwd=env.root_dir) == 0
+    return nimp.sys.process.call(command, cwd=env.ue4_dir) == 0
 
 
 ### Targets
@@ -232,7 +240,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         _ue4_build_ps4_tools_workaround(env, solution, vs_version)
 
     # this is DNE specific
-    if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
+    if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Game/Tools/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
         extra_tools.append('DNEAssetRegistryQuery')
 
     # use UBT for remaining extra tool targets
