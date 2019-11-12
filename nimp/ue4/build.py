@@ -132,7 +132,7 @@ def _ue4_generate_project(env):
 
     # Generate project files
     if nimp.sys.platform.is_windows():
-        command = ['cmd', '/c', 'GenerateProjectFiles.bat']
+        command = ['cmd', '/c', 'GenerateProjectFiles.bat', '<nul']
         if hasattr(env, 'vs_version'):
             command += _ue4_vsversion_to_ubt(env.vs_version)
     else:
