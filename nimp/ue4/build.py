@@ -146,12 +146,7 @@ def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=No
         command = ['cmd', '/c', 'Engine\\Build\\BatchFiles\\Build.bat']
         command += _ue4_vsversion_to_ubt(vs_version)
     else:
-        if platform.system() == 'Darwin':
-            host_platform = 'Mac'
-        else:
-            host_platform = 'Linux'
-
-        command = ['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % host_platform]
+        command = ['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % env.ue4_host_platform]
 
     command += [ target, build_platform, build_configuration ]
 
@@ -206,7 +201,7 @@ def _ue4_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_common_tools_legacy(env, solution, vs_version)
 
-    return _ue4_run_ubt(env, 'UnrealHeaderTool', env.ue4_platform, 'Development', vs_version)
+    return _ue4_run_ubt(env, 'UnrealHeaderTool', env.ue4_host_platform, 'Development', vs_version)
 
 def _ue4_build_extra_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
@@ -245,7 +240,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     # use UBT for remaining extra tool targets
     for tool in extra_tools:
-        if (not _ue4_run_ubt(env, tool, env.ue4_platform, 'Development', vs_version=vs_version)):
+        if (not _ue4_run_ubt(env, tool, env.ue4_host_platform, 'Development', vs_version=vs_version)):
             logging.error("Could not build %s", tool)
             return False
 
@@ -275,13 +270,8 @@ def _ue4_build_project(env, sln_file, project, build_platform,
                                   vs_version=vs_version,
                                   target=target)
 
-    if platform.system() == 'Darwin':
-        host_platform = 'Mac'
-    else:
-        host_platform = 'Linux'
-
     # This file uses bash explicitly
-    return nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (host_platform),
+    return nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.ue4_host_platform),
                                   project, build_platform, configuration],
                                   cwd=env.root_dir) == 0
 

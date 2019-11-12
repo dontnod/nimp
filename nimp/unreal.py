@@ -326,6 +326,9 @@ def _ue4_set_env(env):
         platform_list = list(map(_get_ue4_platform, env.platform.split('+')))
         if None not in platform_list:
             env.ue4_platform = '+'.join(platform_list)
+            env.ue4_host_platform = 'Linux' if 'Linux' in platform_list \
+                               else 'Mac' if 'Mac' in platform_list \
+                               else 'Win64'
 
     # Transform configuration list, default to 'devel'
     if hasattr(env, 'configuration') and env.configuration is not None:
