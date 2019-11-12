@@ -206,7 +206,7 @@ def _ue4_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_common_tools_legacy(env, solution, vs_version)
 
-    return _ue4_run_ubt(env, 'UnrealHeaderTool', env.ue4_platform, env.ue4_config, vs_version)
+    return _ue4_run_ubt(env, 'UnrealHeaderTool', env.ue4_platform, 'Development', vs_version)
 
 def _ue4_build_extra_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
