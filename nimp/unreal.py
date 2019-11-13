@@ -74,9 +74,14 @@ def load_config(env):
     if not hasattr(env, 'root_dir') or env.root_dir is None:
         env.root_dir = os.path.normpath(ue4_dir)
 
-    logging.debug('Found UE4 engine %s.%s.%s in %s' % (env.ue4_major, env.ue4_minor, env.ue4_patch, ue4_dir))
+    # The host platform
+    env.ue4_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
+                       else 'Mac' if platform.system() == 'Darwin' \
+                       else 'Linux'
 
-    # Forward compatibility (TODO: remove later)
+    logging.debug('Found UE4 engine %s.%s.%s for %s in %s' % (env.ue4_major, env.ue4_minor, env.ue4_patch, env.ue4_host_platform, ue4_dir))
+
+    # Forward compatibility (TODO: remove later when all configuration files use uproject)
     if hasattr(env, 'game'):
         env.uproject = env.game
     if hasattr(env, 'game_dir'):
@@ -133,16 +138,6 @@ def load_arguments(env):
     return True
 
 
-def get_host_platform():
-    ''' Get the Unreal platform for the host platform '''
-    if platform.system() == 'Windows':
-        return 'Win64'
-    if platform.system() == 'Linux':
-        return 'Linux'
-    if platform.system() == 'Darwin':
-        return 'Mac'
-    raise ValueError('Unsupported platform: ' + platform.system())
-
 def get_configuration_platform(ue4_platform):
     ''' Gets the platform name used for configuration files '''
     # From PlatformProperties IniPlatformName
@@ -189,6 +184,7 @@ def is_unreal4_available(env):
                         'are launching nimp from inside an UE4 project directory'
                         ' and that you have a properly configured .nimp.conf. '
                         'Check documentation for more details on .nimp.conf.')
+
 def _check_for_unreal(env):
     if not env.is_ue4:
         logging.error('This doesn\'t seems to be a supported project type.')
@@ -202,14 +198,9 @@ def _check_for_unreal(env):
 
 def _ue4_commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an UE4 commandlet '''
-    if nimp.sys.platform.is_windows():
-        exe = 'Engine/Binaries/Win64/UE4Editor.exe'
-    elif platform.system() == 'Darwin':
-        exe = 'Engine/Binaries/Mac/UE4Editor'
-    else:
-        exe = 'Engine/Binaries/Linux/UE4Editor'
 
-    cmdline = [nimp.system.sanitize_path(os.path.join(env.format(env.root_dir), exe)),
+    exe = '{ue4_dir}/Engine/Binaries/{ue4_host_platform}/UE4Editor.exe'
+    cmdline = [nimp.system.sanitize_path(env.format(exe)),
                env.game,
                '-run=%s' % command]
 
@@ -326,9 +317,6 @@ def _ue4_set_env(env):
         platform_list = list(map(_get_ue4_platform, env.platform.split('+')))
         if None not in platform_list:
             env.ue4_platform = '+'.join(platform_list)
-            env.ue4_host_platform = 'Linux' if 'Linux' in platform_list \
-                               else 'Mac' if 'Mac' in platform_list \
-                               else 'Win64'
 
     # Transform configuration list, default to 'devel'
     if hasattr(env, 'configuration') and env.configuration is not None:

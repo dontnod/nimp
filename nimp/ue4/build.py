@@ -120,13 +120,13 @@ def _ue4_vsversion_to_ubt(vs_version):
 def _ue4_generate_project(env):
     # Check for prerequisites
     if env.is_dne_legacy_ue4:
-        has_prereq = os.path.exists(env.format('{root_dir}/Engine/Binaries/DotNET/RPCUtility.exe'))
+        has_prereq = os.path.exists(env.format('{ue4_dir}/Engine/Binaries/DotNET/RPCUtility.exe'))
         if not has_prereq:
             if nimp.sys.platform.is_windows():
                 command = ['cmd', '/c', 'Setup.bat', '<nul']
             else:
                 command = ['/bin/sh', './Setup.sh']
-            if not nimp.sys.process.call(command, cwd=env.root_dir):
+            if not nimp.sys.process.call(command, cwd=env.ue4_dir):
                 return False
     else:
         # We do not use GitDependencies.exe but the build scripts depend on its
@@ -239,7 +239,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         _ue4_build_ps4_tools_workaround(env, solution, vs_version)
 
     # this is DNE specific
-    if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Game/Tools/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
+    if os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Game/Tools/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
         extra_tools.append('DNEAssetRegistryQuery')
 
     # use UBT for remaining extra tool targets
@@ -277,7 +277,7 @@ def _ue4_build_project(env, sln_file, project, build_platform,
     # This file uses bash explicitly
     return nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.ue4_host_platform),
                                   project, build_platform, configuration],
-                                  cwd=env.root_dir) == 0
+                                  cwd=env.ue4_dir) == 0
 
 def _ue4_build_game_legacy(env, solution, vs_version):
     if not _ue4_build_project(env, solution, env.game, env.ue4_platform,
@@ -306,11 +306,8 @@ def _ue4_build_editor_legacy(env, solution, vs_version):
 def _ue4_build_common_tools_legacy(env, solution, vs_version):
     for tool in _ue4_list_common_tools_legacy(env):
         if not _ue4_build_project(env, solution, tool,
-                                  'Mac' if env.platform == 'mac'
-                                  else 'Linux' if env.platform == 'linux'
-                                  else 'Win64',
-                                  'Shipping' if tool == 'CrashReportClient'
-                                  else 'Development',
+                                  env.ue4_host_platform,
+                                  'Shipping' if tool == 'CrashReportClient' else 'Development',
                                   vs_version, 'Build'):
             logging.error("Could not build %s", tool)
             return False
@@ -318,7 +315,7 @@ def _ue4_build_common_tools_legacy(env, solution, vs_version):
 
 def _ue4_build_extra_tools_legacy(env, solution, vs_version):
     # This moved from 'AnyCPU' to 'x64' in UE4.20.
-    sln = env.format('{root_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln')
+    sln = env.format('{ue4_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln')
     if not nimp.build.vsbuild(sln, 'Any CPU', 'Development',
                               vs_version=vs_version, target='Build') and \
        not nimp.build.vsbuild(sln, 'x64', 'Development',
@@ -328,7 +325,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
 
     if env.platform != 'win64':
         # On Windows this is part of the main .sln, but not on Linux…
-        if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Programs/AutomationTool/AutomationTool_Mono.sln'),
+        if not nimp.build.vsbuild(env.format('{ue4_dir}/Engine/Source/Programs/AutomationTool/AutomationTool_Mono.sln'),
                                   'Any CPU', 'Development',
                                   vs_version=vs_version,
                                   target='Build'):
@@ -339,8 +336,8 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
 
         # This also builds AgentInterface.dll, needed by SwarmInterface.sln
         # This used to compile on Linux but hasn't been revisited for a while
-        sln1 = env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln')
-        sln2 = env.format('{root_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
+        sln1 = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln')
+        sln2 = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
         if not nimp.build.vsbuild(sln1, 'Any CPU', 'Development',
                                   vs_version=vs_version, target='Build') and \
            not nimp.build.vsbuild(sln2, 'Any CPU', 'Development',
@@ -350,7 +347,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
 
     # These tools seem to be Windows only for now
     if env.platform == 'win64':
-        if not nimp.build.vsbuild(env.format('{root_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
+        if not nimp.build.vsbuild(env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
                                   'Any CPU', 'Development',
                                   vs_version=vs_version,
                                   target='Build'):
@@ -362,7 +359,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
             logging.error("Could not build BootstrapPackagedGame")
             return False
 
-        tmp = env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
+        tmp = env.format('{ue4_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
         if os.path.exists(nimp.system.sanitize_path(tmp)):
             if not nimp.build.vsbuild(tmp, 'x64', 'Development',
                                       vs_version=vs_version,
@@ -397,7 +394,7 @@ def _ue4_list_common_tools_legacy(env):
         if env.platform == 'linux' and env.ue4_minor < 16:
             tools += [ 'CrossCompilerTool', ]
 
-        if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
+        if os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
             tools += [ 'DNEAssetRegistryQuery', ]
 
         if env.platform == 'win64':
@@ -411,16 +408,16 @@ def _ue4_list_common_tools_legacy(env):
             need_xboxonepdbfileutil = True
 
     # Some tools are necessary even when not building tools...
-    if need_ps4devkitutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
+    if need_ps4devkitutil and os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
         tools += [ 'PS4DevKitUtil' ]
 
-    if need_ps4mapfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
+    if need_ps4mapfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
         tools += [ 'PS4MapFileUtil' ]
 
-    if need_ps4symboltool and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj'))):
+    if need_ps4symboltool and os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj'))):
         tools += [ 'PS4SymbolTool' ]
 
-    if need_xboxonepdbfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
+    if need_xboxonepdbfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
         tools += [ 'XboxOnePDBFileUtil' ]
 
     return tools
