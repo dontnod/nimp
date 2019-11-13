@@ -25,6 +25,7 @@ import logging
 import os
 import platform
 import re
+from pathlib import Path
 
 import nimp.build
 import nimp.system
@@ -128,6 +129,9 @@ def _ue4_generate_project(env):
             if not nimp.sys.process.call(command, cwd=env.root_dir):
                 return False
     else:
+        # We do not use GitDependencies.exe but the build scripts depend on its
+        # successful run, so create this .ue4dependencies file instead.
+        Path(env.format('{ue4_dir}/.ue4dependencies')).touch()
         logging.debug("Skipping prereq for the reboot (already done by GenerateProjectFiles)")
 
     # Generate project files
