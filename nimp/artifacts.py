@@ -249,6 +249,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, simulate)
             destination = os.path.join(artifact_path + '.tmp', destination)
             os.makedirs(os.path.dirname(destination), exist_ok = True)
             shutil.copyfile(source, destination)
+        logging.debug('Renaming %s to %s', artifact_path + '.tmp', artifact_path)
         shutil.move(artifact_path + '.tmp', artifact_path)
 
 
