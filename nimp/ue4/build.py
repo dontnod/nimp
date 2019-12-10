@@ -224,6 +224,11 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         logging.error("BuildCommonTools failed")
         return False
 
+    # CrashReportClient is not built in Shipping by default, however this is required by the staging process
+    if not _ue4_run_ubt(env, 'CrashReportClient', env.ue4_host_platform, 'Shipping', vs_version=vs_version):
+        logging.error("Could not build CrashReportClient")
+        return False
+
     # these are not builded by Epic by default
     extra_tools = [
         'LiveCodingConsole',
