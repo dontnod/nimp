@@ -384,7 +384,7 @@ class Package(nimp.command.Command):
                 '-Project=' + package_configuration.project,
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,
-                '-SkipCook', '-Stage', '-Pak', '-SkipPak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
+                '-SkipCook', '-Stage', '-Pak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
             ]
 
             stage_success = nimp.sys.process.call(stage_command, simulate = env.simulate)
