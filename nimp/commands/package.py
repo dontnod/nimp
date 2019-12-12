@@ -387,6 +387,9 @@ class Package(nimp.command.Command):
                 '-SkipCook', '-Stage', '-Pak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
             ]
 
+            if env.is_dne_legacy_ue4:
+                stage_command += [ '-SkipPak' ]
+
             stage_success = nimp.sys.process.call(stage_command, simulate = env.simulate)
             if stage_success != 0:
                 raise RuntimeError('Stage failed')
