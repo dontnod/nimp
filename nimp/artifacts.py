@@ -250,7 +250,13 @@ def create_artifact(artifact_path, file_collection, archive, compress, simulate)
             os.makedirs(os.path.dirname(destination), exist_ok = True)
             shutil.copyfile(source, destination)
         logging.debug('Renaming %s to %s', artifact_path + '.tmp', artifact_path)
-        shutil.move(artifact_path + '.tmp', artifact_path)
+        try:
+            # Sometimes shutils.move copies files instead of moving them, maybe
+            # because of issues with network shares, so we try os.rename first.
+            os.rename(artifact_path + '.tmp', artifact_path)
+        except Exception as ex:
+            logging.debug('Renaming failed (%s), trying alternate method' % (ex))
+            shutil.move(artifact_path + '.tmp', artifact_path)
 
 
 def create_torrent(artifact_path, announce, simulate):
