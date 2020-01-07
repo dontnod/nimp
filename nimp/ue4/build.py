@@ -309,10 +309,11 @@ def _ue4_build_editor_legacy(env, solution, vs_version):
     return True
 
 def _ue4_build_common_tools_legacy(env, solution, vs_version):
+    need_shipping = ['CrashReportClient', 'UnrealCEFSubProcess']
     for tool in _ue4_list_common_tools_legacy(env):
         if not _ue4_build_project(env, solution, tool,
                                   env.ue4_host_platform,
-                                  'Shipping' if tool == 'CrashReportClient' else 'Development',
+                                  'Shipping' if tool in need_shipping else 'Development',
                                   vs_version, 'Build'):
             logging.error("Could not build %s", tool)
             return False
