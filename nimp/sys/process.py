@@ -59,7 +59,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
                                    cwd     = cwd,
                                    stdout  = subprocess.PIPE,
                                    stderr  = subprocess.PIPE,
-                                   stdin   = subprocess.PIPE if stdin is not None else None,
+                                   stdin   = subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
                                    bufsize = 1)
     except FileNotFoundError as ex:
         logging.error(ex)
