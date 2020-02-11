@@ -63,7 +63,7 @@ def build(env):
             logging.error("Error generating UE4 project files")
             return False
 
-    # Pre-reboot run prebuild *AFTER* GenerateProjectFiles.bat
+    # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
     if not env.is_dne_legacy_ue4:
         nimp.environment.execute_hook('prebuild', env)
 
@@ -136,9 +136,10 @@ def _ue4_generate_project(env):
 
     # Generate project files
     if nimp.sys.platform.is_windows():
-        command = ['cmd', '/c', 'GenerateProjectFiles.bat', '<nul']
+        command = ['cmd', '/c', 'GenerateProjectFiles.bat']
         if hasattr(env, 'vs_version'):
             command += _ue4_vsversion_to_ubt(env.vs_version)
+        command += ['<nul']
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
 
