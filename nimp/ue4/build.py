@@ -184,6 +184,11 @@ def _ue4_build_game(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_game_legacy(env, solution, vs_version)
 
+    if env.platform == 'xboxone':
+        if not _ue4_run_ubt(env, 'XboxOnePDBFileUtil', env.ue4_host_platform, 'Development', vs_version):
+            logging.error("Could not build XboxOnePDBFileUtil")
+            return False
+
     game = env.game if hasattr(env, 'game') else 'UE4'
     if not _ue4_run_ubt(env, game, env.ue4_platform, env.ue4_config, vs_version=vs_version):
         logging.error("Could not build game project")
@@ -194,6 +199,16 @@ def _ue4_build_game(env, solution, vs_version):
 def _ue4_build_editor(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_editor_legacy(env, solution, vs_version)
+
+    dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
+    if not nimp.build.vsbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, target='Build'):
+        logging.error("Could not build SwarmAgent")
+        return False
+
+    dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
+        logging.error("Could not build SwarmInterface")
+        return False
 
     game = env.game if hasattr(env, 'game') else 'UE4'
     if not _ue4_run_ubt(env, game + 'Editor', env.ue4_platform, env.ue4_config, vs_version=vs_version):
@@ -206,7 +221,16 @@ def _ue4_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_common_tools_legacy(env, solution, vs_version)
 
-    return _ue4_run_ubt(env, 'UnrealHeaderTool', env.ue4_host_platform, 'Development', vs_version)
+    dep = env.format('{ue4_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj')
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
+        logging.error("Could not build DotNETUtilities")
+        return False
+
+    if not _ue4_run_ubt(env, 'UnrealHeaderTool', env.ue4_host_platform, 'Development', vs_version):
+        logging.error("Could not build UnrealHeaderTool")
+        return False
+
+    return True
 
 def _ue4_build_extra_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
