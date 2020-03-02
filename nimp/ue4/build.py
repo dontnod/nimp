@@ -260,6 +260,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         'MinidumpDiagnostics',
         'UnrealFileServer',
         'UnrealFrontend',
+        'UnrealInsights',
         'SymbolDebugger'
     ]
 
