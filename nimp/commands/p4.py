@@ -24,6 +24,7 @@
 
 import abc
 import shutil
+import sys
 
 import nimp.command
 import nimp.utils.p4
@@ -56,7 +57,8 @@ class P4(nimp.command.CommandGroup):
     def __init__(self):
         super(P4, self).__init__([_RevertWorkspace(),
                                   _Submit(),
-                                  _Fileset()])
+                                  _Fileset(),
+                                  _Test()])
 
     def configure_arguments(self, env, parser):
         super(P4, self).configure_arguments(env, parser)
@@ -168,3 +170,46 @@ class _Submit(P4Command):
         changelist = p4.get_or_create_changelist(description)
 
         return p4.submit(changelist)
+
+
+class _Test(P4Command):
+    ''' Tests if a file hasn't been modified '''
+    def __init__(self):
+        super(_Test, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        # These are not marked required=True because sometimes we don’t
+        # really need them.
+        super(_Test, self).configure_arguments(env, parser)
+
+        return True
+
+    def is_available(self, env):
+        return _is_p4_available()
+
+    def run(self, env):
+        if not nimp.utils.p4.check_for_p4(env):
+            return False
+
+        p4 = nimp.utils.p4.get_client(env)
+
+        filenames = []
+        for line in sys.stdin:
+            filenames.append(line.rstrip())
+        print(filenames)
+
+        ''' Checking all the files and printing error messages '''
+        result = True
+
+        for f in filenames:
+            if not p4.is_file_versioned(f):
+                logging.error("%s is not versioned.", f)
+                result = False
+
+        statuses = p4.get_files_status(*filenames,)
+        for s in statuses:
+            if s[2] != None:
+                logging.error("%s is modified (or added/deleted) in another changelist.", s[0])
+                result = False
+
+        return result
