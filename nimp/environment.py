@@ -30,6 +30,7 @@ import os
 import sys
 import time
 import glob
+import glob2
 
 import nimp.command
 import nimp.summary
@@ -242,9 +243,10 @@ class Environment:
 
         if not nimp_conf_dir: # conf file wasn't in a parent folder as expected in legacy bh
             # maybe it's in .nimp sub-folder as wanted in new conf bh
-            possible_conf_dirs = glob.glob(os.path.join('.nimp', '.nimp.conf'))
+            possible_conf_dirs = glob.glob(os.path.join('**', '.nimp', '**', '.nimp.conf'), recursive=True)
             if len(possible_conf_dirs) == 1: # several/no results indicates there's a conf issue, carry on with legacy stuff
                 nimp_conf_dir = os.path.dirname(possible_conf_dirs[0])
+                logging.info('conf is %s', possible_conf_dirs[0])
                 is_conf_inside_project = True
             if not nimp_conf_dir: # legacy when no conf is found
                 return True
@@ -257,11 +259,11 @@ class Environment:
         if is_conf_inside_project:
             ue4_file = os.path.join('UE4', 'Engine', 'Build', 'Build.version')
             nimp_conf_dir = nimp.system.find_dir_containing_file(ue4_file)
-            if not nimp_conf_file:
+            if not nimp_conf_dir:
                 raise FileNotFoundError('%s not found. It is now a nimp requirement.' % ue4_file)
+            logging.info('root_dir based off %s is : %s' % (ue4_file, nimp_conf_dir))
 
         self.root_dir = nimp_conf_dir
-        logging.info('root_dir is %s', self.root_dir)
 
         return True
 
