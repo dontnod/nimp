@@ -29,6 +29,7 @@ import logging
 import os
 import sys
 import time
+import glob
 
 import nimp.command
 import nimp.summary
@@ -235,17 +236,32 @@ class Environment:
         ''' Applies environment variables from .nimp.conf '''
 
     def _load_nimp_conf(self):
+        is_conf_inside_project = False
         nimp_conf_file = '.nimp.conf'
         nimp_conf_dir = nimp.system.find_dir_containing_file(nimp_conf_file)
 
-        if not nimp_conf_dir:
-            return True
+        if not nimp_conf_dir: # conf file wasn't in a parent folder as expected in legacy bh
+            # maybe it's in .nimp sub-folder as wanted in new conf bh
+            possible_conf_dirs = glob.glob(os.path.join('.nimp', '.nimp.conf'))
+            if len(possible_conf_dirs) == 1: # several/no results indicates there's a conf issue, carry on with legacy stuff
+                nimp_conf_dir = os.path.dirname(possible_conf_dirs[0])
+                is_conf_inside_project = True
+            if not nimp_conf_dir: # legacy when no conf is found
+                return True
 
         if not self.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
             logging.error('Error loading %s', nimp_conf_file)
             return False
 
+        # new conf bh - we're hacking root_dir to be based off ue4 stuff present in any legit workspace.
+        if is_conf_inside_project:
+            ue4_file = os.path.join('UE4', 'Engine', 'Build', 'Build.version')
+            nimp_conf_dir = nimp.system.find_dir_containing_file(ue4_file)
+            if not nimp_conf_file:
+                raise FileNotFoundError('%s not found. It is now a nimp requirement.' % ue4_file)
+
         self.root_dir = nimp_conf_dir
+        logging.info('root_dir is %s', self.root_dir)
 
         return True
 
