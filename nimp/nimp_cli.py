@@ -39,7 +39,7 @@ import nimp.unreal
 sys.dont_write_bytecode = 1
 
 if 'MSYS_NT' in platform.system():
-    raise NotImplementedError('MSYS Python is not supported; please use MimGW Python instead')
+    raise NotImplementedError('MSYS Python is not supported; please use MinGW Python instead')
 
 def _clean_environment_variables():
     # Some Windows tools don’t like “duplicate” environment variables, i.e.

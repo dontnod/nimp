@@ -282,12 +282,16 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     return True
 
 def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
-    csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
+    csproj = env.format('{ue4_dir}/Engine/Platforms/PS4/Source/Programs/PS4DevKitUtil/PS4DevKitUtil.csproj')
+    if env.ue4_minor < 24:
+        csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
     if not nimp.build.msbuild(csproj, 'AnyCPU', 'Development', vs_version=vs_version):
         logging.error("Could not build PS4DevKitUtil")
         return False
 
-    csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj')
+    csproj = env.format('{ue4_dir}/Engine/Platforms/PS4/Source/Programs/PS4SymbolTool/PS4SymbolTool.csproj')
+    if env.ue4_minor < 24:
+        csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj')
     if not nimp.build.msbuild(csproj, None, None, vs_version=vs_version):
         logging.error("Could not build PS4SymbolTool")
         return False
