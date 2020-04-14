@@ -37,4 +37,5 @@ __all__ = [
     'update_symbol_server',
     'upload',
     'upload_fileset',
+    'validate_changelist',
 ]
