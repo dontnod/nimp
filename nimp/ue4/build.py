@@ -146,6 +146,12 @@ def _ue4_generate_project(env):
     return nimp.sys.process.call(command, cwd=env.ue4_dir)
 
 
+def _ue4_build_tool_ubt(env, tool, vs_version=None):
+    platform = env.ue4_host_platform
+    configuration = _ue4_select_tool_configuration(tool)
+    return _ue4_run_ubt(env, tool, platform, configuration, vs_version=vs_version)
+
+
 def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=None, flags=None):
     if nimp.sys.platform.is_windows():
         command = ['cmd', '/c', 'Engine\\Build\\BatchFiles\\Build.bat']
@@ -185,7 +191,7 @@ def _ue4_build_game(env, solution, vs_version):
         return _ue4_build_game_legacy(env, solution, vs_version)
 
     if env.platform == 'xboxone':
-        if not _ue4_run_ubt(env, 'XboxOnePDBFileUtil', env.ue4_host_platform, 'Development', vs_version):
+        if not _ue4_build_tool_ubt(env, 'XboxOnePDBFileUtil', vs_version):
             logging.error("Could not build XboxOnePDBFileUtil")
             return False
 
@@ -226,7 +232,7 @@ def _ue4_build_common_tools(env, solution, vs_version):
         logging.error("Could not build DotNETUtilities")
         return False
 
-    if not _ue4_run_ubt(env, 'UnrealHeaderTool', env.ue4_host_platform, 'Development', vs_version):
+    if not _ue4_build_tool_ubt(env, 'UnrealHeaderTool', vs_version):
         logging.error("Could not build UnrealHeaderTool")
         return False
 
@@ -249,11 +255,6 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         logging.error("BuildCommonTools failed")
         return False
 
-    # CrashReportClient is not built in Shipping by default, however this is required by the staging process
-    if not _ue4_run_ubt(env, 'CrashReportClient', env.ue4_host_platform, 'Shipping', vs_version=vs_version):
-        logging.error("Could not build CrashReportClient")
-        return False
-
     # CrashReportClientEditor is not built by default, however this is required by the Editor
     # Note: it is normally compiled by UAT BuildTarget command but we don't use it yet
     if env.ue4_minor >= 24:
@@ -261,8 +262,9 @@ def _ue4_build_extra_tools(env, solution, vs_version):
             logging.error("Could not build CrashReportClientEditor")
             return False
 
-    # these are not builded by Epic by default
+    # these are not built by Epic by default
     extra_tools = [
+        'CrashReportClient',
         'LiveCodingConsole',
         'MinidumpDiagnostics',
         'UnrealFileServer',
@@ -271,7 +273,8 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         'SymbolDebugger'
     ]
 
-    # build projects are currently broken for PS4SymbolTool and BuildCommonTools.Automation.cs (4.22)
+    # build projects are currently broken for PS4SymbolTool
+    # and BuildCommonTools.Automation.cs (4.22)
     if need_ps4tools:
         # extra_tools.append('PS4MapFileUtil') # removed in 4.22
         _ue4_build_ps4_tools_workaround(env, solution, vs_version)
@@ -282,7 +285,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     # use UBT for remaining extra tool targets
     for tool in extra_tools:
-        if (not _ue4_run_ubt(env, tool, env.ue4_host_platform, 'Development', vs_version=vs_version)):
+        if not _ue4_build_tool_ubt(env, tool, vs_version):
             logging.error("Could not build %s", tool)
             return False
 
@@ -304,6 +307,15 @@ def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
         return False
 
     return True
+
+def _ue4_select_tool_configuration(tool):
+    # CrashReportClient is not built in Shipping by default,
+    # however this is required by the staging process
+    need_shipping = ['CrashReportClient', 'UnrealCEFSubProcess']
+    if tool in need_shipping:
+        return 'Shipping'
+    return 'Development'
+
 
 ### LEGACY (now using UAT+UBT since 4.22/reboot)
 
@@ -346,11 +358,10 @@ def _ue4_build_editor_legacy(env, solution, vs_version):
     return True
 
 def _ue4_build_common_tools_legacy(env, solution, vs_version):
-    need_shipping = ['CrashReportClient', 'UnrealCEFSubProcess']
     for tool in _ue4_list_common_tools_legacy(env):
         if not _ue4_build_project(env, solution, tool,
                                   env.ue4_host_platform,
-                                  'Shipping' if tool in need_shipping else 'Development',
+                                  _ue4_select_tool_configuration(tool),
                                   vs_version, 'Build'):
             logging.error("Could not build %s", tool)
             return False
