@@ -254,6 +254,13 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         logging.error("Could not build CrashReportClient")
         return False
 
+    # CrashReportClientEditor is not built by default, however this is required by the Editor
+    # Note: it is normally compiled by UAT BuildTarget command but we don't use it yet
+    if env.ue4_minor >= 24:
+        if not _ue4_run_ubt(env, 'CrashReportClientEditor', env.ue4_host_platform, 'Shipping', vs_version=vs_version):
+            logging.error("Could not build CrashReportClientEditor")
+            return False
+
     # these are not builded by Epic by default
     extra_tools = [
         'LiveCodingConsole',
