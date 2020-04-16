@@ -149,7 +149,11 @@ def _ue4_generate_project(env):
 def _ue4_build_tool_ubt(env, tool, vs_version=None):
     platform = env.ue4_host_platform
     configuration = _ue4_select_tool_configuration(tool)
-    return _ue4_run_ubt(env, tool, platform, configuration, vs_version=vs_version)
+    if not _ue4_run_ubt(env, tool, platform, configuration,
+                        vs_version=vs_version):
+        logging.error('Could not build %s', tool)
+        return False
+    return True
 
 
 def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=None, flags=None):
@@ -188,11 +192,11 @@ def _ue4_run_uat(env, target, build_platforms, flags=None):
 
 def _ue4_build_game(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
-        return _ue4_build_game_legacy(env, solution, vs_version)
+        return _ue4_build_project(env, solution, env.game, env.ue4_platform,
+                                  env.ue4_config, vs_version, 'Build')
 
     if env.platform == 'xboxone':
         if not _ue4_build_tool_ubt(env, 'XboxOnePDBFileUtil', vs_version):
-            logging.error("Could not build XboxOnePDBFileUtil")
             return False
 
     game = env.game if hasattr(env, 'game') else 'UE4'
@@ -233,7 +237,6 @@ def _ue4_build_common_tools(env, solution, vs_version):
         return False
 
     if not _ue4_build_tool_ubt(env, 'UnrealHeaderTool', vs_version):
-        logging.error("Could not build UnrealHeaderTool")
         return False
 
     return True
@@ -286,7 +289,6 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     # use UBT for remaining extra tool targets
     for tool in extra_tools:
         if not _ue4_build_tool_ubt(env, tool, vs_version):
-            logging.error("Could not build %s", tool)
             return False
 
     return True
@@ -325,23 +327,20 @@ def _ue4_build_project(env, sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
 
     if nimp.sys.platform.is_windows():
-        return nimp.build.vsbuild(sln_file, build_platform, configuration,
-                                  project=project,
-                                  vs_version=vs_version,
-                                  target=target)
-
-    # This file uses bash explicitly
-    return nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.ue4_host_platform),
+        if nimp.build.vsbuild(sln_file, build_platform, configuration,
+                              project=project,
+                              vs_version=vs_version,
+                              target=target):
+            return True
+    else:
+        # This file needs bash explicitly
+        if nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.ue4_host_platform),
                                   project, build_platform, configuration],
-                                  cwd=env.ue4_dir) == 0
+                                  cwd=env.ue4_dir) == 0:
+            return True
+    logging.error('Could not build %s', tool)
+    return False
 
-def _ue4_build_game_legacy(env, solution, vs_version):
-    if not _ue4_build_project(env, solution, env.game, env.ue4_platform,
-                            env.ue4_config, vs_version, 'Build'):
-        logging.error("Could not build game project")
-        return False
-
-    return True
 
 def _ue4_build_editor_legacy(env, solution, vs_version):
     game = env.game if hasattr(env, 'game') else 'UE4'
@@ -352,12 +351,9 @@ def _ue4_build_editor_legacy(env, solution, vs_version):
         project = game
         config = env.ue4_config + ' Editor'
 
-    if not _ue4_build_project(env, solution, project, env.ue4_platform,
-                            config, vs_version, 'Build'):
-        logging.error("Could not build editor project")
-        return False
+    return _ue4_build_project(env, solution, project, env.ue4_platform,
+                              config, vs_version, 'Build')
 
-    return True
 
 def _ue4_build_common_tools_legacy(env, solution, vs_version):
     for tool in _ue4_list_common_tools_legacy(env):
@@ -365,7 +361,6 @@ def _ue4_build_common_tools_legacy(env, solution, vs_version):
                                   env.ue4_host_platform,
                                   _ue4_select_tool_configuration(tool),
                                   vs_version, 'Build'):
-            logging.error("Could not build %s", tool)
             return False
     return True
 
@@ -412,7 +407,6 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
 
         if not _ue4_build_project(env, solution, 'BootstrapPackagedGame',
                                   'Win64', 'Shipping', vs_version, 'Build'):
-            logging.error("Could not build BootstrapPackagedGame")
             return False
 
         tmp = env.format('{ue4_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
