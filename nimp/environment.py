@@ -258,7 +258,7 @@ class Environment:
         nimp_conf_dir = nimp.system.find_dir_containing_file(nimp_conf_file)
 
         if not nimp_conf_dir:
-            logging.error('No xpj conf')
+            logging.debug('No xpj conf it seems.')
             return True
 
         if not self.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
