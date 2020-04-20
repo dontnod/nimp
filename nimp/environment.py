@@ -24,6 +24,7 @@
 values and command line parameters set for this nimp execution '''
 
 import argparse
+import getopt
 import inspect
 import logging
 import os
@@ -58,7 +59,7 @@ class Environment:
         self.dry_run = False
         self.summary = None
 
-    def load_argument_parser(self):
+    def load_argument_parser(self, parent_parser):
         ''' Returns an argument parser for nimp and his subcommands '''
         # Import project-local commands from .nimp/commands
         cmd_dict = _get_instances(nimp.commands, nimp.command.Command)
@@ -83,8 +84,10 @@ class Environment:
                               key = lambda command: command.__class__.__name__)
         command_list = [it for it in command_list if not it.__class__.__name__.startswith('_')]
 
+        # prog_description = 'Script utilities to ship games, mostly Unreal Engine based ones.'
+        # parser = argparse.ArgumentParser(description = prog_description)
         prog_description = 'Script utilities to ship games, mostly Unreal Engine based ones.'
-        parser = argparse.ArgumentParser(description = prog_description)
+        parser = argparse.ArgumentParser(description=prog_description, parents=[parent_parser])
         log_group = parser.add_argument_group("Logging")
 
         log_group.add_argument('-s',
@@ -101,7 +104,6 @@ class Environment:
                                type=str,
                                choices = list(_SUMMARY_HANDLERS.keys()),
                                default='default')
-
 
         log_group.add_argument('--do-nothing',
                                help='Just parses arguments and exits (used for CIS tests)',
@@ -130,6 +132,17 @@ class Environment:
         exit_error = 1
         exit_warnings = 2
 
+        # parses sys.argv in search of a manual uproject input
+        parent_parser = argparse.ArgumentParser(add_help=False)
+        parent_parser.add_argument('--uproject',
+                                   metavar='<ue4 project>',
+                                   help='Select a ue4 project to work with',
+                                   type=str)
+        parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
+        if hasattr(parent_args, 'uproject') and parent_args.uproject is not None:
+            self._uproject = parent_args.uproject.upper()
+            logging.debug('uproject specified by user : %s' % self._uproject)
+
         if not self._load_nimp_conf():
             return exit_error
 
@@ -138,12 +151,15 @@ class Environment:
                 logging.error('Error while loading nimp config')
                 return exit_error
 
+        if not self._load_project_conf():
+            return exit_error
+
         if not hasattr(self, 'root_dir') or not self.root_dir:
             self.root_dir = '.'
 
         # Loads argument parser, parses argv with it and adds command line para
         # meters as properties of the environment
-        parser = self.load_argument_parser()
+        parser = self.load_argument_parser(parent_parser)
         arguments = parser.parse_args(argv[1:])
         for key, value in vars(arguments).items():
             setattr(self, key, value)
@@ -237,33 +253,44 @@ class Environment:
         ''' Applies environment variables from .nimp.conf '''
 
     def _load_nimp_conf(self):
-        is_conf_inside_project = False
+        ''' legacy - loads project conf before pg8 4.24 preiew - xpj_conf in the future ? '''
         nimp_conf_file = '.nimp.conf'
         nimp_conf_dir = nimp.system.find_dir_containing_file(nimp_conf_file)
 
-        if not nimp_conf_dir: # conf file wasn't in a parent folder as expected in legacy bh
-            # maybe it's in .nimp sub-folder as wanted in new conf bh
-            possible_conf_dirs = glob.glob(os.path.join('**', '.nimp', '**', '.nimp.conf'), recursive=True)
-            if len(possible_conf_dirs) == 1: # several/no results indicates there's a conf issue, carry on with legacy stuff
-                nimp_conf_dir = os.path.dirname(possible_conf_dirs[0])
-                logging.info('conf is %s', possible_conf_dirs[0])
-                is_conf_inside_project = True
-            if not nimp_conf_dir: # legacy when no conf is found
-                return True
+        if not nimp_conf_dir:
+            logging.error('No xpj conf')
+            return True
 
         if not self.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
             logging.error('Error loading %s', nimp_conf_file)
             return False
 
-        # new conf bh - we're hacking root_dir to be based off ue4 stuff present in any legit workspace.
-        if is_conf_inside_project:
-            ue4_file = os.path.join('UE4', 'Engine', 'Build', 'Build.version')
-            nimp_conf_dir = nimp.system.find_dir_containing_file(ue4_file)
-            if not nimp_conf_dir:
-                raise FileNotFoundError('%s not found. It is now a nimp requirement.' % ue4_file)
-            logging.info('root_dir based off %s is : %s' % (ue4_file, nimp_conf_dir))
-
         self.root_dir = nimp_conf_dir
+
+        return True
+
+    def _load_project_conf(self):
+        ''' Loads project conf inside uproject folder - leaves ability to have xpj conf in xpj folder '''
+        if not hasattr(self, 'uproject_dir') or not self.uproject_dir:
+            return True
+
+        nimp_conf_file = '.nimp.conf'
+
+        if not os.path.isfile(os.path.join(self.uproject_dir, nimp_conf_file)):
+            return True
+
+        if not self.load_config_file(os.path.join(self.uproject_dir, nimp_conf_file)):
+            logging.error('Error loading project conf : %s', nimp_conf_file)
+            return False
+
+        ue4_file = os.path.join('UE4', 'Engine', 'Build', 'Build.version')
+        root_dir = nimp.system.find_dir_containing_file(ue4_file)
+        if not root_dir:
+            logging.error('%s not found. It is now a nimp requirement.' % ue4_file)
+            return False
+        self.root_dir = root_dir
+
+        logging.debug('nimp_file %s', os.path.join(self.uproject_dir, nimp_conf_file))
 
         return True
 

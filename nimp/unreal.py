@@ -96,9 +96,25 @@ def load_config(env):
                     if pattern.startswith(';'):
                         continue
                     patterns.add(pattern.strip())
+        ufiles = set()
         for pat in patterns:
             for ufile in glob.glob('%s/%s/*/*.uproject' % (ue4_dir, pat)):
-                uproject = os.path.splitext(os.path.basename(ufile))[0]
+                ufiles.add(ufile.strip())
+
+        cwd = os.getcwd()
+        for ufile in ufiles:
+            uproject = os.path.splitext(os.path.basename(ufile))[0]
+            if hasattr(env, '_uproject'): # --uproject case, check against declared uprojects
+                if uproject == env._uproject:
+                    env.uproject = env._uproject # not sure this is useful - wip
+                    env.uproject_dir = os.path.normpath(os.path.dirname(ufile))
+            else:
+                # try confirming uproject based off directory hints
+                search_pattern = re.compile(r'[\\|/]pg[\d][\d]?-%s-[\w.-]*?[\\|/].*[\\|/]Game[\\|/]%s[\\|/]?|[\\|/]Game[\\|/]%s[\\|/]?'
+                                    % (uproject, uproject, uproject), re.IGNORECASE)
+                match = re.findall(search_pattern, cwd)
+                if len(match) > 0:
+                    env.uproject = uproject
                 # Prefer anything over template and engine test directories as default uproject
                 if not hasattr(env, 'uproject') or 'TP_' in env.uproject or 'EngineTest' in env.uproject:
                     env.uproject = uproject
@@ -108,6 +124,8 @@ def load_config(env):
     # Do not throw here, as it *could* be on purpose to not have any uproject
     #if not hasattr(env, 'uproject_dir'):
     #    raise KeyError('No uproject found.')
+    if hasattr(env, '_uproject') and not hasattr(env, 'uproject_dir'):
+        raise KeyError('Uproject %s not found.' % env._uproject)
 
     # Backwards compatibility (TODO: remove later)
     if hasattr(env, 'uproject'):
