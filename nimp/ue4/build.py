@@ -63,7 +63,7 @@ def build(env):
             logging.error("Error generating UE4 project files")
             return False
 
-    # Pre-reboot run prebuild *AFTER* GenerateProjectFiles.bat
+    # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
     if not env.is_dne_legacy_ue4:
         nimp.environment.execute_hook('prebuild', env)
 
@@ -136,13 +136,24 @@ def _ue4_generate_project(env):
 
     # Generate project files
     if nimp.sys.platform.is_windows():
-        command = ['cmd', '/c', 'GenerateProjectFiles.bat', '<nul']
+        command = ['cmd', '/c', 'GenerateProjectFiles.bat']
         if hasattr(env, 'vs_version'):
             command += _ue4_vsversion_to_ubt(env.vs_version)
+        command += ['<nul']
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
 
     return nimp.sys.process.call(command, cwd=env.ue4_dir)
+
+
+def _ue4_build_tool_ubt(env, tool, vs_version=None):
+    platform = env.ue4_host_platform
+    configuration = _ue4_select_tool_configuration(tool)
+    if not _ue4_run_ubt(env, tool, platform, configuration,
+                        vs_version=vs_version):
+        logging.error('Could not build %s', tool)
+        return False
+    return True
 
 
 def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=None, flags=None):
@@ -181,7 +192,12 @@ def _ue4_run_uat(env, target, build_platforms, flags=None):
 
 def _ue4_build_game(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
-        return _ue4_build_game_legacy(env, solution, vs_version)
+        return _ue4_build_project(env, solution, env.game, env.ue4_platform,
+                                  env.ue4_config, vs_version, 'Build')
+
+    if env.platform == 'xboxone':
+        if not _ue4_build_tool_ubt(env, 'XboxOnePDBFileUtil', vs_version):
+            return False
 
     game = env.game if hasattr(env, 'game') else 'UE4'
     if not _ue4_run_ubt(env, game, env.ue4_platform, env.ue4_config, vs_version=vs_version):
@@ -194,6 +210,16 @@ def _ue4_build_editor(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_editor_legacy(env, solution, vs_version)
 
+    dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
+    if not nimp.build.vsbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, target='Build'):
+        logging.error("Could not build SwarmAgent")
+        return False
+
+    dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
+        logging.error("Could not build SwarmInterface")
+        return False
+
     game = env.game if hasattr(env, 'game') else 'UE4'
     if not _ue4_run_ubt(env, game + 'Editor', env.ue4_platform, env.ue4_config, vs_version=vs_version):
         logging.error("Could not build editor project")
@@ -205,7 +231,15 @@ def _ue4_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_common_tools_legacy(env, solution, vs_version)
 
-    return _ue4_run_ubt(env, 'UnrealHeaderTool', env.ue4_host_platform, 'Development', vs_version)
+    dep = env.format('{ue4_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj')
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
+        logging.error("Could not build DotNETUtilities")
+        return False
+
+    if not _ue4_build_tool_ubt(env, 'UnrealHeaderTool', vs_version):
+        return False
+
+    return True
 
 def _ue4_build_extra_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
@@ -224,21 +258,26 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         logging.error("BuildCommonTools failed")
         return False
 
-    # CrashReportClient is not built in Shipping by default, however this is required by the staging process
-    if not _ue4_run_ubt(env, 'CrashReportClient', env.ue4_host_platform, 'Shipping', vs_version=vs_version):
-        logging.error("Could not build CrashReportClient")
-        return False
-
-    # these are not builded by Epic by default
+    # these are not built by Epic by default
     extra_tools = [
+        'CrashReportClient',
         'LiveCodingConsole',
         'MinidumpDiagnostics',
         'UnrealFileServer',
         'UnrealFrontend',
+        'UnrealInsights',
         'SymbolDebugger'
     ]
 
-    # build projects are currently broken for PS4SymbolTool and BuildCommonTools.Automation.cs (4.22)
+    # CrashReportClientEditor is not built by default, however this is
+    # required by the Editor
+    # Note: it is normally compiled by UAT BuildTarget command but we
+    # don't use it yet
+    if env.ue4_minor >= 24:
+        extra_tools.append('CrashReportClientEditor')
+
+    # build projects are currently broken for PS4SymbolTool
+    # and BuildCommonTools.Automation.cs (4.22)
     if need_ps4tools:
         # extra_tools.append('PS4MapFileUtil') # removed in 4.22
         _ue4_build_ps4_tools_workaround(env, solution, vs_version)
@@ -249,24 +288,38 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     # use UBT for remaining extra tool targets
     for tool in extra_tools:
-        if (not _ue4_run_ubt(env, tool, env.ue4_host_platform, 'Development', vs_version=vs_version)):
-            logging.error("Could not build %s", tool)
+        if not _ue4_build_tool_ubt(env, tool, vs_version):
             return False
 
     return True
 
 def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
-    csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
+    csproj = env.format('{ue4_dir}/Engine/Platforms/PS4/Source/Programs/PS4DevKitUtil/PS4DevKitUtil.csproj')
+    if env.ue4_minor < 24:
+        csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
     if not nimp.build.msbuild(csproj, 'AnyCPU', 'Development', vs_version=vs_version):
         logging.error("Could not build PS4DevKitUtil")
         return False
 
-    csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj')
+    csproj = env.format('{ue4_dir}/Engine/Platforms/PS4/Source/Programs/PS4SymbolTool/PS4SymbolTool.csproj')
+    if env.ue4_minor < 24:
+        csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj')
     if not nimp.build.msbuild(csproj, None, None, vs_version=vs_version):
         logging.error("Could not build PS4SymbolTool")
         return False
 
     return True
+
+def _ue4_select_tool_configuration(tool):
+    # CrashReportClient is not built in Shipping by default,
+    # however this is required by the staging process
+    need_shipping = ['CrashReportClient',
+                     'CrashReportClientEditor',
+                     'UnrealCEFSubProcess']
+    if tool in need_shipping:
+        return 'Shipping'
+    return 'Development'
+
 
 ### LEGACY (now using UAT+UBT since 4.22/reboot)
 
@@ -274,23 +327,20 @@ def _ue4_build_project(env, sln_file, project, build_platform,
                        configuration, vs_version, target = 'Rebuild'):
 
     if nimp.sys.platform.is_windows():
-        return nimp.build.vsbuild(sln_file, build_platform, configuration,
-                                  project=project,
-                                  vs_version=vs_version,
-                                  target=target)
-
-    # This file uses bash explicitly
-    return nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.ue4_host_platform),
+        if nimp.build.vsbuild(sln_file, build_platform, configuration,
+                              project=project,
+                              vs_version=vs_version,
+                              target=target):
+            return True
+    else:
+        # This file needs bash explicitly
+        if nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.ue4_host_platform),
                                   project, build_platform, configuration],
-                                  cwd=env.ue4_dir) == 0
+                                  cwd=env.ue4_dir) == 0:
+            return True
+    logging.error('Could not build %s', tool)
+    return False
 
-def _ue4_build_game_legacy(env, solution, vs_version):
-    if not _ue4_build_project(env, solution, env.game, env.ue4_platform,
-                            env.ue4_config, vs_version, 'Build'):
-        logging.error("Could not build game project")
-        return False
-
-    return True
 
 def _ue4_build_editor_legacy(env, solution, vs_version):
     game = env.game if hasattr(env, 'game') else 'UE4'
@@ -301,21 +351,16 @@ def _ue4_build_editor_legacy(env, solution, vs_version):
         project = game
         config = env.ue4_config + ' Editor'
 
-    if not _ue4_build_project(env, solution, project, env.ue4_platform,
-                            config, vs_version, 'Build'):
-        logging.error("Could not build editor project")
-        return False
+    return _ue4_build_project(env, solution, project, env.ue4_platform,
+                              config, vs_version, 'Build')
 
-    return True
 
 def _ue4_build_common_tools_legacy(env, solution, vs_version):
-    need_shipping = ['CrashReportClient', 'UnrealCEFSubProcess']
     for tool in _ue4_list_common_tools_legacy(env):
         if not _ue4_build_project(env, solution, tool,
                                   env.ue4_host_platform,
-                                  'Shipping' if tool in need_shipping else 'Development',
+                                  _ue4_select_tool_configuration(tool),
                                   vs_version, 'Build'):
-            logging.error("Could not build %s", tool)
             return False
     return True
 
@@ -362,7 +407,6 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
 
         if not _ue4_build_project(env, solution, 'BootstrapPackagedGame',
                                   'Win64', 'Shipping', vs_version, 'Build'):
-            logging.error("Could not build BootstrapPackagedGame")
             return False
 
         tmp = env.format('{ue4_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
