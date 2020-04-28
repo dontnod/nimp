@@ -24,7 +24,7 @@
 values and command line parameters set for this nimp execution '''
 
 import argparse
-import getopt
+import re
 import inspect
 import logging
 import os
@@ -136,11 +136,16 @@ class Environment:
         parent_parser = argparse.ArgumentParser(add_help=False)
         parent_parser.add_argument('--uproject',
                                    metavar='<ue4 project>',
-                                   help='Select a ue4 project to work with',
+                                   help='Select a ue4 project to work with, i.e. PRO/PRO.uproject',
                                    type=str)
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
         if hasattr(parent_args, 'uproject') and parent_args.uproject is not None:
-            self._uproject = parent_args.uproject.upper()
+            self._uproject = parent_args.uproject
+            # valid --uproject param would be like NWD/NWD.uproject
+            search_pattern = re.compile(r'^[\\|/]?(?P<uproject>[\w][\w][\w])[\\|/](?P=uproject).uproject$', re.IGNORECASE)
+            if re.search(search_pattern, self._uproject):
+                self._uproject_path = os.path.normpath(self._uproject)
+                self._uproject = re.findall(search_pattern, self._uproject_path)[0].upper()
             logging.debug('uproject specified by user : %s' % self._uproject)
 
         if not self._load_nimp_conf():
