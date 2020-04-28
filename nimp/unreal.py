@@ -99,15 +99,17 @@ def load_config(env):
         ufiles = set()
         for pat in patterns:
             for ufile in glob.glob('%s/%s/*/*.uproject' % (ue4_dir, pat)):
-                ufiles.add(ufile.strip())
+                ufiles.add(os.path.normpath(ufile.strip()))
 
         cwd = os.getcwd()
         for ufile in ufiles:
             uproject = os.path.splitext(os.path.basename(ufile))[0]
             if hasattr(env, '_uproject'): # --uproject case, check against declared uprojects
-                if uproject == env._uproject:
+                if not hasattr(env, '_uproject_path'): # param not valid, bail out
+                     continue
+                if uproject == env._uproject and ufile.lower().endswith(env._uproject_path.lower()):
                     env.uproject = env._uproject # not sure this is useful - wip
-                    env.uproject_dir = os.path.normpath(os.path.dirname(ufile))
+                    env.uproject_dir = os.path.dirname(ufile)
             else:
                 # try confirming uproject based off directory hints
                 search_pattern = re.compile(r'[\\|/]pg[\d][\d]?-%s-[\w.-]*?[\\|/].*[\\|/]Game[\\|/]%s[\\|/]?|[\\|/]Game[\\|/]%s[\\|/]?'
@@ -119,13 +121,14 @@ def load_config(env):
                 if not hasattr(env, 'uproject') or 'TP_' in env.uproject or 'EngineTest' in env.uproject:
                     env.uproject = uproject
                 if uproject == env.uproject:
-                    env.uproject_dir = os.path.normpath(os.path.dirname(ufile))
+                    env.uproject_dir = os.path.dirname(ufile)
 
     # Do not throw here, as it *could* be on purpose to not have any uproject
     #if not hasattr(env, 'uproject_dir'):
     #    raise KeyError('No uproject found.')
     if hasattr(env, '_uproject') and not hasattr(env, 'uproject_dir'):
-        raise KeyError('Uproject %s not found.' % env._uproject)
+        raise KeyError('Uproject not found : %s. Possible uprojects : ' % (env._uproject) +
+                       ', '.join('%s' % os.path.splitext(os.path.basename(ufile))[0] + '/' + os.path.basename(ufile) for ufile in ufiles))
 
     # Backwards compatibility (TODO: remove later)
     if hasattr(env, 'uproject'):
