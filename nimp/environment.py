@@ -167,7 +167,11 @@ class Environment:
         parser = self.load_argument_parser(parent_parser)
         arguments = parser.parse_args(argv[1:])
         for key, value in vars(arguments).items():
-            setattr(self, key, value)
+            # Shitty hack so --uproject param doesn't break they way env.uproject has been implemented untill now
+            # env.uproject is dealt with in unreal.py, we don't want to reset it now
+            # TODO : is uproject even useful? Looks like it's unsed from there.
+            if key != 'uproject':
+                setattr(self, key, value)
 
         summary_format = getattr(self, 'summary_format')
         with _SUMMARY_HANDLERS[summary_format](self) as log_handler:
