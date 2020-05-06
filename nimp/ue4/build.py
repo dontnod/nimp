@@ -338,7 +338,7 @@ def _ue4_build_project(env, sln_file, project, build_platform,
                                   project, build_platform, configuration],
                                   cwd=env.ue4_dir) == 0:
             return True
-    logging.error('Could not build %s', tool)
+    logging.error('Could not build %s', sln_file)
     return False
 
 
