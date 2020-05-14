@@ -82,6 +82,9 @@ class Build(nimp.command.Command):
                 config = env.configuration
 
             if hasattr(env, 'bootstrap') and env.bootstrap:
+                command = [ 'nuget.exe', 'update', '-self' ]
+                if nimp.sys.process.call(command) != 0:
+                    logging.warning('NuGet could not update itself.')
                 command = [ 'nuget.exe', 'restore', sln ]
                 if nimp.sys.process.call(command) != 0:
                     logging.warning('NuGet could not restore packages.')
