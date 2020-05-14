@@ -67,42 +67,50 @@ class Build(nimp.command.Command):
                             ' there is a .sln file in current directory'))
 
     def run(self, env):
-        # Use distcc and/or ccache if available
 
+        # Special support for UE4 projects
         if env.is_ue4:
+            # Use distcc and/or ccache if available
             nimp.build.install_distcc_and_ccache()
             return nimp.ue4.build.build(env)
 
+        nimp.environment.execute_hook('prebuild', env)
+
         sln = Build._find_vs_solution()
-        if sln is not None:
-            platform, config = 'Any CPU', 'Release'
-            if hasattr(env, 'platform') and env.platform is not None:
-                platform = env.platform
-            if hasattr(env, 'configuration') and env.configuration is not None:
-                config = env.configuration
+        if sln is None:
+            return False
 
-            if hasattr(env, 'bootstrap') and env.bootstrap:
-                command = [ 'nuget.exe', 'update', '-self' ]
-                if nimp.sys.process.call(command) != 0:
-                    logging.warning('NuGet could not update itself.')
-                command = [ 'nuget.exe', 'restore', sln ]
-                if nimp.sys.process.call(command) != 0:
-                    logging.warning('NuGet could not restore packages.')
+        platform, config = 'Any CPU', 'Release'
+        if hasattr(env, 'platform') and env.platform is not None:
+            platform = env.platform
+        if hasattr(env, 'configuration') and env.configuration is not None:
+            config = env.configuration
 
-            if hasattr(env, 'vs_version') and env.vs_version:
-                vs_version = env.vs_version
-            else:
-                contents = open(sln).read()
-                vs_version = '14'
-                if 'MinimumVisualStudioVersion = 15' in contents:
-                    vs_version = '15'
+        if hasattr(env, 'bootstrap') and env.bootstrap:
+            command = [ 'nuget.exe', 'update', '-self' ]
+            if nimp.sys.process.call(command) != 0:
+                logging.warning('NuGet could not update itself.')
+            command = [ 'nuget.exe', 'restore', sln ]
+            if nimp.sys.process.call(command) != 0:
+                logging.warning('NuGet could not restore packages.')
 
-            return nimp.build.vsbuild(sln, platform, config,
-                                      project=env.target,
-                                      vs_version=vs_version,
-                                      target='Build')
+        if hasattr(env, 'vs_version') and env.vs_version:
+            vs_version = env.vs_version
+        else:
+            contents = open(sln).read()
+            vs_version = '14'
+            if 'MinimumVisualStudioVersion = 15' in contents:
+                vs_version = '15'
 
-        return False
+        if not nimp.build.vsbuild(sln, platform, config,
+                                  project=env.target,
+                                  vs_version=vs_version,
+                                  target='Build'):
+            return False
+
+        nimp.environment.execute_hook('postbuild', env)
+
+        return True
 
     @staticmethod
     def _find_vs_solution():
