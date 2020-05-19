@@ -51,16 +51,16 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
     else:
         debug_pipe = None
 
-    # The bufsize = 1 is important; if we don’t bufferise the output, we’re
-    # going to make the callee lag a lot. Using 1 or 1024 or 65536 does not
-    # make any noticeable difference, though.
+    # The bufsize = -1 is important; if we don’t bufferise the output, we’re
+    # going to make the callee lag a lot. In Python 3.3.1 this is now the
+    # default behaviour, but it used to default to 0.
     try:
         process = subprocess.Popen(command,
                                    cwd     = cwd,
                                    stdout  = subprocess.PIPE,
                                    stderr  = subprocess.PIPE,
                                    stdin   = subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
-                                   bufsize = 1)
+                                   bufsize = -1)
     except FileNotFoundError as ex:
         logging.error(ex)
         return 1
