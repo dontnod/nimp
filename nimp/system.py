@@ -42,12 +42,14 @@ def try_import(module_name):
     ''' Tries to import a module, return none if unavailable '''
     try:
         return importlib.import_module(module_name)
+    except ModuleNotFoundError as ex:
+        pass # Ignore this error
     except ImportError as ex:
         if ex.name == module_name:
             logging.debug('No module %s found', module_name)
         else:
             logging.warning('%s', ex)
-        return None
+    return None
 
 def try_execute(action, exception_types, attempt_maximum = 5, retry_delay = 10):
     ''' Attempts to execute an action, and retries when catching one of the specified exceptions '''
