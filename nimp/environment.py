@@ -303,14 +303,15 @@ class Environment:
 
         return True
 
+
 def execute_hook(hook_name, *args):
     ''' Executes a hook in the .nimp/hooks directory '''
     hook_module = nimp.system.try_import('hooks.' + hook_name)
     if hook_module is None:
-        logging.info('No hook %s', hook_name)
         return True
-    logging.info('Running hook %s', hook_name)
+    logging.info('Found %s hook', hook_name)
     return hook_module.run(*args)
+
 
 def read_config_file(filename):
     ''' Reads a config file and returns a dictionary with values defined in it '''
