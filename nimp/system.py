@@ -209,18 +209,6 @@ def find_dir_containing_file(filename):
     return search_dir
 
 
-def load_arguments(env):
-    '''Sets default platform '''
-    if not hasattr(env, 'platform') or env.platform is None:
-        if nimp.sys.platform.is_windows():
-            env.platform = 'win64'
-        elif nimp.sys.platform.is_osx():
-            env.platform = 'mac'
-        else:
-            env.platform = 'linux'
-
-    return True
-
 def map_files(env):
     ''' Returns a file mapper using environment parameters '''
     def _default_mapper(_, dest):

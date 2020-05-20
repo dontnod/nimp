@@ -145,6 +145,15 @@ def load_config(env):
 def load_arguments(env):
     ''' Loads Unreal specific environment parameters. '''
 
+    if env.is_ue4:
+        if not hasattr(env, 'platform') or env.platform is None:
+            if nimp.sys.platform.is_windows():
+                env.platform = 'win64'
+            elif nimp.sys.platform.is_osx():
+                env.platform = 'mac'
+            else:
+                env.platform = 'linux'
+
     # This is safe even when we failed to detect UE4
     _ue4_sanitize_arguments(env)
     _ue4_set_env(env)
