@@ -75,8 +75,7 @@ def main(argv = sys.argv):
 
         nimp.environment.Environment.config_loaders += [nimp.unreal.load_config]
 
-        argument_loaders = [nimp.system.load_arguments,
-                            nimp.command.load_arguments,
+        argument_loaders = [nimp.command.load_arguments,
                             nimp.unreal.load_arguments]
 
         nimp.environment.Environment.argument_loaders += argument_loaders

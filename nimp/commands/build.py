@@ -24,6 +24,7 @@
 
 import logging
 import os
+import re
 
 import nimp.build
 import nimp.command
@@ -80,7 +81,12 @@ class Build(nimp.command.Command):
         if sln is None:
             return False
 
-        platform, config = 'Any CPU', 'Release'
+        # Try to use the best default config/platform combination
+        configs, platforms = Build._find_configs_platforms(sln)
+
+        platform = next((p for p in ['x64', 'Win64', 'Any CPU', 'Win32'] if p in platforms), 'Any CPU')
+        config = next((c for c in ['Release', 'Debug'] if c in configs), 'Release')
+
         if hasattr(env, 'platform') and env.platform is not None:
             platform = env.platform
         if hasattr(env, 'configuration') and env.configuration is not None:
@@ -118,3 +124,21 @@ class Build(nimp.command.Command):
             if os.path.splitext(it)[1] == '.sln' and os.path.isfile(it):
                 return it
         return None
+
+    @staticmethod
+    def _find_configs_platforms(sln):
+        configs, platforms = set(), set()
+        entry = re.compile('\s*([^|]*)\|([^=]*) = ([^|]*)\|([^|]*)')
+
+        good_section = False
+        for l in open(sln, 'r').readlines():
+            if 'GlobalSection(SolutionConfigurationPlatforms)' in l:
+                good_section = True
+            elif 'EndGlobalSection' in l:
+                good_section = False
+            elif good_section:
+                m = entry.match(l.strip())
+                if m:
+                    configs.add(m.groups(0)[0])
+                    platforms.add(m.groups(0)[1])
+        return configs, platforms
