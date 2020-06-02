@@ -56,7 +56,6 @@ class DownloadFileset(nimp.command.Command):
         install_directory = env.root_dir + ('/' + env.format(env.destination) if env.destination else '')
         format_arguments = copy.deepcopy(vars(env))
         format_arguments['revision'] = '*'
-
         logging.info('Searching %s', artifact_uri_pattern.format(**format_arguments))
         all_artifacts = nimp.system.try_execute(lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments), OSError)
         artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision)
