@@ -138,7 +138,12 @@ class Environment:
                                    metavar='<ue4 project>',
                                    help='Select a ue4 project to work with, i.e. PRO/PRO.uproject',
                                    type=str)
+        parent_parser.add_argument('--branch',
+                                   metavar='<project branch>',
+                                   help='Select a project branch to work with',
+                                   type=str)
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
+        # verify that uproject seems somewhat legit
         if hasattr(parent_args, 'uproject') and parent_args.uproject is not None:
             self._uproject = parent_args.uproject
             # valid --uproject param would be like NWD/NWD.uproject
@@ -147,6 +152,7 @@ class Environment:
                 self._uproject_path = os.path.normpath(self._uproject)
                 self._uproject = re.findall(search_pattern, self._uproject_path)[0].upper()
             logging.debug('uproject specified by user : %s' % self._uproject)
+        # TODO: we could try and auto-detect branch based off vcs feedback - especially for buildbot
 
         if not self._load_nimp_conf():
             return exit_error
@@ -166,12 +172,11 @@ class Environment:
         # meters as properties of the environment
         parser = self.load_argument_parser(parent_parser)
         arguments = parser.parse_args(argv[1:])
+        # TODO: remove this crappy hacks
+        arguments.branch = self.branch if hasattr(self, 'branch') and arguments.branch is None else arguments.branch
+        arguments.uproject = self.uproject if hasattr(self, 'uproject') else arguments.uproject
         for key, value in vars(arguments).items():
-            # Shitty hack so --uproject param doesn't break they way env.uproject has been implemented untill now
-            # env.uproject is dealt with in unreal.py, we don't want to reset it now
-            # TODO : is uproject even useful? Looks like it's unsed from there.
-            if key != 'uproject':
-                setattr(self, key, value)
+            setattr(self, key, value)
 
         summary_format = getattr(self, 'summary_format')
         with _SUMMARY_HANDLERS[summary_format](self) as log_handler:
@@ -300,6 +305,13 @@ class Environment:
         self.root_dir = root_dir
 
         logging.debug('nimp_file %s', os.path.join(self.uproject_dir, nimp_conf_file))
+
+        # this can override settings from .nimp.conf
+        additionnal_conf_file = os.path.join(self.uproject_dir, '.nimp', 'config.py')
+        if os.path.exists(additionnal_conf_file):
+            if not self.load_config_file(os.path.join(additionnal_conf_file)):
+                logging.error('Error loading project conf : %s', additionnal_conf_file)
+                return False
 
         return True
 
