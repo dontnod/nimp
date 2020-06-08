@@ -262,12 +262,15 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     extra_tools = [
         'CrashReportClient',
         'LiveCodingConsole',
-        'MinidumpDiagnostics',
         'UnrealFileServer',
         'UnrealFrontend',
         'UnrealInsights',
         'SymbolDebugger'
     ]
+
+    # MinidumpDiagnostics not in use in 4.25+ ue4 iterations
+    if env.ue4_minor  <= 24:
+        extra_tools.append('MinidumpDiagnostics')
 
     # CrashReportClientEditor is not built by default, however this is
     # required by the Editor
