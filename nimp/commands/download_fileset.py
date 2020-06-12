@@ -83,7 +83,7 @@ class DownloadFileset(nimp.command.Command):
     # TODO: Handle revision comparison when identified by a hash
     @staticmethod
     def _find_matching_artifact(all_artifacts, exact_revision, minimum_revision, maximum_revision):
-        all_artifacts = sorted(all_artifacts, key = lambda artifact: int(artifact['revision']), reverse = True)
+        all_artifacts = sorted(all_artifacts, key = lambda artifact: int(artifact['revision'], 16), reverse = True)
 
         try:
             if exact_revision is not None:
