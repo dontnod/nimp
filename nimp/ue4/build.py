@@ -120,8 +120,10 @@ def _ue4_vsversion_to_ubt(vs_version):
 def _ue4_generate_project(env):
     # Check for prerequisites
     if env.is_dne_legacy_ue4:
-        has_prereq = os.path.exists(env.format('{ue4_dir}/Engine/Binaries/DotNET/RPCUtility.exe'))
+        has_prereq = os.path.exists(env.format('{ue4_dir}/Engine/Binaries/DotNET/OneSky.dll'))
         if not has_prereq:
+            # Apparently no prebuild script has created OneSky.dll, so we try to run
+            # the setup script instead.
             if nimp.sys.platform.is_windows():
                 command = ['cmd', '/c', 'Setup.bat', '<nul']
             else:
