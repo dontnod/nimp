@@ -69,7 +69,8 @@ def load_config(env):
 
     env.ue4_dir = ue4_dir
     # Backward compatibility (TODO: remove later)
-    env.is_dne_legacy_ue4 = (env.ue4_minor < 22)
+    if not hasattr(env, 'is_dne_legacy_ue4'):
+        env.is_dne_legacy_ue4 = (env.ue4_minor < 22)
 
     if not hasattr(env, 'root_dir') or env.root_dir is None:
         env.root_dir = os.path.normpath(ue4_dir)
