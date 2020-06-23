@@ -110,11 +110,13 @@ def _find_msbuild_path(vs_version):
 
     # Sanitize vs_version
     if vs_version == '2015':
-        vs_version = '14'
+        vs_version = '14.0'
     if vs_version == '2017':
-        vs_version = '15'
+        vs_version = '15.0'
     if vs_version == '2019':
-        vs_version = '16'
+        # Changed path : MSBuild is installed in the \Current folder
+        # https://docs.microsoft.com/en-us/visualstudio/msbuild/whats-new-msbuild-16-0?view=vs-2019
+        vs_version = 'Current'
 
     # For VS2017 and later, there is vswhere
     vswhere_cmd = [ os.path.join(os.environ['ProgramFiles(x86)'], 'Microsoft Visual Studio/Installer/vswhere.exe') ]
@@ -123,7 +125,7 @@ def _find_msbuild_path(vs_version):
     if result == 0:
         for line in output.split('\n'):
             line = line.strip()
-            msbuild_path = os.path.join(line, 'MSBuild', vs_version + '.0', 'Bin', 'MSBuild.exe')
+            msbuild_path = os.path.join(line, 'MSBuild', vs_version, 'Bin', 'MSBuild.exe')
             if os.path.exists(msbuild_path):
                 break
 
