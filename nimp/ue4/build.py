@@ -209,13 +209,11 @@ def _ue4_build_game(env, solution, vs_version):
     return True
 
 def _ue4_build_editor(env, solution, vs_version):
+    if not _ue4_build_swarmagent(env, vs_version):
+        return False
+
     if env.is_dne_legacy_ue4:
         return _ue4_build_editor_legacy(env, solution, vs_version)
-
-    dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
-    if not nimp.build.vsbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, target='Build'):
-        logging.error("Could not build SwarmAgent")
-        return False
 
     dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
     if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
@@ -228,6 +226,7 @@ def _ue4_build_editor(env, solution, vs_version):
         return False
 
     return True
+
 
 def _ue4_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
@@ -242,6 +241,21 @@ def _ue4_build_common_tools(env, solution, vs_version):
         return False
 
     return True
+
+
+def _ue4_build_swarmagent(env, vs_version):
+    # This also builds AgentInterface.dll, needed by SwarmInterface.sln
+    # This used to compile on Linux but hasn't been revisited for a while
+    if env.ue4_major == 4 and env.ue4_minor < 20:
+        dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln')
+    else:
+        dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
+    if not nimp.build.vsbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, target='Build'):
+        logging.error("Could not build SwarmAgent")
+        return False
+
+    return True
+
 
 def _ue4_build_extra_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
@@ -389,16 +403,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
             return False
 
     if env.platform != 'mac':
-
-        # This also builds AgentInterface.dll, needed by SwarmInterface.sln
-        # This used to compile on Linux but hasn't been revisited for a while
-        sln1 = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln')
-        sln2 = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
-        if not nimp.build.vsbuild(sln1, 'Any CPU', 'Development',
-                                  vs_version=vs_version, target='Build') and \
-           not nimp.build.vsbuild(sln2, 'Any CPU', 'Development',
-                                  vs_version=vs_version, target='Build'):
-            logging.error("Could not build UnrealSwarm")
+        if not _ue4_build_swarmagent(env, vs_version):
             return False
 
     # These tools seem to be Windows only for now
