@@ -30,11 +30,13 @@ import time
 import traceback
 
 import nimp.command
-import nimp.commands
 import nimp.environment
 import nimp.system
 import nimp.sys.process
 import nimp.unreal
+
+import nimp.commands
+import nimp.platforms
 
 sys.dont_write_bytecode = 1
 
