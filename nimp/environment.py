@@ -36,6 +36,7 @@ import pkg_resources
 
 import nimp.command
 import nimp.summary
+import nimp.sys.platform
 import nimp.system
 import nimp.unreal
 
@@ -56,16 +57,22 @@ class Environment:
 
     def __init__(self):
         self.command = None
+        self.command_list = []
         self.environment = {}
         self.dry_run = False
+        self.ue4_platform_aliases = {}
         self.summary = None
 
-    def load_argument_parser(self, parent_parser):
-        ''' Returns an argument parser for nimp and his subcommands '''
+
+    def discover_commands(self):
 
         command_list = []
 
         # Import commands from base nimp
+        cmd_dict = _get_instances(nimp.commands, nimp.command.Command)
+        command_list += list(cmd_dict.values())
+
+        # Import project-local commands from .nimp/commands
         localpath = os.path.abspath(os.path.join(self.root_dir, '.nimp'))
         if localpath not in sys.path:
             sys.path.insert(0, localpath)
@@ -91,14 +98,25 @@ class Environment:
             except:
                 pass
 
-        # Import project-local commands from .nimp/commands
-        cmd_dict = _get_instances(nimp.commands, nimp.command.Command)
-        command_list += list(cmd_dict.values())
 
         command_list = sorted(command_list,
                               key = lambda command: command.__class__.__name__)
-        command_list = [it for it in command_list if not it.__class__.__name__.startswith('_')]
+        self.command_list = [it for it in command_list if not it.__class__.__name__.startswith('_')]
 
+
+    def discover_platforms(self):
+
+        # Import platforms from base nimp and from plugins
+        modules = [nimp.platforms]
+        modules += [e for e in pkg_resources.iter_entry_points('nimp.plugins')]
+
+        for m in modules:
+            for _, platform in _get_instances(m, nimp.sys.platform.Platform).items():
+                platform.register(self)
+
+
+    def load_argument_parser(self, parent_parser):
+        ''' Returns an argument parser for nimp and its subcommands '''
         # prog_description = 'Script utilities to ship games, mostly Unreal Engine based ones.'
         # parser = argparse.ArgumentParser(description = prog_description)
         prog_description = 'Script utilities to ship games, mostly Unreal Engine based ones.'
@@ -129,7 +147,7 @@ class Environment:
                                help='Enable verbose mode',
                                action='store_true')
 
-        nimp.command.add_commands_subparser(command_list, parser, self)
+        nimp.command.add_commands_subparser(self.command_list, parser, self)
 
         return parser
 
@@ -183,8 +201,12 @@ class Environment:
         if not hasattr(self, 'root_dir') or not self.root_dir:
             self.root_dir = '.'
 
-        # Loads argument parser, parses argv with it and adds command line para
-        # meters as properties of the environment
+        # Discover all available commands
+        self.discover_commands()
+        self.discover_platforms()
+
+        # Loads argument parser, parses argv with it and adds command line parameters
+        # as properties of the environment
         parser = self.load_argument_parser(parent_parser)
         arguments = parser.parse_args(argv[1:])
         # TODO: remove this crappy hacks

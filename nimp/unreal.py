@@ -259,31 +259,12 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
 def _ue4_sanitize_arguments(env):
 
     if hasattr(env, "platform") and env.platform is not None:
+
         def sanitize_platform(platform):
             ''' Sanitizes platform '''
-            std_platforms = { "ps4"       : "ps4",
-                              "orbis"     : "ps4",
-                              "xboxone"   : "xboxone",
-                              "dingo"     : "xboxone",
-                              "win32"     : "win32",
-                              "pcconsole" : "win32",
-                              "win64"     : "win64",
-                              "pc"        : "win64",
-                              "windows"   : "win64",
-                              "xbox360"   : "xbox360",
-                              "x360"      : "xbox360",
-                              "ps3"       : "ps3",
-                              "linux"     : "linux",
-                              "android"   : "android",
-                              "switch"    : "switch",
-                              "nx"        : "switch",
-                              "mac"       : "mac",
-                              "macos"     : "mac",
-                              "ios"       : "ios" }
-
-            if platform.lower() not in std_platforms:
+            if platform.lower() not in env.ue4_platform_aliases:
                 return platform
-            return std_platforms[platform.lower()]
+            return env.ue4_platform_aliases[platform.lower()]
 
         ue4_platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
 
