@@ -32,6 +32,7 @@ import sys
 import time
 import glob
 import glob2
+import pkg_resources
 
 import nimp.command
 import nimp.summary
@@ -61,9 +62,10 @@ class Environment:
 
     def load_argument_parser(self, parent_parser):
         ''' Returns an argument parser for nimp and his subcommands '''
-        # Import project-local commands from .nimp/commands
-        cmd_dict = _get_instances(nimp.commands, nimp.command.Command)
-        command_list = list(cmd_dict.values())
+
+        command_list = []
+
+        # Import commands from base nimp
         localpath = os.path.abspath(os.path.join(self.root_dir, '.nimp'))
         if localpath not in sys.path:
             sys.path.insert(0, localpath)
@@ -79,6 +81,19 @@ class Environment:
             command_list += list(cmd_dict.values())
         except ImportError:
             pass
+
+        # Import commands from plugins
+        for entry_point in pkg_resources.iter_entry_points('nimp.plugins'):
+            try:
+                module = entry_point.load()
+                cmd_dict = _get_instances(module, nimp.command.Command)
+                command_list += list(cmd_dict.values())
+            except:
+                pass
+
+        # Import project-local commands from .nimp/commands
+        cmd_dict = _get_instances(nimp.commands, nimp.command.Command)
+        command_list += list(cmd_dict.values())
 
         command_list = sorted(command_list,
                               key = lambda command: command.__class__.__name__)
