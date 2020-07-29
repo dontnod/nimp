@@ -212,9 +212,6 @@ class Package(nimp.command.Command):
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
 
         package_configuration.layout_file_extension = env.layout_file_extension
-        package_configuration.package_tool_platform = env.platform
-        if env.platform == 'ps4':
-            package_configuration.package_tool_platform = 'orbis'
 
         ps4_title_directory_collection = []
 
@@ -727,9 +724,8 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def package_for_ps4(package_configuration, simulate):
-        tool_platform = package_configuration.package_tool_platform
         source = package_configuration.stage_directory
-        package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], tool_platform.upper(), 'Tools', 'Publishing Tools', 'bin', tool_platform + '-pub-cmd.exe')
+        package_tool_path = package_configuration.package_tool_path
 
         for title_data in package_configuration.ps4_title_collection:
             for binary_configuration in package_configuration.binary_configuration.split('+'):
@@ -764,7 +760,7 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def package_for_xboxone(package_configuration, simulate):
-        package_tool_path = os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePkg.exe')
+        package_tool_path = package_configuration.package_tool_path
         source = package_configuration.stage_directory
 
         for binary_configuration in package_configuration.binary_configuration.split('+'):
@@ -873,8 +869,7 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def verify_for_ps4(package_configuration, simulate):
-        tool_platform = package_configuration.package_tool_platform
-        package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], tool_platform.upper(), 'Tools', 'Publishing Tools', 'bin', tool_platform + '-pub-cmd.exe')
+        package_tool_path = package_configuration.package_tool_path
 
         for title_data in package_configuration.ps4_title_collection:
             for binary_configuration in package_configuration.binary_configuration.split('+'):

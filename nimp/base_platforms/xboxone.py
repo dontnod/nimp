@@ -1,4 +1,5 @@
 
+import os
 import nimp.sys.platform
 
 class XboxOne(nimp.sys.platform.Platform):
@@ -10,3 +11,4 @@ class XboxOne(nimp.sys.platform.Platform):
         self.name = 'xboxone'
 
         self.layout_file_extension = 'xml'
+        self.package_tool_path = os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePkg.exe')
