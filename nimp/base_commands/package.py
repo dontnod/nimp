@@ -37,6 +37,8 @@ import nimp.environment
 import nimp.system
 import nimp.sys.process
 
+from nimp.sys.platform import create_platform_desc
+
 
 def _get_ini_value(file_path, key):
     ''' Retrieves a value from a ini file '''
@@ -165,14 +167,15 @@ class Package(nimp.command.Command):
 
 
     def run(self, env):
+
+        platform_desc = create_platform_desc(env.platform)
+
         env.ue4_dir = env.ue4_dir.replace('\\', '/')
         env.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
 
         # Warning: do not move this outside env, because some .nimp.confs need it
-        env.layout_file_extension = 'txt'
-        if env.platform == 'ps4':
-            env.layout_file_extension = 'gp4'
-        if env.platform == 'xboxone' or env.msixvc:
+        env.layout_file_extension = platform_desc.layout_file_extension
+        if env.msixvc:
             env.layout_file_extension = 'xml'
 
         package_configuration = UnrealPackageConfiguration(env)
@@ -184,7 +187,7 @@ class Package(nimp.command.Command):
         package_configuration.cook_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/Cooked/{cook_platform}'))
         package_configuration.patch_base_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/StagedBuilds/{cook_platform}-PatchBase'))
         package_configuration.stage_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/StagedBuilds/{cook_platform}'))
-        package_configuration.package_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/Packages/{cook_platform}'))
+        package_configuration.package_directory = nimp.system.standardize_path(env.format(platform_desc.ue4_package_directory))
 
         if env.variant:
             variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'

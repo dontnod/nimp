@@ -4,6 +4,10 @@ import nimp.sys.platform
 class PS4(nimp.sys.platform.Platform):
     ''' PS4 platform description '''
 
-    def register(self, env):
-        env.ue4_platform_aliases['ps4'] = 'ps4'
-        env.ue4_platform_aliases['orbis'] = 'ps4'
+    def __init__(self):
+        super().__init__()
+
+        self.name = 'ps4'
+        self.aliases = set(['orbis'])
+
+        self.layout_file_extension = 'gp4'

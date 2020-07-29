@@ -1,6 +1,7 @@
 
 ''' Platform-related configuration utilities '''
 
+import logging
 import platform
 import pkg_resources
 
@@ -13,20 +14,38 @@ _all_platforms = {}
 
 
 class Platform:
+    ''' Describe a platform and its specific quirks '''
+
     def __init__(self):
-        pass
+        self.name = 'null'
+        self.aliases = set()
+
+        ''' Packaging information '''
+        self.layout_file_extension = 'txt'
+        self.ue4_package_directory = '{uproject_dir}/Saved/Packages/{cook_platform}'
+
+
+def create_platform_desc(name):
+    ''' Create a platform description from a short name (ps4, win64, …) '''
+    if name not in _all_platforms:
+        logging.warn(f'No support for platform {name}')
+        return Platform()
+    return _all_platforms[name]
 
 
 def discover(env):
     ''' Import platforms from base nimp and from plugins '''
 
-    get_class_instances(nimp.base_platforms, Platform, _all_platforms)
+    tmp = {}
+    get_class_instances(nimp.base_platforms, Platform, tmp)
 
     for e in pkg_resources.iter_entry_points('nimp.plugins'):
-        get_class_instances(e, Platform, _all_platforms)
+        get_class_instances(e, Platform, tmp)
 
-    for platform in _all_platforms.values():
-        platform.register(env)
+    # Register platform classes under their names and aliases
+    for platform in tmp.values():
+        for n in [platform.name, *platform.aliases]:
+            _all_platforms[n] = platform
 
 
 def is_windows():
