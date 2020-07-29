@@ -32,7 +32,6 @@ import sys
 import time
 import glob
 import glob2
-import pkg_resources
 
 import nimp.command
 import nimp.summary
@@ -62,57 +61,6 @@ class Environment:
         self.dry_run = False
         self.ue4_platform_aliases = {}
         self.summary = None
-
-
-    def discover_commands(self):
-
-        command_list = []
-
-        # Import commands from base nimp
-        cmd_dict = _get_instances(nimp.commands, nimp.command.Command)
-        command_list += list(cmd_dict.values())
-
-        # Import project-local commands from .nimp/commands
-        localpath = os.path.abspath(os.path.join(self.root_dir, '.nimp'))
-        if localpath not in sys.path:
-            sys.path.insert(0, localpath)
-        if hasattr(self, 'uproject_dir'):
-            uproject_dir = os.path.abspath(os.path.join(self.uproject_dir, '.nimp'))
-            if uproject_dir not in sys.path:
-                sys.path.insert(0, uproject_dir)
-
-        try:
-            #pylint: disable=import-error
-            import commands
-            cmd_dict = _get_instances(commands, nimp.command.Command)
-            command_list += list(cmd_dict.values())
-        except ImportError:
-            pass
-
-        # Import commands from plugins
-        for entry_point in pkg_resources.iter_entry_points('nimp.plugins'):
-            try:
-                module = entry_point.load()
-                cmd_dict = _get_instances(module, nimp.command.Command)
-                command_list += list(cmd_dict.values())
-            except:
-                pass
-
-
-        command_list = sorted(command_list,
-                              key = lambda command: command.__class__.__name__)
-        self.command_list = [it for it in command_list if not it.__class__.__name__.startswith('_')]
-
-
-    def discover_platforms(self):
-
-        # Import platforms from base nimp and from plugins
-        modules = [nimp.platforms]
-        modules += [e for e in pkg_resources.iter_entry_points('nimp.plugins')]
-
-        for m in modules:
-            for _, platform in _get_instances(m, nimp.sys.platform.Platform).items():
-                platform.register(self)
 
 
     def load_argument_parser(self, parent_parser):
@@ -201,9 +149,11 @@ class Environment:
         if not hasattr(self, 'root_dir') or not self.root_dir:
             self.root_dir = '.'
 
+        # Discover platforms
+        nimp.sys.platform.discover(self)
+
         # Discover all available commands
-        self.discover_commands()
-        self.discover_platforms()
+        nimp.command.discover(self)
 
         # Loads argument parser, parses argv with it and adds command line parameters
         # as properties of the environment
@@ -383,31 +333,3 @@ def read_config_file(filename):
         return None
 
     return {}
-
-def _get_instances(module, instance_type):
-    result = {}
-    module_dict = module.__dict__
-    if "__all__" in module_dict:
-        module_name = module_dict["__name__"]
-        sub_modules_names = module_dict["__all__"]
-        for sub_module_name_it in sub_modules_names:
-            sub_module_complete_name = module_name + "." + sub_module_name_it
-            try:
-                sub_module_it = __import__(sub_module_complete_name, fromlist = ["*"])
-            except (ImportError, TabError) as ex:
-                logging.warning('Error importing local command %s: %s', sub_module_complete_name, ex)
-                continue
-            sub_instances = _get_instances(sub_module_it, instance_type)
-            for (klass, instance) in sub_instances.items():
-                result[klass] = instance
-
-    module_attributes = dir(module)
-    for attribute_name in module_attributes:
-        attribute_value = getattr(module, attribute_name)
-        is_valid = attribute_value != instance_type
-        is_valid = is_valid and inspect.isclass(attribute_value)
-        is_valid = is_valid and issubclass(attribute_value, instance_type)
-        is_valid = is_valid and not inspect.isabstract(attribute_value)
-        if is_valid:
-            result[attribute_value.__name__] = attribute_value()
-    return result

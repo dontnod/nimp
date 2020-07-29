@@ -103,13 +103,21 @@ class _Status(CheckCommand):
         print()
 
     @staticmethod
+    def _json_serialize(o):
+        if isinstance(o, nimp.command.Command):
+            return f'<command {o.__class__.__name__}>'
+        if isinstance(o, nimp.sys.platform.Platform):
+            return f'<platform {o.__name__}>'
+        return o.__dict__
+
+    @staticmethod
     def _show_user_environment():
-        print('User Environment: %s' % json.dumps(dict(os.environ), default = lambda o: o.__dict__, indent = 2, sort_keys = True))
+        print('User Environment: %s' % json.dumps(dict(os.environ), default=_Status._json_serialize, indent=2, sort_keys=True))
         print()
 
     @staticmethod
     def _show_nimp_environment(env):
-        print('Nimp Environment: %s' % json.dumps(env, default = lambda o: o.__dict__, indent = 2, sort_keys = True))
+        print('Nimp Environment: %s' % json.dumps(env, default=_Status._json_serialize, indent=2, sort_keys=True))
         print()
 
 
