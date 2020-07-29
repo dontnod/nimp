@@ -32,7 +32,7 @@ import shutil
 import subprocess
 import xml.etree.ElementTree
 
-import nimp.commands
+import nimp.command
 import nimp.environment
 import nimp.system
 import nimp.sys.process
