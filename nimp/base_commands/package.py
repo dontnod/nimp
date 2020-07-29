@@ -92,7 +92,9 @@ def _copy_file(source, destination, simulate):
 class UnrealPackageConfiguration():
     ''' Configuration to generate a game package from a Unreal project '''
 
-    def __init__(self):
+    def __init__(self, env):
+        self.env = env
+
         self.engine_directory = None
         self.project_directory = None
         self.configuration_directory = None
@@ -166,13 +168,14 @@ class Package(nimp.command.Command):
         env.ue4_dir = env.ue4_dir.replace('\\', '/')
         env.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
 
+        # Warning: do not move this outside env, because some .nimp.confs need it
         env.layout_file_extension = 'txt'
         if env.platform == 'ps4':
             env.layout_file_extension = 'gp4'
         if env.platform == 'xboxone' or env.msixvc:
             env.layout_file_extension = 'xml'
 
-        package_configuration = UnrealPackageConfiguration()
+        package_configuration = UnrealPackageConfiguration(env)
 
         package_configuration.engine_directory = nimp.system.standardize_path(env.format('{ue4_dir}/Engine'))
         package_configuration.project_directory = nimp.system.standardize_path(env.format('{uproject_dir}'))
@@ -204,6 +207,11 @@ class Package(nimp.command.Command):
         package_configuration.pak_compression = env.compress
         package_configuration.is_final_submission = env.final
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
+
+        package_configuration.layout_file_extension = env.layout_file_extension
+        package_configuration.package_tool_platform = env.platform
+        if env.platform == 'ps4':
+            package_configuration.package_tool_platform = 'orbis'
 
         ps4_title_directory_collection = []
 
@@ -282,13 +290,14 @@ class Package(nimp.command.Command):
         ''' Update configuration with information found in the project files '''
 
         if package_configuration.target_platform == 'PS4':
+            platform = package_configuration.target_platform
             if not ps4_title_directory_collection:
-                ini_file_path = package_configuration.configuration_directory + '/PS4/PS4Engine.ini'
+                ini_file_path = f'{package_configuration.configuration_directory}/{platform}/{platform}Engine.ini'
                 ps4_title_directory_collection = [ _get_ini_value(ini_file_path, 'TitleID') ]
 
             ps4_title_collection = []
             for title_directory in ps4_title_directory_collection:
-                title_json_path = package_configuration.project_directory + '/Build/PS4/titledata/' + title_directory + '/title.json'
+                title_json_path = f'{package_configuration.project_directory}/Build/{platform}/titledata/{title_directory}/title.json'
                 with open(title_json_path) as title_json_file:
                     title_data = json.load(title_json_file)
                 title_data['region'] = title_data['region'].upper()
@@ -598,7 +607,8 @@ class Package(nimp.command.Command):
                 for binary_configuration in package_configuration.binary_configuration.split('+'):
                     format_parameters['configuration'] = binary_configuration
                     format_parameters['region'] = title_data['region']
-                    destination = '{project}-{region}-{configuration}.gp4'.format(**format_parameters).lower()
+                    format_parameters['layout_file_extension'] = package_configuration.layout_file_extension
+                    destination = '{project}-{region}-{configuration}.{layout_file_extension}'.format(**format_parameters).lower()
                     transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration).lower()
                     transform_parameters['configuration'] = binary_configuration.lower()
                     Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
@@ -714,14 +724,15 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def package_for_ps4(package_configuration, simulate):
-        package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
+        tool_platform = package_configuration.package_tool_platform
         source = package_configuration.stage_directory
+        package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], tool_platform.upper(), 'Tools', 'Publishing Tools', 'bin', tool_platform + '-pub-cmd.exe')
 
         for title_data in package_configuration.ps4_title_collection:
             for binary_configuration in package_configuration.binary_configuration.split('+'):
                 destination = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
                 destination = package_configuration.package_directory + '/' + destination
-                layout_file = source + '/' + package_configuration.project + '-' + title_data['region'] + '-' + binary_configuration + '.gp4'
+                layout_file = source + '/' + package_configuration.project + '-' + title_data['region'] + '-' + binary_configuration + '.' + package_configuration.layout_file_extension
                 output_format = 'pkg'
                 if package_configuration.is_final_submission:
                     if package_configuration.package_type == 'application' and title_data['storagetype'].startswith('bd'):
@@ -859,7 +870,8 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def verify_for_ps4(package_configuration, simulate):
-        package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
+        tool_platform = package_configuration.package_tool_platform
+        package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], tool_platform.upper(), 'Tools', 'Publishing Tools', 'bin', tool_platform + '-pub-cmd.exe')
 
         for title_data in package_configuration.ps4_title_collection:
             for binary_configuration in package_configuration.binary_configuration.split('+'):
