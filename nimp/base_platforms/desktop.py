@@ -1,18 +1,40 @@
 
 import nimp.sys.platform
 
-class Desktop(nimp.sys.platform.Platform):
-    ''' Desktop platform description '''
+class Win32(nimp.sys.platform.Platform):
+    ''' Win32 platform description '''
 
-    def register(self, env):
-        env.ue4_platform_aliases['win32'] = 'win32'
-        env.ue4_platform_aliases['pcconsole'] = 'win32'
+    def __init__(self):
+        super().__init__()
 
-        env.ue4_platform_aliases['win64'] = 'win64'
-        env.ue4_platform_aliases['pc'] = 'win64'
-        env.ue4_platform_aliases['windows'] = 'win64'
+        self.name = 'win32'
+        self.aliases = set(['pcconsole'])
 
-        env.ue4_platform_aliases['linux'] = 'linux'
 
-        env.ue4_platform_aliases['mac'] = 'mac'
-        env.ue4_platform_aliases['macos'] = 'mac'
+class Win64(nimp.sys.platform.Platform):
+    ''' Win64 platform description '''
+
+    def __init__(self):
+        super().__init__()
+
+        self.name = 'win64'
+        self.aliases = set(['pc', 'windows'])
+
+
+class Linux(nimp.sys.platform.Platform):
+    ''' Linux platform description '''
+
+    def __init__(self):
+        super().__init__()
+
+        self.name = 'linux'
+
+
+class Mac(nimp.sys.platform.Platform):
+    ''' Mac platform description '''
+
+    def __init__(self):
+        super().__init__()
+
+        self.name = 'mac'
+        self.aliases = set(['macos', 'osx'])

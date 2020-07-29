@@ -261,10 +261,7 @@ def _ue4_sanitize_arguments(env):
     if hasattr(env, "platform") and env.platform is not None:
 
         def sanitize_platform(platform):
-            ''' Sanitizes platform '''
-            if platform.lower() not in env.ue4_platform_aliases:
-                return platform
-            return env.ue4_platform_aliases[platform.lower()]
+            return nimp.sys.platform.create_platform_desc(platform.lower()).name
 
         ue4_platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
 

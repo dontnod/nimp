@@ -59,7 +59,6 @@ class Environment:
         self.command_list = []
         self.environment = {}
         self.dry_run = False
-        self.ue4_platform_aliases = {}
         self.summary = None
 
 

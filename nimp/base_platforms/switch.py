@@ -4,5 +4,7 @@ import nimp.sys.platform
 class Switch(nimp.sys.platform.Platform):
     ''' Switch platform description '''
 
-    def register(self, env):
-        env.ue4_platform_aliases['switch'] = 'switch'
+    def __init__(self):
+        super().__init__()
+
+        self.name = 'switch'
