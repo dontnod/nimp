@@ -210,8 +210,8 @@ class Package(nimp.command.Command):
         package_configuration.package_type = 'application'
         package_configuration.pak_collection = [ None ]
         package_configuration.pak_compression = env.compress
-        package_configuration.is_microsoft = env.is_microsoft
-        package_configuration.is_sony = env.is_sony
+        package_configuration.is_microsoft = env.is_microsoft_platform
+        package_configuration.is_sony = env.is_sony_platform
         package_configuration.is_final_submission = env.final
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
 
@@ -293,7 +293,7 @@ class Package(nimp.command.Command):
     def _load_configuration(package_configuration, ps4_title_directory_collection):
         ''' Update configuration with information found in the project files '''
 
-        if package_configuration.target_platform == 'PS4': # if package_configuration.is_sony
+        if package_configuration.target_platform == 'PS4': # if package_configuration.is_sony:
             platform = package_configuration.target_platform
             if not ps4_title_directory_collection:
                 ini_file_path = f'{package_configuration.configuration_directory}/{platform}/{platform}Engine.ini'
@@ -604,7 +604,7 @@ class Package(nimp.command.Command):
         source = package_configuration.layout_file_path
         format_parameters = { 'project': package_configuration.project, 'platform': package_configuration.target_platform }
 
-        if package_configuration.target_platform == 'PS4': # if package_configuration.is_sony
+        if package_configuration.target_platform == 'PS4': # if package_configuration.is_sony:
             for title_data in package_configuration.ps4_title_collection:
                 transform_parameters = copy.deepcopy(title_data)
                 transform_parameters['title_directory'] = transform_parameters['title_directory'].lower()

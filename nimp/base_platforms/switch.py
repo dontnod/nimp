@@ -10,3 +10,5 @@ class Switch(nimp.sys.platform.Platform):
         self.name = 'switch'
 
         self.ue4_name = 'Switch'
+        self.ue4_config_name = 'Switch'
+        self.ue4_cook_name = 'Switch'

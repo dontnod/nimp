@@ -12,6 +12,8 @@ from nimp.utils.python import get_class_instances
 
 
 _all_platforms = {}
+_all_aliases = {}
+_all_ue4_platforms = {}
 
 
 class Platform(metaclass=abc.ABCMeta):
@@ -30,6 +32,8 @@ class Platform(metaclass=abc.ABCMeta):
         self.layout_file_extension = 'txt'
         self.ue4_package_directory = '{uproject_dir}/Saved/Packages/{cook_platform}'
         self.ue4_name = None
+        self.ue4_config_name = None
+        self.ue4_cook_name = None
 
 
 class NullPlatform(Platform):
@@ -37,15 +41,26 @@ class NullPlatform(Platform):
         super().__init__()
         self.name = 'null'
         self.ue4_name = 'Null'
+        self.ue4_config_name = 'Null'
+        self.ue4_cook_name = 'Null'
         self.is_valid = False
 
 
 def create_platform_desc(name):
     ''' Create a platform description from a short name (ps4, win64, …) '''
-    if name not in _all_platforms:
+    if name not in _all_aliases:
         logging.warn(f'No nimp support for platform {name}')
         return NullPlatform()
-    return _all_platforms[name]
+    return _all_platforms[_all_aliases[name]]
+
+
+def create_platform_desc_ue4(ue4_name):
+    ''' Create a platform description from a Unreal name (PS4, Win64, …) '''
+    if ue4_name not in _all_ue4_platforms:
+        logging.warn(f'No UE4 support for platform {name}')
+        return NullPlatform()
+    return _all_ue4_platforms[ue4_name]
+    
 
 
 def discover(env):
@@ -63,8 +78,11 @@ def discover(env):
         setattr(env, f'is_{platform.name}', False)
 
         # Register platform classes under their names and aliases
+        _all_platforms[platform.name] = platform
+        _all_ue4_platforms[platform.ue4_name] = platform
+
         for n in [platform.name, *platform.aliases]:
-            _all_platforms[n] = platform
+            _all_aliases[n] = platform.name
 
 
 def is_windows():
