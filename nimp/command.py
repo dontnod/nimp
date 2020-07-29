@@ -24,7 +24,15 @@
 
 import abc
 import logging
+import os
+import pkg_resources
 import re
+import sys
+
+import nimp.base_commands
+import nimp.command
+
+from nimp.utils.python import get_class_instances
 
 class Command(metaclass=abc.ABCMeta):
     ''' Abstract class for commands '''
@@ -79,6 +87,42 @@ def add_common_arguments(parser, *arg_ids):
                                 default = [])
         else:
             assert False, 'Unknown argument type'
+
+
+def discover(env):
+
+    all_commands = {}
+
+    # Import commands from base nimp
+    get_class_instances(nimp.base_commands, nimp.command.Command, all_commands)
+
+    # Import project-local commands from .nimp/commands
+    localpath = os.path.abspath(os.path.join(env.root_dir, '.nimp'))
+    if localpath not in sys.path:
+        sys.path.insert(0, localpath)
+    if hasattr(env, 'uproject_dir'):
+        uproject_dir = os.path.abspath(os.path.join(env.uproject_dir, '.nimp'))
+        if uproject_dir not in sys.path:
+            sys.path.insert(0, uproject_dir)
+
+    try:
+        #pylint: disable=import-error
+        import commands
+        get_class_instances(commands, nimp.command.Command, all_commands)
+    except ImportError:
+        pass
+
+    # Import commands from plugins
+    for entry_point in pkg_resources.iter_entry_points('nimp.plugins'):
+        try:
+            module = entry_point.load()
+            get_class_instances(module, nimp.command.Command, all_commands)
+        except:
+            pass
+
+    env.command_list = sorted([it for it in all_commands.values() if not it.__class__.__name__.startswith('_')],
+                              key = lambda command: command.__class__.__name__)
+
 
 def load_arguments(env):
     ''' Standardizes some environment parameters and sets new values '''
