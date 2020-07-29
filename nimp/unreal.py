@@ -35,6 +35,8 @@ import nimp.sys.platform
 import nimp.sys.process
 import nimp.summary
 
+from nimp.sys.platform import create_platform_desc_ue4
+
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
         command-line arguments '''
@@ -184,32 +186,13 @@ def get_host_platform():
 def get_configuration_platform(ue4_platform):
     ''' Gets the platform name used for configuration files '''
     # From PlatformProperties IniPlatformName
-    platform_map = {
-        "Android": "Android",
-        "IOS": "IOS",
-        "Linux": "Linux",
-        "Mac": "Mac",
-        "PS4": "PS4",
-        "Win32": "Windows",
-        "Win64": "Windows",
-        "XboxOne": "XboxOne",
-    }
-    return platform_map[ue4_platform]
+    return create_platform_desc_ue4(ue4_platform).ue4_config_name
+
 
 def get_cook_platform(ue4_platform):
     ''' Gets the platform name used for cooking assets '''
     # From Automation GetCookPlatform
-    platform_map = {
-        "Android": "Android",
-        "IOS": "IOS",
-        "Linux": "LinuxNoEditor",
-        "Mac": "MacNoEditor",
-        "PS4": "PS4",
-        "Win32": "WindowsNoEditor",
-        "Win64": "WindowsNoEditor",
-        "XboxOne": "XboxOne",
-    }
-    return platform_map[ue4_platform]
+    return create_platform_desc_ue4(ue4_platform).ue4_cook_name
 
 
 def commandlet(env, command, *args, heartbeat = 0):

@@ -10,3 +10,5 @@ class Android(nimp.sys.platform.Platform):
         self.name = 'android'
         self.is_mobile = True
         self.ue4_name = 'Android'
+        self.ue4_config_name = 'Android'
+        self.ue4_cook_name = 'Android'
