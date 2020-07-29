@@ -210,6 +210,8 @@ class Package(nimp.command.Command):
         package_configuration.package_type = 'application'
         package_configuration.pak_collection = [ None ]
         package_configuration.pak_compression = env.compress
+        package_configuration.is_microsoft = env.is_microsoft
+        package_configuration.is_sony = env.is_sony
         package_configuration.is_final_submission = env.final
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
 
@@ -291,7 +293,7 @@ class Package(nimp.command.Command):
     def _load_configuration(package_configuration, ps4_title_directory_collection):
         ''' Update configuration with information found in the project files '''
 
-        if package_configuration.target_platform == 'PS4':
+        if package_configuration.target_platform == 'PS4': # if package_configuration.is_sony
             platform = package_configuration.target_platform
             if not ps4_title_directory_collection:
                 ini_file_path = f'{package_configuration.configuration_directory}/{platform}/{platform}Engine.ini'
@@ -602,7 +604,7 @@ class Package(nimp.command.Command):
         source = package_configuration.layout_file_path
         format_parameters = { 'project': package_configuration.project, 'platform': package_configuration.target_platform }
 
-        if package_configuration.target_platform == 'PS4':
+        if package_configuration.target_platform == 'PS4': # if package_configuration.is_sony
             for title_data in package_configuration.ps4_title_collection:
                 transform_parameters = copy.deepcopy(title_data)
                 transform_parameters['title_directory'] = transform_parameters['title_directory'].lower()
@@ -702,7 +704,9 @@ class Package(nimp.command.Command):
             else:
                 Package.package_for_desktop(package_configuration, vars(env), env.simulate)
         elif package_configuration.target_platform == 'PS4':
-            Package.package_for_ps4(package_configuration, env.simulate)
+            Package.package_for_sony(package_configuration, env.simulate)
+        elif package_configuration.is_sony:
+            Package.package_for_sony_with_uat(package_configuration, env.simulate)
         elif package_configuration.target_platform == 'XboxOne':
             Package.package_for_xboxone(package_configuration, env.simulate)
 
@@ -724,8 +728,32 @@ class Package(nimp.command.Command):
             _copy_file(source_file, destination_file, simulate)
 
 
+    def package_for_sony_with_uat(package_configuration, simulate):
+        # we'll use uat for now
+        print(package_configuration.binary_configuration)
+        destination = package_configuration.package_directory
+        if not os.path.isdir(destination): raise IOError('Package failed: %s does not exist.' % destination )
+        for item in os.listdir(destination):
+            if item.endswith('.pkg') or item.endswith('.' + package_configuration.layout_file_extension):
+                _try_remove(os.path.join(destination, item), simulate)
+
+        if package_configuration.package_type in [ 'application', 'application_patch' ]:
+            package_command = [
+                package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
+                'BuildCookRun', '-UE4exe=UE4Editor-Cmd.exe', '-UTF8Output',
+                '-Project=' + package_configuration.project,
+                '-TargetPlatform=' + package_configuration.target_platform,
+                '-ClientConfig=' + package_configuration.binary_configuration,
+                '-SkipCook', '-SkipStage', '-Package',
+            ]
+
+            package_success = nimp.sys.process.call(package_command, simulate = simulate)
+            if package_success != 0:
+                raise RuntimeError('Package failed')
+
+
     @staticmethod
-    def package_for_ps4(package_configuration, simulate):
+    def package_for_sony(package_configuration, simulate):
         source = package_configuration.stage_directory
         package_tool_path = package_configuration.package_tool_path
 
