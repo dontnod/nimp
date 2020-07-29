@@ -8,3 +8,5 @@ class Switch(nimp.sys.platform.Platform):
         super().__init__()
 
         self.name = 'switch'
+
+        self.ue4_name = 'Switch'

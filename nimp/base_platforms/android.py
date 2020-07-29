@@ -8,3 +8,5 @@ class Android(nimp.sys.platform.Platform):
         super().__init__()
 
         self.name = 'android'
+        self.is_mobile = True
+        self.ue4_name = 'Android'
