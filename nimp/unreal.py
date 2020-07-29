@@ -260,29 +260,26 @@ def _ue4_sanitize_arguments(env):
 
     if hasattr(env, "platform") and env.platform is not None:
 
-        def sanitize_platform(platform):
-            return nimp.sys.platform.create_platform_desc(platform.lower()).name
+        env.is_microsoft_platform = False
+        env.is_sony_platform      = False
+        env.is_mobile_platform    = False
 
-        ue4_platform = '+'.join(map(sanitize_platform, env.platform.split('+')))
+        platform_descs = [nimp.sys.platform.create_platform_desc(p) for p in env.platform.split('+')]
 
-        env.is_win32   = 'win32'   in ue4_platform.split('+')
-        env.is_win64   = 'win64'   in ue4_platform.split('+')
-        env.is_ps3     = 'ps3'     in ue4_platform.split('+')
-        env.is_ps4     = 'ps4'     in ue4_platform.split('+')
-        env.is_x360    = 'xbox360' in ue4_platform.split('+')
-        env.is_xone    = 'xboxone' in ue4_platform.split('+')
-        env.is_linux   = 'linux'   in ue4_platform.split('+')
-        env.is_android = 'android' in ue4_platform.split('+')
-        env.is_mac     = 'mac'     in ue4_platform.split('+')
-        env.is_ios     = 'ios'     in ue4_platform.split('+')
-        env.is_switch  = 'switch'  in ue4_platform.split('+')
+        # Set env.is_ps4, env.is_linux, etc. to True for platforms we target
+        for p in platform_descs:
+            setattr(env, f'is_{p.name}', True)
+            env.is_microsoft_platform = env.is_microsoft_platform or p.is_microsoft
+            env.is_sony_platform = env.is_sony_platform or p.is_sony
+            env.is_mobile_platform = env.is_mobile_platform or p.is_mobile
 
-        env.is_microsoft_platform = env.is_win32 or env.is_win64 or env.is_x360 or env.is_xone
-        env.is_sony_platform      = env.is_ps3 or env.is_ps4
-        env.is_mobile_platform    = env.is_ios or env.is_android
+        # XXX: track usage of these variables and replace them with the correct name
+        env.is_ps3 = False
+        env.is_x360 = False
+        env.is_xone = env.is_xboxone
 
         if env.is_ue4:
-            env.platform = ue4_platform
+            env.platform = '+'.join(map(lambda x: x.name, platform_descs))
 
     if hasattr(env, 'configuration') and env.configuration is not None:
         def sanitize_config(config):
@@ -319,20 +316,9 @@ def _ue4_set_env(env):
         return configs[config]
 
     def _get_ue4_platform(in_platform):
-        platforms = { "ps4"     : "PS4",
-                      "xboxone" : "XboxOne",
-                      "win64"   : "Win64",
-                      "win32"   : "Win32",
-                      "linux"   : "Linux",
-                      "android" : "Android",
-                      "switch"  : "Switch",
-                      "mac"     : "Mac",
-                      "ios"     : "IOS", }
-        if in_platform not in platforms:
-            if env.is_ue4:
-                logging.warning('Unsupported UE4 build platform “%s”', in_platform)
-            return None
-        return platforms[in_platform]
+        if not env.is_ue4:
+            return in_platform
+        return nimp.sys.platform.create_platform_desc(in_platform).ue4_name
 
     if hasattr(env, 'platform') and env.platform is not None:
         platform_list = list(map(_get_ue4_platform, env.platform.split('+')))

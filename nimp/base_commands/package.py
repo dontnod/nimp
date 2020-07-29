@@ -169,6 +169,8 @@ class Package(nimp.command.Command):
     def run(self, env):
 
         platform_desc = create_platform_desc(env.platform)
+        if not platform_desc.is_valid:
+            raise ValueError(f'Invalid platform {env.platform}')
 
         env.ue4_dir = env.ue4_dir.replace('\\', '/')
         env.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
