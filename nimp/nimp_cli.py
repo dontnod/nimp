@@ -35,7 +35,7 @@ import nimp.system
 import nimp.sys.process
 import nimp.unreal
 
-import nimp.commands
+import nimp.base_commands
 
 sys.dont_write_bytecode = 1
 
