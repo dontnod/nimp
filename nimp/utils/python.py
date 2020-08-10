@@ -27,4 +27,7 @@ def get_class_instances(module, instance_type, result):
         is_valid = is_valid and issubclass(attribute_value, instance_type)
         is_valid = is_valid and not inspect.isabstract(attribute_value)
         if is_valid:
-            result[attribute_value.__name__] = attribute_value()
+            try:
+                result[attribute_value.__name__] = attribute_value()
+            except Exception as ex:
+                logging.warning('Error creating %s %s: %s', instance_type.__name__, attribute_value.__name__, ex)
