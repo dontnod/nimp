@@ -70,7 +70,11 @@ def discover(env):
     get_class_instances(nimp.base_platforms, Platform, tmp)
 
     for e in pkg_resources.iter_entry_points('nimp.plugins'):
-        get_class_instances(e, Platform, tmp)
+        try:
+            module = e.load()
+            get_class_instances(module, Platform, tmp)
+        except:
+            pass
 
     for platform in tmp.values():
 
