@@ -129,9 +129,12 @@ def load_config(env):
     # Do not throw here, as it *could* be on purpose to not have any uproject
     #if not hasattr(env, 'uproject_dir'):
     #    raise KeyError('No uproject found.')
-    if hasattr(env, '_uproject') and not hasattr(env, 'uproject_dir'):
-        raise KeyError('Uproject not found : %s. Possible uprojects : ' % (env._uproject) +
-                       ', '.join('%s' % os.path.splitext(os.path.basename(ufile))[0] + '/' + os.path.basename(ufile) for ufile in ufiles))
+
+    # Do not throw here, because our buildbot setup uses --uproject everywhere, including
+    # when the repository is not yet set up.
+    #if hasattr(env, '_uproject') and not hasattr(env, 'uproject_dir'):
+    #    raise KeyError('Uproject not found : %s. Possible uprojects : ' % (env._uproject) +
+    #                   ', '.join('%s' % os.path.splitext(os.path.basename(ufile))[0] + '/' + os.path.basename(ufile) for ufile in ufiles))
 
     # Backwards compatibility (TODO: remove later)
     if hasattr(env, 'uproject'):
