@@ -30,6 +30,7 @@ class Platform(metaclass=abc.ABCMeta):
 
         ''' Packaging information '''
         self.layout_file_extension = 'txt'
+        self.package_tool_path = None
         self.ue4_package_directory = '{uproject_dir}/Saved/Packages/{cook_platform}'
         self.ue4_name = None
         self.ue4_config_name = None
