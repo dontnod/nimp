@@ -215,6 +215,7 @@ class Package(nimp.command.Command):
         package_configuration.is_final_submission = env.final
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
 
+        package_configuration.package_tool_path = platform_desc.package_tool_path
         package_configuration.layout_file_extension = env.layout_file_extension
 
         ps4_title_directory_collection = []
