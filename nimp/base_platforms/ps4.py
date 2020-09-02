@@ -9,12 +9,14 @@ class PS4(nimp.sys.platform.Platform):
     def __init__(self):
         super().__init__()
 
+        sce_root = os.environ.get('SCE_ROOT_DIR', None) or '/'
+
         self.name = 'ps4'
         self.aliases = set(['orbis'])
         self.is_sony = True
 
         self.layout_file_extension = 'gp4'
-        self.package_tool_path = os.path.join(os.environ['SCE_ROOT_DIR'], 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
+        self.package_tool_path = os.path.join(sce_root, 'ORBIS', 'Tools', 'Publishing Tools', 'bin', 'orbis-pub-cmd.exe')
 
         self.ue4_name = 'PS4'
         self.ue4_config_name = 'PS4'
