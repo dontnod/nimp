@@ -533,8 +533,9 @@ class Package(nimp.command.Command):
                 resource_destination = 'Resources/' + os.path.relpath(resource_source, package_configuration.resource_directory)
                 Package._stage_file(package_configuration.stage_directory, resource_source, resource_destination, simulate)
 
+            xdk_root = os.environ.get('DurangoXDK', None) or '/'
             makepri_command = [
-                os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePri.exe'), 'new',
+                os.path.join(xdk_root, 'bin', 'MakePri.exe'), 'new',
                 '/ProjectRoot', package_configuration.stage_directory,
                 '/ConfigXml', package_configuration.project_directory + '/Build/XboxOne/PriConfig.xml',
                 '/Manifest', package_configuration.configuration_directory + '/XboxOne/AppxManifest.xml',
@@ -571,8 +572,9 @@ class Package(nimp.command.Command):
                 resource_destination = 'Resources/' + os.path.relpath(resource_source, package_configuration.resource_directory)
                 Package._stage_file(package_configuration.stage_directory, resource_source, resource_destination, simulate)
 
+            sdk_root = os.environ.get('GamingSDK', None) or '/'
             makepri_command = [
-                os.path.join(os.environ['GamingSDK'], 'bin', 'MakePri.exe'), 'new',
+                os.path.join(sdk_root, 'bin', 'MakePri.exe'), 'new',
                 '/ProjectRoot', package_configuration.stage_directory,
                 '/ConfigXml', package_configuration.project_directory + '/Build/Win64/PriConfig.xml',
                 '/IndexName', xml.etree.ElementTree.parse(manifest_source).getroot().find('Identity').get('Name'),
@@ -829,7 +831,8 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def package_for_windows_msixvc(package_configuration, simulate):
-        package_tool_path = os.path.join(os.environ['GamingSDK'], 'bin', 'MakePkg.exe')
+        sdk_root = os.environ.get('GamingSDK', None) or '/'
+        package_tool_path = os.path.join(sdk_root, 'bin', 'MakePkg.exe')
         source = package_configuration.stage_directory
 
         for binary_configuration in package_configuration.binary_configuration.split('+'):
