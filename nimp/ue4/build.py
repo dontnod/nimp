@@ -197,7 +197,7 @@ def _ue4_build_game(env, solution, vs_version):
         return _ue4_build_project(env, solution, env.game, env.ue4_platform,
                                   env.ue4_config, vs_version, 'Build')
 
-    if env.platform == 'xboxone':
+    if env.platform == 'xboxone' or env.platform == 'mpx':
         if not _ue4_build_tool_ubt(env, 'XboxOnePDBFileUtil', vs_version):
             return False
 
