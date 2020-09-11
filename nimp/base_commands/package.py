@@ -706,12 +706,14 @@ class Package(nimp.command.Command):
                 Package.package_for_windows_msixvc(package_configuration, env.simulate)
             else:
                 Package.package_for_desktop(package_configuration, vars(env), env.simulate)
+        # legacy console packaging
         elif package_configuration.target_platform == 'PS4':
             Package.package_for_sony(package_configuration, env.simulate)
-        elif package_configuration.is_sony:
-            Package.package_for_sony_with_uat(package_configuration, env.simulate)
         elif package_configuration.target_platform == 'XboxOne':
             Package.package_for_xboxone(package_configuration, env.simulate)
+        # console packaging using out of the box uat behavior
+        elif package_configuration.is_sony or package_configuration.is_microsoft:
+            Package.package_with_uat(package_configuration, env.simulate)
 
 
     @staticmethod
@@ -731,13 +733,17 @@ class Package(nimp.command.Command):
             _copy_file(source_file, destination_file, simulate)
 
 
-    def package_for_sony_with_uat(package_configuration, simulate):
-        # we'll use uat for now
-        print(package_configuration.binary_configuration)
+    def package_with_uat(package_configuration, simulate):
+        # Packaging with out of the box UAT behavior
         destination = package_configuration.package_directory
-        if not os.path.isdir(destination): raise IOError('Package failed: %s does not exist.' % destination )
+        if not os.path.isdir(destination):
+            raise IOError('Package failed: %s does not exist.' % destination )
+        # Cautionnary cleaning
         for item in os.listdir(destination):
-            if item.endswith('.pkg') or item.endswith('.' + package_configuration.layout_file_extension):
+            if item.endswith('.pkg') or\
+               item.endswith('.msixvc') or item.endswith('.msixvc.phd') or\
+               item.endswith('.ekb') or item.endswith('.zip') or\
+               item.endswith('.' + package_configuration.layout_file_extension):
                 _try_remove(os.path.join(destination, item), simulate)
 
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
@@ -944,7 +950,7 @@ class Package(nimp.command.Command):
                 package_directory = package_configuration.package_directory + '/' + package_directory
                 Package.verify_msixvc(package_directory, package_configuration.ignored_errors, package_configuration.ignored_warnings)
 
-
+z
     @staticmethod
     def verify_msixvc(package_directory, ignored_errors, ignored_warnings):
         validation_success = True
