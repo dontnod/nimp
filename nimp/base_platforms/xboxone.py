@@ -14,7 +14,8 @@ class XboxOne(nimp.sys.platform.Platform):
         self.is_microsoft = True
 
         self.layout_file_extension = 'xml'
-        self.package_tool_path = os.path.join(xdk_root, 'bin', 'MakePkg.exe')
+        if not os.getenv('UE_SDKS_ROOT'):
+            self.package_tool_path = os.path.join(os.environ['DurangoXDK'], 'bin', 'MakePkg.exe')
 
         self.ue4_name = 'XboxOne'
         self.ue4_config_name = 'XboxOne'
