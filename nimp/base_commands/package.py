@@ -950,7 +950,7 @@ class Package(nimp.command.Command):
                 package_directory = package_configuration.package_directory + '/' + package_directory
                 Package.verify_msixvc(package_directory, package_configuration.ignored_errors, package_configuration.ignored_warnings)
 
-z
+
     @staticmethod
     def verify_msixvc(package_directory, ignored_errors, ignored_warnings):
         validation_success = True
