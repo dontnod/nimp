@@ -209,19 +209,19 @@ def _try_make_executable(file_path):
                 logging.warning('Failed to make file executable: %s (FilePath: %s)', exception, file_path)
 
 
-def create_artifact(artifact_path, file_collection, archive, compress, simulate):
+def create_artifact(artifact_path, file_collection, archive, compress, dry_run):
     ''' Create an artifact '''
 
     if os.path.isfile(artifact_path + '.zip') or os.path.isdir(artifact_path):
         raise ValueError('Artifact already exists: %s' % artifact_path)
 
-    if not simulate:
+    if not dry_run:
         if os.path.isfile(artifact_path + '.zip.tmp'):
             os.remove(artifact_path + '.zip.tmp')
         if os.path.isdir(artifact_path + '.tmp'):
             shutil.rmtree(artifact_path + '.tmp')
 
-    if simulate:
+    if dry_run:
         for source, destination in file_collection:
             if os.path.isdir(source):
                 continue
@@ -259,14 +259,14 @@ def create_artifact(artifact_path, file_collection, archive, compress, simulate)
             shutil.move(artifact_path + '.tmp', artifact_path)
 
 
-def create_torrent(artifact_path, announce, simulate):
+def create_torrent(artifact_path, announce, dry_run):
     ''' Create a torrent for an existing artifact '''
 
     if BitTornado is None:
         raise ImportError('Required module "BitTornado" is not available')
 
     torrent_path = artifact_path + '.torrent'
-    if not simulate:
+    if not dry_run:
         if os.path.isfile(torrent_path + '.tmp'):
             os.remove(torrent_path + '.tmp')
         if os.path.isfile(torrent_path):
@@ -294,7 +294,7 @@ def create_torrent(artifact_path, announce, simulate):
     torrent_metainfo_parameters = { key: value for key, value in torrent_metainfo_parameters.items() if value is not None }
     torrent_metainfo = BitTornado.Meta.Info.MetaInfo(info = torrent_info, **torrent_metainfo_parameters)
 
-    if not simulate:
+    if not dry_run:
         with open(torrent_path + '.tmp', 'wb') as torrent_file:
             torrent_file.write(BitTornado.Meta.bencode.bencode(torrent_metainfo))
         shutil.move(torrent_path + '.tmp', torrent_path)

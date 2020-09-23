@@ -30,14 +30,14 @@ import zipfile
 import nimp.command
 
 
-def _try_remove(file_path, simulate):
+def _try_remove(file_path, dry_run):
     if os.path.isdir(file_path):
         logging.info('Removing %s', file_path)
-        if not simulate:
+        if not dry_run:
             shutil.rmtree(file_path)
     if os.path.isfile(file_path):
         logging.info('Removing %s', file_path)
-        if not simulate:
+        if not dry_run:
             os.remove(file_path)
 
 
@@ -46,7 +46,7 @@ class UploadFileset(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'revision', 'free_parameters')
-        parser.add_argument('--simulate', action = 'store_true', help = 'perform a test run, without writing changes')
+        parser.add_argument('-n', '--dry-run', action = 'store_true', help = 'perform a test run, without writing changes')
         parser.add_argument('--archive', action = 'store_true', help = 'upload the files as a zip archive')
         parser.add_argument('--compress', action = 'store_true', help = 'if uploading as an archive, compress it')
         parser.add_argument('--torrent', action = 'store_true', help = 'create a torrent for the uploaded fileset')
@@ -72,9 +72,9 @@ class UploadFileset(nimp.command.Command):
             if not env.force:
                 raise ValueError('Artifact already exists: %s' % artifact_path)
             else:
-                _try_remove(artifact_path + '.torrent', env.simulate)
-                _try_remove(artifact_path + '.zip', env.simulate)
-                _try_remove(artifact_path, env.simulate)
+                _try_remove(artifact_path + '.torrent', env.dry_run)
+                _try_remove(artifact_path + '.zip', env.dry_run)
+                _try_remove(artifact_path, env.dry_run)
 
         logging.info('Listing files for %s', artifact_path)
         file_mapper = nimp.system.FileMapper(None, vars(env))
@@ -85,13 +85,13 @@ class UploadFileset(nimp.command.Command):
             raise RuntimeError('Found no files to upload')
 
         logging.info('Uploading to %s', artifact_path)
-        if not env.simulate:
+        if not env.dry_run:
             os.makedirs(os.path.dirname(artifact_path), exist_ok = True)
         nimp.system.try_execute(
-            lambda: nimp.artifacts.create_artifact(artifact_path, all_files, env.archive, env.compress, env.simulate),
+            lambda: nimp.artifacts.create_artifact(artifact_path, all_files, env.archive, env.compress, env.dry_run),
             (OSError, ValueError, zipfile.BadZipFile))
         if env.torrent:
             logging.info('Creating torrent for %s', artifact_path)
-            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(artifact_path, env.torrent_tracker_announce, env.simulate), OSError)
+            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(artifact_path, env.torrent_tracker_announce, env.dry_run), OSError)
 
         return True

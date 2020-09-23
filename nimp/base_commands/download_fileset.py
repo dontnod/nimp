@@ -37,7 +37,7 @@ class DownloadFileset(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'free_parameters')
-        parser.add_argument('--simulate', action = 'store_true', help = 'perform a test run, without writing changes')
+        parser.add_argument('-n', '--dry-run', action = 'store_true', help = 'perform a test run, without writing changes')
         parser.add_argument('--revision', metavar = '<revision>', help = 'find a revision equal to this one')
         parser.add_argument('--max-revision', metavar = '<revision>', help = 'find a revision older or equal to this one')
         parser.add_argument('--min-revision', metavar = '<revision>', help = 'find a revision newer or equal to this one')
@@ -60,12 +60,12 @@ class DownloadFileset(nimp.command.Command):
         all_artifacts = nimp.system.try_execute(lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments), OSError)
         artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision)
 
-        logging.info('Downloading %s%s', artifact_to_download['uri'], ' (simulation)' if env.simulate else '')
-        if not env.simulate:
+        logging.info('Downloading %s%s', artifact_to_download['uri'], ' (simulation)' if env.dry_run else '')
+        if not env.dry_run:
             local_artifact_path = nimp.system.try_execute(lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']), OSError)
 
-        logging.info('Installing %s in %s%s', artifact_to_download['uri'], install_directory, ' (simulation)' if env.simulate else '')
-        if not env.simulate:
+        logging.info('Installing %s in %s%s', artifact_to_download['uri'], install_directory, ' (simulation)' if env.dry_run else '')
+        if not env.dry_run:
             nimp.artifacts.install_artifact(local_artifact_path, install_directory)
             shutil.rmtree(local_artifact_path)
 
@@ -74,7 +74,7 @@ class DownloadFileset(nimp.command.Command):
             old_revision = workspace_status[env.track][env.platform] if env.platform in workspace_status[env.track] else None
             logging.info('Tracking for %s %s: %s => %s', env.track, env.platform, old_revision, artifact_to_download['revision'])
             workspace_status[env.track][env.platform] = artifact_to_download['revision']
-            if not env.simulate:
+            if not env.dry_run:
                 nimp.system.save_status(env, workspace_status)
 
         return True

@@ -17,7 +17,7 @@ def main():
     upload(artifact_repository, configuration_instance["distribution"], configuration_instance["project_version"], False)
 
 
-def upload(artifact_repository, distribution, version, simulate):
+def upload(artifact_repository, distribution, version, dry_run):
     logging.info("Uploading distribution package")
 
     archive_name = distribution + "-" + version["full"]
@@ -31,7 +31,7 @@ def upload(artifact_repository, distribution, version, simulate):
 
     logging.info("Uploading '%s' to '%s'", source_path, destination_path)
 
-    if not simulate:
+    if not dry_run:
         os.makedirs(os.path.dirname(destination_path), exist_ok = True)
         shutil.copyfile(source_path, destination_path + ".tmp")
         shutil.move(destination_path + ".tmp", destination_path)

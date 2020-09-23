@@ -75,9 +75,9 @@ class SymbolServer:
         return symbols
 
 
-    def update_symbols(self, source, simulate):
+    def update_symbols(self, source, dry_run):
         if self.server_type == "shaders":
-            logging.info("Uploading from '%s' to '%s'%s", source, self.server_path, " (Simulation)" if simulate else "")
+            logging.info("Uploading from '%s' to '%s'%s", source, self.server_path, " (Simulation)" if dry_run else "")
 
             all_files = glob.glob(os.path.join(source, "**"), recursive = True)
             all_files = [ path for path in all_files if os.path.isfile(path) ]
@@ -86,7 +86,7 @@ class SymbolServer:
                 destination_file = os.path.join(self.server_path, os.path.relpath(source_file, source))
                 logging.info("Copying '%s' to '%s'", source_file, destination_file)
 
-                if not simulate:
+                if not dry_run:
                     os.makedirs(os.path.dirname(destination_file), exist_ok = True)
                     shutil.copyfile(source_file, destination_file)
 
@@ -117,10 +117,10 @@ class SymbolServer:
         return symbols_to_clean
 
 
-    def clean_symbols(self, symbols_to_clean, simulate): # pylint: disable = no-self-use
+    def clean_symbols(self, symbols_to_clean, dry_run): # pylint: disable = no-self-use
         for symbol_path in symbols_to_clean:
             logging.info("Removing '%s'", symbol_path)
-            if not simulate:
+            if not dry_run:
                 try:
                     if os.path.isdir(symbol_path):
                         shutil.rmtree(symbol_path)
