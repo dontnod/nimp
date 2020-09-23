@@ -36,13 +36,13 @@ import nimp.sys.platform
 
 
 def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
-         capture_output=False, capture_debug=False, hide_output=False, simulate=False):
+         capture_output=False, capture_debug=False, hide_output=False, dry_run=False):
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
     if not hide_output:
         logging.info('Running "%s" in "%s"', ' '.join(command), os.path.abspath(cwd))
 
-    if simulate:
+    if dry_run:
         return 0
 
     if capture_debug and not hide_output and nimp.sys.platform.is_windows():

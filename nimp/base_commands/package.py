@@ -50,14 +50,14 @@ def _get_ini_value(file_path, key):
     return match.group('value')
 
 
-def _try_remove(file_path, simulate):
+def _try_remove(file_path, dry_run):
 
     def _remove():
         if os.path.isdir(file_path):
-            if not simulate:
+            if not dry_run:
                 shutil.rmtree(file_path)
         elif os.path.isfile(file_path):
-            if not simulate:
+            if not dry_run:
                 os.remove(file_path)
 
     # The operation can fail if Windows Explorer has a handle on the directory
@@ -66,11 +66,11 @@ def _try_remove(file_path, simulate):
         nimp.system.try_execute(_remove, OSError)
 
 
-def _try_create_directory(file_path, simulate):
+def _try_create_directory(file_path, dry_run):
 
     def _create_directory():
         if not os.path.isdir(file_path):
-            if not simulate:
+            if not dry_run:
                 os.makedirs(file_path)
 
     # The operation can fail if Windows Explorer has a handle on the directory
@@ -78,13 +78,13 @@ def _try_create_directory(file_path, simulate):
         nimp.system.try_execute(_create_directory, OSError)
 
 
-def _copy_file(source, destination, simulate):
+def _copy_file(source, destination, dry_run):
     logging.info('Copying %s to %s', source, destination)
     if os.path.isdir(source):
-        if not simulate:
+        if not dry_run:
             os.makedirs(destination, exist_ok = True)
     elif os.path.isfile(source):
-        if not simulate:
+        if not dry_run:
             os.makedirs(os.path.dirname(destination), exist_ok = True)
             shutil.copyfile(source, destination)
     else:
@@ -138,7 +138,7 @@ class Package(nimp.command.Command):
         all_steps = [ 'cook', 'stage', 'package', 'verify' ]
         default_steps = [ 'cook', 'stage', 'package' ]
 
-        parser.add_argument('--simulate', action = 'store_true', help = 'perform a test run, without writing changes')
+        parser.add_argument('-n', '--dry-run', action = 'store_true', help = 'perform a test run, without writing changes')
         parser.add_argument('--steps', nargs = '+', choices = all_steps, default = default_steps, metavar = '<step>',
                             help = 'select the steps to execute\n(%s)' % ', '.join(all_steps))
         parser.add_argument('--variant', metavar = '<variant>', help = 'set the configuration variant to use')
@@ -328,8 +328,8 @@ class Package(nimp.command.Command):
         logging.info('')
 
         if not package_configuration.iterative_cook:
-            _try_remove(package_configuration.cook_directory, env.simulate)
-            _try_create_directory(package_configuration.cook_directory, env.simulate)
+            _try_remove(package_configuration.cook_directory, env.dry_run)
+            _try_create_directory(package_configuration.cook_directory, env.dry_run)
 
         nimp.environment.execute_hook('precook', env)
 
@@ -349,13 +349,13 @@ class Package(nimp.command.Command):
             sdb_path = package_configuration.project_directory + '/Saved/ShaderDebugInfo/' + package_configuration.target_platform
             engine_configuration_file_path = package_configuration.configuration_directory + '/DefaultEngine.ini'
 
-            if not env.simulate:
+            if not env.dry_run:
                 os.makedirs(sdb_path, exist_ok = True)
                 shutil.move(engine_configuration_file_path, engine_configuration_file_path + '.nimp.bak')
                 shutil.copyfile(engine_configuration_file_path + '.nimp.bak', engine_configuration_file_path)
 
         try:
-            if package_configuration.shader_debug_info and not env.simulate:
+            if package_configuration.shader_debug_info and not env.dry_run:
                 with open(engine_configuration_file_path, 'a') as configuration_file:
                     configuration_file.write('\n')
                     configuration_file.write('[ConsoleVariables]\n')
@@ -368,12 +368,12 @@ class Package(nimp.command.Command):
                     configuration_file.write('\n')
 
             # Heartbeart for background shader compilation and existing cook verification
-            cook_success = nimp.sys.process.call(cook_command, heartbeat = 60, simulate = env.simulate)
+            cook_success = nimp.sys.process.call(cook_command, heartbeat = 60, dry_run = env.dry_run)
             if cook_success != 0:
                 raise RuntimeError('Cook failed')
 
         finally:
-            if package_configuration.shader_debug_info and not env.simulate:
+            if package_configuration.shader_debug_info and not env.dry_run:
                 os.remove(engine_configuration_file_path)
                 shutil.move(engine_configuration_file_path + '.nimp.bak', engine_configuration_file_path)
 
@@ -387,8 +387,8 @@ class Package(nimp.command.Command):
         logging.info('Staging package files for %s (Destination: %s)', package_configuration.target_platform, package_configuration.stage_directory)
         logging.info('')
 
-        _try_remove(package_configuration.stage_directory, env.simulate)
-        _try_create_directory(package_configuration.stage_directory, env.simulate)
+        _try_remove(package_configuration.stage_directory, env.dry_run)
+        _try_create_directory(package_configuration.stage_directory, env.dry_run)
 
         # AutomationTool is used here for the staging parts which are not done by nimp itself yet
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
@@ -404,17 +404,17 @@ class Package(nimp.command.Command):
             if env.is_dne_legacy_ue4:
                 stage_command += [ '-SkipPak' ]
 
-            stage_success = nimp.sys.process.call(stage_command, simulate = env.simulate)
+            stage_success = nimp.sys.process.call(stage_command, dry_run = env.dry_run)
             if stage_success != 0:
                 raise RuntimeError('Stage failed')
 
-        Package._stage_title_files(package_configuration, env.simulate)
-        Package._stage_layout(package_configuration, env.simulate)
-        Package._stage_binaries(package_configuration, env.simulate)
+        Package._stage_title_files(package_configuration, env.dry_run)
+        Package._stage_layout(package_configuration, env.dry_run)
+        Package._stage_binaries(package_configuration, env.dry_run)
         Package._stage_content(env, package_configuration)
 
         if package_configuration.msixvc:
-            if not env.simulate:
+            if not env.dry_run:
                 # Dummy files for empty chunks
                 with open(package_configuration.stage_directory + '/LaunchChunk.bin', 'w') as empty_file:
                     empty_file.write('\0')
@@ -446,7 +446,7 @@ class Package(nimp.command.Command):
             manifest_file_path = manifest_file_path.lower()
             pak_file_path = pak_file_path.lower()
 
-        if not env.simulate:
+        if not env.dry_run:
             os.makedirs(destination, exist_ok = True)
 
         logging.info('Listing files for pak %s', pak_file_name)
@@ -459,7 +459,7 @@ class Package(nimp.command.Command):
             return
 
         logging.info('Creating manifest for pak %s', pak_file_name)
-        if not env.simulate:
+        if not env.dry_run:
             with open(manifest_file_path, 'w') as manifest_file:
                 for source_file, destination_file in all_files:
                     allow_compression = os.path.basename(source_file) not in package_configuration.pak_compression_exclusions
@@ -484,13 +484,13 @@ class Package(nimp.command.Command):
         if is_patch:
             pak_command += [ '-GeneratePatch=' + os.path.abspath(patch_base + '/' + pak_file_name + '.pak') ]
 
-        pak_success = nimp.sys.process.call(pak_command, simulate = env.simulate)
+        pak_success = nimp.sys.process.call(pak_command, dry_run = env.dry_run)
         if pak_success != 0:
             raise RuntimeError('Pak creation failed')
 
 
     @staticmethod
-    def _stage_title_files(package_configuration, simulate):
+    def _stage_title_files(package_configuration, dry_run):
 
         if package_configuration.target_platform == 'PS4':
 
@@ -507,12 +507,12 @@ class Package(nimp.command.Command):
                 for source_path, destination_path in mapping_collection:
                     source_path = source_path.format(title_directory = title['title_directory'])
                     destination_path = destination_path.format(title_directory = title['title_directory']).lower()
-                    Package._stage_file(package_configuration.stage_directory, source_path, destination_path, simulate)
+                    Package._stage_file(package_configuration.stage_directory, source_path, destination_path, dry_run)
 
         elif package_configuration.target_platform == 'XboxOne':
 
             # AutomationTool already stages these files
-            if package_configuration.package_type in [ 'application', 'application_patch'] and not simulate:
+            if package_configuration.package_type in [ 'application', 'application_patch'] and not dry_run:
                 os.remove(package_configuration.stage_directory + '/AppxManifest.xml')
                 os.remove(package_configuration.stage_directory + '/appdata.bin')
                 os.remove(package_configuration.stage_directory + '/resources.pri')
@@ -524,14 +524,14 @@ class Package(nimp.command.Command):
                 manifest_destination = 'AppxManifest-%s.xml' % binary_configuration
                 transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
                 transform_parameters['configuration'] = binary_configuration
-                Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
+                Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, dry_run)
 
             resource_file_collection = glob.glob(package_configuration.resource_directory + '/**/*.png', recursive = True)
             resource_file_collection += glob.glob(package_configuration.resource_directory + '/**/*.resw', recursive = True)
             resource_file_collection = [ nimp.system.standardize_path(path) for path in resource_file_collection ]
             for resource_source in resource_file_collection:
                 resource_destination = 'Resources/' + os.path.relpath(resource_source, package_configuration.resource_directory)
-                Package._stage_file(package_configuration.stage_directory, resource_source, resource_destination, simulate)
+                Package._stage_file(package_configuration.stage_directory, resource_source, resource_destination, dry_run)
 
             xdk_root = os.environ.get('DurangoXDK', None) or '/'
             makepri_command = [
@@ -544,7 +544,7 @@ class Package(nimp.command.Command):
             ]
 
             logging.info('+ %s', ' '.join(makepri_command))
-            if not simulate:
+            if not dry_run:
                 subprocess.check_call(makepri_command)
 
         elif package_configuration.target_platform == 'Win64' and package_configuration.msixvc:
@@ -563,14 +563,14 @@ class Package(nimp.command.Command):
                 manifest_destination = manifest_destination_format.format(configuration = binary_configuration)
                 transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
                 transform_parameters['configuration'] = binary_configuration
-                Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, simulate)
+                Package._stage_and_transform_file(package_configuration.stage_directory, manifest_source, manifest_destination, transform_parameters, dry_run)
 
             resource_file_collection = glob.glob(package_configuration.resource_directory + '/**/*.png', recursive = True)
             resource_file_collection += glob.glob(package_configuration.resource_directory + '/**/*.resw', recursive = True)
             resource_file_collection = [ nimp.system.standardize_path(path) for path in resource_file_collection ]
             for resource_source in resource_file_collection:
                 resource_destination = 'Resources/' + os.path.relpath(resource_source, package_configuration.resource_directory)
-                Package._stage_file(package_configuration.stage_directory, resource_source, resource_destination, simulate)
+                Package._stage_file(package_configuration.stage_directory, resource_source, resource_destination, dry_run)
 
             sdk_root = os.environ.get('GamingSDK', None) or '/'
             makepri_command = [
@@ -583,12 +583,12 @@ class Package(nimp.command.Command):
             ]
 
             logging.info('+ %s', ' '.join(makepri_command))
-            if not simulate:
+            if not dry_run:
                 subprocess.check_call(makepri_command)
 
 
     @staticmethod
-    def _stage_binaries(package_configuration, simulate):
+    def _stage_binaries(package_configuration, dry_run):
         if package_configuration.package_type not in [ 'application', 'application_patch' ]:
             return
 
@@ -599,11 +599,11 @@ class Package(nimp.command.Command):
         if package_configuration.target_platform in [ 'Win64', 'XboxOne' ]:
             for binary_configuration in package_configuration.binary_configuration.split('+'):
                 pdb_file_name = Package._get_executable_name(package_configuration, binary_configuration) + '.pdb'
-                Package._stage_file(package_configuration.stage_directory, source + '/' + pdb_file_name, destination + '/' + pdb_file_name, simulate)
+                Package._stage_file(package_configuration.stage_directory, source + '/' + pdb_file_name, destination + '/' + pdb_file_name, dry_run)
 
 
     @staticmethod
-    def _stage_layout(package_configuration, simulate):
+    def _stage_layout(package_configuration, dry_run):
         source = package_configuration.layout_file_path
         format_parameters = { 'project': package_configuration.project, 'platform': package_configuration.target_platform }
 
@@ -618,7 +618,7 @@ class Package(nimp.command.Command):
                     destination = '{project}-{region}-{configuration}.{layout_file_extension}'.format(**format_parameters).lower()
                     transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration).lower()
                     transform_parameters['configuration'] = binary_configuration.lower()
-                    Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
+                    Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, dry_run)
 
         elif package_configuration.msixvc:
             transform_parameters = {}
@@ -627,7 +627,7 @@ class Package(nimp.command.Command):
                 destination = '{project}-{configuration}.xml'.format(**format_parameters)
                 transform_parameters['executable_name'] = Package._get_executable_name(package_configuration, binary_configuration)
                 transform_parameters['configuration'] = binary_configuration
-                Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, simulate)
+                Package._stage_and_transform_file(package_configuration.stage_directory, source, destination, transform_parameters, dry_run)
 
 
     @staticmethod
@@ -642,7 +642,7 @@ class Package(nimp.command.Command):
             for source_file, destination_file in all_files:
                 if package_configuration.target_platform == 'PS4':
                     destination_file = destination_file.lower()
-                Package._stage_file(package_configuration.stage_directory, source_file, destination_file, env.simulate)
+                Package._stage_file(package_configuration.stage_directory, source_file, destination_file, env.dry_run)
         except ImportError:
             pass
 
@@ -653,13 +653,13 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage_file(stage_directory, source, destination, simulate):
+    def _stage_file(stage_directory, source, destination, dry_run):
         logging.info('Staging %s as %s', source, destination)
         if os.path.isdir(source):
-            if not simulate:
+            if not dry_run:
                 shutil.copytree(source, stage_directory + '/' + destination, copy_function = shutil.copyfile)
         elif os.path.isfile(source):
-            if not simulate:
+            if not dry_run:
                 os.makedirs(os.path.dirname(stage_directory + '/' +destination), exist_ok = True)
                 shutil.copyfile(source, stage_directory + '/' +destination)
         else:
@@ -667,7 +667,7 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def _stage_and_transform_file(stage_directory, source, destination, transform_parameters, simulate):
+    def _stage_and_transform_file(stage_directory, source, destination, transform_parameters, dry_run):
         logging.info('Staging %s as %s', source, destination)
 
         with open(source, 'r') as source_file:
@@ -676,7 +676,7 @@ class Package(nimp.command.Command):
         if transform_parameters['configuration'].lower() == 'shipping':
             file_content = re.sub(r'<!-- #if Debug -->(.*?)<!-- #endif Debug -->', '', file_content, 0, re.DOTALL)
 
-        if not simulate:
+        if not dry_run:
             with open(stage_directory + '/' + destination, 'w') as destination_file:
                 destination_file.write(file_content)
 
@@ -703,26 +703,26 @@ class Package(nimp.command.Command):
 
         if package_configuration.target_platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
             if package_configuration.target_platform == 'Win64' and package_configuration.msixvc:
-                Package.package_for_windows_msixvc(package_configuration, env.simulate)
+                Package.package_for_windows_msixvc(package_configuration, env.dry_run)
             else:
-                Package.package_for_desktop(package_configuration, vars(env), env.simulate)
+                Package.package_for_desktop(package_configuration, vars(env), env.dry_run)
         # legacy console packaging
         elif package_configuration.target_platform == 'PS4':
-            Package.package_for_sony(package_configuration, env.simulate)
+            Package.package_for_sony(package_configuration, env.dry_run)
         elif package_configuration.target_platform == 'XboxOne':
-            Package.package_for_xboxone(package_configuration, env.simulate)
+            Package.package_for_xboxone(package_configuration, env.dry_run)
         # console packaging using out of the box uat behavior
         elif package_configuration.is_sony or package_configuration.is_microsoft:
-            Package.package_with_uat(package_configuration, env.simulate)
+            Package.package_with_uat(package_configuration, env.dry_run)
 
 
     @staticmethod
-    def package_for_desktop(package_configuration, file_mapper_arguments, simulate):
+    def package_for_desktop(package_configuration, file_mapper_arguments, dry_run):
         source = package_configuration.stage_directory
         destination = 'Default-Final' if package_configuration.is_final_submission else 'Default'
         destination = package_configuration.package_directory + '/' + destination
-        _try_remove(destination, simulate)
-        _try_create_directory(destination, simulate)
+        _try_remove(destination, dry_run)
+        _try_create_directory(destination, dry_run)
 
         logging.info('Listing package files')
         file_mapper = nimp.system.FileMapper(None, file_mapper_arguments)
@@ -730,10 +730,10 @@ class Package(nimp.command.Command):
         all_files = file_mapper.to_list(source, destination)
 
         for source_file, destination_file in all_files:
-            _copy_file(source_file, destination_file, simulate)
+            _copy_file(source_file, destination_file, dry_run)
 
 
-    def package_with_uat(package_configuration, simulate):
+    def package_with_uat(package_configuration, dry_run):
         # Packaging with out of the box UAT behavior
         destination = package_configuration.package_directory
         if not os.path.isdir(destination):
@@ -744,7 +744,7 @@ class Package(nimp.command.Command):
                item.endswith('.msixvc') or item.endswith('.msixvc.phd') or\
                item.endswith('.ekb') or item.endswith('.zip') or\
                item.endswith('.' + package_configuration.layout_file_extension):
-                _try_remove(os.path.join(destination, item), simulate)
+                _try_remove(os.path.join(destination, item), dry_run)
 
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
@@ -756,13 +756,13 @@ class Package(nimp.command.Command):
                 '-SkipCook', '-SkipStage', '-Package',
             ]
 
-            package_success = nimp.sys.process.call(package_command, simulate = simulate)
+            package_success = nimp.sys.process.call(package_command, dry_run = dry_run)
             if package_success != 0:
                 raise RuntimeError('Package failed')
 
 
     @staticmethod
-    def package_for_sony(package_configuration, simulate):
+    def package_for_sony(package_configuration, dry_run):
         source = package_configuration.stage_directory
         package_tool_path = package_configuration.package_tool_path
 
@@ -777,10 +777,10 @@ class Package(nimp.command.Command):
                         output_format += '+iso'
                     output_format += '+subitem'
 
-                _try_remove(destination, simulate)
-                _try_remove(destination + '-Temporary', simulate)
-                _try_create_directory(destination, simulate)
-                _try_create_directory(destination + '-Temporary', simulate)
+                _try_remove(destination, dry_run)
+                _try_remove(destination + '-Temporary', dry_run)
+                _try_create_directory(destination, dry_run)
+                _try_create_directory(destination + '-Temporary', dry_run)
 
                 create_package_command = [
                     package_tool_path, 'img_create',
@@ -790,15 +790,15 @@ class Package(nimp.command.Command):
                     layout_file, destination
                 ]
 
-                package_success = nimp.sys.process.call(create_package_command, simulate = simulate)
+                package_success = nimp.sys.process.call(create_package_command, dry_run = dry_run)
                 if package_success != 0:
                     raise RuntimeError('Package generation failed')
 
-                _try_remove(destination + '-Temporary', simulate)
+                _try_remove(destination + '-Temporary', dry_run)
 
 
     @staticmethod
-    def package_for_xboxone(package_configuration, simulate):
+    def package_for_xboxone(package_configuration, dry_run):
         package_tool_path = package_configuration.package_tool_path
         source = package_configuration.stage_directory
 
@@ -818,15 +818,15 @@ class Package(nimp.command.Command):
             if package_configuration.package_type in [ 'application', 'application_patch' ]:
                 package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
 
-            _try_remove(destination, simulate)
-            _try_create_directory(destination, simulate)
+            _try_remove(destination, dry_run)
+            _try_create_directory(destination, dry_run)
 
-            if not simulate:
+            if not dry_run:
                 shutil.copyfile(source + '/AppxManifest-%s.xml' % binary_configuration, source + '/AppxManifest.xml')
 
-            package_success = nimp.sys.process.call(package_command, simulate = simulate)
+            package_success = nimp.sys.process.call(package_command, dry_run = dry_run)
 
-            if not simulate:
+            if not dry_run:
                 os.remove(source + '/AppxManifest.xml')
                 if os.path.isfile(source + '/appdata.bin'):
                     os.remove(source + '/appdata.bin')
@@ -836,7 +836,7 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def package_for_windows_msixvc(package_configuration, simulate):
+    def package_for_windows_msixvc(package_configuration, dry_run):
         sdk_root = os.environ.get('GamingSDK', None) or '/'
         package_tool_path = os.path.join(sdk_root, 'bin', 'MakePkg.exe')
         source = package_configuration.stage_directory
@@ -852,18 +852,18 @@ class Package(nimp.command.Command):
             package_command += [ '/f', layout_file_path, '/d', source, '/pd', destination ]
             package_command += [ '/l' ] if package_configuration.is_final_submission else []
 
-            _try_remove(destination, simulate)
-            _try_create_directory(destination, simulate)
+            _try_remove(destination, dry_run)
+            _try_create_directory(destination, dry_run)
 
-            if not simulate:
+            if not dry_run:
                 if os.path.isfile(source + '/AppxManifest-%s.xml' % binary_configuration):
                     shutil.copyfile(source + '/AppxManifest-%s.xml' % binary_configuration, source + '/AppxManifest.xml')
                 if os.path.isfile(source + '/MicrosoftGame-%s.config' % binary_configuration):
                     shutil.copyfile(source + '/MicrosoftGame-%s.config' % binary_configuration, source + '/MicrosoftGame.config')
 
-            package_success = nimp.sys.process.call(package_command, simulate = simulate)
+            package_success = nimp.sys.process.call(package_command, dry_run = dry_run)
 
-            if not simulate:
+            if not dry_run:
                 if os.path.isfile(source + '/AppxManifest.xml'):
                     os.remove(source + '/AppxManifest.xml')
                 if os.path.isfile(source + '/appdata.bin'):
@@ -902,13 +902,13 @@ class Package(nimp.command.Command):
         if package_configuration.target_platform == 'Win64':
             Package.verify_for_windows(package_configuration)
         elif package_configuration.target_platform == 'PS4':
-            Package.verify_for_ps4(package_configuration, env.simulate)
+            Package.verify_for_ps4(package_configuration, env.dry_run)
         elif package_configuration.target_platform == 'XboxOne':
             Package.verify_for_xboxone(package_configuration)
 
 
     @staticmethod
-    def verify_for_ps4(package_configuration, simulate):
+    def verify_for_ps4(package_configuration, dry_run):
         package_tool_path = package_configuration.package_tool_path
 
         for title_data in package_configuration.ps4_title_collection:
@@ -916,8 +916,8 @@ class Package(nimp.command.Command):
                 directory = title_data['region'] + '-' + binary_configuration + ('-Final' if package_configuration.is_final_submission else '')
                 directory = package_configuration.package_directory + '/' + directory
 
-                _try_remove(directory + '-Temporary', simulate)
-                _try_create_directory(directory + '-Temporary', simulate)
+                _try_remove(directory + '-Temporary', dry_run)
+                _try_create_directory(directory + '-Temporary', dry_run)
 
                 validate_package_command = [
                     package_tool_path, 'img_verify',
@@ -927,11 +927,11 @@ class Package(nimp.command.Command):
                 ]
                 validate_package_command += [ path.replace('\\', '/') for path in glob.glob(directory + '/*.pkg') ]
 
-                validation_success = nimp.sys.process.call(validate_package_command, simulate = simulate)
+                validation_success = nimp.sys.process.call(validate_package_command, dry_run = dry_run)
                 if validation_success != 0:
                     logging.warning('Package validation failed')
 
-                _try_remove(directory + '-Temporary', simulate)
+                _try_remove(directory + '-Temporary', dry_run)
 
 
     @staticmethod

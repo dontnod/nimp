@@ -78,7 +78,7 @@ class _Update(nimp.command.Command):
 
 
     def configure_arguments(self, env, parser):
-        parser.add_argument("--simulate", action = "store_true", help = "perform the command as a simulation")
+        parser.add_argument('-n', '--dry-run', action = "store_true", help = "perform the command as a simulation")
         return True
 
 
@@ -95,7 +95,7 @@ class _Update(nimp.command.Command):
             symbol_source = '{uproject_dir}/Saved/ShaderDebugInfo'
             symbol_source += '/' + ('SF_PS4/sdb' if env.ue4_platform == 'PS4' else env.ue4_platform)
             symbol_source = nimp.system.sanitize_path(env.format(symbol_source))
-            symbol_server.update_symbols(symbol_source, env.simulate)
+            symbol_server.update_symbols(symbol_source, env.dry_run)
 
         return True
 
@@ -106,7 +106,7 @@ class _Clean(nimp.command.Command):
 
 
     def configure_arguments(self, env, parser):
-        parser.add_argument("--simulate", action = "store_true", help = "perform the command as a simulation")
+        parser.add_argument('-n', '--dry-run', action = "store_true", help = "perform the command as a simulation")
         return True
 
 
@@ -119,11 +119,11 @@ class _Clean(nimp.command.Command):
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
 
-        logging.info("Cleaning symbol server at '%s'%s", symbol_server.server_path, " (Simulation)" if env.simulate else "")
+        logging.info("Cleaning symbol server at '%s'%s", symbol_server.server_path, " (Simulation)" if env.dry_run else "")
 
         all_symbols = symbol_server.list_symbols()
         symbols_to_clean = symbol_server.list_symbols_to_clean(all_symbols)
-        symbol_server.clean_symbols(symbols_to_clean, env.simulate)
+        symbol_server.clean_symbols(symbols_to_clean, env.dry_run)
 
         logging.info("Symbol count: %s => %s", len(all_symbols), len(all_symbols) - len(symbols_to_clean))
 

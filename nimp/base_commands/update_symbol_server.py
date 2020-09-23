@@ -43,8 +43,8 @@ def _list_files(source):
     return all_files
 
 
-def _copy_file(source, destination, simulate):
-    if not simulate:
+def _copy_file(source, destination, dry_run):
+    if not dry_run:
         destination_directory = os.path.dirname(destination)
         if not os.path.exists(destination_directory):
             os.makedirs(destination_directory)
@@ -59,7 +59,7 @@ class UpdateSymbolServer(nimp.command.Command):
         nimp.command.add_common_arguments(parser, 'free_parameters')
         parser.add_argument('--symbol-type', required = True, metavar = '<type>', help = 'Set the type of symbols to upload')
         parser.add_argument('--platform', metavar = '<platform>', help = 'Set the platform to upload symbols for')
-        parser.add_argument("--simulate", action = "store_true", help = "Do a test run without actually uploading files")
+        parser.add_argument('-n', '--dry-run', action = "store_true", help = "Do a test run without actually uploading files")
         return True
 
 
@@ -76,6 +76,6 @@ class UpdateSymbolServer(nimp.command.Command):
             symbol_source = '{uproject_dir}/Saved/ShaderDebugInfo'
             symbol_source += '/' + ('SF_PS4/sdb' if env.ue4_platform == 'PS4' else env.ue4_platform)
             symbol_source = nimp.system.sanitize_path(env.format(symbol_source))
-            symbol_server.update_symbols(symbol_source, env.simulate)
+            symbol_server.update_symbols(symbol_source, env.dry_run)
 
         return True
