@@ -146,6 +146,7 @@ class Package(nimp.command.Command):
         parser.add_argument('--shader-debug-info', action = 'store_true', help = 'enable shader debug information generation')
         parser.add_argument('--compress', action = 'store_true', help = 'enable pak file compression')
         parser.add_argument('--final', action = 'store_true', help = 'enable package options for final submission')
+        parser.add_argument('--pkg-compress', action = 'store_true', help = 'enable package compression if available')
         parser.add_argument('--trackloadpackage', action = 'store_true', help = 'track LoadPackage calls when cooking')
         parser.add_argument('--cook-extra-options', nargs = '*', default = [], metavar = '<cook_option>',
                             help = 'pass additional options to the cook command')
@@ -213,6 +214,7 @@ class Package(nimp.command.Command):
         package_configuration.is_microsoft = env.is_microsoft_platform
         package_configuration.is_sony = env.is_sony_platform
         package_configuration.is_final_submission = env.final
+        package_configuration.is_pkg_compress = env.pkg_compress
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
 
         package_configuration.package_tool_path = platform_desc.package_tool_path
@@ -787,6 +789,7 @@ class Package(nimp.command.Command):
                     '--no_progress_bar',
                     '--tmp_path', destination + '-Temporary',
                     '--oformat', output_format,
+                    '--compress', 'on' if package_configuration.is_pkg_compress else 'off',
                     layout_file, destination
                 ]
 
