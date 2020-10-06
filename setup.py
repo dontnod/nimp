@@ -54,16 +54,6 @@ setup_info = dict(
         'requests',
         # FIXME: sort out what is required by nimp-cli and what could be in nimp-dne
         'jira',
-        'pykakasi',
-        'psycopg2',
-        'wlc',
-        'pymongo',
-        'xlsxwriter',
-        'openpyxl',
-        'python-dateutil',
-        'pymysql',
-        'pillow',
-        'jinja2',
     ],
 
     entry_points = {
