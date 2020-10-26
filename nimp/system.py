@@ -64,6 +64,18 @@ def try_execute(action, exception_types, attempt_maximum = 5, retry_delay = 10):
             time.sleep(retry_delay)
             attempt += 1
 
+def try_remove(file_path, dry_run):
+    if os.path.exists(file_path):
+        logging.info("Removing %s", file_path)
+        if not dry_run:
+            try:
+                if os.path.isdir(file_path):
+                    safe_rmtree(file_path)
+                else:
+                    os.remove(file_path)
+            except OSError as exception:
+                logging.warning("Failed to remove %s: %s", file_path, exception)
+
 def split_path(path):
     ''' Returns an array of path elements '''
     splitted_path = []
