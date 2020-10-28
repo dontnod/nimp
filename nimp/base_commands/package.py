@@ -218,6 +218,18 @@ class Package(nimp.command.Command):
         package_configuration.package_tool_path = platform_desc.package_tool_path
         package_configuration.layout_file_extension = env.layout_file_extension
 
+        # Temporary hack : PIO now uses "BuildEnvironment = TargetBuildEnvironment.Unique;"
+        # https://jira.dont-nod.com/browse/XPJ-4747
+        # https://gitea.dont-nod.com/devs/monorepo/commit/ceacad5c42cd0be34946236d36201e646b393d60
+        package_configuration.editor_path = package_configuration.engine_directory + '/Binaries/' + package_configuration.worker_platform
+        package_configuration.editor_path += '/UE4Editor' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
+        if not os.path.exists(package_configuration.editor_path):
+            package_configuration.editor_path = package_configuration.project_directory + '/Binaries/' + package_configuration.worker_platform + '/'
+            package_configuration.editor_path += package_configuration.project + 'Editor' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
+        package_configuration.editor_cmd_exe = 'UE4Editor-Cmd.exe'
+        if not os.path.exists(package_configuration.engine_directory + '/Binaries/Win64/' +  package_configuration.editor_cmd_exe):
+            package_configuration.editor_cmd_exe = package_configuration.project + 'Editor-Cmd.exe'
+
         ps4_title_directory_collection = []
 
         if hasattr(env, 'package_variants'):
@@ -333,11 +345,8 @@ class Package(nimp.command.Command):
 
         nimp.environment.execute_hook('precook', env)
 
-        engine_binaries_directory = package_configuration.engine_directory + '/Binaries/' + package_configuration.worker_platform
-        editor_path = engine_binaries_directory + '/UE4Editor' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
-
         cook_command = [
-            editor_path, package_configuration.project,
+            package_configuration.editor_path, package_configuration.project,
             '-Run=Cook', '-TargetPlatform=' + package_configuration.cook_platform,
             '-BuildMachine', '-Unattended', '-StdOut', '-UTF8Output',
         ]
@@ -394,7 +403,7 @@ class Package(nimp.command.Command):
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             stage_command = [
                 package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
-                'BuildCookRun', '-UE4exe=UE4Editor-Cmd.exe', '-UTF8Output',
+                'BuildCookRun', '-UE4exe=' + package_configuration.editor_cmd_exe, '-UTF8Output',
                 '-Project=' + package_configuration.project,
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,
@@ -749,7 +758,7 @@ class Package(nimp.command.Command):
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
                 package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
-                'BuildCookRun', '-UE4exe=UE4Editor-Cmd.exe', '-UTF8Output',
+                'BuildCookRun', '-UE4exe=' + package_configuration.editor_cmd_exe, '-UTF8Output',
                 '-Project=' + package_configuration.project,
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,

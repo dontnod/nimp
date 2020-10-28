@@ -229,6 +229,11 @@ def _ue4_commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an UE4 commandlet '''
 
     exe = '{ue4_dir}/Engine/Binaries/{ue4_host_platform}/UE4Editor.exe'
+    if not os.path.exists(exe) and hasattr(env, 'uproject_dir'):
+        # Temporary hack : PIO now uses "BuildEnvironment = TargetBuildEnvironment.Unique;"
+        # https://jira.dont-nod.com/browse/XPJ-4747
+        # https://gitea.dont-nod.com/devs/monorepo/commit/ceacad5c42cd0be34946236d36201e646b393d60
+        exe = '{uproject_dir}/Binaries/{ue4_host_platform}/{game}Editor.exe'
     cmdline = [nimp.system.sanitize_path(env.format(exe)),
                env.game,
                '-run=%s' % command]
