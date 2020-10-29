@@ -20,28 +20,54 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Command to wrap command execution '''
+''' Command to run executables or special commands '''
 
 import argparse
+import logging
 
 import nimp.command
+import nimp.unreal
 import nimp.sys.process
 
 class Run(nimp.command.Command):
-    ''' Simply runs a command '''
+    ''' Run executables, hooks, and commandlets '''
     def configure_arguments(self, env, parser):
-        parser.add_argument('command_and_args',
-                            help = 'Command to run',
-                            metavar = '<command> [<argument>...]',
-                            nargs = argparse.REMAINDER)
+        parser.add_argument('parameters',
+                            help='command to run',
+                            metavar='<command> [<argument>...]',
+                            nargs=argparse.REMAINDER)
+        parser.add_argument('--hook',
+                            help='run as hook (prerun, postbuild, etc.)',
+                            metavar='hook')
+        parser.add_argument('--commandlet',
+                            help='run as Unreal Engine commandlet (resavepackages, deriveddatacache, etc.)',
+                            action='store_true')
         return True
+
 
     def is_available(self, env):
         return True, ''
 
+
     def run(self, env):
+
+        # Hook mode
+        if hasattr(env, 'hook') and env.hook:
+            if len(env.parameters) != 0:
+                logging.error('Too many arguments')
+                return False
+            return nimp.environment.execute_hook(env.hook, env)
+
+        # Commandlet mode
+        if hasattr(env, 'commandlet') and env.commandlet:
+            if not nimp.unreal.is_unreal4_available(env):
+                logging.error('Not an Unreal Engine project')
+                return False
+            return nimp.unreal.commandlet(env, env.parameters[0], env.parameters[1:])
+
+        # Standard executable mode
         cmdline = []
-        for arg in env.command_and_args:
+        for arg in env.parameters:
             cmdline.append(env.format(arg))
 
         nimp.environment.execute_hook('prerun', env)
