@@ -52,7 +52,7 @@ class P4Command(nimp.command.Command):
         pass
 
 class P4(nimp.command.CommandGroup):
-    ''' P4 related commands. '''
+    ''' Run Perforce commands '''
     def __init__(self):
         super(P4, self).__init__([_RevertWorkspace(),
                                   _Submit(),

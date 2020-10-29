@@ -134,10 +134,12 @@ def load_arguments(env):
 
 def add_commands_subparser(commands, parser, env, required = False):
     ''' Adds a list of commands to a subparser '''
-    command_description = ('Commands marked with /!\\ are currently unavailable.'
+    command_description = ('Commands marked with [DISABLED] are unavailable.'
                            ' You can issue "nimp <command> -h" to know why '
                            '<command> is currently disabled')
-    subparsers = parser.add_subparsers(metavar = '<command>', description = command_description, required = required)
+    subparsers = parser.add_subparsers(metavar='<command>',
+                                       description=command_description,
+                                       required=required)
 
     for command_it in commands:
         command_class = type(command_it)
@@ -155,7 +157,7 @@ def add_commands_subparser(commands, parser, env, required = False):
 
         if not enabled:
             description = 'This command is currently disabled :\n' + reason
-            command_help = '/!\\ ' + command_help
+            command_help = '[DISABLED] ' + command_help
 
         command_parser = subparsers.add_parser(command_name,
                                                description = description,

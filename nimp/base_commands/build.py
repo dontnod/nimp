@@ -32,7 +32,7 @@ import nimp.environment
 import nimp.ue4.build
 
 class Build(nimp.command.Command):
-    ''' Builds a project binaries '''
+    ''' Build a project '''
     def __init__(self):
         super(Build, self).__init__()
 
