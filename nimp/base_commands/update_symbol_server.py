@@ -52,7 +52,7 @@ def _copy_file(source, destination, dry_run):
 
 
 class UpdateSymbolServer(nimp.command.Command):
-    ''' (deprecated, use symbol-server) Update the symbol server '''
+    ''' [DEPRECATED} (use nimp symbol-server) Update the symbol server '''
 
 
     def configure_arguments(self, env, parser):

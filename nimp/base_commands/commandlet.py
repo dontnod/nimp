@@ -28,7 +28,7 @@ import nimp.command
 import nimp.unreal
 
 class Commandlet(nimp.command.Command):
-    ''' Runs an Unreal Engine Commandlet. '''
+    ''' [DEPRECATED] (use nimp run) Run an Unreal Engine commandlet '''
     def __init__(self):
         super(Commandlet, self).__init__()
 
@@ -40,7 +40,7 @@ class Commandlet(nimp.command.Command):
         parser.add_argument('args',
                             help    = 'Commandlet arguments',
                             metavar = '<args>',
-                            nargs    = argparse.REMAINDER)
+                            nargs   = argparse.REMAINDER)
 
         return True
 
