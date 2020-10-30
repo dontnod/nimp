@@ -63,7 +63,7 @@ class Run(nimp.command.Command):
             if not nimp.unreal.is_unreal4_available(env):
                 logging.error('Not an Unreal Engine project')
                 return False
-            return nimp.unreal.commandlet(env, env.parameters[0], env.parameters[1:])
+            return nimp.unreal.commandlet(env, env.parameters[0], *env.parameters[1:])
 
         # Standard executable mode
         cmdline = []
