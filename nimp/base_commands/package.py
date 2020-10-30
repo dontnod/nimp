@@ -221,6 +221,7 @@ class Package(nimp.command.Command):
         # Temporary hack : PIO now uses "BuildEnvironment = TargetBuildEnvironment.Unique;"
         # https://jira.dont-nod.com/browse/XPJ-4747
         # https://gitea.dont-nod.com/devs/monorepo/commit/ceacad5c42cd0be34946236d36201e646b393d60
+        #TODO: use .nimp.conf uniqueBuildEnvironment
         package_configuration.editor_path = package_configuration.engine_directory + '/Binaries/' + package_configuration.worker_platform
         package_configuration.editor_path += '/UE4Editor' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
         if not os.path.exists(package_configuration.editor_path):
