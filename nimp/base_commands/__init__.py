@@ -32,7 +32,6 @@ __all__ = [
     'p4',
     'package',
     'run',
-    'run_hook',
     'symbol_server',
     'update_symbol_server',
     'upload',
