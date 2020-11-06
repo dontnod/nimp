@@ -310,6 +310,15 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         if not _ue4_build_tool_ubt(env, tool, vs_version):
             return False
 
+    # Build CSVTools
+    csv_tools_sln = env.format('{ue4_dir}/Engine/Source/Programs/CSVTools/CSVTools.sln')
+    if not nimp.build.vsbuild(nimp.system.sanitize_path(csv_tools_sln),
+                              'Any CPU', "Release",
+                              vs_version=vs_version,
+                              target='Build'):
+        logging.error("Could not build CSVTools")
+        return False
+
     return True
 
 def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
