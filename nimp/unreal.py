@@ -86,9 +86,9 @@ def load_config(env):
 
     # Forward compatibility (TODO: remove later when all configuration files use uproject)
     if hasattr(env, 'game'):
-        env.uproject = env.game
+        env.uproject = env.format(env.game)
     if hasattr(env, 'game_dir'):
-        env.uproject_dir = env.game_dir
+        env.uproject_dir = env.format(env.game_dir)
 
     # If no uproject information is provided, look for one
     if not hasattr(env, 'uproject_dir') or not hasattr(env, 'uproject'):
@@ -143,7 +143,7 @@ def load_config(env):
         env.game_dir = env.uproject_dir
 
     if hasattr(env, 'uproject') and hasattr(env, 'uproject_dir'):
-        logging.debug('Found UE4 project %s in %s' % (env.uproject, env.uproject_dir))
+        logging.info('Found UE4 project %s in %s' % (env.uproject, env.uproject_dir))
 
     return True
 
