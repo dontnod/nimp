@@ -60,6 +60,9 @@ class Environment:
         self.environment = {}
         self.dry_run = False
         self.summary = None
+        self.debug_env = {}
+        self.has_base_conf = None
+        self.has_project_conf = None
 
 
     def load_argument_parser(self, parent_parser):
@@ -124,18 +127,25 @@ class Environment:
                                    type=str)
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
         # verify that uproject seems somewhat legit
-        if hasattr(parent_args, 'uproject') and parent_args.uproject is not None:
+        has_uproject_parameter = hasattr(parent_args, 'uproject') and parent_args.uproject is not None
+        if has_uproject_parameter:
             self._uproject = parent_args.uproject
             # valid --uproject param would be like NWD/NWD.uproject
             search_pattern = re.compile(r'^[\\|/]?(?P<uproject>[\w][\w][\w])[\\|/](?P=uproject).uproject$', re.IGNORECASE)
             if re.search(search_pattern, self._uproject):
                 self._uproject_path = os.path.normpath(self._uproject)
                 self._uproject = re.findall(search_pattern, self._uproject_path)[0].upper()
-            logging.debug('uproject specified by user : %s' % self._uproject)
-        # TODO: we could try and auto-detect branch based off vcs feedback - especially for buildbot
 
-        if not self._load_nimp_conf():
+            logging.debug('uproject specified by user : %s' % self._uproject)
+            # TODO: we could try and auto-detect branch based off vcs feedback - especially for buildbot
+
+        # base_conf for monorepo
+        if not self._load_nimp_conf('.baseNimp.conf'):
             return exit_error
+        # legacy conf
+        if not hasattr(self, 'root_dir') or not self.root_dir:
+            if not self._load_nimp_conf('.nimp.conf'):
+                return exit_error
 
         for config_loader in Environment.config_loaders:
             if not config_loader(self):
@@ -246,15 +256,16 @@ class Environment:
 
         for key, value in settings_content.items():
             setattr(self, key, value)
+            self.debug_env.update({key: value})
 
         return True
 
     def setup_envvars(self):
         ''' Applies environment variables from .nimp.conf '''
 
-    def _load_nimp_conf(self):
+    def _load_nimp_conf(self, conf_file):
         ''' legacy - loads project conf before pg8 4.24 preiew - xpj_conf in the future ? '''
-        nimp_conf_file = '.nimp.conf'
+        nimp_conf_file = conf_file
         nimp_conf_dir = nimp.system.find_dir_containing_file(nimp_conf_file)
 
         if not nimp_conf_dir:
