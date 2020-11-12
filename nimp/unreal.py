@@ -121,7 +121,8 @@ def load_config(env):
                 if len(match) > 0:
                     env.uproject = uproject
                 # Prefer anything over template and engine test directories as default uproject
-                if not hasattr(env, 'uproject') or 'TP_' in env.uproject or 'EngineTest' in env.uproject:
+                prefixes = ['TP_', 'FP_', 'EngineTest']
+                if not hasattr(env, 'uproject') or any(prefix in env.uproject for prefix in prefixes):
                     env.uproject = uproject
                 if uproject == env.uproject:
                     env.uproject_dir = os.path.dirname(ufile)
