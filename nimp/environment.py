@@ -61,8 +61,6 @@ class Environment:
         self.dry_run = False
         self.summary = None
         self.debug_env = {}
-        self.has_base_conf = None
-        self.has_project_conf = None
 
 
     def load_argument_parser(self, parent_parser):
@@ -179,6 +177,12 @@ class Environment:
             if "NIMP_LOG_FILE" in os.environ:
                 # PATCHING ROOT LOGGER
                 logging.getLogger().addHandler(log_handler.log_all_handler)
+
+            # Alawys display uproject selected
+            if hasattr(self, 'uproject') and hasattr(self, 'uproject_dir'):
+                logging.info('Found UE4 project %s in %s' % (self.uproject, self.uproject_dir))
+            else:
+                logging.info('No UE4 project loaded')
 
             if hasattr(self, 'environment'):
                 for key, val in self.environment.items():
