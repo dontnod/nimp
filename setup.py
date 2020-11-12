@@ -23,7 +23,7 @@ version_full = version_short + ('+' + revision if revision else '')
 
 setup_info = dict(
 
-    name = 'nimp-cli',
+    name = 'nimp-cli-staging',
     version = version_full,
     description = 'Multipurpose build tool',
     long_description = '' +
@@ -57,7 +57,7 @@ setup_info = dict(
     ],
 
     entry_points = {
-        'console_scripts' : [ 'nimp = nimp.nimp_cli:main' ],
+        'console_scripts' : [ 'nimp-staging = nimp.nimp_cli:main' ],
     },
 
     # See list at https://pypi.python.org/pypi?:action=list_classifiers
