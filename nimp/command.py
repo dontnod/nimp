@@ -96,10 +96,20 @@ def discover(env):
     # Import commands from base nimp
     get_class_instances(nimp.base_commands, nimp.command.Command, all_commands)
 
-    # Import project-local commands from .nimp/commands
+    # Import legacy project-local commands from .nimp/commands
     localpath = os.path.abspath(os.path.join(env.root_dir, '.nimp'))
     if localpath not in sys.path:
         sys.path.insert(0, localpath)
+        # Import monorepo commands if any - not legacy
+        if hasattr(env, 'uproject_dir') and hasattr(env, 'has_monorepo_commands') and env.has_monorepo_commands:
+            if os.path.exists(os.path.join(localpath, 'monorepo_commands')):
+                try:
+                    #pylint: disable=import-error
+                    import monorepo_commands
+                    get_class_instances(monorepo_commands, nimp.command.Command, all_commands)
+                except ImportError:
+                    pass
+    # Import project-local commands from .nimp/commands - not legacy
     if hasattr(env, 'uproject_dir'):
         uproject_dir = os.path.abspath(os.path.join(env.uproject_dir, '.nimp'))
         if uproject_dir not in sys.path:
