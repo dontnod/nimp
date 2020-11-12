@@ -142,9 +142,6 @@ def load_config(env):
     if hasattr(env, 'uproject_dir'):
         env.game_dir = env.uproject_dir
 
-    if hasattr(env, 'uproject') and hasattr(env, 'uproject_dir'):
-        logging.info('Found UE4 project %s in %s' % (env.uproject, env.uproject_dir))
-
     return True
 
 
