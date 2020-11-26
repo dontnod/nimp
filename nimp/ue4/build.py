@@ -25,6 +25,7 @@ import logging
 import os
 import platform
 import re
+import time
 from pathlib import Path
 
 import nimp.build
@@ -59,9 +60,21 @@ def build(env):
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
         # Now generate project files
-        if _ue4_generate_project(env) != 0:
-            logging.error("Error generating UE4 project files")
-            return False
+        counter = 0
+        max_counter = 2
+        retry_delay = 5
+        while counter <= max_counter:
+            result, output, err = _ue4_generate_project(env)
+            if result != 0 and "autoSDK" in err:
+                    logging.warning('AutoSDK issue, trying again.')
+                    if counter >= max_counter:
+                        logging.error("Error generating UE4 project files")
+                        return False
+                    counter += 1
+                    time.sleep(retry_delay)
+            elif result != 0:
+                logging.error("Error generating UE4 project files")
+                return False
 
     # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
     if not env.is_dne_legacy_ue4:
@@ -145,7 +158,7 @@ def _ue4_generate_project(env):
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
 
-    return nimp.sys.process.call(command, cwd=env.ue4_dir)
+    return nimp.sys.process.call(command, cwd=env.ue4_dir, capture_output=True)
 
 
 def _ue4_build_tool_ubt(env, tool, vs_version=None):
@@ -202,11 +215,17 @@ def _ue4_build_game(env, solution, vs_version):
             return False
 
     game = env.game if hasattr(env, 'game') else 'UE4'
-    if not _ue4_run_ubt(env, game, env.ue4_platform, env.ue4_config, vs_version=vs_version):
+    if not _ue4_run_ubt(env, game, env.ue4_platform, env.ue4_config, vs_version=vs_version, flags=['-verbose']):
         logging.error("Could not build game project")
         return False
 
     return True
+
+def _ue4_build_editor_swarm_interface(env, solution, vs_version):
+    dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
+        logging.error("Could not build SwarmInterface")
+        return False
 
 def _ue4_build_editor(env, solution, vs_version):
     if not _ue4_build_swarmagent(env, vs_version):
@@ -215,15 +234,22 @@ def _ue4_build_editor(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_editor_legacy(env, solution, vs_version)
 
-    dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
-    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
-        logging.error("Could not build SwarmInterface")
-        return False
+    # Needed before any compilation
+    _ue4_build_editor_swarm_interface(env, solution, vs_version)
 
+    # Legacy - one game compilation
     game = env.game if hasattr(env, 'game') else 'UE4'
-    if not _ue4_run_ubt(env, game + 'Editor', env.ue4_platform, env.ue4_config, vs_version=vs_version):
-        logging.error("Could not build editor project")
-        return False
+    editors_to_build = [game]
+    # for testing
+    if hasattr(env, 'build_multiple_editors') and env.build_multiple_editors is True and\
+       hasattr(env, 'editors_to_build') and env.editors_to_build is not None:
+        editors_to_build = env.editors_to_build
+    editors_to_build = [ game + 'Editor' for game in editors_to_build]
+
+    for editor in editors_to_build:
+        if not _ue4_run_ubt(env, editor, env.ue4_platform, env.ue4_config, vs_version=vs_version):
+            logging.error("Could not build editor project")
+            return False
 
     return True
 
