@@ -152,7 +152,7 @@ def _ue4_generate_project(env):
         attempt = 0
         while attempt <= max_attemtps:
             result, output, err = nimp.sys.process.call(command, cwd=env.ue4_dir, capture_output=True)
-            if result != 0 and "ERROR: Unhandled exception: System.IO.IOException:" in output or ":\\autoSDK\\HostWin64\\" in output:  # AutoSDK error most likely, retry
+            if result != 0 and "ERROR: Unhandled exception: System." in output or ":\\autoSDK\\HostWin64\\" in output:  # AutoSDK error most likely, retry
                 logging.warning('AutoSDK issue, retrying...')
                 if attempt >= max_attemtps:
                     return result
