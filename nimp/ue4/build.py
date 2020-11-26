@@ -60,23 +60,9 @@ def build(env):
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
         # Now generate project files
-        counter = 0
-        max_counter = 2
-        retry_delay = 5
-        while counter <= max_counter:
-            result, output, err = _ue4_generate_project(env)
-            if result == 0: # Build is ok, continue
-                break
-            if result != 0 and "autoSDK" in err: # AutoSDK error most likely, retry a few times
-                    logging.warning('AutoSDK issue, trying again.')
-                    if counter >= max_counter:
-                        logging.error("Error generating UE4 project files because of autoSDK")
-                        return False
-                    counter += 1
-                    time.sleep(retry_delay)
-            elif result != 0: # Unknown error, stop
-                logging.error("Error generating UE4 project files")
-                return False
+        if _ue4_generate_project(env) != 0:
+            logging.error("Error generating UE4 project files")
+            return False
 
     # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
     if not env.is_dne_legacy_ue4:
@@ -160,7 +146,24 @@ def _ue4_generate_project(env):
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
 
-    return nimp.sys.process.call(command, cwd=env.ue4_dir, capture_output=True)
+    # Inline this here - minimal change for now - for testing
+    def _try_excecute(env, command, max_attemtps=2, delay=5):
+        ''' retry in cause autoSDK fails us '''
+        attempt = 0
+        while attempt <= max_attemtps:
+            result, output, err = nimp.sys.process.call(command, cwd=env.ue4_dir, capture_output=True)
+            if result != 0 and "ERROR: Unhandled exception: System.IO.IOException:" in output or ":\\autoSDK\\HostWin64\\" in output:  # AutoSDK error most likely, retry
+                logging.warning('AutoSDK issue, retrying...')
+                if attempt >= max_attemtps:
+                    return result
+                attempt += 1
+                time.sleep(delay)
+            else:
+                return result
+
+    return _try_excecute(env, command)
+
+
 
 
 def _ue4_build_tool_ubt(env, tool, vs_version=None):
