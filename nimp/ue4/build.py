@@ -65,14 +65,16 @@ def build(env):
         retry_delay = 5
         while counter <= max_counter:
             result, output, err = _ue4_generate_project(env)
-            if result != 0 and "autoSDK" in err:
+            if result == 0: # Build is ok, continue
+                break
+            if result != 0 and "autoSDK" in err: # AutoSDK error most likely, retry a few times
                     logging.warning('AutoSDK issue, trying again.')
                     if counter >= max_counter:
-                        logging.error("Error generating UE4 project files")
+                        logging.error("Error generating UE4 project files because of autoSDK")
                         return False
                     counter += 1
                     time.sleep(retry_delay)
-            elif result != 0:
+            elif result != 0: # Unknown error, stop
                 logging.error("Error generating UE4 project files")
                 return False
 
