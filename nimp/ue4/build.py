@@ -146,13 +146,14 @@ def _ue4_generate_project(env):
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
 
+
     # Inline this here - minimal change for now - for testing
     def _try_excecute(env, command, max_attemtps=2, delay=5):
         ''' retry in cause autoSDK fails us '''
         attempt = 0
         while attempt <= max_attemtps:
             result, output, err = nimp.sys.process.call(command, cwd=env.ue4_dir, capture_output=True)
-            if result != 0 and "ERROR: Unhandled exception: System." in output or ":\\autoSDK\\HostWin64\\" in output:  # AutoSDK error most likely, retry
+            if result != 0 and "ERROR: Unhandled exception: System." in output and ":\\autoSDK\\HostWin64\\" in output:  # AutoSDK error most likely, retry
                 logging.warning('AutoSDK issue, retrying...')
                 if attempt >= max_attemtps:
                     return result
@@ -162,8 +163,6 @@ def _ue4_generate_project(env):
                 return result
 
     return _try_excecute(env, command)
-
-
 
 
 def _ue4_build_tool_ubt(env, tool, vs_version=None):
