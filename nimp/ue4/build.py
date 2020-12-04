@@ -85,6 +85,11 @@ def build(env):
         except IOError:
             pass
 
+    # testing using msbulid insted of devenv in certain cases
+    env.use_msbuild = False
+    if hasattr(env, 'vs_version') and hasattr(env, 'ue4_minor'):
+        env.use_msbuild = vs_version >= '2019' and env.ue4_minor >= 26
+
     # Build tools that all targets require
     if not _ue4_build_common_tools(env, solution=solution, vs_version=vs_version):
         return False
@@ -148,14 +153,19 @@ def _ue4_generate_project(env):
 
 
     # Inline this here - minimal change for now - for testing
-    def _try_excecute(env, command, max_attemtps=2, delay=5):
+    def _try_excecute(env, command, max_attemtps=3, delay=5, time_out=60):
         ''' retry in cause autoSDK fails us '''
-        attempt = 0
+        attempt = 1
         while attempt <= max_attemtps:
+            start_time = time.time()
             result, output, err = nimp.sys.process.call(command, cwd=env.ue4_dir, capture_output=True)
-            if result != 0 and "ERROR: Unhandled exception: System." in output and ":\\autoSDK\\HostWin64\\" in output:  # AutoSDK error most likely, retry
-                logging.warning('AutoSDK issue, retrying...')
-                if attempt >= max_attemtps:
+            time_passed = time.time() - start_time
+            # We don't want to retry long processes and block build machines, just retry quick autoSDK errors.
+            if time_passed > time_out:
+                return result
+            if result != 0 and "ERROR: Unhandled exception: System." in output and ":\\autoSDK\\HostWin64\\" in output:
+                logging.info('AutoSDK issue, retrying : attempt {attempt} out of {max_attemtps}...'.format(**locals()))
+                if attempt > max_attemtps:
                     return result
                 attempt += 1
                 time.sleep(delay)
