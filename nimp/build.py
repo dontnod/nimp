@@ -74,19 +74,33 @@ def msbuild(project_file, platform_name, configuration, project=None,
     return result == 0
 
 def vsbuild(solution, platform_name, configuration, project=None,
-            vs_version='14', target='Build', dotnet_version='4.6'):
+            vs_version='14', target='Build', dotnet_version='4.6', use_msbuild=False):
     ''' Builds a project with Visual Studio '''
 
     # Windows
     if nimp.sys.platform.is_windows():
-        devenv_path = _find_devenv_path(vs_version)
-        if devenv_path is None:
-            logging.error('Unable to find Visual Studio %s', vs_version)
-            return False
-        command = [ devenv_path, solution ]
-        command = command + [ '/' + target, configuration + '|' + platform_name ]
-        if project is not None:
-            command = command + [ '/project', project ]
+        if use_msbuild:
+            msbuild_path = _find_msbuild_path(vs_version)
+            if msbuild_path is None:
+                logging.error('Unable to find Visual Studio %s', vs_version)
+                return False
+            command = [ msbuild_path, solution, '/verbosity:minimal', '/nologo',
+                       '/p:Configuration=' + configuration,
+                       '/p:Platform=' + platform_name,
+                       '/p:TargetFrameworkVersion=v' + dotnet_version,
+                       '/p:TargetFrameworkProfile=']
+            if project is not None:
+                command = command + ['/target:' + project]
+
+        else:
+            devenv_path = _find_devenv_path(vs_version)
+            if devenv_path is None:
+                logging.error('Unable to find Visual Studio %s', vs_version)
+                return False
+            command = [ devenv_path, solution ]
+            command = command + [ '/' + target, configuration + '|' + platform_name ]
+            if project is not None:
+                command = command + [ '/project', project ]
 
         result, output, _ = nimp.sys.process.call(command, capture_output=True)
         if 'Cannot run if when setup is in progress.' in output:
