@@ -201,12 +201,26 @@ def _ue4_build_game(env, solution, vs_version):
         if not _ue4_build_tool_ubt(env, 'XboxOnePDBFileUtil', vs_version):
             return False
 
+    if env.platform == 'xsx':
+        if not _ue4_build_tool_ubt(env, 'XboxPDBFileUtil', vs_version):
+            return False
+
+    if env.platform == 'ps5' and env.ue4_minor >= 26:
+        if not _ue4_build_ps5_common_tools(env, solution, vs_version):
+            return False
+
     game = env.game if hasattr(env, 'game') else 'UE4'
     if not _ue4_run_ubt(env, game, env.ue4_platform, env.ue4_config, vs_version=vs_version):
         logging.error("Could not build game project")
         return False
 
     return True
+
+def _ue4_build_ps5_common_tools(env, solution, vs_version):
+    dep = env.format('{ue4_dir}/Engine/Platforms/PS5/Source/Programs/PS5SymbolTool/PS5SymbolTool.csproj')
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Release', vs_version=vs_version):
+        logging.error("Could not build PS5SymbolTool")
+        return False
 
 def _ue4_build_editor(env, solution, vs_version):
     if not _ue4_build_swarmagent(env, vs_version):
