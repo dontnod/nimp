@@ -209,7 +209,7 @@ def _try_make_executable(file_path):
                 logging.warning('Failed to make file executable: %s (FilePath: %s)', exception, file_path)
 
 
-def create_artifact(artifact_path, file_collection, archive, compress, dry_run):
+def create_artifact(artifact_path, file_collection, archive, compress, dry_run, tmp_path=None):
     ''' Create an artifact '''
 
     if os.path.isfile(artifact_path + '.zip') or os.path.isdir(artifact_path):
@@ -220,6 +220,9 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run):
             os.remove(artifact_path + '.zip.tmp')
         if os.path.isdir(artifact_path + '.tmp'):
             shutil.rmtree(artifact_path + '.tmp')
+        if tmp_path is not None:
+            if os.path.isdir(tmp_path + '.tmp'):
+                shutil.rmtree(tmp_path + '.tmp')
 
     if dry_run:
         for source, destination in file_collection:
@@ -242,21 +245,22 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run):
         shutil.move(archive_path + '.tmp', archive_path)
 
     else:
+        artifact_path_tmp = artifact_path + '.tmp' if tmp_path is None else tmp_path + '.tmp'
         for source, destination in file_collection:
             if os.path.isdir(source):
                 continue
             logging.debug('Adding %s as %s', source, destination)
-            destination = os.path.join(artifact_path + '.tmp', destination)
+            destination = os.path.join(artifact_path_tmp, destination)
             os.makedirs(os.path.dirname(destination), exist_ok = True)
             shutil.copyfile(source, destination)
-        logging.debug('Renaming %s to %s', artifact_path + '.tmp', artifact_path)
+        logging.debug('Renaming %s to %s', artifact_path_tmp, artifact_path)
         try:
             # Sometimes shutils.move copies files instead of moving them, maybe
             # because of issues with network shares, so we try os.rename first.
-            os.rename(artifact_path + '.tmp', artifact_path)
+            os.rename(artifact_path_tmp, artifact_path)
         except Exception as ex:
             logging.debug('Renaming failed (%s), trying alternate method' % (ex))
-            shutil.move(artifact_path + '.tmp', artifact_path)
+            shutil.move(artifact_path_tmp, artifact_path)
 
 
 def create_torrent(artifact_path, announce, dry_run):
