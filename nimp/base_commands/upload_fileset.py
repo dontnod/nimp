@@ -67,6 +67,8 @@ class UploadFileset(nimp.command.Command):
 
         artifact_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
         artifact_path = nimp.system.sanitize_path(env.format(artifact_path))
+        artifact_path_tmp = env.artifact_repository_destination + '/.tmp/' + env.artifact_collection[env.fileset]
+        artifact_path_tmp = nimp.system.sanitize_path(env.format(artifact_path))
 
         if os.path.isfile(artifact_path + '.zip') or os.path.isdir(artifact_path):
             if not env.force:
@@ -88,7 +90,9 @@ class UploadFileset(nimp.command.Command):
         if not env.dry_run:
             os.makedirs(os.path.dirname(artifact_path), exist_ok = True)
         nimp.system.try_execute(
-            lambda: nimp.artifacts.create_artifact(artifact_path, all_files, env.archive, env.compress, env.dry_run),
+            lambda: nimp.artifacts.create_artifact(artifact_path, all_files,
+                                                   env.archive, env.compress, env.dry_run,
+                                                   tmp_path=artifact_path_tmp),
             (OSError, ValueError, zipfile.BadZipFile))
         if env.torrent:
             logging.info('Creating torrent for %s', artifact_path)
