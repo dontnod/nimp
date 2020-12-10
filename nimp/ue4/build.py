@@ -248,6 +248,7 @@ def _ue4_build_ps5_common_tools(env, solution, vs_version):
     if not nimp.build.msbuild(dep, 'AnyCPU', 'Release', vs_version=vs_version):
         logging.error("Could not build PS5SymbolTool")
         return False
+    return True
 
 def _ue4_build_editor_swarm_interface(env, solution, vs_version):
     dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
