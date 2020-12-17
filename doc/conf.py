@@ -40,7 +40,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'Nimp-staging'
+project = 'Nimp'
 copyright = '2014-2019, Dontnod Entertainment'
 author = 'Dontnod Entertainment'
 
