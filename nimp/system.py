@@ -31,6 +31,7 @@ import shutil
 import stat
 import time
 import importlib
+import pkg_resources
 
 import glob2
 
@@ -300,7 +301,19 @@ class FileMapper():
     def load_set(self, set_name):
         ''' Loads a file mapper from a configuration file '''
         set_module_name = self._format(set_name)
-        set_module = importlib.import_module('filesets.' + set_module_name)
+        set_module = None
+        try:
+            set_module = importlib.import_module('filesets.' + set_module_name)
+        except ModuleNotFoundError:
+            for entry in pkg_resources.iter_entry_points('nimp.plugins'):
+                try:
+                    set_module = importlib.import_module(entry.module_name + '.filesets.' + set_module_name)
+                    break
+                except ModuleNotFoundError:
+                    pass
+        if set_module is None:
+            raise ModuleNotFoundError(f"No module named 'filesets.{set_module_name}'")
+
         set_module.map(self)
         return self.get_leaves()
 
