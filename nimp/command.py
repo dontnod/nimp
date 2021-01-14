@@ -124,6 +124,7 @@ def discover(env):
 
     # Import commands from plugins
     for entry_point in pkg_resources.iter_entry_points('nimp.plugins'):
+        print(entry_point)
         try:
             module = entry_point.load()
             get_class_instances(module, nimp.command.Command, all_commands)
