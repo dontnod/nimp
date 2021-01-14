@@ -28,6 +28,7 @@ import glob
 import logging
 import os
 import re
+import stat
 import shutil
 import subprocess
 import xml.etree.ElementTree
@@ -361,6 +362,10 @@ class Package(nimp.command.Command):
 
             if not env.dry_run:
                 os.makedirs(sdb_path, exist_ok = True)
+                if os.path.exists(engine_configuration_file_path + '.nimp.bak'):
+                    # safely remove any leftover backup file
+                    os.chmod(engine_configuration_file_path + '.nimp.bak', stat.S_IWRITE)
+                    os.remove(engine_configuration_file_path + '.nimp.bak')
                 shutil.move(engine_configuration_file_path, engine_configuration_file_path + '.nimp.bak')
                 shutil.copyfile(engine_configuration_file_path + '.nimp.bak', engine_configuration_file_path)
 
