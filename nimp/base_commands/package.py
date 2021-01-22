@@ -38,6 +38,8 @@ import nimp.environment
 import nimp.system
 import nimp.sys.process
 
+from contextlib import contextmanager
+
 from nimp.sys.platform import create_platform_desc
 
 
@@ -98,6 +100,7 @@ class UnrealPackageConfiguration():
     def __init__(self, env):
         self.env = env
 
+        self.editor_path = None
         self.engine_directory = None
         self.project_directory = None
         self.configuration_directory = None
@@ -286,23 +289,40 @@ class Package(nimp.command.Command):
 
         if 'cook' in env.steps:
             logging.info('=== Cook ===')
-            Package.cook(env, package_configuration)
+            with Package.configure_variant(env, package_configuration.project_directory):
+                Package.cook(env, package_configuration)
             logging.info('')
         if 'stage' in env.steps:
             logging.info('=== Stage ===')
-            Package.stage(env, package_configuration)
+            with Package.configure_variant(env, package_configuration.project_directory):
+                Package.stage(env, package_configuration)
             logging.info('')
         if 'package' in env.steps:
             logging.info('=== Package ===')
-            Package.package_for_platform(env, package_configuration)
+            with Package.configure_variant(env, package_configuration.project_directory):
+                Package.package_for_platform(env, package_configuration)
             logging.info('')
         if 'verify' in env.steps:
             logging.info('=== Verify ===')
-            Package.verify(env, package_configuration)
+            with Package.configure_variant(env, package_configuration.project_directory):
+                Package.verify(env, package_configuration)
             logging.info('')
 
         return True
 
+    @contextmanager
+    def configure_variant(env, project_directory):
+        if env.variant and env.ue4_minor > 24:
+            variant_configuration_directory = project_directory + '/Config/Variants/' + env.variant
+            active_configuration_directory = project_directory + '/Config/Variants/Active'
+            try:
+                if not os.path.exists(variant_configuration_directory):
+                    raise FileNotFoundError("Variant not found : %s" % variant_configuration_directory)
+                _try_remove(active_configuration_directory, False)
+                _copy_file(variant_configuration_directory, active_configuration_directory, False)
+                yield
+            finally:
+                _try_remove(active_configuration_directory, False)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
@@ -423,18 +443,19 @@ class Package(nimp.command.Command):
             if stage_success != 0:
                 raise RuntimeError('Stage failed')
 
-        Package._stage_title_files(package_configuration, env.dry_run)
-        Package._stage_layout(package_configuration, env.dry_run)
-        Package._stage_binaries(package_configuration, env.dry_run)
-        Package._stage_content(env, package_configuration)
+        if env.ue4_minor < 24: # legacy
+            Package._stage_title_files(package_configuration, env.dry_run)
+            Package._stage_layout(package_configuration, env.dry_run)
+            Package._stage_binaries(package_configuration, env.dry_run)
+            Package._stage_content(env, package_configuration)
 
-        if package_configuration.msixvc:
-            if not env.dry_run:
-                # Dummy files for empty chunks
-                with open(package_configuration.stage_directory + '/LaunchChunk.bin', 'w') as empty_file:
-                    empty_file.write('\0')
-                with open(package_configuration.stage_directory + '/AlignmentChunk.bin', 'w') as empty_file:
-                    empty_file.write('\0')
+            if package_configuration.msixvc:
+                if not env.dry_run:
+                    # Dummy files for empty chunks
+                    with open(package_configuration.stage_directory + '/LaunchChunk.bin', 'w') as empty_file:
+                        empty_file.write('\0')
+                    with open(package_configuration.stage_directory + '/AlignmentChunk.bin', 'w') as empty_file:
+                        empty_file.write('\0')
 
 
     @staticmethod
