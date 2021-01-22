@@ -289,42 +289,41 @@ class Package(nimp.command.Command):
 
         logging.info('')
 
-        if 'cook' in env.steps:
-            logging.info('=== Cook ===')
-            # with Package.configure_variant(env, package_configuration.project_directory):
-            Package.cook(env, package_configuration)
-            logging.info('')
-        if 'stage' in env.steps:
-            logging.info('=== Stage ===')
-            # with Package.configure_variant(env, package_configuration.project_directory):
-            Package.stage(env, package_configuration)
-            logging.info('')
-        if 'package' in env.steps:
-            logging.info('=== Package ===')
-            # with Package.configure_variant(env, package_configuration.project_directory):
-            Package.package_for_platform(env, package_configuration)
-            logging.info('')
-        if 'verify' in env.steps:
-            logging.info('=== Verify ===')
-            # with Package.configure_variant(env, package_configuration.project_directory):
-            Package.verify(env, package_configuration)
-            logging.info('')
+        with Package.configure_variant(env, package_configuration.project_directory):
+            if 'cook' in env.steps:
+                logging.info('=== Cook ===')
+                Package.cook(env, package_configuration)
+                logging.info('')
+            if 'stage' in env.steps:
+                logging.info('=== Stage ===')
+                Package.stage(env, package_configuration)
+                logging.info('')
+            if 'package' in env.steps:
+                logging.info('=== Package ===')
+                Package.package_for_platform(env, package_configuration)
+                logging.info('')
+            if 'verify' in env.steps:
+                logging.info('=== Verify ===')
+                Package.verify(env, package_configuration)
+                logging.info('')
 
         return True
 
     @contextmanager
     def configure_variant(env, project_directory):
-        if env.variant and env.ue4_minor > 24:
-            variant_configuration_directory = project_directory + '/Config/Variants/' + env.variant
-            active_configuration_directory = project_directory + '/Config/Variants/Active'
-            try:
-                if not os.path.exists(variant_configuration_directory):
-                    raise FileNotFoundError("Variant not found : %s" % variant_configuration_directory)
-                _try_remove(active_configuration_directory, False)
-                _copy_file(variant_configuration_directory, active_configuration_directory, False)
-                yield
-            finally:
-                _try_remove(active_configuration_directory, False)
+        if env.ue4_minor < 24 or not env.variant:
+            yield
+
+        variant_configuration_directory = project_directory + '/Config/Variants/' + env.variant
+        active_configuration_directory = project_directory + '/Config/Variants/Active'
+        try:
+            if not os.path.exists(variant_configuration_directory):
+                raise FileNotFoundError("Variant not found : %s" % variant_configuration_directory)
+            _try_remove(active_configuration_directory, False)
+            _copy_file(variant_configuration_directory, active_configuration_directory, False)
+            yield
+        finally:
+            _try_remove(active_configuration_directory, False)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
