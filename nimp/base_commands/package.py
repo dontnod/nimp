@@ -291,23 +291,23 @@ class Package(nimp.command.Command):
 
         if 'cook' in env.steps:
             logging.info('=== Cook ===')
-            with Package.configure_variant(env, package_configuration.project_directory):
-                Package.cook(env, package_configuration)
+            # with Package.configure_variant(env, package_configuration.project_directory):
+            Package.cook(env, package_configuration)
             logging.info('')
         if 'stage' in env.steps:
             logging.info('=== Stage ===')
-            with Package.configure_variant(env, package_configuration.project_directory):
-                Package.stage(env, package_configuration)
+            # with Package.configure_variant(env, package_configuration.project_directory):
+            Package.stage(env, package_configuration)
             logging.info('')
         if 'package' in env.steps:
             logging.info('=== Package ===')
-            with Package.configure_variant(env, package_configuration.project_directory):
-                Package.package_for_platform(env, package_configuration)
+            # with Package.configure_variant(env, package_configuration.project_directory):
+            Package.package_for_platform(env, package_configuration)
             logging.info('')
         if 'verify' in env.steps:
             logging.info('=== Verify ===')
-            with Package.configure_variant(env, package_configuration.project_directory):
-                Package.verify(env, package_configuration)
+            # with Package.configure_variant(env, package_configuration.project_directory):
+            Package.verify(env, package_configuration)
             logging.info('')
 
         return True
