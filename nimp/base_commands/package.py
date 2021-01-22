@@ -199,6 +199,8 @@ class Package(nimp.command.Command):
             variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
             if os.path.exists(variant_configuration_directory):
                 package_configuration.configuration_directory = variant_configuration_directory
+                with open(package_configuration.configuration_directory + '/DefaultEngine.ini', 'a'):
+                    pass # necessary for shader debug info in case no defaultEngine is present
             variant_resource_directory = package_configuration.resource_directory + '/Variants/' + env.variant
             if os.path.exists(variant_resource_directory):
                 package_configuration.resource_directory = variant_resource_directory
