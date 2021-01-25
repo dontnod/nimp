@@ -311,16 +311,15 @@ class Package(nimp.command.Command):
 
     @contextmanager
     def configure_variant(env, project_directory):
-        if env.ue4_minor < 24 or not env.variant:
-            yield
-
-        variant_configuration_directory = project_directory + '/Config/Variants/' + env.variant
+        should_configure_variant = ( env.ue4_minor > 24 and env.variant is not None )
         active_configuration_directory = project_directory + '/Config/Variants/Active'
         try:
-            if not os.path.exists(variant_configuration_directory):
-                raise FileNotFoundError("Variant not found : %s" % variant_configuration_directory)
             _try_remove(active_configuration_directory, False)
-            _copy_file(variant_configuration_directory, active_configuration_directory, False)
+            if should_configure_variant:
+                variant_configuration_directory = project_directory + '/Config/Variants/' + env.variant
+                if not os.path.exists(variant_configuration_directory):
+                    raise FileNotFoundError("Variant not found : %s" % variant_configuration_directory)
+                _copy_file(variant_configuration_directory, active_configuration_directory, False)
             yield
         finally:
             _try_remove(active_configuration_directory, False)
