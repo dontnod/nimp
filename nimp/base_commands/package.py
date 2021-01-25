@@ -311,18 +311,21 @@ class Package(nimp.command.Command):
 
     @contextmanager
     def configure_variant(env, project_directory):
-        should_configure_variant = ( env.ue4_minor > 24 and env.variant is not None )
+        should_configure_variant = ( env.ue4_minor > 24 )
         active_configuration_directory = project_directory + '/Config/Variants/Active'
+
         try:
-            _try_remove(active_configuration_directory, False)
             if should_configure_variant:
+                _try_remove(active_configuration_directory, False)
+            if should_configure_variant and env.variant is not None:
                 variant_configuration_directory = project_directory + '/Config/Variants/' + env.variant
                 if not os.path.exists(variant_configuration_directory):
                     raise FileNotFoundError("Variant not found : %s" % variant_configuration_directory)
                 _copy_file(variant_configuration_directory, active_configuration_directory, False)
             yield
         finally:
-            _try_remove(active_configuration_directory, False)
+            if should_configure_variant:
+                _try_remove(active_configuration_directory, False)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
