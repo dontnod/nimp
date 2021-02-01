@@ -284,7 +284,8 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run, 
         try:
             # Sometimes shutils.move copies files instead of moving them, maybe
             # because of issues with network shares, so we try os.rename first.
-            _try_rename(artifact_path_tmp, artifact_path, max_attempts=30, retry_delay=2)
+            os.rename(artifact_path_tmp, artifact_path)
+            # _try_rename(artifact_path_tmp, artifact_path, max_attempts=30, retry_delay=2)
         except Exception as ex:
             logging.debug('Renaming failed (%s), trying alternate method' % (ex))
             shutil.move(artifact_path_tmp, artifact_path)
