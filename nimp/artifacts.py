@@ -36,6 +36,8 @@ import zipfile
 import requests
 
 import nimp.system
+import nimp.utils.git
+
 
 if platform.system() != 'Windows':
     try:
@@ -63,16 +65,28 @@ def list_artifacts(artifact_pattern, format_arguments):
     artifact_regex = re.compile(r'^' + artifact_escaped_name.format(revision = r'(?P<revision>[a-zA-Z0-9]+)') + r'(.zip)?$')
 
     all_files = _list_files(artifact_source, False)
+    # try:
+    #     all_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+    # except:
+    #     pass
     all_artifacts = []
+    counter = 0
+    counter_max = 100
     for file_uri in all_files:
+        # if counter < counter_max:
         file_name = os.path.basename(file_uri.rstrip('/'))
         artifact_match = artifact_regex.match(file_name)
         if artifact_match:
-            artifact = {
-                'revision': artifact_match.group('revision'),
-                'uri': file_uri,
-            }
-            all_artifacts.append(artifact)
+            group_revision = artifact_match.group('revision')
+            # if len(group_revision) > 8: # shitty way to hint a sha1
+                # group_revision = nimp.utils.git.get_commit_version(group_revision)
+                # counter += 1
+            if group_revision is not None:
+                artifact = {
+                    'revision': group_revision,
+                    'uri': file_uri,
+                }
+                all_artifacts.append(artifact)
     return all_artifacts
 
 
@@ -102,6 +116,7 @@ def _list_files(source, recursive):
                     all_files.extend(_list_files(file_path, True))
             else:
                 all_files.append(file_path)
+
 
     return all_files
 
@@ -208,6 +223,17 @@ def _try_make_executable(file_path):
             except OSError as exception:
                 logging.warning('Failed to make file executable: %s (FilePath: %s)', exception, file_path)
 
+def _try_rename(src, dst, max_attempts=5, retry_delay=10):
+    attempt = 1
+    while attempt <= max_attempts:
+        try:
+            os.rename(src, dst)
+        except OSError as exception:
+            logging.warning('%s (Attempt %s of %s)', exception, attempt, max_attempts)
+            if attempt >= max_attempts:
+                raise exception
+            time.sleep(retry_delay)
+            attempt += 1
 
 def create_artifact(artifact_path, file_collection, archive, compress, dry_run, tmp_path=None):
     ''' Create an artifact '''
@@ -257,7 +283,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run, 
         try:
             # Sometimes shutils.move copies files instead of moving them, maybe
             # because of issues with network shares, so we try os.rename first.
-            os.rename(artifact_path_tmp, artifact_path)
+            _try_rename(artifact_path_tmp, artifact_path, max_attempts=30, retry_delay=2)
         except Exception as ex:
             logging.debug('Renaming failed (%s), trying alternate method' % (ex))
             shutil.move(artifact_path_tmp, artifact_path)

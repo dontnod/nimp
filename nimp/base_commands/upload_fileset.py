@@ -66,6 +66,7 @@ class UploadFileset(nimp.command.Command):
             env.torrent_tracker_announce = None
 
         artifact_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
+
         artifact_path = nimp.system.sanitize_path(env.format(artifact_path))
         artifact_path_tmp = env.artifact_repository_destination + '/.tmp/' + env.artifact_collection[env.fileset]
         artifact_path_tmp = nimp.system.sanitize_path(env.format(artifact_path))
