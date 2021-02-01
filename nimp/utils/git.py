@@ -58,3 +58,12 @@ def get_version():
         revision_offset += 1
 
     return '.'.join([date, str(revision_offset), shorthash])
+
+def get_commit_version(commit_hash):
+    ''' Build a version string from the date and hash of a given commit '''
+    command = 'git show --no-patch --date=short --pretty=format:%ct.%h ' +  commit_hash
+    result, output, _ = nimp.sys.process.call(command.split(' '), capture_output=True, hide_output=True)
+    if result != 0 or '.' not in output:
+        return None
+
+    return output
