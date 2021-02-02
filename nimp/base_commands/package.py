@@ -28,6 +28,7 @@ import glob
 import logging
 import os
 import re
+import stat
 import shutil
 import subprocess
 import xml.etree.ElementTree
@@ -36,6 +37,8 @@ import nimp.command
 import nimp.environment
 import nimp.system
 import nimp.sys.process
+
+from contextlib import contextmanager
 
 from nimp.sys.platform import create_platform_desc
 
@@ -97,6 +100,7 @@ class UnrealPackageConfiguration():
     def __init__(self, env):
         self.env = env
 
+        self.editor_path = None
         self.engine_directory = None
         self.project_directory = None
         self.configuration_directory = None
@@ -195,6 +199,8 @@ class Package(nimp.command.Command):
             variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
             if os.path.exists(variant_configuration_directory):
                 package_configuration.configuration_directory = variant_configuration_directory
+                with open(package_configuration.configuration_directory + '/DefaultEngine.ini', 'a'):
+                    pass # necessary for shader debug info in case no defaultEngine is present
             variant_resource_directory = package_configuration.resource_directory + '/Variants/' + env.variant
             if os.path.exists(variant_resource_directory):
                 package_configuration.resource_directory = variant_resource_directory
@@ -283,6 +289,7 @@ class Package(nimp.command.Command):
 
         logging.info('')
 
+        # with Package.configure_variant(env, package_configuration.project_directory):
         if 'cook' in env.steps:
             logging.info('=== Cook ===')
             Package.cook(env, package_configuration)
@@ -302,6 +309,23 @@ class Package(nimp.command.Command):
 
         return True
 
+    @contextmanager
+    def configure_variant(env, project_directory):
+        should_configure_variant = ( env.ue4_minor > 24 )
+        active_configuration_directory = project_directory + '/Config/Variants/Active'
+
+        try:
+            if should_configure_variant:
+                _try_remove(active_configuration_directory, False)
+            if should_configure_variant and env.variant is not None:
+                variant_configuration_directory = project_directory + '/Config/Variants/' + env.variant
+                if not os.path.exists(variant_configuration_directory):
+                    raise FileNotFoundError("Variant not found : %s" % variant_configuration_directory)
+                _copy_file(variant_configuration_directory, active_configuration_directory, False)
+            yield
+        finally:
+            if should_configure_variant:
+                _try_remove(active_configuration_directory, False)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
@@ -361,6 +385,10 @@ class Package(nimp.command.Command):
 
             if not env.dry_run:
                 os.makedirs(sdb_path, exist_ok = True)
+                if os.path.exists(engine_configuration_file_path + '.nimp.bak'):
+                    # safely remove any leftover backup file
+                    os.chmod(engine_configuration_file_path + '.nimp.bak', stat.S_IWRITE)
+                    os.remove(engine_configuration_file_path + '.nimp.bak')
                 shutil.move(engine_configuration_file_path, engine_configuration_file_path + '.nimp.bak')
                 shutil.copyfile(engine_configuration_file_path + '.nimp.bak', engine_configuration_file_path)
 
@@ -418,18 +446,19 @@ class Package(nimp.command.Command):
             if stage_success != 0:
                 raise RuntimeError('Stage failed')
 
-        Package._stage_title_files(package_configuration, env.dry_run)
-        Package._stage_layout(package_configuration, env.dry_run)
-        Package._stage_binaries(package_configuration, env.dry_run)
-        Package._stage_content(env, package_configuration)
+        if env.ue4_minor < 24: # legacy
+            Package._stage_title_files(package_configuration, env.dry_run)
+            Package._stage_layout(package_configuration, env.dry_run)
+            Package._stage_binaries(package_configuration, env.dry_run)
+            Package._stage_content(env, package_configuration)
 
-        if package_configuration.msixvc:
-            if not env.dry_run:
-                # Dummy files for empty chunks
-                with open(package_configuration.stage_directory + '/LaunchChunk.bin', 'w') as empty_file:
-                    empty_file.write('\0')
-                with open(package_configuration.stage_directory + '/AlignmentChunk.bin', 'w') as empty_file:
-                    empty_file.write('\0')
+            if package_configuration.msixvc:
+                if not env.dry_run:
+                    # Dummy files for empty chunks
+                    with open(package_configuration.stage_directory + '/LaunchChunk.bin', 'w') as empty_file:
+                        empty_file.write('\0')
+                    with open(package_configuration.stage_directory + '/AlignmentChunk.bin', 'w') as empty_file:
+                        empty_file.write('\0')
 
 
     @staticmethod

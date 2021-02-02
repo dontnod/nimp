@@ -85,6 +85,14 @@ class DownloadFileset(nimp.command.Command):
     def _find_matching_artifact(all_artifacts, exact_revision, minimum_revision, maximum_revision):
         all_artifacts = sorted(all_artifacts, key = lambda artifact: int(artifact['revision'], 16), reverse = True)
 
+        # if exact_revision is not None and len(exact_revision) > 8:
+        #     exact_revision = nimp.utils.git.get_commit_version(exact_revision)
+        # if minimum_revision is not None and len(minimum_revision) > 8:
+        #     minimum_revision = nimp.utils.git.get_commit_version(minimum_revision)
+        # if maximum_revision is not None and len(maximum_revision) > 8:
+        #     maximum_revision = nimp.utils.git.get_commit_version(maximum_revision)
+
+
         try:
             if exact_revision is not None:
                 return next(a for a in all_artifacts if a['revision'] == exact_revision)
