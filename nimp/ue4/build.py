@@ -245,7 +245,8 @@ def _ue4_build_game(env, solution, vs_version):
 
 def _ue4_build_ps5_common_tools(env, solution, vs_version):
     dep = env.format('{ue4_dir}/Engine/Platforms/PS5/Source/Programs/PS5SymbolTool/PS5SymbolTool.csproj')
-    if not nimp.build.msbuild(dep, 'AnyCPU', 'Release', vs_version=vs_version):
+    configuration = 'Release' if (env.ue4_minor >= 26 and env.ue4_patch < 1) else 'Development'
+    if not nimp.build.msbuild(dep, 'AnyCPU', configuration, vs_version=vs_version):
         logging.error("Could not build PS5SymbolTool")
         return False
     return True
