@@ -227,7 +227,7 @@ def _try_make_executable(file_path):
 def _try_rename(src, dst, max_attempts=5, retry_delay=2):
     def _rename():
         os.rename(src, dst)
-    try_execute(_rename, OSError, attempt_maximum=max_attempts, retry_delay=retry_delay)
+    nimp.system.try_execute(_rename, OSError, attempt_maximum=max_attempts, retry_delay=retry_delay)
 
 def create_artifact(artifact_path, file_collection, archive, compress, dry_run, tmp_path=None):
     ''' Create an artifact '''
