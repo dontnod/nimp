@@ -224,17 +224,10 @@ def _try_make_executable(file_path):
             except OSError as exception:
                 logging.warning('Failed to make file executable: %s (FilePath: %s)', exception, file_path)
 
-def _try_rename(src, dst, max_attempts=5, retry_delay=10):
-    attempt = 1
-    while attempt <= max_attempts:
-        try:
-            os.rename(src, dst)
-        except OSError as exception:
-            logging.warning('%s (Attempt %s of %s)', exception, attempt, max_attempts)
-            if attempt >= max_attempts:
-                raise exception
-            time.sleep(retry_delay)
-            attempt += 1
+def _try_rename(src, dst, max_attempts=5, retry_delay=2):
+    def _rename():
+        os.rename(src, dst)
+    try_execute(_rename, OSError, attempt_maximum=max_attempts, retry_delay=retry_delay)
 
 def create_artifact(artifact_path, file_collection, archive, compress, dry_run, tmp_path=None):
     ''' Create an artifact '''
@@ -284,8 +277,8 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run, 
         try:
             # Sometimes shutils.move copies files instead of moving them, maybe
             # because of issues with network shares, so we try os.rename first.
-            os.rename(artifact_path_tmp, artifact_path)
-            # _try_rename(artifact_path_tmp, artifact_path, max_attempts=30, retry_delay=2)
+            # os.rename(artifact_path_tmp, artifact_path)
+            _try_rename(artifact_path_tmp, artifact_path, max_attempts=30, retry_delay=2)
         except Exception as ex:
             logging.debug('Renaming failed (%s), trying alternate method' % (ex))
             shutil.move(artifact_path_tmp, artifact_path)
