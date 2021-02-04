@@ -239,7 +239,8 @@ class Package(nimp.command.Command):
 
         ps4_title_directory_collection = []
 
-        if hasattr(env, 'package_variants'):
+        # ignore possible  legacy config for pre-monorepo projects
+        if hasattr(env, 'package_variants') and env.ue4_minor < 24:
             if not env.variant:
                 raise ValueError('Variant parameter is required')
 
@@ -258,7 +259,7 @@ class Package(nimp.command.Command):
             if 'ignored_warnings' in env.package_variants[env.variant]:
                 package_configuration.ignored_warnings = env.package_variants[env.variant]['ignored_warnings']
 
-        #region Legacy
+        # region Legacy
         else:
             if env.patch:
                 package_configuration.package_type = 'application_patch'
@@ -290,6 +291,8 @@ class Package(nimp.command.Command):
         logging.info('')
 
         # with Package.configure_variant(env, package_configuration.project_directory):
+        # TODO: Fix issues linked to configure context manager exiting when executing hooks
+        # TODO: which reset active variant folder -- at cook stage
         if 'cook' in env.steps:
             logging.info('=== Cook ===')
             Package.cook(env, package_configuration)
