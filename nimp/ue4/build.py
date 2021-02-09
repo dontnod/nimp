@@ -337,6 +337,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         'UnrealFileServer',
         'UnrealFrontend',
         'UnrealInsights',
+        'UnrealCEFSubProcess',
     ]
 
     # MinidumpDiagnostics not in use in 4.25+ ue4 iterations
