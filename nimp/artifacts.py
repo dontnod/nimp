@@ -262,6 +262,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run, 
         with zipfile.ZipFile(archive_path + '.tmp', 'r') as archive_file:
             if archive_file.testzip():
                 raise OSError('Archive is corrupted')
+        logging.debug('Try : renaming %s to %s', artifact_path_tmp, artifact_path)
         shutil.move(archive_path + '.tmp', archive_path)
 
     else:
@@ -273,14 +274,13 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run, 
             destination = os.path.join(artifact_path_tmp, destination)
             os.makedirs(os.path.dirname(destination), exist_ok = True)
             shutil.copyfile(source, destination)
-        logging.debug('Try : renaming %s to %s', artifact_path_tmp, artifact_path)
+        logging.debug('Try : renaming %s to %s' % (artifact_path_tmp, artifact_path))
         try:
             # Sometimes shutils.move copies files instead of moving them, maybe
             # because of issues with network shares, so we try os.rename first.
-            # os.rename(artifact_path_tmp, artifact_path)
             _try_rename(artifact_path_tmp, artifact_path, max_attempts=30, retry_delay=2)
             if os.path.exists(artifact_path):
-                logging.info("Succes : renaming %s to %s', artifact_path_tmp, artifact_path")
+                logging.debug("Succes : renaming %s to %s" % (artifact_path_tmp, artifact_path))
         except Exception as ex:
             logging.debug('Renaming failed (%s), trying alternate method' % (ex))
             shutil.move(artifact_path_tmp, artifact_path)
