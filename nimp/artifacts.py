@@ -262,7 +262,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run, 
         with zipfile.ZipFile(archive_path + '.tmp', 'r') as archive_file:
             if archive_file.testzip():
                 raise OSError('Archive is corrupted')
-        logging.debug('Try : renaming %s to %s', artifact_path_tmp, artifact_path)
+        logging.debug('Renaming %s to %s' % (archive_path + '.tmp', artifact_path))
         shutil.move(archive_path + '.tmp', archive_path)
 
     else:
