@@ -24,7 +24,8 @@
 
 import logging
 import os
-import re
+import glob
+import socket
 import subprocess
 
 import nimp.system
@@ -247,31 +248,60 @@ def install_distcc_and_ccache():
 
 def upload_symbols(env, symbols, config):
     ''' Uploads build symbols to a symbol server '''
+    if not (env.is_win64 or env.is_xsx or env.is_ps5):
+        logging.error("Plafrom must be win64, xsx or ps5")
+        return False
+
+    # create sotre if not available yet
+    store_root = nimp.system.sanitize_path(os.path.join(env.format(env.publish_symbols), env.platform.lower()))
+    if not os.path.exists(store_root):
+        nimp.system.safe_makedirs(store_root)
+    # find the tool to upload our symbols
+    sym_tool_path_microsft = "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/symstore.exe"
+    sym_tool_path_ps5 = os.path.join(os.getenv('SCE_PROSPERO_SDK_DIR'), 'host_tools', 'bin', 'prospero-symupload.exe')
+    sym_tool_path_ps5 = "C:/Program Files (x86)/SCE/Prospero SDKs/2.000/host_tools/bin/prospero-symupload.exe"
+    host_name = socket.gethostname()
+    is_build_worker = host_name.startswith('farmagent') or host_name.startswith('linuxagent')
+    if is_build_worker: # look for autoSDK
+        #TODO: programmatically find that path
+        sym_tool_path_ps5 = 'D:/autoSDK/HostWin64/PS5/2.00.00.09/NotForLicensees/2.000/host_tools/bin/prospero-symupload.exe'
+    sym_tool_path = sym_tool_path_ps5 if env.is_ps5 else sym_tool_path_microsft
+    # Create response file
+    index_file = "symbols_index.txt"
+    with open(index_file, "w") as symbols_index:
+        for src, _ in symbols:
+            symbols_index.write(src + "\n")
+    # transaction tag
+    transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, config, env.revision)
+
+    # common cmd params
+    compress = "/compress" if hasattr(env, 'compress') and env.compress else ""
+    cmd = [
+        sym_tool_path,
+        "add",
+        "/r", # Recursive
+        "/f", "@" + index_file, # add files from response file
+        "/s", store_root, # target symbol store
+        "/o", # Verbose output
+        compress, # compression
+    ]
+    # platform specific cmd params
+    if env.is_ps5:
+        cmd += [
+            "/tag", transaction_comment, # tag symbols
+        ]
     if env.is_microsoft_platform:
-        index_file = "symbols_index.txt"
-        with open(index_file, "w") as symbols_index:
-            for src, _ in symbols:
-                symbols_index.write(src + "\n")
+        cmd += [
+            "/t", env.project, # Product name
+            "/c", transaction_comment,
+            "/v", env.revision,
+        ]
 
-        store_root = nimp.system.sanitize_path(env.format(env.publish_symbols))
-        transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, config, env.revision)
-        cmd = [ "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/symstore.exe",
-                "add",
-                "/r", # Recursive
-                "/f", "@" + index_file,
-                "/s", store_root,
-                "/o", # Verbose output
-                "/t", env.project, # Product name
-                "/c", transaction_comment,
-                "/v", env.revision, ]
-        if hasattr(env, 'compress') and env.compress:
-            cmd += [ "/compress" ]
+    if nimp.sys.process.call(cmd) != 0:
+        # Do not remove symbol index; keep it for later debugging
+        return False
 
-        if nimp.sys.process.call(cmd) != 0:
-            # Do not remove symbol index; keep it for later debugging
-            return False
-
-        os.remove(index_file)
+    os.remove(index_file)
 
     return True
 
