@@ -27,6 +27,7 @@ import os
 import glob
 import socket
 import subprocess
+import re
 
 import nimp.system
 import nimp.sys.platform
@@ -252,20 +253,58 @@ def upload_symbols(env, symbols, config):
         logging.error("Plafrom must be win64, xsx or ps5")
         return False
 
-    # create sotre if not available yet
+    def _discover_latest_autosdk(platform):
+        '''look for autoSDK on buildmachine '''
+        # TODO: get this out of here and in a more generic place like system for example
+        host_name = socket.gethostname()
+        is_build_worker = host_name.startswith('farmagent') or host_name.startswith('linuxagent')
+        platform = 'GDK' if platform in ['win64', 'xsx'] else platform
+        auto_sdk_root = 'D:/autoSDK/HostWin64/' + platform.upper()
+        if not is_build_worker or not os.path.exists((auto_sdk_root)):
+            return None
+
+        possible_paths = os.listdir(auto_sdk_root)
+        if platform == 'ps5':
+            # possible falvours : PS5/2.00.00.09/NotForLicensees/2.000/
+            # possible falvours : PS5/2.000.009/NotForLicensees/2.000/
+            pattern = r'^\d?(\d).\d+.\d+?(.\d+)$'
+
+        else:
+            # possible flavours like GDK/200806/
+            pattern = r'^\d{6}$'
+        possible_paths = sorted([ p for p in possible_paths if re.match(pattern, p)], reverse=True )
+        if platform == 'ps5': # sort possible flavours like 2.00.00.89 and 2.000.089, sigh...
+            dotless_paths = sorted([ (path.replace('.', ''), path) for path in possible_paths ], reverse=True)
+            possible_paths = [ dot for dotless, dot in dotless_paths ]
+            if possible_paths != []: # second round of version guessing for ps5, sigh...
+                auto_sdk_root += '/' + possible_paths[0] + '/NotForLicensees/'
+                possible_paths = os.listdir(auto_sdk_root)
+                possible_paths = sorted([p for p in possible_paths if re.match(r'\d?(\d).\d+', p)], reverse=True)
+        if possible_paths == []:
+            return None
+        auto_sdk_root += '/' + possible_paths[0]
+        return auto_sdk_root
+
+    # create store if not available yet
     store_root = nimp.system.sanitize_path(os.path.join(env.format(env.publish_symbols), env.platform.lower()))
     if not os.path.exists(store_root):
         nimp.system.safe_makedirs(store_root)
+
     # find the tool to upload our symbols
-    sym_tool_path_microsft = "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/symstore.exe"
-    sym_tool_path_ps5 = os.path.join(os.getenv('SCE_PROSPERO_SDK_DIR'), 'host_tools', 'bin', 'prospero-symupload.exe')
-    sym_tool_path_ps5 = "C:/Program Files (x86)/SCE/Prospero SDKs/2.000/host_tools/bin/prospero-symupload.exe"
-    host_name = socket.gethostname()
-    is_build_worker = host_name.startswith('farmagent') or host_name.startswith('linuxagent')
-    if is_build_worker: # look for autoSDK
-        #TODO: programmatically find that path
-        sym_tool_path_ps5 = 'D:/autoSDK/HostWin64/PS5/2.00.00.09/NotForLicensees/2.000/host_tools/bin/prospero-symupload.exe'
-    sym_tool_path = sym_tool_path_ps5 if env.is_ps5 else sym_tool_path_microsft
+    sym_tool_path = "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/symstore.exe"
+    if env.is_ps5: # ps5 sym tool
+        auto_sdk_root = _discover_latest_autosdk(env.platform)
+        prospero_local_root = os.getenv('SCE_PROSPERO_SDK_DIR', default=None)
+        assert prospero_local_root or auto_sdk_root
+        ps5_sdk_root = auto_sdk_root if auto_sdk_root else prospero_local_root
+        sym_tool_path = os.path.join(ps5_sdk_root, 'host_tools', 'bin', 'prospero-symupload.exe')
+    else: # autoSDK win10 sdk
+        win10_sdk_path = 'D:/autoSDK/HostWin64/Win64/Windows Kits/10/Debuggers/x64/symstore.exe'
+        if os.path.isfile(win10_sdk_path):
+            sym_tool_path = win10_sdk_path
+    sym_tool_path = nimp.system.sanitize_path(sym_tool_path)
+    logging.debug('Using sym-too-path -> %s' % sym_tool_path)
+
     # Create response file
     index_file = "symbols_index.txt"
     with open(index_file, "w") as symbols_index:
