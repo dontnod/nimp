@@ -290,23 +290,28 @@ class Package(nimp.command.Command):
 
         logging.info('')
 
-        with Package.configure_variant(env, package_configuration.project_directory):
-            if 'cook' in env.steps:
-                logging.info('=== Cook ===')
-                Package.cook(env, package_configuration)
-                logging.info('')
-            if 'stage' in env.steps:
-                logging.info('=== Stage ===')
-                Package.stage(env, package_configuration)
-                logging.info('')
-            if 'package' in env.steps:
-                logging.info('=== Package ===')
-                Package.package_for_platform(env, package_configuration)
-                logging.info('')
-            if 'verify' in env.steps:
-                logging.info('=== Verify ===')
-                Package.verify(env, package_configuration)
-                logging.info('')
+        # with Package.configure_variant(env, package_configuration.project_directory):
+        # For some reason this works locally with shader-debug-info and everything
+        # but won't on farmagents, have to investigate this
+        # locally I have engine_configuration_file_path and farms don't
+        # File "c:\python38\lib\site-packages\nimp\base_commands\package.py", line 393, in cook
+        # shutil.move(engine_configuration_file_path, engine_configuration_file_path + '.nimp.bak')
+        if 'cook' in env.steps:
+            logging.info('=== Cook ===')
+            Package.cook(env, package_configuration)
+            logging.info('')
+        if 'stage' in env.steps:
+            logging.info('=== Stage ===')
+            Package.stage(env, package_configuration)
+            logging.info('')
+        if 'package' in env.steps:
+            logging.info('=== Package ===')
+            Package.package_for_platform(env, package_configuration)
+            logging.info('')
+        if 'verify' in env.steps:
+            logging.info('=== Verify ===')
+            Package.verify(env, package_configuration)
+            logging.info('')
 
         return True
 
