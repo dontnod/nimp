@@ -309,6 +309,7 @@ def upload_symbols(env, symbols, config):
     index_file = "symbols_index.txt"
     with open(index_file, "w") as symbols_index:
         for src, _ in symbols:
+            logging.debug("adding %s to response file %s" % (src, index_file))
             symbols_index.write(src + "\n")
     # transaction tag
     transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, config, env.revision)
@@ -336,9 +337,13 @@ def upload_symbols(env, symbols, config):
             "/v", env.revision,
         ]
 
-    if nimp.sys.process.call(cmd) != 0:
-        # Do not remove symbol index; keep it for later debugging
-        return False
+    if env.dry_run:
+        logging.info('dry run : %s' % ' '.join(cmd))
+
+    if not env.dry_run:
+        if nimp.sys.process.call(cmd) != 0:
+            # Do not remove symbol index; keep it for later debugging
+            return False
 
     os.remove(index_file)
 

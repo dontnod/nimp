@@ -44,6 +44,7 @@ class _Symbols(nimp.command.Command):
                                           'platform',
                                           'target',
                                           'revision')
+        parser.add_argument('-n', '--dry-run', action = 'store_true', help = 'perform a test run, without writing changes')
         parser.add_argument('-l',
                             '--configurations',
                             help    = 'Configurations and targets to upload',
@@ -53,12 +54,15 @@ class _Symbols(nimp.command.Command):
                             '--compress',
                             help    = 'Compress symbols when uploading',
                             action  = 'store_true')
+
         return True
 
     def is_available(self, env):
         return True, ''
 
     def run(self, env):
+        # ps5 shipping has no corresponding symbols, they're in the elf/self unstripped binary file
+        has_symbols_inside_binary_file = env.platform in ['ps5']
         for config_or_target in env.configurations:
             config = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
             target = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
@@ -69,12 +73,13 @@ class _Symbols(nimp.command.Command):
             binaries_to_publish = nimp.system.map_files(env)
             tmp_binaries_to_publish = binaries_to_publish.override(configuration = config, target = target)
             tmp_binaries_to_publish.load_set("binaries")
-            nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish()), config)
+            nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(
+                symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file), config)
 
         return True
 
     @staticmethod
-    def _chain_symbols_and_binaries(symbols, binaries):
+    def _chain_symbols_and_binaries(symbols, binaries, has_symbols_inside_binary_file=False):
         # sort of itertools.chain, but binaries are pushed only if corresp. symbol is present
         symbol_roots = []
         for symbol in symbols:
@@ -82,7 +87,10 @@ class _Symbols(nimp.command.Command):
             symbol_roots.append(symbol_root)
             yield symbol
         for binary in binaries:
-            binary_root, _ = os.path.splitext(binary[0])
             # (it's always Microsoft platform so OK to just splitext)
-            if binary_root in symbol_roots:
+            binary_root, _ = os.path.splitext(binary[0])
+            # symbols inside binaries, no symbols, just yield binaries and no corresponding symbols
+            if has_symbols_inside_binary_file and os.path.isfile(binary[0]):
+                yield  binary
+            elif binary_root in symbol_roots:
                 yield binary
