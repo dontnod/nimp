@@ -251,6 +251,7 @@ def _ue4_sanitize_arguments(env):
 
         env.is_microsoft_platform = False
         env.is_sony_platform      = False
+        env.is_nintendo_platform  = False
         env.is_mobile_platform    = False
 
         platform_descs = [nimp.sys.platform.create_platform_desc(p) for p in env.platform.split('+')]
@@ -260,6 +261,7 @@ def _ue4_sanitize_arguments(env):
             setattr(env, f'is_{p.name}', True)
             env.is_microsoft_platform = env.is_microsoft_platform or p.is_microsoft
             env.is_sony_platform = env.is_sony_platform or p.is_sony
+            env.is_nintendo_platform = env.is_nintendo_platform or p.is_nintendo
             env.is_mobile_platform = env.is_mobile_platform or p.is_mobile
 
         # XXX: track usage of these variables and replace them with the correct name
