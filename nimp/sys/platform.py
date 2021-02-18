@@ -26,6 +26,7 @@ class Platform(metaclass=abc.ABCMeta):
         self.is_valid = True
         self.is_microsoft = False
         self.is_sony = False
+        self.is_nintendo = False
         self.is_mobile = False
 
         ''' Packaging information '''

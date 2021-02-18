@@ -218,6 +218,7 @@ class Package(nimp.command.Command):
         package_configuration.pak_compression = env.compress
         package_configuration.is_microsoft = env.is_microsoft_platform
         package_configuration.is_sony = env.is_sony_platform
+        package_configuration.is_nintendo = env.is_nintendo_platform
         package_configuration.is_final_submission = env.final
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
 
@@ -757,7 +758,7 @@ class Package(nimp.command.Command):
         elif package_configuration.target_platform == 'XboxOne':
             Package.package_for_xboxone(package_configuration, env.dry_run)
         # console packaging using out of the box uat behavior
-        elif package_configuration.is_sony or package_configuration.is_microsoft:
+        elif package_configuration.is_sony or package_configuration.is_microsoft or package_configuration.is_nintendo:
             Package.package_with_uat(package_configuration, env.dry_run)
 
 
