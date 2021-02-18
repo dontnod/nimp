@@ -1,4 +1,6 @@
 
+import os
+
 import nimp.sys.platform
 
 class Switch(nimp.sys.platform.Platform):
@@ -12,3 +14,7 @@ class Switch(nimp.sys.platform.Platform):
         self.ue4_name = 'Switch'
         self.ue4_config_name = 'Switch'
         self.ue4_cook_name = 'Switch'
+
+        self.is_nintendo = True
+
+        self.ue4_package_directory = '{uproject_dir}/Binaries/Switch'
