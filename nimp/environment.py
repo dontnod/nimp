@@ -38,6 +38,9 @@ import nimp.summary
 import nimp.sys.platform
 import nimp.system
 import nimp.unreal
+import nimp.utils.profiling
+
+# from nimp.plugins.dne.agrou.agrou_timer import agrou_timer
 
 _LOG_FORMATS = { # pylint: disable = invalid-name
     'standard': '%(asctime)s [%(levelname)s] %(message)s'
@@ -123,6 +126,9 @@ class Environment:
                                    metavar='<project branch>',
                                    help='Select a project branch to work with',
                                    type=str)
+        parent_parser.add_argument('--nimp-profiling',
+                                   help='Profile nimp command',
+                                   action='store_true')
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
         # verify that uproject seems somewhat legit
         has_uproject_parameter = hasattr(parent_args, 'uproject') and parent_args.uproject is not None
@@ -169,6 +175,8 @@ class Environment:
         # TODO: remove this crappy hacks
         arguments.branch = self.branch if hasattr(self, 'branch') and arguments.branch is None else arguments.branch
         arguments.uproject = self.uproject if hasattr(self, 'uproject') else arguments.uproject
+        arguments.nimp_profiling = self.nimp_profiling if hasattr(self, 'nimp_profiling') else arguments.nimp_profiling
+        self.parser = arguments
         for key, value in vars(arguments).items():
             setattr(self, key, value)
 
@@ -201,7 +209,8 @@ class Environment:
                 success = True
             else:
                 try:
-                    success = self.command.run(self)
+                    with nimp.utils.profiling.nimp_profile(self):
+                        success = self.command.run(self)
                 #pylint: disable=broad-except
                 except Exception as exception:
                     logging.exception(exception)
