@@ -137,8 +137,12 @@ def discover(env):
 def load_arguments(env):
     ''' Standardizes some environment parameters and sets new values '''
     if hasattr(env, 'free_parameters') and env.free_parameters is not None:
-        for key, value in [ x.split('=') for x in env.free_parameters]:
-            setattr(env, key, value)
+        for x in env.free_parameters:
+            if '=' in x:
+                key, value = x.split('=')
+                setattr(env, key, value)
+            else:
+                setattr(env, x, True)
 
     return True
 
