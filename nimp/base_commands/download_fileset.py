@@ -52,13 +52,14 @@ class DownloadFileset(nimp.command.Command):
 
 
     def run(self, env):
+        api_context = nimp.utils.git.initialize_gitea_api_context(env)
         artifact_uri_pattern = env.artifact_repository_source + '/' + env.artifact_collection[env.fileset]
         install_directory = env.root_dir + ('/' + env.format(env.destination) if env.destination else '')
         format_arguments = copy.deepcopy(vars(env))
         format_arguments['revision'] = '*'
         logging.info('Searching %s', artifact_uri_pattern.format(**format_arguments))
-        all_artifacts = nimp.system.try_execute(lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments), OSError)
-        artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision)
+        all_artifacts = nimp.system.try_execute(lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments, api_context), OSError)
+        artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision, api_context)
 
         logging.info('Downloading %s%s', artifact_to_download['uri'], ' (simulation)' if env.dry_run else '')
         if not env.dry_run:
@@ -82,16 +83,13 @@ class DownloadFileset(nimp.command.Command):
 
     # TODO: Handle revision comparison when identified by a hash
     @staticmethod
-    def _find_matching_artifact(all_artifacts, exact_revision, minimum_revision, maximum_revision):
-        all_artifacts = sorted(all_artifacts, key = lambda artifact: int(artifact['revision'], 16), reverse = True)
+    def _find_matching_artifact(all_artifacts, exact_revision, minimum_revision, maximum_revision, api_context):
+        all_artifacts = sorted(all_artifacts, key=lambda artifact: int(artifact['revision'], 16), reverse=True)
 
-        # if exact_revision is not None and len(exact_revision) > 8:
-        #     exact_revision = nimp.utils.git.get_commit_version(exact_revision)
-        # if minimum_revision is not None and len(minimum_revision) > 8:
-        #     minimum_revision = nimp.utils.git.get_commit_version(minimum_revision)
-        # if maximum_revision is not None and len(maximum_revision) > 8:
-        #     maximum_revision = nimp.utils.git.get_commit_version(maximum_revision)
-
+        if api_context:
+            exact_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, exact_revision)
+            minimum_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, minimum_revision)
+            maximum_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, maximum_revision)
 
         try:
             if exact_revision is not None:

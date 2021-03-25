@@ -21,7 +21,6 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ''' Provides functions for build artifacts '''
-
 import copy
 import hashlib
 import glob
@@ -54,7 +53,7 @@ except ImportError as exception:
     BitTornado = None
 
 
-def list_artifacts(artifact_pattern, format_arguments):
+def list_artifacts(artifact_pattern, format_arguments, api_context):
     ''' List all artifacts and their revision using the provided pattern after formatting '''
 
     format_arguments = copy.deepcopy(format_arguments)
@@ -66,22 +65,14 @@ def list_artifacts(artifact_pattern, format_arguments):
     artifact_regex = re.compile(r'^' + artifact_escaped_name.format(revision = r'(?P<revision>[a-zA-Z0-9]+)') + r'(.zip)?$')
 
     all_files = _list_files(artifact_source, False)
-    # try:
-    #     all_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-    # except:
-    #     pass
     all_artifacts = []
-    counter = 0
-    counter_max = 100
     for file_uri in all_files:
-        # if counter < counter_max:
         file_name = os.path.basename(file_uri.rstrip('/'))
         artifact_match = artifact_regex.match(file_name)
         if artifact_match:
             group_revision = artifact_match.group('revision')
-            # if len(group_revision) > 8: # shitty way to hint a sha1
-                # group_revision = nimp.utils.git.get_commit_version(group_revision)
-                # counter += 1
+            if api_context:
+                group_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, group_revision)
             if group_revision is not None:
                 artifact = {
                     'revision': group_revision,
@@ -109,9 +100,11 @@ def _list_files(source, recursive):
                     all_files.extend(_list_files(file_path, True))
 
     else:
-        for file_name in os.listdir(source):
-            file_path = source + '/' + file_name
-            if os.path.isdir(file_path):
+        # scandir is way faster than listdir, especially via vpn
+        # and is available in std os lib since python v3.5+
+        for file_name in os.scandir(source):
+            file_path = source + '/' + file_name.name
+            if file_name.is_dir():
                 all_files.append(file_path + '/')
                 if recursive:
                     all_files.extend(_list_files(file_path, True))

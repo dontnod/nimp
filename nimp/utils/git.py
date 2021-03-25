@@ -21,6 +21,11 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ''' Git utilities '''
+import logging
+import giteapy
+from giteapy.rest import ApiException
+from datetime import datetime, timezone
+import time
 
 import nimp.sys.process
 
@@ -39,7 +44,6 @@ def get_branch():
 
 def get_version():
     ''' Build a version string from the date and hash of the last commit '''
-    from datetime import datetime, timezone
     command = 'git log -10 --date=short --pretty=format:%ct.%h'
     result, output, _ = nimp.sys.process.call(command.split(' '), capture_output=True)
     if result != 0 or '.' not in output:
@@ -67,3 +71,53 @@ def get_commit_version(commit_hash):
         return None
 
     return output
+
+def gitea_has_missing_params(env):
+    needed_params = ['gitea_host', 'gitea_access_token', 'gitea_repo_owner', 'gitea_repo_name', 'gitea_repo_name']
+    has_missing_params = False
+    for param in needed_params:
+        if not hasattr(env, param):
+            has_missing_params = True
+            logging.error(f"Please configure {param} parameter in project conf")
+    return has_missing_params
+
+def check_for_gitea_env(env):
+    if hasattr(env, 'gitea_branches') and env.branch in env.gitea_branches:
+        return True
+    if hasattr(env, 'gitea_branch') and env.branch in env.gitea_branch:
+        return True
+    return False
+
+def initialize_gitea_api_context(env):
+    if not check_for_gitea_env(env):
+        return False
+    if gitea_has_missing_params(env):
+        raise ValueError("You're missing mandatory gitea params in project conf")
+
+    configuration = giteapy.Configuration()
+    configuration.host = env.gitea_host
+    configuration.api_key['access_token'] = env.gitea_access_token
+    api_instance = giteapy.RepositoryApi(giteapy.ApiClient(configuration))
+    return {
+        'instance': api_instance,
+        'repo_owner': env.gitea_repo_owner,
+        'repo_name': env.gitea_repo_name
+    }
+
+def get_gitea_commit_timestamp(gitea_context, commit_sha):
+    if not commit_sha:
+        return None
+
+    api_commit_timestamp = None
+    try:
+        api_response = gitea_context['instance'].repo_get_single_commit(
+            gitea_context['repo_owner'],
+            gitea_context['repo_name'],
+            commit_sha
+        )
+        api_commit_date = api_response.commit.committer._date
+        api_commit_date = datetime.fromisoformat(api_commit_date).astimezone(timezone.utc)
+        api_commit_timestamp = str(round(time.mktime(api_commit_date.timetuple())))
+    except ApiException as e:
+        logging.warning("Exception when calling RepositoryApi->repo_get_single_commit: %s\n" % e)
+    return api_commit_timestamp
