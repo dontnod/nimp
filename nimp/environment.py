@@ -124,18 +124,11 @@ class Environment:
                                    help='Select a project branch to work with',
                                    type=str)
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
+
         # verify that uproject seems somewhat legit
         has_uproject_parameter = hasattr(parent_args, 'uproject') and parent_args.uproject is not None
         if has_uproject_parameter:
-            self._uproject = parent_args.uproject
-            # valid --uproject param would be like NWD/NWD.uproject
-            search_pattern = re.compile(r'^[\\|/]?(?P<uproject>[\w][\w][\w])[\\|/](?P=uproject).uproject$', re.IGNORECASE)
-            if re.search(search_pattern, self._uproject):
-                self._uproject_path = os.path.normpath(self._uproject)
-                self._uproject = re.findall(search_pattern, self._uproject_path)[0].upper()
-
-            logging.debug('uproject specified by user : %s' % self._uproject)
-            # TODO: we could try and auto-detect branch based off vcs feedback - especially for buildbot
+            self.validate_uproject(parent_args.uproject)
 
         # base_conf for monorepo
         if not self._load_nimp_conf('.baseNimp.conf'):
@@ -315,6 +308,16 @@ class Environment:
                 return False
 
         return True
+
+    def validate_uproject(self, urpoject):
+        self._uproject = urpoject
+        # valid --uproject param would be like NWD/NWD.uproject
+        search_pattern = re.compile(r'^[\\|/]?(?P<uproject>[\w][\w][\w])[\\|/](?P=uproject).uproject$', re.IGNORECASE)
+        if re.search(search_pattern, self._uproject):
+            self._uproject_path = os.path.normpath(self._uproject)
+            self._uproject = re.findall(search_pattern, self._uproject_path)[0].upper()
+        # TODO: we could try and auto-detect branch based off vcs feedback - especially for buildbot
+        logging.debug('uproject specified by user : %s' % self._uproject)
 
 
 def execute_hook(hook_name, *args):
