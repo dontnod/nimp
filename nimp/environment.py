@@ -126,9 +126,7 @@ class Environment:
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
 
         # verify that uproject seems somewhat legit
-        has_uproject_parameter = hasattr(parent_args, 'uproject') and parent_args.uproject is not None
-        if has_uproject_parameter:
-            self.validate_uproject(parent_args.uproject)
+        self.validate_uproject(parent_args.uproject)
 
         # base_conf for monorepo
         if not self._load_nimp_conf('.baseNimp.conf'):
@@ -310,6 +308,9 @@ class Environment:
         return True
 
     def validate_uproject(self, urpoject):
+        if not urpoject:
+            return
+
         self._uproject = urpoject
         # valid --uproject param would be like NWD/NWD.uproject
         search_pattern = re.compile(r'^[\\|/]?(?P<uproject>[\w][\w][\w])[\\|/](?P=uproject).uproject$', re.IGNORECASE)
