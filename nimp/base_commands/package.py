@@ -199,8 +199,6 @@ class Package(nimp.command.Command):
             variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
             if os.path.exists(variant_configuration_directory):
                 package_configuration.configuration_directory = variant_configuration_directory
-                with open(package_configuration.configuration_directory + '/DefaultEngine.ini', 'a'):
-                    pass # necessary for shader debug info in case no defaultEngine is present
             variant_resource_directory = package_configuration.resource_directory + '/Variants/' + env.variant
             if os.path.exists(variant_resource_directory):
                 package_configuration.resource_directory = variant_resource_directory
@@ -291,47 +289,52 @@ class Package(nimp.command.Command):
 
         logging.info('')
 
-        # with Package.configure_variant(env, package_configuration.project_directory):
-        # For some reason this works locally with shader-debug-info and everything
-        # but won't on farmagents, have to investigate this
-        # locally I have engine_configuration_file_path and farms don't
-        # File "c:\python38\lib\site-packages\nimp\base_commands\package.py", line 393, in cook
-        # shutil.move(engine_configuration_file_path, engine_configuration_file_path + '.nimp.bak')
-        if 'cook' in env.steps:
-            logging.info('=== Cook ===')
-            Package.cook(env, package_configuration)
-            logging.info('')
-        if 'stage' in env.steps:
-            logging.info('=== Stage ===')
-            Package.stage(env, package_configuration)
-            logging.info('')
-        if 'package' in env.steps:
-            logging.info('=== Package ===')
-            Package.package_for_platform(env, package_configuration)
-            logging.info('')
-        if 'verify' in env.steps:
-            logging.info('=== Verify ===')
-            Package.verify(env, package_configuration)
-            logging.info('')
+        with Package.configure_variant(env, package_configuration.project_directory):
+            if 'cook' in env.steps:
+                logging.info('=== Cook ===')
+                Package.cook(env, package_configuration)
+                logging.info('')
+            if 'stage' in env.steps:
+                logging.info('=== Stage ===')
+                Package.stage(env, package_configuration)
+                logging.info('')
+            if 'package' in env.steps:
+                logging.info('=== Package ===')
+                Package.package_for_platform(env, package_configuration)
+                logging.info('')
+            if 'verify' in env.steps:
+                logging.info('=== Verify ===')
+                Package.verify(env, package_configuration)
+                logging.info('')
 
         return True
 
     @contextmanager
     def configure_variant(env, project_directory):
-        should_configure_variant = ( env.ue4_minor > 24)
-        active_configuration_directory = project_directory + '/Config/Variants/Active'
+        def _setup_default_config_file(config_file):
+            if not os.path.exists(config_file):
+                with open(config_file, 'a'):
+                    pass
+
+        is_monorepo_behavior = env.ue4_minor > 24
+        should_configure_variant = is_monorepo_behavior and env.variant is not None
+        active_configuration_directory = f'{project_directory}/Config/Variants/Active'
 
         try:
-            if should_configure_variant:
+            if is_monorepo_behavior:
                 _try_remove(active_configuration_directory, False)
-            if should_configure_variant and env.variant is not None:
-                variant_configuration_directory = project_directory + '/Config/Variants/' + env.variant
+            if should_configure_variant:
+                variant_configuration_directory = f'{project_directory}/Config/Variants/{env.variant}'
                 if not os.path.exists(variant_configuration_directory):
-                    raise FileNotFoundError("Variant not found : %s" % variant_configuration_directory)
-                _copy_file(variant_configuration_directory, active_configuration_directory, False)
+                    raise FileNotFoundError(f"Variant not found : {variant_configuration_directory}")
+                logging.info(f'configuring variant {env.variant} in : {active_configuration_directory}')
+                shutil.copytree(variant_configuration_directory, active_configuration_directory, copy_function=shutil.copyfile)
+                # necessary for shader debug info in case no defaultEngine is present
+                _setup_default_config_file(f'{active_configuration_directory}/DefaultEngine.ini')
+                _setup_default_config_file(f'{active_configuration_directory}/DefaultGame.ini')
             yield
         finally:
-            if should_configure_variant:
+            if is_monorepo_behavior:
                 _try_remove(active_configuration_directory, False)
 
     @staticmethod
