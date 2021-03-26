@@ -5,5 +5,6 @@ __all__ = [
     'git',
     'p4',
     'python',
+    'profiling',
     'version',
 ]

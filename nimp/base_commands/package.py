@@ -288,7 +288,6 @@ class Package(nimp.command.Command):
         Package._load_configuration(package_configuration, ps4_title_directory_collection)
 
         logging.info('')
-
         with Package.configure_variant(env, package_configuration.project_directory):
             if 'cook' in env.steps:
                 logging.info('=== Cook ===')
