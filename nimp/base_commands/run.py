@@ -51,6 +51,14 @@ class Run(nimp.command.Command):
 
     def run(self, env):
 
+        # Forward compatibility for the transition to subcommands
+        if 'hook' in env.parameters[:1]:
+            setattr(env, env.parameters[0], env.parameters[1])
+            env.parameters = env.parameters[2:]
+        elif 'commandlet' in env.parameters[:1]:
+            setattr(env, env.parameters[0], True)
+            env.parameters = env.parameters[1:]
+
         # Hook mode
         if hasattr(env, 'hook') and env.hook:
             if len(env.parameters) != 0:
