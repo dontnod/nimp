@@ -37,6 +37,12 @@ class Platform(metaclass=abc.ABCMeta):
         self.ue4_config_name = None
         self.ue4_cook_name = None
 
+    def install_package(self, package_directory, device_ip=None, dry_run=False):
+        return False
+
+    def launch_package(self, package_name, device_ip=None, dry_run=False):
+        return False
+
 
 class NullPlatform(Platform):
     def __init__(self):
