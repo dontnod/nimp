@@ -29,6 +29,8 @@ import logging
 import nimp.command
 import nimp.unreal
 import nimp.sys.process
+from nimp.sys.platform import create_platform_desc
+
 
 class Run(nimp.command.CommandGroup):
     ''' Run executables, hooks, and commandlets '''
@@ -52,6 +54,9 @@ class RunCommand(nimp.command.Command):
                             help='command to run',
                             metavar='<command> [<argument>...]',
                             nargs=argparse.REMAINDER)
+        parser.add_argument('-n', '--dry-run',
+                            action = 'store_true',
+                            help = 'perform a test run, without writing changes')
         return True
 
     def is_available(self, env):
@@ -103,15 +108,16 @@ class ConsoleGameCommand(RunCommand):
 
     def configure_arguments(self, env, parser):
         super(ConsoleGameCommand, self).configure_arguments(env, parser)
-        parser.add_argument('--deploy', help='deploy the game to a devkit')
-        parser.add_argument('--launch', help='launch the game on a devkit')
-        add_common_arguments(parser, 'platform')
+        nimp.command.add_common_arguments(parser, 'platform')
+        parser.add_argument('--deploy', action='store_true', help='deploy the game to a devkit')
+        parser.add_argument('--launch', action='store_true', help='launch the game on a devkit')
+        parser.add_argument('--device', metavar = '<host>', help = 'set target device')
 
     def run(self, env):
         if env.deploy:
-            return _deploy(env)
+            return self._deploy(env)
         if env.launch:
-            return _launch(env)
+            return self._launch(env)
         return False
 
     @abc.abstractmethod
@@ -143,9 +149,12 @@ class _Package(ConsoleGameCommand):
         super(_Package, self).__init__()
 
     def _deploy(self, env):
-        # Call plugin based on env.platform
+        platform_desc = create_platform_desc(env.platform)
+        package_directory = env.format('{uproject_dir}/Saved/Packages/{platform}')
+        platform_desc.install_package(package_directory, env.device, env.dry_run)
         return True
 
     def _launch(self, env):
-        # Call plugin based on env.platform
+        platform_desc = create_platform_desc(env.platform)
+        platform_desc.launch_package(env.game, env.device, env.dry_run)
         return True
