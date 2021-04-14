@@ -125,7 +125,7 @@ class ConsoleGameCommand(RunCommand):
                             metavar='<package_name>',
                             help='launch the game on a devkit')
         parser.add_argument('--device', metavar = '<host>', help = 'set target device')
-        parser.add_argument('-v', '--variant', default='fullgame', metavar="<variant_name>", help="name of variant (use 'fullgame' if none provided).")
+        parser.add_argument('-v', '--variant', metavar="<variant_name>", help="name of variant")
 
     def run(self, env):
         if env.deploy:
