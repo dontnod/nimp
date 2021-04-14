@@ -185,11 +185,29 @@ class _Staged(ConsoleGameCommand):
 
     def _deploy(self, env):
         # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy [-configuration=Development] [-device=IP]
-        return True
+        cmdline = [
+            env.ue4_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
+            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
+            '-skipcook', '-skipstage', '-deploy'
+        ]
+        if env.device:
+            cmdline.append('-device=' + env.device)
+
+        result = nimp.sys.process.call(cmdline, dry_run=env.dry_run)
+        return result == 0
 
     def _launch(self, env):
         # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy -run [-device=IP]
-        return True
+        cmdline = [
+            env.ue4_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
+            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
+            '-skipcook', '-skipstage', '-deploy', '-run'
+        ]
+        if env.device:
+            cmdline.append('-device=' + env.device)
+
+        result = nimp.sys.process.call(cmdline, dry_run=env.dry_run)
+        return result == 0
 
 class _Package(ConsoleGameCommand):
     ''' Deploys and runs console packages '''
