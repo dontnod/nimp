@@ -185,9 +185,13 @@ class _Staged(ConsoleGameCommand):
 
     def _deploy(self, env):
         # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy [-configuration=Development] [-device=IP]
+
+        absolute_path = os.path.abspath(env.deploy + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
+
         cmdline = [
             env.ue4_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
             'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
+            '-stagingdirectory=' + absolute_path, 
             '-skipcook', '-skipstage', '-deploy'
         ]
         if env.device:
@@ -198,9 +202,16 @@ class _Staged(ConsoleGameCommand):
 
     def _launch(self, env):
         # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy -run [-device=IP]
+
+        if env.launch == 'default':
+            env.launch = 'local'
+        env.launch = self.get_path_from_parameter(env.launch, env)
+        absolute_path = os.path.abspath(env.launch + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
+
         cmdline = [
             env.ue4_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
             'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
+            '-stagingdirectory=' + absolute_path,
             '-skipcook', '-skipstage', '-deploy', '-run'
         ]
         if env.device:
