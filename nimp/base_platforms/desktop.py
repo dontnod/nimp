@@ -30,11 +30,6 @@ class Win64(nimp.sys.platform.Platform):
         self.ue4_config_name = 'Windows'
         self.ue4_cook_name = 'WindowsNoEditor'
 
-    def launch_package(self, package_name, env):
-        if not package_name:
-            package_name = env.uproject_dir + '/Saved/Packages/WindowsNoEditor/Default/' + env.game + '.exe'
-        result = nimp.sys.process.call([ package_name ])
-        return result == 0
 
 class Linux(nimp.sys.platform.Platform):
     ''' Linux platform description '''
