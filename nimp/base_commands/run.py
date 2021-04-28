@@ -25,8 +25,6 @@
 import abc
 import argparse
 import logging
-import re
-import os
 
 import nimp.command
 import nimp.unreal
@@ -105,68 +103,23 @@ class _Exec_cmds(RunCommand):
         return ret == 0
 
 class ConsoleGameCommand(RunCommand):
-    def __init__(self, buildbot_directory_ending, local_directory):
+    def __init__(self):
         super(ConsoleGameCommand, self).__init__()
-        self.buildbot_directory_ending = buildbot_directory_ending
-        self.local_directory = local_directory
 
     def configure_arguments(self, env, parser):
         super(ConsoleGameCommand, self).configure_arguments(env, parser)
-        nimp.command.add_common_arguments(parser, 'platform', 'configuration')
-        parser.add_argument('--deploy',
-                            nargs='?',
-                            metavar='<path | CL# | "latest">',
-                            help="deploy the game to a devkit. If empty, deploys from the game's 'Saved' directory\
-                                  WARNING: if passing a CL number or 'latest', be aware that\
-                                  the game will be downloaded from B:\\, then reuploaded to the devkit!!\
-                                  Avoid doing this over the VPN")
+        nimp.command.add_common_arguments(parser, 'platform')
+        parser.add_argument('--deploy', action='store_true', help='deploy the game to a devkit')
         parser.add_argument('--launch', action='store_true', help='launch the game on a devkit')
-        parser.add_argument('--package_name', help = 'name of the package to launch')
         parser.add_argument('--device', metavar = '<host>', help = 'set target device')
-        parser.add_argument('-v', '--variant', default='fullgame', metavar="<variant_name>", help="name of variant (use 'fullgame' if none provided).")
+        parser.add_argument('--package_name', help = 'name of the package to launch')
 
     def run(self, env):
-        if hasattr(env, 'deploy'):
-            return self.deploy(env)
-        if hasattr(env, 'launch'):
+        if env.deploy:
+            return self._deploy(env)
+        if env.launch:
             return self._launch(env)
         return False
-
-    def deploy(self, env):
-        if env.deploy:
-            if str.isdigit(env.deploy):
-                env.deploy = self.fetch_pkg_by_revision(env, env.deploy)
-            # if 'latest' was provided, fetch latest package uploaded to /b/
-            elif env.deploy.lower() == 'latest':
-                env.deploy = self.fetch_pkg_latest(env)
-        else:
-            env.deploy = env.format('{uproject_dir}/Saved/%s/{platform}' % self.local_directory)
-
-        if not os.path.isdir(env.deploy):
-            raise FileNotFoundError('Invalid path / could not find a valid pkg file in %s' % env.deploy)
-
-        return self._deploy(env)
-
-    def fetch_pkg_by_revision(self, env, rev):
-        logging.info('Looking for a %s test package at CL#%s' % (env.platform, rev))
-        artifact_repository = env.format(env.artifact_repository_destination)
-        deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant + '/' +
-                                    ('%s-%s-%s-%s-%s/%s/' % (env.project, env.variant, rev, env.platform, self.buildbot_directory_ending, env.platform)))
-        return deploy_repository
-
-    def fetch_pkg_latest(self, env):
-        artifact_repository = env.format(env.artifact_repository_destination)
-        deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant)
-        logging.info('Looking for latest %s package in %s' % (env.platform, deploy_repository))
-
-        rev = '0'
-        regex = re.compile(("%s-%s-" % (env.project, env.variant)) + r'(\d+)' + ('-%s-%s' % (env.platform, self.buildbot_directory_ending)))
-        for d in os.listdir(deploy_repository):
-            m = regex.match(d)
-            if m and m.group(1) > rev:
-                rev = m.group(1)
-
-        return self.fetch_pkg_by_revision(env, rev)
 
     @abc.abstractmethod
     def _deploy(self, env):
@@ -180,7 +133,7 @@ class _Staged(ConsoleGameCommand):
     ''' Deploys and runs staged console builds '''
 
     def __init__(self):
-        super(_Staged, self).__init__('staged', 'StagedBuilds')
+        super(_Staged, self).__init__()
 
     def _deploy(self, env):
         # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy [-configuration=Development] [-device=IP]
@@ -194,11 +147,12 @@ class _Package(ConsoleGameCommand):
     ''' Deploys and runs console packages '''
 
     def __init__(self):
-        super(_Package, self).__init__('package', 'Packages')
+        super(_Package, self).__init__()
 
     def _deploy(self, env):
         platform_desc = create_platform_desc(env.platform)
-        platform_desc.install_package(env.deploy, env.device, env.dry_run, env.ue4_config)
+        package_directory = env.format('{uproject_dir}/Saved/Packages/{platform}')
+        platform_desc.install_package(package_directory, env.device, env.dry_run)
         return True
 
     def _launch(self, env):
@@ -206,5 +160,5 @@ class _Package(ConsoleGameCommand):
         package_name = env.package_name
         if not package_name:
             package_name = env.game
-        platform_desc.launch_package(package_name, env.device, env.dry_run, env.ue4_config)
+        platform_desc.launch_package(package_name, env.device, env.dry_run)
         return True
