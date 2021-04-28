@@ -27,7 +27,6 @@ import argparse
 import logging
 import re
 import os
-import shutil
 
 import nimp.command
 import nimp.unreal
@@ -114,14 +113,6 @@ class ConsoleGameCommand(RunCommand):
     def configure_arguments(self, env, parser):
         super(ConsoleGameCommand, self).configure_arguments(env, parser)
         nimp.command.add_common_arguments(parser, 'platform', 'configuration')
-
-        parser.add_argument('--fetch',
-                            metavar='<path | CL# | "latest">',
-                            help='copies the game to the default location on this machine')
-        parser.add_argument('--outdir',
-                            nargs='?', default='local',
-                            help='output directory for fetch')
-
         parser.add_argument('--deploy',
                             nargs='?', const='local',
                             metavar='<path | CL# | "latest">',
@@ -129,67 +120,39 @@ class ConsoleGameCommand(RunCommand):
                                   WARNING: if passing a CL number or 'latest', be aware that\
                                   the game will be downloaded from B:\\, then reuploaded to the devkit!!\
                                   Avoid doing this over the VPN")
-
         parser.add_argument('--launch',
                             nargs='?', const='default',
                             metavar='<package_name>',
                             help='launch the game on a devkit')
-
         parser.add_argument('--device', metavar = '<host>', help = 'set target device')
         parser.add_argument('-v', '--variant', metavar="<variant_name>", help="name of variant")
 
     def run(self, env):
-        if env.platform == 'win64':
-            self.platform_directory = 'WindowsNoEditor'
-        else:
-            self.platform_directory = env.platform
-
-        if env.fetch:
-            return self.fetch(env)
         if env.deploy:
             return self.deploy(env)
         if env.launch:
             return self._launch(env)
         return False
 
-    def fetch(self, env):
-        env.fetch = self.get_path_from_parameter(env.fetch, env)
-        if env.outdir == 'local':
-            env.outdir = self.get_local_path(env)
-        if os.path.exists(env.outdir):
-            logging.warning(env.outdir + ' exists. Deleting it.')
-            if not env.dry_run:
-                shutil.rmtree(env.outdir)
-        logging.info('Copying from ' + env.fetch + ' to ' + env.outdir)
-        if env.dry_run:
-            return True
-        else:
-            return shutil.copytree(env.fetch, env.outdir)
-    
     def deploy(self, env):
-        env.deploy = self.get_path_from_parameter(env.deploy, env)
-        if not os.path.isdir(env.deploy):
-            raise FileNotFoundError('Invalid path / could not find a valid pkg file in %s' % param)
-        return self._deploy(env)
-
-    def get_path_from_parameter(self, param, env):
-        if str.isdigit(param):
-            return self.fetch_pkg_by_revision(env, param)
+        if str.isdigit(env.deploy):
+            env.deploy = self.fetch_pkg_by_revision(env, env.deploy)
         # if 'latest' was provided, fetch latest package uploaded to /b/
-        elif param.lower() == 'latest':
-            return self.fetch_pkg_latest(env)
-        elif param == 'local':
-            return self.get_local_path(env)
-        return param
+        elif env.deploy.lower() == 'latest':
+            env.deploy = self.fetch_pkg_latest(env)
+        elif env.deploy == 'local':
+            env.deploy = env.format('{uproject_dir}/Saved/%s/{platform}' % self.local_directory)
 
-    def get_local_path(self, env):
-        return env.uproject_dir + '/Saved/' + self.local_directory + '/' + self.platform_directory
+        if not os.path.isdir(env.deploy):
+            raise FileNotFoundError('Invalid path / could not find a valid pkg file in %s' % env.deploy)
+
+        return self._deploy(env)
 
     def fetch_pkg_by_revision(self, env, rev):
         logging.info('Looking for a %s test package at CL#%s' % (env.platform, rev))
         artifact_repository = env.format(env.artifact_repository_destination)
         deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant + '/' +
-                                    ('%s-%s-%s-%s-%s/%s/' % (env.project, env.variant, rev, env.platform, self.buildbot_directory_ending, self.platform_directory)))
+                                    ('%s-%s-%s-%s-%s/%s/' % (env.project, env.variant, rev, env.platform, self.buildbot_directory_ending, env.platform)))
         return deploy_repository
 
     def fetch_pkg_latest(self, env):
