@@ -217,10 +217,12 @@ class _Package(ConsoleGameCommand):
 
     def _deploy(self, env):
         platform_desc = create_platform_desc(env.platform)
-        return platform_desc.install_package(env.deploy, env)
+        platform_desc.install_package(env.deploy, env)
+        return True
 
     def _launch(self, env):
         platform_desc = create_platform_desc(env.platform)
         if env.launch == 'default':
             env.launch = None
-        return platform_desc.launch_package(env.launch, env)
+        platform_desc.launch_package(env.launch, env)
+        return True
