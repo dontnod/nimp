@@ -112,7 +112,6 @@ class ConsoleGameCommand(RunCommand):
         parser.add_argument('--deploy', action='store_true', help='deploy the game to a devkit')
         parser.add_argument('--launch', action='store_true', help='launch the game on a devkit')
         parser.add_argument('--device', metavar = '<host>', help = 'set target device')
-        parser.add_argument('--package_name', help = 'name of the package to launch')
 
     def run(self, env):
         if env.deploy:
@@ -157,8 +156,5 @@ class _Package(ConsoleGameCommand):
 
     def _launch(self, env):
         platform_desc = create_platform_desc(env.platform)
-        package_name = env.package_name
-        if not package_name:
-            package_name = env.game
-        platform_desc.launch_package(package_name, env.device, env.dry_run)
+        platform_desc.launch_package(env.game, env.device, env.dry_run)
         return True
