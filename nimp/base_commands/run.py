@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2014-2021 Dontnod Entertainment
+# Copyright (c) 2014-2019 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -22,7 +22,6 @@
 
 ''' Command to run executables or special commands '''
 
-import abc
 import argparse
 import logging
 
@@ -30,63 +29,43 @@ import nimp.command
 import nimp.unreal
 import nimp.sys.process
 
-class Run(nimp.command.CommandGroup):
+class Run(nimp.command.Command):
     ''' Run executables, hooks, and commandlets '''
-
-    def __init__(self):
-        super(Run, self).__init__([_Hook(),
-                                   _Commandlet(),
-                                   _Exec_cmds(),
-                                   _Staged(),
-                                   _Package()])
-
-    def is_available(self, env):
-        return True, ''
-
-class RunCommand(nimp.command.Command):
-    def __init__(self):
-        super(RunCommand, self).__init__()
-
     def configure_arguments(self, env, parser):
         parser.add_argument('parameters',
                             help='command to run',
                             metavar='<command> [<argument>...]',
                             nargs=argparse.REMAINDER)
+        parser.add_argument('--hook',
+                            help='run as hook (prerun, postbuild, etc.)',
+                            metavar='hook')
+        parser.add_argument('--commandlet',
+                            help='run as Unreal Engine commandlet (resavepackages, deriveddatacache, etc.)',
+                            action='store_true')
         return True
+
 
     def is_available(self, env):
         return True, ''
 
-class _Hook(RunCommand):
-    ''' Runs a hook '''
-    def __init__(self):
-        super(_Hook, self).__init__()
 
     def run(self, env):
-        if len(env.parameters) != 0:
-            logging.error('Too many arguments')
-            return False
-        return nimp.environment.execute_hook(env.hook, env)
 
-class _Commandlet(RunCommand):
-    ''' Runs a commandlet '''
+        # Hook mode
+        if hasattr(env, 'hook') and env.hook:
+            if len(env.parameters) != 0:
+                logging.error('Too many arguments')
+                return False
+            return nimp.environment.execute_hook(env.hook, env)
 
-    def __init__(self):
-        super(_Commandlet, self).__init__()
+        # Commandlet mode
+        if hasattr(env, 'commandlet') and env.commandlet:
+            if not nimp.unreal.is_unreal4_available(env):
+                logging.error('Not an Unreal Engine project')
+                return False
+            return nimp.unreal.commandlet(env, env.parameters[0], *env.parameters[1:])
 
-    def run(self, env):
-        if not nimp.unreal.is_unreal4_available(env):
-            logging.error('Not an Unreal Engine project')
-            return False
-        return nimp.unreal.commandlet(env, env.parameters[0], *env.parameters[1:])
-
-class _Exec_cmds(RunCommand):
-    ''' Runs executables on the local host '''
-
-    def __init__(self):
-        super(_Exec_cmds, self).__init__()
-
-    def run(self, env):
+        # Standard executable mode
         cmdline = []
         for arg in env.parameters:
             cmdline.append(env.format(arg))
@@ -96,56 +75,3 @@ class _Exec_cmds(RunCommand):
         nimp.environment.execute_hook('postrun', env)
 
         return ret == 0
-
-class ConsoleGameCommand(RunCommand):
-    def __init__(self):
-        super(ConsoleGameCommand, self).__init__()
-
-    def configure_arguments(self, env, parser):
-        super(ConsoleGameCommand, self).configure_arguments(env, parser)
-        parser.add_argument('--deploy', help='deploy the game to a devkit')
-        parser.add_argument('--launch', help='launch the game on a devkit')
-        add_common_arguments(parser, 'platform')
-
-    def run(self, env):
-        if env.deploy:
-            return _deploy(env)
-        if env.launch:
-            return _launch(env)
-        return False
-
-    @abc.abstractmethod
-    def _deploy(self, env):
-        pass
-
-    @abc.abstractmethod
-    def _launch(self, env):
-        pass
-
-class _Staged(ConsoleGameCommand):
-    ''' Deploys and runs staged console builds '''
-
-    def __init__(self):
-        super(_Staged, self).__init__()
-
-    def _deploy(self, env):
-        # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy [-configuration=Development] [-device=IP]
-        return True
-
-    def _launch(self, env):
-        # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy -run [-device=IP]
-        return True
-
-class _Package(ConsoleGameCommand):
-    ''' Deploys and runs console packages '''
-
-    def __init__(self):
-        super(_Package, self).__init__()
-
-    def _deploy(self, env):
-        # Call plugin based on env.platform
-        return True
-
-    def _launch(self, env):
-        # Call plugin based on env.platform
-        return True
