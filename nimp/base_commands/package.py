@@ -109,6 +109,7 @@ class UnrealPackageConfiguration():
         self.patch_base_directory = None
         self.stage_directory = None
         self.package_directory = None
+        self.uat_logs_directory = None
 
         self.project = None
         self.binary_configuration = None
@@ -194,6 +195,8 @@ class Package(nimp.command.Command):
         package_configuration.patch_base_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/StagedBuilds/{cook_platform}-PatchBase'))
         package_configuration.stage_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/StagedBuilds/{cook_platform}'))
         package_configuration.package_directory = nimp.system.standardize_path(env.format(platform_desc.ue4_package_directory))
+        package_configuration.uat_logs_directory = package_configuration.engine_directory + '/Programs/AutomationTool/Saved/Logs'
+
 
         if env.variant:
             variant_configuration_directory = package_configuration.configuration_directory + '/Variants/Active'
@@ -439,6 +442,9 @@ class Package(nimp.command.Command):
         logging.info('Staging package files for %s (Destination: %s)', package_configuration.target_platform, package_configuration.stage_directory)
         logging.info('')
 
+        uat_log_files = glob.glob(f'{package_configuration.uat_logs_directory}/*.txt')
+        for uat_log_file in uat_log_files:
+            _try_remove(uat_log_file, env.dry_run)
         _try_remove(package_configuration.stage_directory, env.dry_run)
         _try_create_directory(package_configuration.stage_directory, env.dry_run)
 
@@ -450,7 +456,9 @@ class Package(nimp.command.Command):
                 '-Project=' + package_configuration.project,
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,
-                '-SkipCook', '-Stage', '-Pak', '-Prereqs', '-CrashReporter', '-NoDebugInfo',
+                '-SkipCook', '-Stage', '-Pak', '-Prereqs', '-CrashReporter',
+                # Deactivate NoDebugInfo and let UAT handle symbols
+                # '-NoDebugInfo',
             ]
 
             if env.is_dne_legacy_ue4:
@@ -460,10 +468,11 @@ class Package(nimp.command.Command):
             if stage_success != 0:
                 raise RuntimeError('Stage failed')
 
+        Package._stage_uat_logs(package_configuration, env.dry_run)
         if env.ue4_minor < 24: # legacy
+            Package._stage_binaries(package_configuration, env.dry_run)
             Package._stage_title_files(package_configuration, env.dry_run)
             Package._stage_layout(package_configuration, env.dry_run)
-            Package._stage_binaries(package_configuration, env.dry_run)
             Package._stage_content(env, package_configuration)
 
             if package_configuration.msixvc:
@@ -638,6 +647,16 @@ class Package(nimp.command.Command):
             logging.info('+ %s', ' '.join(makepri_command))
             if not dry_run:
                 subprocess.check_call(makepri_command)
+
+    @staticmethod
+    def _stage_uat_logs(package_configuration, dry_run):
+        stage_path = package_configuration.stage_directory
+        source_path = package_configuration.uat_logs_directory
+        dest_path = 'UATLogs'
+
+        for uat_log_path in glob.glob(f'{source_path}/*.txt'):
+            filename = os.path.basename(uat_log_path)
+            Package._stage_file(stage_path, f'{source_path}/{filename}', f'{dest_path}/{filename}', dry_run)
 
 
     @staticmethod
