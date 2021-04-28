@@ -114,33 +114,32 @@ class ConsoleGameCommand(RunCommand):
         super(ConsoleGameCommand, self).configure_arguments(env, parser)
         nimp.command.add_common_arguments(parser, 'platform', 'configuration')
         parser.add_argument('--deploy',
-                            nargs='?', const='local',
+                            nargs='?',
                             metavar='<path | CL# | "latest">',
                             help="deploy the game to a devkit. If empty, deploys from the game's 'Saved' directory\
                                   WARNING: if passing a CL number or 'latest', be aware that\
                                   the game will be downloaded from B:\\, then reuploaded to the devkit!!\
                                   Avoid doing this over the VPN")
-        parser.add_argument('--launch',
-                            nargs='?', const='default',
-                            metavar='<package_name>',
-                            help='launch the game on a devkit')
+        parser.add_argument('--launch', action='store_true', help='launch the game on a devkit')
+        parser.add_argument('--package_name', help = 'name of the package to launch')
         parser.add_argument('--device', metavar = '<host>', help = 'set target device')
         parser.add_argument('-v', '--variant', default='fullgame', metavar="<variant_name>", help="name of variant (use 'fullgame' if none provided).")
 
     def run(self, env):
-        if env.deploy:
+        if hasattr(env, 'deploy'):
             return self.deploy(env)
-        if env.launch:
+        if hasattr(env, 'launch'):
             return self._launch(env)
         return False
 
     def deploy(self, env):
-        if str.isdigit(env.deploy):
-            env.deploy = self.fetch_pkg_by_revision(env, env.deploy)
-        # if 'latest' was provided, fetch latest package uploaded to /b/
-        elif env.deploy.lower() == 'latest':
-            env.deploy = self.fetch_pkg_latest(env)
-        elif env.deploy == 'local':
+        if env.deploy:
+            if str.isdigit(env.deploy):
+                env.deploy = self.fetch_pkg_by_revision(env, env.deploy)
+            # if 'latest' was provided, fetch latest package uploaded to /b/
+            elif env.deploy.lower() == 'latest':
+                env.deploy = self.fetch_pkg_latest(env)
+        else:
             env.deploy = env.format('{uproject_dir}/Saved/%s/{platform}' % self.local_directory)
 
         if not os.path.isdir(env.deploy):
@@ -204,7 +203,8 @@ class _Package(ConsoleGameCommand):
 
     def _launch(self, env):
         platform_desc = create_platform_desc(env.platform)
-        if env.launch == 'default':
-            env.launch = env.game
-        platform_desc.launch_package(env.launch, env.device, env.dry_run, env.ue4_config)
+        package_name = env.package_name
+        if not package_name:
+            package_name = env.game
+        platform_desc.launch_package(package_name, env.device, env.dry_run, env.ue4_config)
         return True
