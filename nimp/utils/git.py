@@ -73,7 +73,7 @@ def get_commit_version(commit_hash):
     return output
 
 def gitea_has_missing_params(env):
-    needed_params = ['gitea_host', 'gitea_access_token', 'gitea_repo_owner', 'gitea_repo_name', 'gitea_repo_name']
+    needed_params = ['gitea_host', 'gitea_access_token', 'gitea_repo_owner', 'gitea_repo_name']
     has_missing_params = False
     for param in needed_params:
         if not hasattr(env, param):
@@ -119,5 +119,6 @@ def get_gitea_commit_timestamp(gitea_context, commit_sha):
         api_commit_date = datetime.fromisoformat(api_commit_date).astimezone(timezone.utc)
         api_commit_timestamp = str(round(time.mktime(api_commit_date.timetuple())))
     except ApiException as e:
-        logging.warning("Exception when calling RepositoryApi->repo_get_single_commit: %s\n" % e)
+        reason = str(e.reason).lower() if hasattr(e, 'reason') else ''
+        logging.debug(f'[GITEA API] {gitea_context["repo_owner"]}@{gitea_context["repo_name"]}@{commit_sha} {reason}')
     return api_commit_timestamp
