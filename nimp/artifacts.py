@@ -71,11 +71,13 @@ def list_artifacts(artifact_pattern, format_arguments, api_context):
         artifact_match = artifact_regex.match(file_name)
         if artifact_match:
             group_revision = artifact_match.group('revision')
+            sortable_revision = copy.deepcopy(group_revision)
             if api_context:
-                group_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, group_revision)
-            if group_revision is not None:
+                sortable_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, group_revision)
+            if sortable_revision is not None:
                 artifact = {
                     'revision': group_revision,
+                    'sortable_revision': sortable_revision,
                     'uri': file_uri,
                 }
                 all_artifacts.append(artifact)

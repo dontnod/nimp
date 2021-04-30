@@ -84,7 +84,7 @@ class DownloadFileset(nimp.command.Command):
     # TODO: Handle revision comparison when identified by a hash
     @staticmethod
     def _find_matching_artifact(all_artifacts, exact_revision, minimum_revision, maximum_revision, api_context):
-        all_artifacts = sorted(all_artifacts, key=lambda artifact: int(artifact['revision'], 16), reverse=True)
+        all_artifacts = sorted(all_artifacts, key=lambda artifact: int(artifact['sortable_revision'], 16), reverse=True)
 
         if api_context:
             exact_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, exact_revision)
@@ -93,13 +93,13 @@ class DownloadFileset(nimp.command.Command):
 
         try:
             if exact_revision is not None:
-                return next(a for a in all_artifacts if a['revision'] == exact_revision)
+                return next(a for a in all_artifacts if a['sortable_revision'] == exact_revision)
             if minimum_revision is not None and maximum_revision is not None:
-                return next(a for a in all_artifacts if int(a['revision']) >= int(minimum_revision) and int(a['revision']) <= int(maximum_revision))
+                return next(a for a in all_artifacts if int(a['sortable_revision']) >= int(minimum_revision) and int(a['sortable_revision']) <= int(maximum_revision))
             if minimum_revision is not None:
-                return next(a for a in all_artifacts if int(a['revision']) >= int(minimum_revision))
+                return next(a for a in all_artifacts if int(a['sortable_revision']) >= int(minimum_revision))
             if maximum_revision is not None:
-                return next(a for a in all_artifacts if int(a['revision']) <= int(maximum_revision))
+                return next(a for a in all_artifacts if int(a['sortable_revision']) <= int(maximum_revision))
             return next(a for a in all_artifacts)
         except StopIteration:
             raise ValueError('Matching artifact not found')
