@@ -85,11 +85,15 @@ class DownloadFileset(nimp.command.Command):
     @staticmethod
     def _find_matching_artifact(all_artifacts, exact_revision, minimum_revision, maximum_revision, api_context):
         all_artifacts = sorted(all_artifacts, key=lambda artifact: int(artifact['sortable_revision'], 16), reverse=True)
+        has_revision_input = exact_revision or minimum_revision or maximum_revision
 
         if api_context:
             exact_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, exact_revision)
             minimum_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, minimum_revision)
             maximum_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, maximum_revision)
+            revision_not_found = not exact_revision and not minimum_revision and not maximum_revision
+            if has_revision_input and revision_not_found:
+                raise ValueError('Searched commit not found on gitea repo')
 
         try:
             if exact_revision is not None:
