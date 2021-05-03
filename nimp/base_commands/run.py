@@ -169,7 +169,7 @@ class ConsoleGameCommand(RunCommand):
     def deploy(self, env):
         env.deploy = self.get_path_from_parameter(env.deploy, env)
         if not os.path.isdir(env.deploy):
-            raise FileNotFoundError('Invalid path / could not find a valid pkg file in %s' % param)
+            raise FileNotFoundError('Invalid path / could not find a valid pkg file in %s' % env.deploy)
         return self._deploy(env)
 
     def get_path_from_parameter(self, param, env):
@@ -186,6 +186,9 @@ class ConsoleGameCommand(RunCommand):
         return env.uproject_dir + '/Saved/' + self.local_directory + '/' + self.platform_directory
 
     def fetch_pkg_by_revision(self, env, rev):
+        if not env.variant:
+            raise RuntimeError('"variant" parameter is required to fetch remote packages')
+
         logging.info('Looking for a %s test package at CL#%s' % (env.platform, rev))
         artifact_repository = env.format(env.artifact_repository_destination)
         deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant + '/' +
@@ -193,6 +196,9 @@ class ConsoleGameCommand(RunCommand):
         return deploy_repository
 
     def fetch_pkg_latest(self, env):
+        if not env.variant:
+            raise RuntimeError('"variant" parameter is required to fetch remote packages')
+
         artifact_repository = env.format(env.artifact_repository_destination)
         deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant)
         logging.info('Looking for latest %s package in %s' % (env.platform, deploy_repository))
