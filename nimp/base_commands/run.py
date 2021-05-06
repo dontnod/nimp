@@ -158,7 +158,7 @@ class ConsoleGameCommand(RunCommand):
             env.outdir = self.get_local_path(env)
 
         logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
-        cmdline = [ 'robocopy', '/MIR', '/Z', '/NJH', '/ETA', env.fetch, env.outdir ]
+        cmdline = [ 'robocopy', '/MIR', '/Z', '/NJH', '/ETA', '/MT', env.fetch, env.outdir ]
         logging.info('Running "%s"', ' '.join(cmdline))
         if env.dry_run:
             return True
