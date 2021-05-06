@@ -27,7 +27,7 @@ import argparse
 import logging
 import re
 import os
-import shutil
+import subprocess
 
 import nimp.command
 import nimp.unreal
@@ -156,15 +156,14 @@ class ConsoleGameCommand(RunCommand):
         env.fetch = self.get_path_from_parameter(env.fetch, env)
         if env.outdir == 'local':
             env.outdir = self.get_local_path(env)
-        if os.path.exists(env.outdir):
-            logging.warning(env.outdir + ' exists. Deleting it.')
-            if not env.dry_run:
-                shutil.rmtree(env.outdir)
-        logging.info('Copying from ' + env.fetch + ' to ' + env.outdir)
+
+        logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
+        cmdline = [ 'robocopy', '/MIR', '/Z', '/NJH', '/ETA', env.fetch, env.outdir ]
+        logging.info('Running "%s"', ' '.join(cmdline))
         if env.dry_run:
             return True
-        else:
-            return shutil.copytree(env.fetch, env.outdir)
+        result = subprocess.call(cmdline)
+        return result <= 1 # 0: nothing to copy. 1: some files were copied
     
     def deploy(self, env):
         env.deploy = self.get_path_from_parameter(env.deploy, env)
