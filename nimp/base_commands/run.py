@@ -162,7 +162,7 @@ class ConsoleGameCommand(RunCommand):
         logging.info('Running "%s"', ' '.join(cmdline))
         if env.dry_run:
             return True
-        result = subprocess.call(cmdline)
+        result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)
         return result <= 1 # 0: nothing to copy. 1: some files were copied
     
     def deploy(self, env):
