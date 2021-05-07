@@ -28,6 +28,7 @@ import logging
 import re
 import os
 import shutil
+import subprocess
 
 import nimp.command
 import nimp.unreal
@@ -156,6 +157,22 @@ class ConsoleGameCommand(RunCommand):
         env.fetch = self.get_path_from_parameter(env.fetch, env)
         if env.outdir == 'local':
             env.outdir = self.get_local_path(env)
+
+        if shutil.which('robocopy'):
+            return self.fetch_with_robocopy(env)
+        else:
+            return self.fetch_with_copy(env)
+
+    def fetch_with_robocopy(self, env):
+        logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
+        cmdline = [ 'robocopy', '/MIR', '/Z', '/NJH', '/ETA', '/MT', env.fetch, env.outdir ]
+        logging.info('Running "%s"', ' '.join(cmdline))
+        if env.dry_run:
+            return True
+        result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)
+        return result <= 1 # 0: nothing to copy. 1: some files were copied
+    
+    def fetch_with_copy(self, env):
         if os.path.exists(env.outdir):
             logging.warning(env.outdir + ' exists. Deleting it.')
             if not env.dry_run:
@@ -163,8 +180,8 @@ class ConsoleGameCommand(RunCommand):
         logging.info('Copying from ' + env.fetch + ' to ' + env.outdir)
         if env.dry_run:
             return True
-        else:
-            return shutil.copytree(env.fetch, env.outdir)
+        return shutil.copytree(env.fetch, env.outdir)
+
     
     def deploy(self, env):
         env.deploy = self.get_path_from_parameter(env.deploy, env)
