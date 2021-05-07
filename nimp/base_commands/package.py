@@ -119,7 +119,7 @@ class UnrealPackageConfiguration():
         self.package_type = None
         self.shader_debug_info = False
         self.iterative_cook = False
-        self.cook_extra_options = []
+        self.extra_options = []
         self.pak_collection = []
         self.pak_compression = False
         self.pak_compression_exclusions = []
@@ -152,7 +152,7 @@ class Package(nimp.command.Command):
         parser.add_argument('--compress', action = 'store_true', help = 'enable pak file compression')
         parser.add_argument('--final', action = 'store_true', help = 'enable package options for final submission')
         parser.add_argument('--trackloadpackage', action = 'store_true', help = 'track LoadPackage calls when cooking')
-        parser.add_argument('--cook-extra-options', nargs = '*', default = [], metavar = '<cook_option>',
+        parser.add_argument('--extra-options', nargs = '*', default = [], metavar = '<engine_option>',
                             help = 'pass additional options to the cook command')
         parser.add_argument('--msixvc', action = 'store_true', help = 'create a MSIXVC package')
         parser.add_argument('--ps4-regions', metavar = '<region>', nargs = '+', help = 'set the PS4 regions to package for')
@@ -213,7 +213,7 @@ class Package(nimp.command.Command):
         package_configuration.target_platform = env.ue4_platform
         package_configuration.shader_debug_info = env.shader_debug_info
         package_configuration.iterative_cook = env.iterate
-        package_configuration.cook_extra_options = env.cook_extra_options
+        package_configuration.extra_options = env.extra_options
         package_configuration.package_type = 'application'
         package_configuration.pak_collection = [ None ]
         package_configuration.pak_compression = env.compress
@@ -282,7 +282,7 @@ class Package(nimp.command.Command):
         #endregion Legacy
 
         if env.trackloadpackage:
-            package_configuration.cook_extra_options.append('-TrackLoadPackage')
+            package_configuration.extra_options.append('-TrackLoadPackage')
 
         if package_configuration.layout_file_path:
             package_configuration.layout_file_path = env.format(package_configuration.layout_file_path)
@@ -389,7 +389,7 @@ class Package(nimp.command.Command):
         ]
         if package_configuration.iterative_cook:
             cook_command += [ '-Iterate', '-IterateHash' ]
-        cook_command += package_configuration.cook_extra_options
+        cook_command += package_configuration.extra_options
 
         if package_configuration.shader_debug_info:
             sdb_path = package_configuration.project_directory + '/Saved/ShaderDebugInfo/' + package_configuration.target_platform
@@ -460,6 +460,8 @@ class Package(nimp.command.Command):
                 # Deactivate NoDebugInfo and let UAT handle symbols
                 # '-NoDebugInfo',
             ]
+
+            stage_command += package_configuration.extra_options
 
             if env.is_dne_legacy_ue4:
                 stage_command += [ '-SkipPak' ]
@@ -827,6 +829,8 @@ class Package(nimp.command.Command):
                 '-ClientConfig=' + package_configuration.binary_configuration,
                 '-SkipCook', '-SkipStage', '-Package',
             ]
+
+            package_command += package_configuration.extra_options
 
             package_success = nimp.sys.process.call(package_command, dry_run = dry_run)
             if package_success != 0:
