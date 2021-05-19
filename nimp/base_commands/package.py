@@ -37,6 +37,7 @@ import nimp.command
 import nimp.environment
 import nimp.system
 import nimp.sys.process
+import nimp.unreal
 
 from contextlib import contextmanager
 
@@ -147,6 +148,7 @@ class Package(nimp.command.Command):
         parser.add_argument('--steps', nargs = '+', choices = all_steps, default = default_steps, metavar = '<step>',
                             help = 'select the steps to execute\n(%s)' % ', '.join(all_steps))
         parser.add_argument('--variant', metavar = '<variant>', help = 'set the configuration variant to use')
+        parser.add_argument('--write-project-revisions', action = 'store_true', help = 'write project revisions for debug')
         parser.add_argument('--iterate', action = 'store_true', help = 'enable iterative cooking')
         parser.add_argument('--shader-debug-info', action = 'store_true', help = 'enable shader debug information generation')
         parser.add_argument('--compress', action = 'store_true', help = 'enable pak file compression')
@@ -311,6 +313,7 @@ class Package(nimp.command.Command):
 
         return True
 
+
     @contextmanager
     def configure_variant(env, project_directory):
         def _setup_default_config_file(config_file):
@@ -334,10 +337,66 @@ class Package(nimp.command.Command):
                 # necessary for shader debug info in case no defaultEngine is present
                 _setup_default_config_file(f'{active_configuration_directory}/DefaultEngine.ini')
                 _setup_default_config_file(f'{active_configuration_directory}/DefaultGame.ini')
+                if env.write_project_revisions:
+                    Package.write_project_revisions(env, active_configuration_directory)
             yield
         finally:
             if is_monorepo_behavior:
                 _try_remove(active_configuration_directory, False)
+
+    @staticmethod
+    def write_project_revisions(env, active_configuration_directory):
+        ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
+        project_version = {
+            'ProjectVersion': '1.0.0.0',
+            'ProjectBinaryRevision': None,
+            'ProjectContentRevision': None
+        }
+
+        logging.info('Updating %s', ini_file_path)
+        with open(ini_file_path, 'r') as ini_file:
+            ini_content = ini_file.read()
+
+        # Setup ProjectVersion
+        version_match = re.search(r'^ProjectVersion=(?P<value>.*?)$', ini_content, re.MULTILINE)
+        if version_match:
+            project_version['ProjectVersion'] = version_match.group('value')
+        else:
+            logging.warning('Failed to get project version, defaulting to 1.0.0.0')
+
+        # Setup ProjectBinaryRevision
+        try:
+            workspace_status = nimp.system.load_status(env)
+            worker_platform = nimp.unreal.get_host_platform()
+            project_version['ProjectBinaryRevision'] = workspace_status['binaries'][worker_platform.lower()]
+        except KeyError:
+            logging.warning('Failed to get binary revision')
+
+        # Setup ProjectContentRevision
+        try:
+            project_version['ProjectContentRevision'] = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
+        except:
+            logging.warning('Failed to get content revision')
+
+        for key, value in project_version.items():
+            logging.info(f'{key}: {value}')
+
+        # Setup GeneralProjectSettings
+        tmp = ini_content.splitlines()
+        for needle in project_version.keys():
+            tmp = [ line for line in tmp if not re.match(rf'^{needle}=(.*?)$', line) ]
+        index = [ i for i, s in enumerate(tmp) if re.match(r'^\[/Script/EngineSettings\.GeneralProjectSettings\]', s) ]
+        if index == []: # Insert GeneralProjectSettings on top if not exist
+            tmp.insert(0, '')
+            tmp.insert(0, '[/Script/EngineSetting.GeneralProjectSettings]')
+            index = [0]
+        for key, value in project_version.items(): # Insert project values at the top of GeneralProjectSettings section
+            tmp.insert(index[0] + 1, f'{key}={value}')
+        ini_content = '\n'.join(tmp)
+
+        if not env.dry_run:
+            with open(ini_file_path, 'w') as ini_file:
+                ini_file.write(ini_content)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
@@ -809,16 +868,16 @@ class Package(nimp.command.Command):
 
     def package_with_uat(package_configuration, dry_run):
         # Packaging with out of the box UAT behavior
-        destination = package_configuration.package_directory
-        if not os.path.isdir(destination):
-            raise IOError('Package failed: %s does not exist.' % destination )
-        # Cautionnary cleaning
-        for item in os.listdir(destination):
-            if item.endswith('.pkg') or\
-               item.endswith('.msixvc') or item.endswith('.msixvc.phd') or\
-               item.endswith('.ekb') or item.endswith('.zip') or\
-               item.endswith('.' + package_configuration.layout_file_extension):
-                _try_remove(os.path.join(destination, item), dry_run)
+        # destination = package_configuration.package_directory
+        # if os.path.isdir(destination):
+        #     for item in os.listdir(destination): # Cautionnary cleaning
+        #         if item.endswith('.pkg') or\
+        #            item.endswith('.nsp') or\
+        #            re.match(r'(Run_|Install)_' + package_configuration.env.game + r'(-.*.bat)?', item) or\
+        #            item.endswith('.msixvc') or item.endswith('.msixvc.phd') or\
+        #            item.endswith('.ekb') or item.endswith('.zip') or\
+        #            item.endswith('.' + package_configuration.layout_file_extension):
+        #             _try_remove(os.path.join(destination, item), dry_run)
 
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
