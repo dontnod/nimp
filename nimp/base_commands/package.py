@@ -352,7 +352,6 @@ class Package(nimp.command.Command):
             tmp = ini_content.splitlines()
             for needle in settings_dict.keys():
                 tmp = [line for line in tmp if not re.match(rf'^{needle}=(.*?)$', line)]
-                print(needle, tmp)
             pattern = r'^\[/Script/' + setting_category.replace(".", "\\.") + '\]'
             index = [i for i, s in enumerate(tmp) if re.match(pattern, s)]
             if index == []:  # Insert setting on top if not exist
