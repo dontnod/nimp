@@ -346,53 +346,56 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
-        ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
-        project_version = {
-            'ProjectVersion': '1.0.0.0',
-            'ProjectBinaryRevision': None,
-            'ProjectContentRevision': None
-        }
+        def _insert_into_ini_settings(ini_content, settings_dict, setting_category):
+            for key, value in settings_dict.items():
+                logging.info(f'{key}: {value}')
+            tmp = ini_content.splitlines()
+            for needle in settings_dict.keys():
+                tmp = [line for line in tmp if not re.match(rf'^{needle}=(.*?)$', line)]
+                print(needle, tmp)
+            pattern = r'^\[/Script/' + setting_category.replace(".", "\\.") + '\]'
+            index = [i for i, s in enumerate(tmp) if re.match(pattern, s)]
+            if index == []:  # Insert setting on top if not exist
+                tmp.insert(0, '')
+                tmp.insert(0, f'[/Script/{setting_category}]')
+                index = [0]
+            for key, value in settings_dict.items():  # Insert project values in wanted section
+                tmp.insert(index[0] + 1, f'{key}={value}')
+            return '\n'.join(tmp)
 
+        ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
         logging.info('Updating %s', ini_file_path)
         with open(ini_file_path, 'r') as ini_file:
             ini_content = ini_file.read()
 
-        # Setup ProjectVersion
+        # Setup Epic ProjectVersion
+        project_version = {
+            'ProjectVersion': '1.0.0.0',
+        }
         version_match = re.search(r'^ProjectVersion=(?P<value>.*?)$', ini_content, re.MULTILINE)
         if version_match:
             project_version['ProjectVersion'] = version_match.group('value')
         else:
             logging.warning('Failed to get project version, defaulting to 1.0.0.0')
+        ini_content = _insert_into_ini_settings(ini_content, project_version, 'EngineSettings.GeneralProjectSettings')
 
-        # Setup ProjectBinaryRevision
+        # Setup DNE custom ProjectBinaryRevision and ProjectContentRevision
+        # TODO: get this into plugins?
+        dne_project_vresion = {
+            'ProjectBinaryRevision': None,
+            'ProjectContentRevision': None
+        }
         try:
             workspace_status = nimp.system.load_status(env)
             worker_platform = nimp.unreal.get_host_platform()
-            project_version['ProjectBinaryRevision'] = workspace_status['binaries'][worker_platform.lower()]
+            dne_project_vresion['ProjectBinaryRevision'] = workspace_status['binaries'][worker_platform.lower()]
         except KeyError:
             logging.warning('Failed to get binary revision')
-
-        # Setup ProjectContentRevision
         try:
-            project_version['ProjectContentRevision'] = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
+            dne_project_vresion['ProjectContentRevision'] = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
         except:
             logging.warning('Failed to get content revision')
-
-        for key, value in project_version.items():
-            logging.info(f'{key}: {value}')
-
-        # Setup GeneralProjectSettings
-        tmp = ini_content.splitlines()
-        for needle in project_version.keys():
-            tmp = [ line for line in tmp if not re.match(rf'^{needle}=(.*?)$', line) ]
-        index = [ i for i, s in enumerate(tmp) if re.match(r'^\[/Script/EngineSettings\.GeneralProjectSettings\]', s) ]
-        if index == []: # Insert GeneralProjectSettings on top if not exist
-            tmp.insert(0, '')
-            tmp.insert(0, '[/Script/EngineSetting.GeneralProjectSettings]')
-            index = [0]
-        for key, value in project_version.items(): # Insert project values at the top of GeneralProjectSettings section
-            tmp.insert(index[0] + 1, f'{key}={value}')
-        ini_content = '\n'.join(tmp)
+        ini_content = _insert_into_ini_settings(ini_content, dne_project_vresion, 'DNEEngineVersion.DNEEngineVersion')
 
         if not env.dry_run:
             with open(ini_file_path, 'w') as ini_file:
