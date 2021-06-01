@@ -224,10 +224,13 @@ def find_dir_containing_file(filename):
 
 def map_files(env):
     ''' Returns a file mapper using environment parameters '''
+    ctx = [None]
     def _default_mapper(_, dest):
-        yield (env.root_dir, dest)
+        yield (env.root_dir if ctx[0].root_based else None, dest)
 
-    return FileMapper(_default_mapper, format_args = vars(env))
+    ret = FileMapper(_default_mapper, format_args = vars(env))
+    ctx[0] = ret
+    return ret
 
 class FileMapper():
     ''' A file mapper is a tree of rules used to enumerate files.
@@ -239,6 +242,9 @@ class FileMapper():
         self._mapper = mapper
         self._next = []
         self._format_args = format_args if format_args is not None else {}
+        # True for legacy mode: filesets are relative to {root_dir}, not current directory
+        # Newer filesets should explicitly use {root_dir} or {ue4_dir} etc.
+        self.root_based = True
 
     def __call__(self, src = None, dest = None):
         results = self._mapper(src, dest) if self._mapper else [(src, dest)]

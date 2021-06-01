@@ -78,7 +78,7 @@ class _List(FilesetCommand):
     def run(self, env):
         file_mapper = nimp.system.FileMapper(None, vars(env))
         file_mapper.load_set(env.fileset)
-        all_files = file_mapper.to_list(env.root_dir, ".")
+        all_files = file_mapper.to_list(env.root_dir if file_mapper.root_based else '.', '.')
 
         if env.destination:
             with open(env.destination, 'w') as export_file:
