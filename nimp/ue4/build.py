@@ -322,7 +322,8 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     # also compile console tools on Win64
     if nimp.sys.platform.is_windows():
-        uat_platforms += [ 'XboxOne' ] # + [ 'PS4' ]
+        # Disabled untill we figure out why this a nuget error is triggered by it
+        # uat_platforms += [ 'XboxOne' ] # + [ 'PS4' ]
         need_ps4tools = True
 
     # UAT has a special target to build common tools
