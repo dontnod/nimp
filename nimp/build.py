@@ -53,7 +53,7 @@ def msbuild(project_file, platform_name, configuration, project=None,
     command = [ msbuild_path, project_file,
                 '/verbosity:minimal',
                 '/nologo',
-                # This is the defaul for ue5 csproj files
+                # This is the default for ue5 csproj files
                 '/p:TargetFramework=' + 'netcoreapp3.1',
                 # Not used by UE5 csproj files it seems
                 # '/p:TargetFrameworkVersion=v' + dotnet_version,
