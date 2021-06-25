@@ -85,11 +85,6 @@ def build(env):
         except IOError:
             pass
 
-    # testing using msbulid insted of devenv in certain cases
-    env.use_msbuild = False
-    if hasattr(env, 'vs_version') and hasattr(env, 'ue4_minor'):
-        env.use_msbuild = ( vs_version >= '2019' and env.ue4_minor >= 26 )
-
     # Build tools that all targets require
     if not _ue4_build_common_tools(env, solution=solution, vs_version=vs_version):
         return False
@@ -379,8 +374,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     if not nimp.build.vsbuild(nimp.system.sanitize_path(csv_tools_sln),
                               'Any CPU', "Release",
                               vs_version=vs_version,
-                              target='Build',
-                              use_msbuild=True):
+                              target='Build'):
         logging.error("Could not build CSVTools")
         return False
 
