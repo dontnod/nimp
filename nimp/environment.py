@@ -28,6 +28,7 @@ import re
 import inspect
 import logging
 import os
+import pkg_resources
 import sys
 import time
 import glob
@@ -331,7 +332,13 @@ class Environment:
 
 def execute_hook(hook_name, *args):
     ''' Executes a hook in the .nimp/hooks directory '''
+    # Always look for project level hook first
     hook_module = nimp.system.try_import('hooks.' + hook_name)
+    if hook_module is not None: # If none found, try plugins level
+        for entry in pkg_resources.iter_entry_points('nimp.plugins'):
+            hook_module = nimp.system.try_import(entry.module_name + '.hooks.' + hook_name)
+            if hook_module:
+                break
     if hook_module is None:
         return True
     logging.info('Found %s hook', hook_name)
