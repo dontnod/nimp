@@ -71,6 +71,11 @@ def build(env):
     # The main solution file
     solution = env.format('{ue4_dir}/UE4.sln')
 
+    # Decide which dotnet_version to use
+    env.dotnet_version = 4.6
+    if env.ue4_major == 5: # We don't need a dotnet version
+        env.dotnet_version = False
+
     # Decide which VS version to use
     if hasattr(env, 'vs_version') and env.vs_version:
         vs_version = env.vs_version
@@ -241,14 +246,14 @@ def _ue4_build_game(env, solution, vs_version):
 def _ue4_build_ps5_common_tools(env, solution, vs_version):
     dep = env.format('{ue4_dir}/Engine/Platforms/PS5/Source/Programs/PS5SymbolTool/PS5SymbolTool.csproj')
     configuration = 'Release' if (env.ue4_minor >= 26 and env.ue4_patch < 1) else 'Development'
-    if not nimp.build.msbuild(dep, 'AnyCPU', configuration, vs_version=vs_version):
+    if not nimp.build.msbuild(dep, 'AnyCPU', configuration, vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS5SymbolTool")
         return False
     return True
 
 def _ue4_build_editor_swarm_interface(env, solution, vs_version):
     dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
-    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build SwarmInterface")
         return False
 
@@ -285,7 +290,7 @@ def _ue4_build_common_tools(env, solution, vs_version):
 
     # absolute path needed for ue5 to avoid NETSDK1004 error
     dep = os.path.abspath(env.format('{ue4_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
-    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build DotNETUtilities")
         return False
 
@@ -384,14 +389,14 @@ def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
     csproj = env.format('{ue4_dir}/Engine/Platforms/PS4/Source/Programs/PS4DevKitUtil/PS4DevKitUtil.csproj')
     if env.ue4_minor < 24:
         csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
-    if not nimp.build.msbuild(csproj, 'AnyCPU', 'Development', vs_version=vs_version):
+    if not nimp.build.msbuild(csproj, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS4DevKitUtil")
         return False
 
     csproj = env.format('{ue4_dir}/Engine/Platforms/PS4/Source/Programs/PS4SymbolTool/PS4SymbolTool.csproj')
     if env.ue4_minor < 24:
         csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj')
-    if not nimp.build.msbuild(csproj, None, None, vs_version=vs_version):
+    if not nimp.build.msbuild(csproj, None, None, vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS4SymbolTool")
         return False
 
