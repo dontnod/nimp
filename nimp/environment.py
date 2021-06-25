@@ -334,7 +334,7 @@ def execute_hook(hook_name, *args):
     ''' Executes a hook in the .nimp/hooks directory '''
     # Always look for project level hook first
     hook_module = nimp.system.try_import('hooks.' + hook_name)
-    if hook_module is not None: # If none found, try plugins level
+    if hook_module is None: # If none found, try plugins level
         for entry in pkg_resources.iter_entry_points('nimp.plugins'):
             hook_module = nimp.system.try_import(entry.module_name + '.hooks.' + hook_name)
             if hook_module:
