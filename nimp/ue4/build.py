@@ -288,7 +288,8 @@ def _ue4_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_common_tools_legacy(env, solution, vs_version)
 
-    dep = env.format('{ue4_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj')
+    # absolute path needed for ue5 to avoid NETSDK1004 error
+    dep = os.path.abspath(env.format('{ue4_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
     if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version):
         logging.error("Could not build DotNETUtilities")
         return False
@@ -322,9 +323,9 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     # also compile console tools on Win64
     if nimp.sys.platform.is_windows():
-        # Disabled untill we figure out why this a nuget error is triggered by it
-        # uat_platforms += [ 'XboxOne' ] # + [ 'PS4' ]
-        need_ps4tools = True
+        if env.ue4_major == 4: # We do not handle consoles yet for ue5
+            uat_platforms += [ 'XboxOne' ] # + [ 'PS4' ]
+            need_ps4tools = True
 
     # UAT has a special target to build common tools
     if not _ue4_run_uat(env, 'BuildCommonTools', uat_platforms):
@@ -335,14 +336,19 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     extra_tools = [
         'CrashReportClient',
         'LiveCodingConsole',
-        'UnrealFileServer',
         'UnrealFrontend',
         'UnrealInsights',
-        'UnrealCEFSubProcess',
     ]
 
+    if env.ue4_major < 5: # we don't wan the following in UE5
+        extra_tools = [
+            'UnrealFileServer',
+            'UnrealCEFSubProcess',
+        ]
+
     # MinidumpDiagnostics not in use in 4.25+ ue4 iterations
-    if env.ue4_minor  <= 24:
+    # Not build in UE5
+    if env.ue4_major == 4 and env.ue4_minor  <= 24:
         extra_tools.append('MinidumpDiagnostics')
         extra_tools.append('SymbolDebugger')
 
