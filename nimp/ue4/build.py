@@ -56,7 +56,7 @@ def build(env):
     # The main solution file and vs version needed
     solution = env.format('{ue4_dir}/UE4.sln')
     vs_version = _get_solution_vs_version(env, solution)
-    env.dotnet_version = False if env.ue4_major == 5 else '4.26'
+    env.dotnet_version = False if env.ue4_major == 5 else '4.6'
 
     # Pre-reboot run prebuild *BEFORE* GenerateProjectFiles.bat
     if env.is_dne_legacy_ue4:
