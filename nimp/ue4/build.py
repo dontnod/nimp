@@ -53,9 +53,16 @@ def build(env):
         os.environ['UBT_bAllowFastBuild'] = 'true'
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
+    # The main solution file and vs version needed
+    solution = env.format('{ue4_dir}/UE4.sln')
+    vs_version = _get_solution_vs_version(env, solution)
+    env.dotnet_version = False if env.ue4_major == 5 else '4.26'
+
     # Pre-reboot run prebuild *BEFORE* GenerateProjectFiles.bat
     if env.is_dne_legacy_ue4:
         nimp.environment.execute_hook('prebuild', env)
+        if env.ue4_major >= 5: # Compile prebuild stuff for UE5+ here
+            _pre_build(env, vs_version)
 
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
@@ -67,28 +74,8 @@ def build(env):
     # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
     if not env.is_dne_legacy_ue4:
         nimp.environment.execute_hook('prebuild', env)
-
-    # The main solution file
-    solution = env.format('{ue4_dir}/UE4.sln')
-
-    # Decide which dotnet_version to use
-    env.dotnet_version = 4.6
-    if env.ue4_major == 5: # We don't need a dotnet version
-        env.dotnet_version = False
-
-    # Decide which VS version to use
-    if hasattr(env, 'vs_version') and env.vs_version:
-        vs_version = env.vs_version
-    else:
-        # Default to VS 2015.
-        vs_version = '14'
-        try:
-            for line in open(solution):
-                if 'MinimumVisualStudioVersion = 15' in line:
-                    vs_version = '15'
-                    break
-        except IOError:
-            pass
+        if env.ue4_major >= 5: # Compile prebuild stuff for UE5+ here
+            _pre_build(env, vs_version)
 
     # Build tools that all targets require
     if not _ue4_build_common_tools(env, solution=solution, vs_version=vs_version):
@@ -111,6 +98,74 @@ def build(env):
     return True
 
 ### UAT + UBT helpers
+def _get_solution_vs_version(env, solution):
+    # Decide which VS version to use
+    if hasattr(env, 'vs_version') and env.vs_version:
+        vs_version = env.vs_version
+    else:
+        # Default to VS 2015.
+        vs_version = '14'
+        try:
+            for line in open(solution):
+                if 'MinimumVisualStudioVersion = 15' in line:
+                    vs_version = '15'
+                    break
+        except IOError:
+            pass
+    return vs_version
+
+def _pre_build(env, vs_version):
+    if env.is_dne_legacy_ue4: # The project file generation requires RPCUtility very early
+        if not nimp.build.vsbuild(env.format('{ue4_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln'),
+                                  'Any CPU', 'Development', None, '15', 'Build'):
+            logging.error("Could not build RPCUtility")
+            return False
+
+    # We need to build this on Linux
+    if platform.system() == 'Linux':
+        breakpad_dir = env.format('{ue4_dir}/Engine/Source/ThirdParty/Breakpad')
+        if not os.path.exists(breakpad_dir + '/src/tools/linux/dump_syms/dump_syms'):
+            if nimp.sys.process.call(['sh', 'configure'], cwd=breakpad_dir) != 0:
+                logging.error("Could not configure dump_syms")
+                return False
+            if nimp.sys.process.call(['make', '-j4'], cwd=breakpad_dir) != 0:
+                logging.error("Could not build dump_syms")
+                return False
+        bse_dir = env.format('{ue4_dir}/Engine/Source/Programs/BreakpadSymbolEncoder')
+        if not os.path.exists(bse_dir + '/BreakpadSymbolEncoder'):
+            if nimp.sys.process.call(['bash', 'BuildBreakpadSymbolEncoderLinux.sh'], cwd=bse_dir) != 0:
+                logging.error("Could not build BreakpadSymbolEncoder")
+                return False
+
+    if env.is_dne_legacy_ue4:
+        if platform.system() == 'Darwin':
+            solution_path = '{ue4_dir}/Engine/Source/Programs/IOS/iPhonePackager/iPhonePackager.sln'
+            nimp.build.vsbuild(env.format(solution_path), 'Any CPU', 'Release', '4.5', '14', 'Build')
+            # HACK: nothing creates this directory on OS X
+            nimp.system.safe_makedirs(env.format('{ue4_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
+
+    missing = [ # Files that need to be copied to Engine/Binaries
+        ('Win64', 'Engine/Source/ThirdParty/FBX/2016.1.1/lib/vs2015/x64/release/libfbxsdk.dll'),
+        ('Win64', 'Engine/Source/ThirdParty/FBX/2018.1.1/lib/vs2015/x64/release/libfbxsdk.dll'),
+        ('Win64', 'Engine/Source/ThirdParty/IntelEmbree/Embree270/Win64/lib/embree.dll'),
+        ('Win64', 'Engine/Source/ThirdParty/IntelEmbree/Embree270/Win64/lib/tbb.dll'),
+        ('Win64', 'Engine/Source/ThirdParty/IntelEmbree/Embree270/Win64/lib/tbbmalloc.dll'),
+        ('Win64', 'Engine/Source/ThirdParty/IntelEmbree/Embree2140/Win64/lib/embree.2.14.0.dll'),
+        ('Win64', 'Engine/Source/ThirdParty/IntelEmbree/Embree2140/Win64/lib/tbb.dll'),
+        ('Win64', 'Engine/Source/ThirdParty/IntelEmbree/Embree2140/Win64/lib/tbbmalloc.dll'),
+        ('Linux', 'Engine/Binaries/ThirdParty/OpenAL/Linux/x86_64-unknown-linux-gnu/libopenal.so.1'),
+        ('Linux', 'Engine/Binaries/ThirdParty/Steamworks/Steamv139/x86_64-unknown-linux-gnu/libsteam_api.so'),
+        ('Linux', 'Engine/Source/ThirdParty/Breakpad/src/tools/linux/dump_syms/dump_syms'),
+        ('Linux', 'Engine/Source/Programs/BreakpadSymbolEncoder/BreakpadSymbolEncoder'),
+        ('Mac',   'Engine/Source/ThirdParty/Breakpad/src/tools/mac/dump_syms/dump_syms'),
+    ]
+
+    for directory, path in missing:
+        src = env.format('{ue4_dir}/{f}', f=path)
+        dst = env.format('{ue4_dir}/Engine/Binaries/{d}/{f}', d=directory, f=os.path.basename(path))
+        if os.path.exists(nimp.system.sanitize_path(src)):
+            nimp.system.robocopy(src, dst, ignore_older=True)
+
 
 def _ue4_vsversion_to_ubt(vs_version):
     if vs_version == '14' or vs_version == '2015':
@@ -293,6 +348,18 @@ def _ue4_build_common_tools(env, solution, vs_version):
     if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build DotNETUtilities")
         return False
+
+    # Compile previous prebuild stuff for UE5+ here
+    if env.target == 'editor' and env.ue4_major >= 5:
+        dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
+        if not nimp.build.vsbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, target='Build'):
+            logging.error("Could not build SwarmAgent")
+            return False
+
+        dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
+        if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
+            logging.error("Could not build SwarmInterface")
+            return False
 
     if not _ue4_build_tool_ubt(env, 'UnrealHeaderTool', vs_version):
         return False
