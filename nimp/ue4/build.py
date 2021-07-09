@@ -343,9 +343,14 @@ def _ue4_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_common_tools_legacy(env, solution, vs_version)
 
-    # absolute path needed for ue5 to avoid NETSDK1004 error
     dep = os.path.abspath(env.format('{ue4_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
-    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
+    # UE5 : use flag to perform a dotnet restore command to avoid NETSDK1004 error that happens at first build
+    # The restore process only rebuilds what's not yet rebuilt so it doesn't slow down the process.
+    # source : https://docs.microsoft.com/en-us/dotnet/core/tools/sdk-errors/netsdk1004
+    #TODO: is it a good default flag for farm compil?
+    command_flags = ['/t:Restore'] if env.ue4_major >= 5 else None
+    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development',
+                              vs_version=vs_version, dotnet_version=env.dotnet_version, additional_flags=command_flags):
         logging.error("Could not build DotNETUtilities")
         return False
 
