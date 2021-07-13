@@ -58,11 +58,10 @@ def build(env):
     vs_version = _get_solution_vs_version(env, solution)
     env.dotnet_version = False if env.ue4_major == 5 else '4.6'
 
-    # Pre-reboot run prebuild *BEFORE* GenerateProjectFiles.bat
+
     if env.is_dne_legacy_ue4:
+        # Pre-reboot run prebuild *BEFORE* GenerateProjectFiles.bat
         nimp.environment.execute_hook('prebuild', env)
-        if env.ue4_major >= 5: # Compile prebuild stuff for UE5+ here
-            _pre_build(env, vs_version)
 
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
@@ -74,7 +73,7 @@ def build(env):
     # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
     if not env.is_dne_legacy_ue4:
         nimp.environment.execute_hook('prebuild', env)
-        if env.ue4_major >= 5: # Compile prebuild stuff for UE5+ here
+        if env.ue4_major >= 5: # Compile prebuild stuff for UE5+ here instead of hook
             _pre_build(env, vs_version)
 
     # Build tools that all targets require
@@ -120,7 +119,6 @@ def _pre_build(env, vs_version):
                                   'Any CPU', 'Development', None, '15', 'Build'):
             logging.error("Could not build RPCUtility")
             return False
-
     # We need to build this on Linux
     if platform.system() == 'Linux':
         breakpad_dir = env.format('{ue4_dir}/Engine/Source/ThirdParty/Breakpad')
