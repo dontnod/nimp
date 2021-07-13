@@ -40,50 +40,76 @@ from nimp.sys.platform import create_platform_desc_ue4
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
         command-line arguments '''
-    ue4_file = 'UE4/Engine/Build/Build.version'
-    ue4_dir = nimp.system.find_dir_containing_file(ue4_file)
+    unreal_file = 'Engine/Build/Build.version'
+    unreal_dir = None
 
-    ''' Retry by looking for a Engine/ folder if failed to find UE4/ (pre-reboot compatibility) '''
-    ue4_file = 'Engine/Build/Build.version'
-    if not ue4_dir:
-        ue4_dir = nimp.system.find_dir_containing_file(ue4_file)
-    else:
-        ue4_dir = os.path.join(ue4_dir, 'UE4') # (backward compatibility)
+    unreal_base_paths = [
+        'UnrealEngine',
+        'UE4',
+        '',
+    ]
+    for unreal_path in unreal_base_paths:
+        unreal_dir = nimp.system.find_dir_containing_file(f'{unreal_path}/{unreal_file}')
+        if unreal_dir:
+            unreal_dir = os.path.join(unreal_dir, unreal_path)
+            break
 
-    if not ue4_dir:
-        env.is_ue4 = False
+    # unreal_dir = nimp.system.find_dir_containing_file(unreal_file)
+    #
+    # ''' Retry by looking for a Engine/ folder if failed to find UE4/ (pre-reboot compatibility) '''
+    # unreal_file = 'Engine/Build/Build.version'
+    # if not unreal_dir:
+    #     unreal_dir = nimp.system.find_dir_containing_file(unreal_file)
+    # else:
+    #     unreal_dir = os.path.join(unreal_dir, 'UE4') # (backward compatibility)
+
+    if not unreal_dir:
+        env.is_unreal = env.is_ue4 = env.is_ue5 = False
         env.is_dne_legacy_ue4 = True
         return True
 
-    env.is_ue4 = True
 
-    with open('%s/%s' % (ue4_dir, ue4_file)) as version_file:
+
+    with open('%s/%s' % (unreal_dir, unreal_file)) as version_file:
         data = json.load(version_file)
-        env.ue4_major = data['MajorVersion']
-        env.ue4_minor = data['MinorVersion']
-        env.ue4_patch = data['PatchVersion']
+        env.unreal_major = data['MajorVersion']
+        env.unreal_minor = data['MinorVersion']
+        env.unreal_patch = data['PatchVersion']
+        env.unreal_version = float(f'{data["MajorVersion"]}.{data["MinorVersion"]}')
+        #TODO: deprecate ue4_* use in nimp and ue5 conf before proceeding with the following
+        # if env.unreal_major == 4: # Legacy, for older UE4 project conf
+        env.ue4_major = env.unreal_major
+        env.ue4_minor = env.unreal_minor
+        env.ue4_patch = env.unreal_patch
 
-    if not hasattr(env, 'vs_version') or env.vs_version is None:
-        if env.ue4_minor < 20:
-            env.vs_version = '14'
-        else:
-            env.vs_version = '15'
-
-    env.ue4_dir = ue4_dir
+    env.is_unreal = env.is_ue4 = env.is_ue5 = True
+    # TODO: deprecate is_ue4* use in nimp and ue5 conf before proceeding
+    # env.is_ue4 = False
+    # env.is_ue5 = False
+    # if env.unreal_major == 4:  # Legacy, for older UE4 project conf
+    #     env.is_ue4 = env.is_unreal
+    # if env.unreal_major == 5:
+    #     env.is_ue5 = env.is_unreal
+    # TODO: Deprecate ue4_dir for older UE4 confs
+    env.unreal_dir = env.ue4_dir = unreal_dir
     # Backward compatibility (TODO: remove later)
     if not hasattr(env, 'is_dne_legacy_ue4'):
-        # Specify major version number so ue5 is not considered ue4 legacy
-        env.is_dne_legacy_ue4 = (env.ue4_major == 4 and env.ue4_minor < 22)
+        env.is_dne_legacy_ue4 = env.unreal_version < 4.22
 
     if not hasattr(env, 'root_dir') or env.root_dir is None:
-        env.root_dir = os.path.normpath(ue4_dir)
+        env.root_dir = os.path.normpath(unreal_dir)
 
     # The host platform
+    env.unreal_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
+                          else 'Mac' if platform.system() == 'Darwin' \
+                          else 'Linux'
+    # TODO: Deprecate ue4_host_platform for older UE4 confs
     env.ue4_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
                        else 'Mac' if platform.system() == 'Darwin' \
                        else 'Linux'
 
-    logging.debug('Found UE4 engine %s.%s.%s for %s in %s' % (env.ue4_major, env.ue4_minor, env.ue4_patch, env.ue4_host_platform, ue4_dir))
+    logging.debug(f'Found UE {env.unreal_major}.{env.unreal_minor}.{env.unreal_patch} '
+                  f'for {env.unreal_host_platform} in {env.unreal_dir}')
 
     # Forward compatibility (TODO: remove later when all configuration files use uproject)
     if hasattr(env, 'game'):
@@ -94,7 +120,7 @@ def load_config(env):
     # If no uproject information is provided, look for one
     if not hasattr(env, 'uproject_dir') or not hasattr(env, 'uproject'):
         patterns = set()
-        for upd in glob.glob(ue4_dir + '/*.uprojectdirs'):
+        for upd in glob.glob(unreal_dir + '/*.uprojectdirs'):
             with open(upd, 'r') as upd_file:
                 for pattern in upd_file.readlines():
                     if pattern.startswith(';'):
@@ -102,7 +128,7 @@ def load_config(env):
                     patterns.add(pattern.strip())
         ufiles = set()
         for pat in patterns:
-            for ufile in glob.glob('%s/%s/*/*.uproject' % (ue4_dir, pat)):
+            for ufile in glob.glob('%s/%s/*/*.uproject' % (unreal_dir, pat)):
                 ufiles.add(os.path.normpath(ufile.strip()))
 
         cwd = os.getcwd()
@@ -144,13 +170,16 @@ def load_config(env):
     if hasattr(env, 'uproject_dir'):
         env.game_dir = env.uproject_dir
 
+    if not hasattr(env, 'unreal_exe_name') or env.unreal_exe_name is None:
+        env.unreal_exe_name = _set_unreal_exe_name(env)
+
     return True
 
 
 def load_arguments(env):
     ''' Loads Unreal specific environment parameters. '''
 
-    if env.is_ue4:
+    if env.is_unreal:
         if not hasattr(env, 'platform') or env.platform is None:
             if nimp.sys.platform.is_windows():
                 env.platform = 'win64'
@@ -163,7 +192,7 @@ def load_arguments(env):
     _ue4_sanitize_arguments(env)
     _ue4_set_env(env)
 
-    if env.is_ue4:
+    if env.is_unreal:
         if not hasattr(env, 'target') or env.target is None:
             if env.platform in ['win64', 'mac', 'linux']:
                 env.target = 'editor'
@@ -202,7 +231,7 @@ def commandlet(env, command, *args, heartbeat = 0):
         nimp as OutputDebugString will be redirected to standard output. '''
     if not _check_for_unreal(env):
         return False
-    return _ue4_commandlet(env, command, *args, heartbeat = heartbeat)
+    return _unreal_commandlet(env, command, *args, heartbeat = heartbeat)
 
 def is_unreal4_available(env):
     ''' Returns a tuple containing unreal availability and a help text
@@ -214,7 +243,7 @@ def is_unreal4_available(env):
                         'Check documentation for more details on .nimp.conf.')
 
 def _check_for_unreal(env):
-    if not env.is_ue4:
+    if not env.is_unreal:
         logging.error('This doesn\'t seems to be a supported project type.')
         logging.error('Check that you are launching nimp from an UE project')
         logging.error('directory, and that you have a .nimp.conf file in the')
@@ -224,18 +253,11 @@ def _check_for_unreal(env):
     return True
 
 
-def _ue4_commandlet(env, command, *args, heartbeat = 0):
-    ''' Runs an UE4 commandlet '''
+def _unreal_commandlet(env, command, *args, heartbeat = 0):
+    ''' Runs an Unreal commandlet '''
 
-    exe = '{ue4_dir}/Engine/Binaries/{ue4_host_platform}/UE4Editor.exe'
-    # Temporary hack : PIO now uses "BuildEnvironment = TargetBuildEnvironment.Unique;"
-    # https://jira.dont-nod.com/browse/XPJ-4747
-    # https://gitea.dont-nod.com/devs/monorepo/commit/ceacad5c42cd0be34946236d36201e646b393d60
-    if hasattr(env, 'uniqueBuildEnvironment') and hasattr(env, 'root_dir') and env.uniqueBuildEnvironment['is_enabled']:
-        exe = os.path.join(env.root_dir, env.uniqueBuildEnvironment['editor_path'])
-    cmdline = [nimp.system.sanitize_path(env.format(exe)),
-               env.game,
-               '-run=%s' % command]
+    exe = '{unreal_dir}/Engine/Binaries/{unreal_host_platform}/{unreal_exe_name}.exe'
+    cmdline = [nimp.system.sanitize_path(env.format(exe)), env.game, f'-run={command}']
 
     cmdline += list(args)
     cmdline += ['-buildmachine', '-nopause', '-unattended', '-noscriptcheck']
@@ -270,7 +292,7 @@ def _ue4_sanitize_arguments(env):
         env.is_x360 = False
         env.is_xone = env.is_xboxone
 
-        if env.is_ue4:
+        if env.is_unreal:
             env.platform = '+'.join(map(lambda x: x.name, platform_descs))
 
     if hasattr(env, 'configuration') and env.configuration is not None:
@@ -289,7 +311,7 @@ def _ue4_sanitize_arguments(env):
 
         ue4_configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
 
-        if env.is_ue4:
+        if env.is_unreal:
             env.configuration = ue4_configuration
 
 
@@ -302,13 +324,13 @@ def _ue4_set_env(env):
                     "test"     : "Test",
                     "shipping" : "Shipping", }
         if config not in configs:
-            if env.is_ue4:
-                logging.warning('Unsupported UE4 build config “%s”', config)
+            if env.is_unreal:
+                logging.warning('Unsupported Unreal build config “%s”', config)
             return None
         return configs[config]
 
     def _get_ue4_platform(in_platform):
-        if not env.is_ue4:
+        if not env.is_unreal:
             return in_platform
         return nimp.sys.platform.create_platform_desc(in_platform).ue4_name
 
@@ -380,6 +402,16 @@ class _AssetSummary():
                         pass
 
         destination.add(msg)
+
+def _set_unreal_exe_name(env):
+    unreal_exe_name = 'UnrealEditor'
+    if env.unreal_major == 4:
+        unreal_exe_name = 'UE4Editor'
+    # Exe name is <game>Editor in case we set uniqueBuildEnv
+    _is_unique_build_env = hasattr(env, 'uniqueBuildEnvironment') and env.uniqueBuildEnvironment['is_enabled']
+    if _is_unique_build_env:
+        unreal_exe_name = env.game + 'Editor'
+    return unreal_exe_name
 
 class UnrealSummaryHandler(nimp.summary.SummaryHandler):
     """ Default summary handler, showing one line by error / warning and
