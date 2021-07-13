@@ -68,8 +68,6 @@ def load_config(env):
         env.is_dne_legacy_ue4 = True
         return True
 
-
-
     with open('%s/%s' % (unreal_dir, unreal_file)) as version_file:
         data = json.load(version_file)
         env.unreal_major = data['MajorVersion']
@@ -82,14 +80,14 @@ def load_config(env):
         env.ue4_minor = env.unreal_minor
         env.ue4_patch = env.unreal_patch
 
-    env.is_unreal = env.is_ue4 = env.is_ue5 = True
-    # TODO: deprecate is_ue4* use in nimp and ue5 conf before proceeding
-    # env.is_ue4 = False
-    # env.is_ue5 = False
-    # if env.unreal_major == 4:  # Legacy, for older UE4 project conf
-    #     env.is_ue4 = env.is_unreal
-    # if env.unreal_major == 5:
-    #     env.is_ue5 = env.is_unreal
+    env.is_unreal = True
+    env.is_ue4 = False
+    env.is_ue5 = False
+    if env.unreal_major == 4:
+        env.is_ue4 = env.is_unreal
+    if env.unreal_major == 5:
+        #TODO: remove is_ue5/is_ue4 equivalence when is_ue4 has been factored out of ue5 conf
+        env.is_ue5 = env.is_ue4 = env.is_unreal
     # TODO: Deprecate ue4_dir for older UE4 confs
     env.unreal_dir = env.ue4_dir = unreal_dir
     # Backward compatibility (TODO: remove later)
