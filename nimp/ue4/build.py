@@ -413,7 +413,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     ]
 
     if env.ue4_major < 5: # we don't wan the following in UE5
-        extra_tools = [
+        extra_tools += [
             'UnrealFileServer',
             'UnrealCEFSubProcess',
         ]
