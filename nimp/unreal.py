@@ -49,11 +49,14 @@ def load_config(env):
         '',
     ]
     for unreal_path in unreal_base_paths:
-        unreal_dir = nimp.system.find_dir_containing_file(f'{unreal_path}/{unreal_file}')
+        unreal_dir = nimp.system.find_dir_containing_file(os.path.join(unreal_path, unreal_file))
         if unreal_dir:
             unreal_dir = os.path.join(unreal_dir, unreal_path)
             break
 
+    # Legacy code, left there for testing
+    # TODO: Remove when new unreal_dir method has shown it's robust enough with older projects
+    # unreal_file = 'UE4/Engine/Build/Build.version'
     # unreal_dir = nimp.system.find_dir_containing_file(unreal_file)
     #
     # ''' Retry by looking for a Engine/ folder if failed to find UE4/ (pre-reboot compatibility) '''
