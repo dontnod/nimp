@@ -88,9 +88,10 @@ def load_config(env):
     env.is_ue5 = False
     if env.unreal_major == 4:
         env.is_ue4 = env.is_unreal
+        env.is_ue5 = False
     if env.unreal_major == 5:
-        #TODO: remove is_ue5/is_ue4 equivalence when is_ue4 has been factored out of ue5 conf
-        env.is_ue5 = env.is_ue4 = env.is_unreal
+        env.is_ue5 = env.is_unreal
+        env.is_ue4 = False
     # TODO: Deprecate ue4_dir for older UE4 confs
     env.unreal_dir = env.ue4_dir = unreal_dir
     # Backward compatibility (TODO: remove later)
@@ -413,6 +414,7 @@ def _set_unreal_exe_name(env):
     if _is_unique_build_env:
         unreal_exe_name = env.game + 'Editor'
     return unreal_exe_name
+
 
 class UnrealSummaryHandler(nimp.summary.SummaryHandler):
     """ Default summary handler, showing one line by error / warning and
