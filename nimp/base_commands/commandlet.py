@@ -45,7 +45,7 @@ class Commandlet(nimp.command.Command):
         return True
 
     def is_available(self, env):
-        return nimp.unreal.is_unreal4_available(env)
+        return nimp.unreal.is_unreal_available(env)
 
     def run(self, env):
         return nimp.unreal.commandlet(env, env.commandlet, *env.args)

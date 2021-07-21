@@ -170,7 +170,7 @@ class Package(nimp.command.Command):
 
 
     def is_available(self, env):
-        return nimp.unreal.is_unreal4_available(env)
+        return nimp.unreal.is_unreal_available(env)
 
 
     def run(self, env):

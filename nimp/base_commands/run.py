@@ -84,7 +84,7 @@ class _Commandlet(RunCommand):
         super(_Commandlet, self).__init__()
 
     def run(self, env):
-        if not nimp.unreal.is_unreal4_available(env):
+        if not nimp.unreal.is_unreal_available(env):
             logging.error('Not an Unreal Engine project')
             return False
         return nimp.unreal.commandlet(env, env.parameters[0], *env.parameters[1:])
