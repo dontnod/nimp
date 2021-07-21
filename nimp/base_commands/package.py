@@ -210,7 +210,7 @@ class Package(nimp.command.Command):
 
         package_configuration.project = env.game
         package_configuration.binary_configuration = env.ue4_config
-        package_configuration.worker_platform = env.ue4_host_platform
+        package_configuration.worker_platform = env.unreal_host_platform
         package_configuration.cook_platform = env.cook_platform
         package_configuration.target_platform = env.ue4_platform
         package_configuration.shader_debug_info = env.shader_debug_info

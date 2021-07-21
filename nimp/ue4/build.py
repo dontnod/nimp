@@ -228,7 +228,7 @@ def _ue4_generate_project(env):
 
 
 def _ue4_build_tool_ubt(env, tool, vs_version=None):
-    platform = env.ue4_host_platform
+    platform = env.unreal_host_platform
     configuration = _ue4_select_tool_configuration(tool)
     if not _ue4_run_ubt(env, tool, platform, configuration,
                         vs_version=vs_version):
@@ -242,7 +242,7 @@ def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=No
         command = ['cmd', '/c', 'Engine\\Build\\BatchFiles\\Build.bat']
         command += _ue4_vsversion_to_ubt(vs_version)
     else:
-        command = ['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % env.ue4_host_platform]
+        command = ['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % env.unreal_host_platform]
 
     command += [ target, build_platform, build_configuration ]
 
@@ -495,7 +495,7 @@ def _ue4_build_project(env, sln_file, project, build_platform,
             return True
     else:
         # This file needs bash explicitly
-        if nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.ue4_host_platform),
+        if nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.unreal_host_platform),
                                   project, build_platform, configuration],
                                   cwd=env.unreal_dir) == 0:
             return True
@@ -519,7 +519,7 @@ def _ue4_build_editor_legacy(env, solution, vs_version):
 def _ue4_build_common_tools_legacy(env, solution, vs_version):
     for tool in _ue4_list_common_tools_legacy(env):
         if not _ue4_build_project(env, solution, tool,
-                                  env.ue4_host_platform,
+                                  env.unreal_host_platform,
                                   _ue4_select_tool_configuration(tool),
                                   vs_version, 'Build'):
             return False

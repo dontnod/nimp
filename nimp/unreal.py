@@ -93,10 +93,10 @@ def load_config(env):
     env.unreal_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
                           else 'Mac' if platform.system() == 'Darwin' \
                           else 'Linux'
-    # TODO: Deprecate ue4_host_platform for older UE4 confs
-    env.ue4_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
-                       else 'Mac' if platform.system() == 'Darwin' \
-                       else 'Linux'
+    if env.is_ue4: # legacy for old conf
+        env.ue4_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
+                           else 'Mac' if platform.system() == 'Darwin' \
+                           else 'Linux'
 
     logging.debug(f'Found UE {env.unreal_major}.{env.unreal_minor}.{env.unreal_patch} '
                   f'for {env.unreal_host_platform} in {env.unreal_dir}')
@@ -192,7 +192,7 @@ def load_arguments(env):
     return True
 
 
-# TODO: deprecate this in favour of env.ue4_host_platform
+# TODO: deprecate this in favour of env.unreal_host_platform
 def get_host_platform():
     ''' Get the Unreal platform for the host platform '''
     if platform.system() == 'Windows':
