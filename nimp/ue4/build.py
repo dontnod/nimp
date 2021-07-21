@@ -56,8 +56,7 @@ def build(env):
     # The main solution file and vs version needed
     solution = env.format('{unreal_dir}/UE4.sln')
     vs_version = _get_solution_vs_version(env, solution)
-    env.dotnet_version = False if env.ue4_major == 5 else '4.6'
-
+    env.dotnet_version = False if env.unreal_version >= 5 else '4.6'
 
     if env.is_dne_legacy_ue4:
         # Pre-reboot run prebuild *BEFORE* GenerateProjectFiles.bat
@@ -73,7 +72,7 @@ def build(env):
     # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
     if not env.is_dne_legacy_ue4:
         nimp.environment.execute_hook('prebuild', env)
-        if env.ue4_major >= 5: # Compile prebuild stuff for UE5+ here instead of hook
+        if env.unreal_version >= 5: # Compile prebuild stuff for UE5+ here instead of hook
             _pre_build(env, vs_version)
 
     # Build tools that all targets require
@@ -285,7 +284,7 @@ def _ue4_build_game(env, solution, vs_version):
         if not _ue4_build_tool_ubt(env, 'XboxPDBFileUtil', vs_version):
             return False
 
-    if env.platform == 'ps5' and env.ue4_minor >= 26:
+    if env.platform == 'ps5' and env.unreal_version >= 4.26:
         if not _ue4_build_ps5_common_tools(env, solution, vs_version):
             return False
 
@@ -298,7 +297,7 @@ def _ue4_build_game(env, solution, vs_version):
 
 def _ue4_build_ps5_common_tools(env, solution, vs_version):
     dep = env.format('{unreal_dir}/Engine/Platforms/PS5/Source/Programs/PS5SymbolTool/PS5SymbolTool.csproj')
-    configuration = 'Release' if (env.ue4_minor >= 26 and env.ue4_patch < 1) else 'Development'
+    configuration = 'Release' if (env.unreal_version >= 4.26 and env.ue4_patch < 1) else 'Development'
     if not nimp.build.msbuild(dep, 'AnyCPU', configuration, vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS5SymbolTool")
         return False
@@ -346,14 +345,14 @@ def _ue4_build_common_tools(env, solution, vs_version):
     # The restore process only rebuilds what's not yet rebuilt so it doesn't slow down the process.
     # source : https://docs.microsoft.com/en-us/dotnet/core/tools/sdk-errors/netsdk1004
     #TODO: is it a good default flag for farm compil?
-    command_flags = ['/t:Restore'] if env.ue4_major >= 5 else None
+    command_flags = ['/t:Restore'] if env.unreal_version >= 5 else None
     if not nimp.build.msbuild(dep, 'AnyCPU', 'Development',
                               vs_version=vs_version, dotnet_version=env.dotnet_version, additional_flags=command_flags):
         logging.error("Could not build DotNETUtilities")
         return False
 
     # Compile previous prebuild stuff for UE5+ here
-    if env.target == 'editor' and env.ue4_major >= 5:
+    if env.target == 'editor' and env.unreal_version >= 5:
         dep = env.format('{unreal_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
         if not nimp.build.vsbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, target='Build'):
             logging.error("Could not build SwarmAgent")
@@ -373,7 +372,7 @@ def _ue4_build_common_tools(env, solution, vs_version):
 def _ue4_build_swarmagent(env, vs_version):
     # This also builds AgentInterface.dll, needed by SwarmInterface.sln
     # This used to compile on Linux but hasn't been revisited for a while
-    if env.ue4_major == 4 and env.ue4_minor < 20:
+    if env.unreal_version < 4.20:
         dep = env.format('{unreal_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln')
     else:
         dep = env.format('{unreal_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
@@ -393,7 +392,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     # also compile console tools on Win64
     if nimp.sys.platform.is_windows():
-        if env.ue4_major == 4: # We do not handle consoles yet for ue5
+        if env.unreal_version < 5: # We do not handle consoles yet for ue5
             uat_platforms += [ 'XboxOne' ] # + [ 'PS4' ]
             need_ps4tools = True
 
@@ -410,7 +409,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         'UnrealInsights',
     ]
 
-    if env.ue4_major < 5: # we don't wan the following in UE5
+    if env.unreal_version < 5: # we don't wan the following in UE5
         extra_tools += [
             'UnrealFileServer',
             'UnrealCEFSubProcess',
@@ -418,7 +417,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     # MinidumpDiagnostics not in use in 4.25+ ue4 iterations
     # Not build in UE5
-    if env.ue4_major == 4 and env.ue4_minor  <= 24:
+    if env.unreal_version  <= 4.24:
         extra_tools.append('MinidumpDiagnostics')
         extra_tools.append('SymbolDebugger')
 
@@ -426,7 +425,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     # required by the Editor
     # Note: it is normally compiled by UAT BuildTarget command but we
     # don't use it yet
-    if env.ue4_minor >= 24:
+    if env.unreal_version >= 4.24:
         extra_tools.append('CrashReportClientEditor')
 
     # build projects are currently broken for PS4SymbolTool
@@ -457,14 +456,14 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
 def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
     csproj = env.format('{unreal_dir}/Engine/Platforms/PS4/Source/Programs/PS4DevKitUtil/PS4DevKitUtil.csproj')
-    if env.ue4_minor < 24:
+    if env.unreal_version < 4.24:
         csproj = env.format('{unreal_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
     if not nimp.build.msbuild(csproj, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS4DevKitUtil")
         return False
 
     csproj = env.format('{unreal_dir}/Engine/Platforms/PS4/Source/Programs/PS4SymbolTool/PS4SymbolTool.csproj')
-    if env.ue4_minor < 24:
+    if env.unreal_version < 4.24:
         csproj = env.format('{unreal_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj')
     if not nimp.build.msbuild(csproj, None, None, vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS4SymbolTool")
@@ -594,7 +593,7 @@ def _ue4_list_common_tools_legacy(env):
             tools += [ 'UnrealLightmass', ] # doesn’t build (yet?)
 
         # No longer needed in UE 4.16
-        if env.platform == 'linux' and env.ue4_minor < 16:
+        if env.platform == 'linux' and env.unreal_version < 4.16:
             tools += [ 'CrossCompilerTool', ]
 
         if os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):

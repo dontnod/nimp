@@ -244,7 +244,7 @@ class Package(nimp.command.Command):
         ps4_title_directory_collection = []
 
         # ignore possible  legacy config for pre-monorepo projects
-        if hasattr(env, 'package_variants') and env.ue4_minor < 24:
+        if hasattr(env, 'package_variants') and env.unreal_version < 4.24:
             if not env.variant:
                 raise ValueError('Variant parameter is required')
 
@@ -321,7 +321,7 @@ class Package(nimp.command.Command):
                 with open(config_file, 'a'):
                     pass
 
-        is_monorepo_behavior = env.ue4_minor > 24
+        is_monorepo_behavior = env.unreal_version > 4.24
         should_configure_variant = is_monorepo_behavior and env.variant is not None
         active_configuration_directory = f'{project_directory}/Config/Variants/Active'
 
@@ -532,7 +532,7 @@ class Package(nimp.command.Command):
                 raise RuntimeError('Stage failed')
 
         Package._stage_uat_logs(package_configuration, env.dry_run)
-        if env.ue4_minor < 24: # legacy
+        if env.unreal_version < 4.24: # legacy
             Package._stage_binaries(package_configuration, env.dry_run)
             Package._stage_title_files(package_configuration, env.dry_run)
             Package._stage_layout(package_configuration, env.dry_run)

@@ -65,11 +65,10 @@ def load_config(env):
         env.unreal_minor = data['MinorVersion']
         env.unreal_patch = data['PatchVersion']
         env.unreal_version = float(f'{data["MajorVersion"]}.{data["MinorVersion"]}')
-        #TODO: deprecate ue4_* use in nimp and ue5 conf before proceeding with the following
-        # if env.unreal_major == 4: # Legacy, for older UE4 project conf
-        env.ue4_major = env.unreal_major
-        env.ue4_minor = env.unreal_minor
-        env.ue4_patch = env.unreal_patch
+        if env.unreal_major == 4: # Legacy, for older UE4 project conf
+            env.ue4_major = env.unreal_major
+            env.ue4_minor = env.unreal_minor
+            env.ue4_patch = env.unreal_patch
 
     env.is_unreal = True
     env.is_ue4 = False
