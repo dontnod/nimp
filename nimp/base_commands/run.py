@@ -249,7 +249,7 @@ class _Staged(ConsoleGameCommand):
         absolute_path = os.path.abspath(env.deploy + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
         cmdline = [
-            env.ue4_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
+            env.unreal_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
             'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
             '-stagingdirectory=' + absolute_path, 
             '-skipcook', '-skipstage', '-deploy'
@@ -269,7 +269,7 @@ class _Staged(ConsoleGameCommand):
         absolute_path = os.path.abspath(env.launch + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
         cmdline = [
-            env.ue4_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
+            env.unreal_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
             'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
             '-stagingdirectory=' + absolute_path,
             '-skipcook', '-skipstage', '-deploy', '-run'

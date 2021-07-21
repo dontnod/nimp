@@ -54,18 +54,6 @@ def load_config(env):
             unreal_dir = os.path.join(unreal_dir, unreal_path)
             break
 
-    # Legacy code, left there for testing
-    # TODO: Remove when new unreal_dir method has shown it's robust enough with older projects
-    # unreal_file = 'UE4/Engine/Build/Build.version'
-    # unreal_dir = nimp.system.find_dir_containing_file(unreal_file)
-    #
-    # ''' Retry by looking for a Engine/ folder if failed to find UE4/ (pre-reboot compatibility) '''
-    # unreal_file = 'Engine/Build/Build.version'
-    # if not unreal_dir:
-    #     unreal_dir = nimp.system.find_dir_containing_file(unreal_file)
-    # else:
-    #     unreal_dir = os.path.join(unreal_dir, 'UE4') # (backward compatibility)
-
     if not unreal_dir:
         env.is_unreal = env.is_ue4 = env.is_ue5 = False
         env.is_dne_legacy_ue4 = True
@@ -92,8 +80,9 @@ def load_config(env):
     if env.unreal_major == 5:
         env.is_ue5 = env.is_unreal
         env.is_ue4 = False
-    # TODO: Deprecate ue4_dir for older UE4 confs
-    env.unreal_dir = env.ue4_dir = unreal_dir
+    env.unreal_dir = unreal_dir
+    if env.is_ue4: # legacy compat for old conf
+        env.ue4_dir = unreal_dir
     # Backward compatibility (TODO: remove later)
     if not hasattr(env, 'is_dne_legacy_ue4'):
         env.is_dne_legacy_ue4 = env.unreal_version < 4.22

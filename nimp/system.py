@@ -243,7 +243,7 @@ class FileMapper():
         self._next = []
         self._format_args = format_args if format_args is not None else {}
         # True for legacy mode: filesets are relative to {root_dir}, not current directory
-        # Newer filesets should explicitly use {root_dir} or {ue4_dir} etc.
+        # Newer filesets should explicitly use {root_dir} or {unreal_dir} etc.
         self.root_based = True
 
     def __call__(self, src = None, dest = None):

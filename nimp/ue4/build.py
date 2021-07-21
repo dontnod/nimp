@@ -54,7 +54,7 @@ def build(env):
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
     # The main solution file and vs version needed
-    solution = env.format('{ue4_dir}/UE4.sln')
+    solution = env.format('{unreal_dir}/UE4.sln')
     vs_version = _get_solution_vs_version(env, solution)
     env.dotnet_version = False if env.ue4_major == 5 else '4.6'
 
@@ -115,13 +115,13 @@ def _get_solution_vs_version(env, solution):
 
 def _pre_build(env, vs_version):
     if env.is_dne_legacy_ue4: # The project file generation requires RPCUtility very early
-        if not nimp.build.vsbuild(env.format('{ue4_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln'),
+        if not nimp.build.vsbuild(env.format('{unreal_dir}/Engine/Source/Programs/RPCUtility/RPCUtility.sln'),
                                   'Any CPU', 'Development', None, '15', 'Build'):
             logging.error("Could not build RPCUtility")
             return False
     # We need to build this on Linux
     if platform.system() == 'Linux':
-        breakpad_dir = env.format('{ue4_dir}/Engine/Source/ThirdParty/Breakpad')
+        breakpad_dir = env.format('{unreal_dir}/Engine/Source/ThirdParty/Breakpad')
         if not os.path.exists(breakpad_dir + '/src/tools/linux/dump_syms/dump_syms'):
             if nimp.sys.process.call(['sh', 'configure'], cwd=breakpad_dir) != 0:
                 logging.error("Could not configure dump_syms")
@@ -129,7 +129,7 @@ def _pre_build(env, vs_version):
             if nimp.sys.process.call(['make', '-j4'], cwd=breakpad_dir) != 0:
                 logging.error("Could not build dump_syms")
                 return False
-        bse_dir = env.format('{ue4_dir}/Engine/Source/Programs/BreakpadSymbolEncoder')
+        bse_dir = env.format('{unreal_dir}/Engine/Source/Programs/BreakpadSymbolEncoder')
         if not os.path.exists(bse_dir + '/BreakpadSymbolEncoder'):
             if nimp.sys.process.call(['bash', 'BuildBreakpadSymbolEncoderLinux.sh'], cwd=bse_dir) != 0:
                 logging.error("Could not build BreakpadSymbolEncoder")
@@ -137,10 +137,10 @@ def _pre_build(env, vs_version):
 
     if env.is_dne_legacy_ue4:
         if platform.system() == 'Darwin':
-            solution_path = '{ue4_dir}/Engine/Source/Programs/IOS/iPhonePackager/iPhonePackager.sln'
+            solution_path = '{unreal_dir}/Engine/Source/Programs/IOS/iPhonePackager/iPhonePackager.sln'
             nimp.build.vsbuild(env.format(solution_path), 'Any CPU', 'Release', '4.5', '14', 'Build')
             # HACK: nothing creates this directory on OS X
-            nimp.system.safe_makedirs(env.format('{ue4_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
+            nimp.system.safe_makedirs(env.format('{unreal_dir}/Engine/Binaries/Mac/UnrealCEFSubProcess.app'))
 
     missing = [ # Files that need to be copied to Engine/Binaries
         ('Win64', 'Engine/Source/ThirdParty/FBX/2016.1.1/lib/vs2015/x64/release/libfbxsdk.dll'),
@@ -159,8 +159,8 @@ def _pre_build(env, vs_version):
     ]
 
     for directory, path in missing:
-        src = env.format('{ue4_dir}/{f}', f=path)
-        dst = env.format('{ue4_dir}/Engine/Binaries/{d}/{f}', d=directory, f=os.path.basename(path))
+        src = env.format('{unreal_dir}/{f}', f=path)
+        dst = env.format('{unreal_dir}/Engine/Binaries/{d}/{f}', d=directory, f=os.path.basename(path))
         if os.path.exists(nimp.system.sanitize_path(src)):
             nimp.system.robocopy(src, dst, ignore_older=True)
 
@@ -179,7 +179,7 @@ def _ue4_vsversion_to_ubt(vs_version):
 def _ue4_generate_project(env):
     # Check for prerequisites
     if env.is_dne_legacy_ue4:
-        has_prereq = os.path.exists(env.format('{ue4_dir}/Engine/Binaries/DotNET/OneSky.dll'))
+        has_prereq = os.path.exists(env.format('{unreal_dir}/Engine/Binaries/DotNET/OneSky.dll'))
         if not has_prereq:
             # Apparently no prebuild script has created OneSky.dll, so we try to run
             # the setup script instead.
@@ -187,12 +187,12 @@ def _ue4_generate_project(env):
                 command = ['cmd', '/c', 'Setup.bat', '<nul']
             else:
                 command = ['/bin/sh', './Setup.sh']
-            if not nimp.sys.process.call(command, cwd=env.ue4_dir):
+            if not nimp.sys.process.call(command, cwd=env.unreal_dir):
                 return False
     else:
         # We do not use GitDependencies.exe but the build scripts depend on its
         # successful run, so create this .ue4dependencies file instead.
-        Path(env.format('{ue4_dir}/.ue4dependencies')).touch()
+        Path(env.format('{unreal_dir}/.ue4dependencies')).touch()
         logging.debug("Skipping prereq for the reboot (already done by GenerateProjectFiles)")
 
     # Generate project files
@@ -211,7 +211,7 @@ def _ue4_generate_project(env):
         attempt = 1
         while attempt <= max_attemtps:
             start_time = time.time()
-            result, output, err = nimp.sys.process.call(command, cwd=env.ue4_dir, capture_output=True)
+            result, output, err = nimp.sys.process.call(command, cwd=env.unreal_dir, capture_output=True)
             time_passed = time.time() - start_time
             # We don't want to retry long processes and block build machines, just retry quick autoSDK errors.
             if time_passed > time_out:
@@ -250,7 +250,7 @@ def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=No
     if flags is not None:
         command += flags
 
-    return nimp.sys.process.call(command, cwd=env.ue4_dir) == 0
+    return nimp.sys.process.call(command, cwd=env.unreal_dir) == 0
 
 
 def _ue4_run_uat(env, target, build_platforms, flags=None):
@@ -267,7 +267,7 @@ def _ue4_run_uat(env, target, build_platforms, flags=None):
     if flags is not None:
         command += flags
 
-    return nimp.sys.process.call(command, cwd=env.ue4_dir) == 0
+    return nimp.sys.process.call(command, cwd=env.unreal_dir) == 0
 
 
 ### Targets
@@ -297,7 +297,7 @@ def _ue4_build_game(env, solution, vs_version):
     return True
 
 def _ue4_build_ps5_common_tools(env, solution, vs_version):
-    dep = env.format('{ue4_dir}/Engine/Platforms/PS5/Source/Programs/PS5SymbolTool/PS5SymbolTool.csproj')
+    dep = env.format('{unreal_dir}/Engine/Platforms/PS5/Source/Programs/PS5SymbolTool/PS5SymbolTool.csproj')
     configuration = 'Release' if (env.ue4_minor >= 26 and env.ue4_patch < 1) else 'Development'
     if not nimp.build.msbuild(dep, 'AnyCPU', configuration, vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS5SymbolTool")
@@ -305,7 +305,7 @@ def _ue4_build_ps5_common_tools(env, solution, vs_version):
     return True
 
 def _ue4_build_editor_swarm_interface(env, solution, vs_version):
-    dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
+    dep = env.format('{unreal_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
     if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build SwarmInterface")
         return False
@@ -341,7 +341,7 @@ def _ue4_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_common_tools_legacy(env, solution, vs_version)
 
-    dep = os.path.abspath(env.format('{ue4_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
+    dep = os.path.abspath(env.format('{unreal_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
     # UE5 : use flag to perform a dotnet restore command to avoid NETSDK1004 error that happens at first build
     # The restore process only rebuilds what's not yet rebuilt so it doesn't slow down the process.
     # source : https://docs.microsoft.com/en-us/dotnet/core/tools/sdk-errors/netsdk1004
@@ -354,12 +354,12 @@ def _ue4_build_common_tools(env, solution, vs_version):
 
     # Compile previous prebuild stuff for UE5+ here
     if env.target == 'editor' and env.ue4_major >= 5:
-        dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
+        dep = env.format('{unreal_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
         if not nimp.build.vsbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, target='Build'):
             logging.error("Could not build SwarmAgent")
             return False
 
-        dep = env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
+        dep = env.format('{unreal_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
         if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
             logging.error("Could not build SwarmInterface")
             return False
@@ -374,9 +374,9 @@ def _ue4_build_swarmagent(env, vs_version):
     # This also builds AgentInterface.dll, needed by SwarmInterface.sln
     # This used to compile on Linux but hasn't been revisited for a while
     if env.ue4_major == 4 and env.ue4_minor < 20:
-        dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln')
+        dep = env.format('{unreal_dir}/Engine/Source/Programs/UnrealSwarm/UnrealSwarm.sln')
     else:
-        dep = env.format('{ue4_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
+        dep = env.format('{unreal_dir}/Engine/Source/Programs/UnrealSwarm/SwarmAgent.sln')
     if not nimp.build.vsbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, target='Build'):
         logging.error("Could not build SwarmAgent")
         return False
@@ -436,7 +436,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
         _ue4_build_ps4_tools_workaround(env, solution, vs_version)
 
     # this is DNE specific
-    if os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Game/Tools/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
+    if os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Game/Tools/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
         extra_tools.append('DNEAssetRegistryQuery')
 
     # use UBT for remaining extra tool targets
@@ -445,7 +445,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
             return False
 
     # Build CSVTools
-    csv_tools_sln = env.format('{ue4_dir}/Engine/Source/Programs/CSVTools/CSVTools.sln')
+    csv_tools_sln = env.format('{unreal_dir}/Engine/Source/Programs/CSVTools/CSVTools.sln')
     if not nimp.build.vsbuild(nimp.system.sanitize_path(csv_tools_sln),
                               'Any CPU', "Release",
                               vs_version=vs_version,
@@ -456,16 +456,16 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     return True
 
 def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
-    csproj = env.format('{ue4_dir}/Engine/Platforms/PS4/Source/Programs/PS4DevKitUtil/PS4DevKitUtil.csproj')
+    csproj = env.format('{unreal_dir}/Engine/Platforms/PS4/Source/Programs/PS4DevKitUtil/PS4DevKitUtil.csproj')
     if env.ue4_minor < 24:
-        csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
+        csproj = env.format('{unreal_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
     if not nimp.build.msbuild(csproj, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS4DevKitUtil")
         return False
 
-    csproj = env.format('{ue4_dir}/Engine/Platforms/PS4/Source/Programs/PS4SymbolTool/PS4SymbolTool.csproj')
+    csproj = env.format('{unreal_dir}/Engine/Platforms/PS4/Source/Programs/PS4SymbolTool/PS4SymbolTool.csproj')
     if env.ue4_minor < 24:
-        csproj = env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj')
+        csproj = env.format('{unreal_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj')
     if not nimp.build.msbuild(csproj, None, None, vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS4SymbolTool")
         return False
@@ -498,7 +498,7 @@ def _ue4_build_project(env, sln_file, project, build_platform,
         # This file needs bash explicitly
         if nimp.sys.process.call(['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % (env.ue4_host_platform),
                                   project, build_platform, configuration],
-                                  cwd=env.ue4_dir) == 0:
+                                  cwd=env.unreal_dir) == 0:
             return True
     logging.error('Could not build %s', project)
     return False
@@ -528,7 +528,7 @@ def _ue4_build_common_tools_legacy(env, solution, vs_version):
 
 def _ue4_build_extra_tools_legacy(env, solution, vs_version):
     # This moved from 'AnyCPU' to 'x64' in UE4.20.
-    sln = env.format('{ue4_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln')
+    sln = env.format('{unreal_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln')
     if not nimp.build.vsbuild(sln, 'Any CPU', 'Development',
                               vs_version=vs_version, target='Build') and \
        not nimp.build.vsbuild(sln, 'x64', 'Development',
@@ -538,7 +538,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
 
     if env.platform != 'win64':
         # On Windows this is part of the main .sln, but not on Linux…
-        if not nimp.build.vsbuild(env.format('{ue4_dir}/Engine/Source/Programs/AutomationTool/AutomationTool_Mono.sln'),
+        if not nimp.build.vsbuild(env.format('{unreal_dir}/Engine/Source/Programs/AutomationTool/AutomationTool_Mono.sln'),
                                   'Any CPU', 'Development',
                                   vs_version=vs_version,
                                   target='Build'):
@@ -551,7 +551,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
 
     # These tools seem to be Windows only for now
     if env.platform == 'win64':
-        if not nimp.build.vsbuild(env.format('{ue4_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
+        if not nimp.build.vsbuild(env.format('{unreal_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.sln'),
                                   'Any CPU', 'Development',
                                   vs_version=vs_version,
                                   target='Build'):
@@ -562,7 +562,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
                                   'Win64', 'Shipping', vs_version, 'Build'):
             return False
 
-        tmp = env.format('{ue4_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
+        tmp = env.format('{unreal_dir}/Engine/Source/Programs/XboxOne/XboxOnePackageNameUtil/XboxOnePackageNameUtil.sln')
         if os.path.exists(nimp.system.sanitize_path(tmp)):
             if not nimp.build.vsbuild(tmp, 'x64', 'Development',
                                       vs_version=vs_version,
@@ -597,7 +597,7 @@ def _ue4_list_common_tools_legacy(env):
         if env.platform == 'linux' and env.ue4_minor < 16:
             tools += [ 'CrossCompilerTool', ]
 
-        if os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
+        if os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Engine/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
             tools += [ 'DNEAssetRegistryQuery', ]
 
         if env.platform == 'win64':
@@ -611,16 +611,16 @@ def _ue4_list_common_tools_legacy(env):
             need_xboxonepdbfileutil = True
 
     # Some tools are necessary even when not building tools...
-    if need_ps4devkitutil and os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
+    if need_ps4devkitutil and os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj'))):
         tools += [ 'PS4DevKitUtil' ]
 
-    if need_ps4mapfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
+    if need_ps4mapfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Engine/Source/Programs/PS4/PS4MapFileUtil/PS4MapFileUtil.Build.cs'))):
         tools += [ 'PS4MapFileUtil' ]
 
-    if need_ps4symboltool and os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj'))):
+    if need_ps4symboltool and os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Engine/Source/Programs/PS4/PS4SymbolTool/PS4SymbolTool.csproj'))):
         tools += [ 'PS4SymbolTool' ]
 
-    if need_xboxonepdbfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{ue4_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
+    if need_xboxonepdbfileutil and os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Engine/Source/Programs/XboxOne/XboxOnePDBFileUtil/XboxOnePDBFileUtil.Build.cs'))):
         tools += [ 'XboxOnePDBFileUtil' ]
 
     return tools

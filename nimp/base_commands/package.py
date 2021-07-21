@@ -179,7 +179,7 @@ class Package(nimp.command.Command):
         if not platform_desc.is_valid:
             raise ValueError(f'Invalid platform {env.platform}')
 
-        env.ue4_dir = env.ue4_dir.replace('\\', '/')
+        env.unreal_dir = env.unreal_dir.replace('\\', '/')
         env.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
 
         # Warning: do not move this outside env, because some .nimp.confs need it
@@ -189,7 +189,7 @@ class Package(nimp.command.Command):
 
         package_configuration = UnrealPackageConfiguration(env)
 
-        package_configuration.engine_directory = nimp.system.standardize_path(env.format('{ue4_dir}/Engine'))
+        package_configuration.engine_directory = nimp.system.standardize_path(env.format('{unreal_dir}/Engine'))
         package_configuration.project_directory = nimp.system.standardize_path(env.format('{uproject_dir}'))
         package_configuration.configuration_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Config'))
         package_configuration.resource_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Build/{ue4_platform}/Resources'))

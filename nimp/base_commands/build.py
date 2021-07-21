@@ -69,7 +69,7 @@ class Build(nimp.command.Command):
 
     def run(self, env):
 
-        # Special support for UE4 projects
+        # Special support for Unreal projects
         if env.is_unreal:
             # Use distcc and/or ccache if available
             nimp.build.install_distcc_and_ccache()
