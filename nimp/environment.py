@@ -119,8 +119,8 @@ class Environment:
         # parses sys.argv in search of a manual uproject input
         parent_parser = argparse.ArgumentParser(add_help=False)
         parent_parser.add_argument('--uproject',
-                                   metavar='<ue4 project>',
-                                   help='Select a ue4 project to work with, i.e. PRO/PRO.uproject',
+                                   metavar='<unreal project>',
+                                   help='Select an Unreal project to work with, i.e. PRO/PRO.uproject',
                                    type=str)
         parent_parser.add_argument('--branch',
                                    metavar='<project branch>',
@@ -179,9 +179,9 @@ class Environment:
 
             # Alawys display uproject selected
             if hasattr(self, 'uproject') and hasattr(self, 'uproject_dir'):
-                logging.info('Found UE4 project %s in %s' % (self.uproject, self.uproject_dir))
+                logging.info('Found UE%s project %s in %s' % (self.unreal_version, self.uproject, self.uproject_dir))
             else:
-                logging.info('No UE4 project loaded')
+                logging.info('No Unreal project loaded')
 
             if hasattr(self, 'environment'):
                 for key, val in self.environment.items():
@@ -298,10 +298,10 @@ class Environment:
             logging.error('Error loading project conf : %s', nimp_conf_file)
             return False
 
-        ue4_file = os.path.join('UE4', 'Engine', 'Build', 'Build.version')
-        root_dir = nimp.system.find_dir_containing_file(ue4_file)
+        unreal_file = os.path.join('UE4', 'Engine', 'Build', 'Build.version')
+        root_dir = nimp.system.find_dir_containing_file(unreal_file)
         if not root_dir:
-            logging.error('%s not found. It is now a nimp requirement.' % ue4_file)
+            logging.error('%s not found. It is now a nimp requirement.' % unreal_file)
             return False
         self.root_dir = root_dir
 

@@ -350,7 +350,7 @@ def _unreal_set_env(env):
     if None not in config_list:
         env.unreal_config = '+'.join(config_list)
         if env.is_ue4:
-            envunreal_config = '+'.join(config_list)
+            env.unreal_config = '+'.join(config_list)
 
 
 def _cant_find_file(_, group_dict):

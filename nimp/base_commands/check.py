@@ -138,7 +138,7 @@ class _Processes(CheckCommand):
         if not nimp.sys.platform.is_windows():
             return True
 
-        # Irrelevant if we’re not a UE4 project
+        # Irrelevant if we’re not a Unreal project
         if not hasattr(env, 'is_unreal') or not env.is_unreal:
             return True
 

@@ -65,8 +65,8 @@ def build(env):
     # Bootstrap if necessary
     if hasattr(env, 'bootstrap') and env.bootstrap:
         # Now generate project files
-        if _ue4_generate_project(env) != 0:
-            logging.error("Error generating UE4 project files")
+        if _unreal_generate_project(env) != 0:
+            logging.error("Error generating Unreal project files")
             return False
 
     # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
@@ -76,19 +76,19 @@ def build(env):
             _pre_build(env, vs_version)
 
     # Build tools that all targets require
-    if not _ue4_build_common_tools(env, solution=solution, vs_version=vs_version):
+    if not _unreal_build_common_tools(env, solution=solution, vs_version=vs_version):
         return False
 
     if env.target == 'tools':
-        if not _ue4_build_extra_tools(env, solution=solution, vs_version=vs_version):
+        if not _unreal_build_extra_tools(env, solution=solution, vs_version=vs_version):
             return False
 
     if env.target == 'game':
-        if not _ue4_build_game(env, solution=solution, vs_version=vs_version):
+        if not _unreal_build_game(env, solution=solution, vs_version=vs_version):
             return False
 
     if env.target == 'editor':
-        if not _ue4_build_editor(env, solution=solution, vs_version=vs_version):
+        if not _unreal_build_editor(env, solution=solution, vs_version=vs_version):
             return False
 
     nimp.environment.execute_hook('postbuild', env)
@@ -164,7 +164,7 @@ def _pre_build(env, vs_version):
             nimp.system.robocopy(src, dst, ignore_older=True)
 
 
-def _ue4_vsversion_to_ubt(vs_version):
+def _unreal_vsversion_to_ubt(vs_version):
     if vs_version == '14' or vs_version == '2015':
         return ['-2015']
     elif vs_version == '15' or vs_version == '2017':
@@ -175,7 +175,7 @@ def _ue4_vsversion_to_ubt(vs_version):
         return []
 
 
-def _ue4_generate_project(env):
+def _unreal_generate_project(env):
     # Check for prerequisites
     if env.is_dne_legacy_ue4:
         has_prereq = os.path.exists(env.format('{unreal_dir}/Engine/Binaries/DotNET/OneSky.dll'))
@@ -198,7 +198,7 @@ def _ue4_generate_project(env):
     if nimp.sys.platform.is_windows():
         command = ['cmd', '/c', 'GenerateProjectFiles.bat']
         if hasattr(env, 'vs_version'):
-            command += _ue4_vsversion_to_ubt(env.vs_version)
+            command += _unreal_vsversion_to_ubt(env.vs_version)
         command += ['<nul']
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
@@ -227,20 +227,20 @@ def _ue4_generate_project(env):
     return _try_excecute(env, command)
 
 
-def _ue4_build_tool_ubt(env, tool, vs_version=None):
+def _unreal_build_tool_ubt(env, tool, vs_version=None):
     platform = env.unreal_host_platform
-    configuration = _ue4_select_tool_configuration(tool)
-    if not _ue4_run_ubt(env, tool, platform, configuration,
-                        vs_version=vs_version):
+    configuration = _unreal_select_tool_configuration(tool)
+    if not _unreal_run_ubt(env, tool, platform, configuration,
+                           vs_version=vs_version):
         logging.error('Could not build %s', tool)
         return False
     return True
 
 
-def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=None, flags=None):
+def _unreal_run_ubt(env, target, build_platform, build_configuration, vs_version=None, flags=None):
     if nimp.sys.platform.is_windows():
         command = ['cmd', '/c', 'Engine\\Build\\BatchFiles\\Build.bat']
-        command += _ue4_vsversion_to_ubt(vs_version)
+        command += _unreal_vsversion_to_ubt(vs_version)
     else:
         command = ['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % env.unreal_host_platform]
 
@@ -252,7 +252,7 @@ def _ue4_run_ubt(env, target, build_platform, build_configuration, vs_version=No
     return nimp.sys.process.call(command, cwd=env.unreal_dir) == 0
 
 
-def _ue4_run_uat(env, target, build_platforms, flags=None):
+def _unreal_run_uat(env, target, build_platforms, flags=None):
     if nimp.sys.platform.is_windows():
         command = ['cmd', '/c', 'Engine\\Build\\BatchFiles\\RunUAT.bat']
     else:
@@ -271,53 +271,53 @@ def _ue4_run_uat(env, target, build_platforms, flags=None):
 
 ### Targets
 
-def _ue4_build_game(env, solution, vs_version):
+def _unreal_build_game(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
-        return _ue4_build_project(env, solution, env.game, env.unreal_platform,
-                                  env.unreal_config, vs_version, 'Build')
+        return _unreal_build_project(env, solution, env.game, env.unreal_platform,
+                                     env.unreal_config, vs_version, 'Build')
 
     if env.platform == 'xboxone' or env.platform == 'mpx':
-        if not _ue4_build_tool_ubt(env, 'XboxOnePDBFileUtil', vs_version):
+        if not _unreal_build_tool_ubt(env, 'XboxOnePDBFileUtil', vs_version):
             return False
 
     if env.platform == 'xsx':
-        if not _ue4_build_tool_ubt(env, 'XboxPDBFileUtil', vs_version):
+        if not _unreal_build_tool_ubt(env, 'XboxPDBFileUtil', vs_version):
             return False
 
     if env.platform == 'ps5' and env.unreal_version >= 4.26:
-        if not _ue4_build_ps5_common_tools(env, solution, vs_version):
+        if not _unreal_build_ps5_common_tools(env, solution, vs_version):
             return False
 
     game = env.game if hasattr(env, 'game') else 'UE4'
-    if not _ue4_run_ubt(env, game, env.unreal_config, envunreal_config, vs_version=vs_version, flags=['-verbose']):
+    if not _unreal_run_ubt(env, game, env.unreal_config, env.unreal_config, vs_version=vs_version, flags=['-verbose']):
         logging.error("Could not build game project")
         return False
 
     return True
 
-def _ue4_build_ps5_common_tools(env, solution, vs_version):
+def _unreal_build_ps5_common_tools(env, solution, vs_version):
     dep = env.format('{unreal_dir}/Engine/Platforms/PS5/Source/Programs/PS5SymbolTool/PS5SymbolTool.csproj')
-    configuration = 'Release' if (env.unreal_version >= 4.26 and env.ue4_patch < 1) else 'Development'
+    configuration = 'Release' if env.unreal_version <= 4.26 else 'Development'
     if not nimp.build.msbuild(dep, 'AnyCPU', configuration, vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS5SymbolTool")
         return False
     return True
 
-def _ue4_build_editor_swarm_interface(env, solution, vs_version):
+def _unreal_build_editor_swarm_interface(env, solution, vs_version):
     dep = env.format('{unreal_dir}/Engine/Source/Editor/SwarmInterface/DotNET/SwarmInterface.csproj')
     if not nimp.build.msbuild(dep, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build SwarmInterface")
         return False
 
-def _ue4_build_editor(env, solution, vs_version):
-    if not _ue4_build_swarmagent(env, vs_version):
+def _unreal_build_editor(env, solution, vs_version):
+    if not _unreal_build_swarmagent(env, vs_version):
         return False
 
     if env.is_dne_legacy_ue4:
-        return _ue4_build_editor_legacy(env, solution, vs_version)
+        return _unreal_build_editor_legacy(env, solution, vs_version)
 
     # Needed before any compilation
-    _ue4_build_editor_swarm_interface(env, solution, vs_version)
+    _unreal_build_editor_swarm_interface(env, solution, vs_version)
 
     # Legacy - one game compilation
     game = env.game if hasattr(env, 'game') else 'UE4'
@@ -329,16 +329,16 @@ def _ue4_build_editor(env, solution, vs_version):
     editors_to_build = [ game + 'Editor' for game in editors_to_build]
 
     for editor in editors_to_build:
-        if not _ue4_run_ubt(env, editor, env.unreal_platform, env.unreal_config, vs_version=vs_version):
+        if not _unreal_run_ubt(env, editor, env.unreal_platform, env.unreal_config, vs_version=vs_version):
             logging.error("Could not build editor project")
             return False
 
     return True
 
 
-def _ue4_build_common_tools(env, solution, vs_version):
+def _unreal_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
-        return _ue4_build_common_tools_legacy(env, solution, vs_version)
+        return _unreal_build_common_tools_legacy(env, solution, vs_version)
 
     dep = os.path.abspath(env.format('{unreal_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
     # UE5 : use flag to perform a dotnet restore command to avoid NETSDK1004 error that happens at first build
@@ -363,13 +363,13 @@ def _ue4_build_common_tools(env, solution, vs_version):
             logging.error("Could not build SwarmInterface")
             return False
 
-    if not _ue4_build_tool_ubt(env, 'UnrealHeaderTool', vs_version):
+    if not _unreal_build_tool_ubt(env, 'UnrealHeaderTool', vs_version):
         return False
 
     return True
 
 
-def _ue4_build_swarmagent(env, vs_version):
+def _unreal_build_swarmagent(env, vs_version):
     # This also builds AgentInterface.dll, needed by SwarmInterface.sln
     # This used to compile on Linux but hasn't been revisited for a while
     if env.unreal_version < 4.20:
@@ -383,9 +383,9 @@ def _ue4_build_swarmagent(env, vs_version):
     return True
 
 
-def _ue4_build_extra_tools(env, solution, vs_version):
+def _unreal_build_extra_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
-        return _ue4_build_extra_tools_legacy(env, solution, vs_version)
+        return _unreal_build_extra_tools_legacy(env, solution, vs_version)
 
     uat_platforms = [ env.unreal_platform]
     need_ps4tools = ( env.platform == 'ps4' )
@@ -397,7 +397,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
             need_ps4tools = True
 
     # UAT has a special target to build common tools
-    if not _ue4_run_uat(env, 'BuildCommonTools', uat_platforms):
+    if not _unreal_run_uat(env, 'BuildCommonTools', uat_platforms):
         logging.error("BuildCommonTools failed")
         return False
 
@@ -415,7 +415,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
             'UnrealCEFSubProcess',
         ]
 
-    # MinidumpDiagnostics not in use in 4.25+ ue4 iterations
+    # MinidumpDiagnostics not in use in 4.25+ Unreal iterations
     # Not build in UE5
     if env.unreal_version  <= 4.24:
         extra_tools.append('MinidumpDiagnostics')
@@ -432,7 +432,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     # and BuildCommonTools.Automation.cs (4.22)
     if need_ps4tools:
         # extra_tools.append('PS4MapFileUtil') # removed in 4.22
-        _ue4_build_ps4_tools_workaround(env, solution, vs_version)
+        _unreal_build_ps4_tools_workaround(env, solution, vs_version)
 
     # this is DNE specific
     if os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Game/Tools/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
@@ -440,7 +440,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     # use UBT for remaining extra tool targets
     for tool in extra_tools:
-        if not _ue4_build_tool_ubt(env, tool, vs_version):
+        if not _unreal_build_tool_ubt(env, tool, vs_version):
             return False
 
     # Build CSVTools
@@ -454,7 +454,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
 
     return True
 
-def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
+def _unreal_build_ps4_tools_workaround(env, solution, vs_version):
     csproj = env.format('{unreal_dir}/Engine/Platforms/PS4/Source/Programs/PS4DevKitUtil/PS4DevKitUtil.csproj')
     if env.unreal_version < 4.24:
         csproj = env.format('{unreal_dir}/Engine/Source/Programs/PS4/PS4DevKitUtil/PS4DevKitUtil.csproj')
@@ -471,7 +471,7 @@ def _ue4_build_ps4_tools_workaround(env, solution, vs_version):
 
     return True
 
-def _ue4_select_tool_configuration(tool):
+def _unreal_select_tool_configuration(tool):
     # CrashReportClient is not built in Shipping by default,
     # however this is required by the staging process
     need_shipping = ['CrashReportClient',
@@ -484,8 +484,8 @@ def _ue4_select_tool_configuration(tool):
 
 ### LEGACY (now using UAT+UBT since 4.22/reboot)
 
-def _ue4_build_project(env, sln_file, project, build_platform,
-                       configuration, vs_version, target = 'Rebuild'):
+def _unreal_build_project(env, sln_file, project, build_platform,
+                          configuration, vs_version, target = 'Rebuild'):
 
     if nimp.sys.platform.is_windows():
         if nimp.build.vsbuild(sln_file, build_platform, configuration,
@@ -503,7 +503,7 @@ def _ue4_build_project(env, sln_file, project, build_platform,
     return False
 
 
-def _ue4_build_editor_legacy(env, solution, vs_version):
+def _unreal_build_editor_legacy(env, solution, vs_version):
     game = env.game if hasattr(env, 'game') else 'UE4'
     if env.platform in ['linux', 'mac']:
         project = game + 'Editor'
@@ -512,20 +512,20 @@ def _ue4_build_editor_legacy(env, solution, vs_version):
         project = game
         config = env.unreal_config + ' Editor'
 
-    return _ue4_build_project(env, solution, project, env.unreal_platform,
-                              config, vs_version, 'Build')
+    return _unreal_build_project(env, solution, project, env.unreal_platform,
+                                 config, vs_version, 'Build')
 
 
-def _ue4_build_common_tools_legacy(env, solution, vs_version):
-    for tool in _ue4_list_common_tools_legacy(env):
-        if not _ue4_build_project(env, solution, tool,
-                                  env.unreal_host_platform,
-                                  _ue4_select_tool_configuration(tool),
-                                  vs_version, 'Build'):
+def _unreal_build_common_tools_legacy(env, solution, vs_version):
+    for tool in _unreal_list_common_tools_legacy(env):
+        if not _unreal_build_project(env, solution, tool,
+                                     env.unreal_host_platform,
+                                     _unreal_select_tool_configuration(tool),
+                                     vs_version, 'Build'):
             return False
     return True
 
-def _ue4_build_extra_tools_legacy(env, solution, vs_version):
+def _unreal_build_extra_tools_legacy(env, solution, vs_version):
     # This moved from 'AnyCPU' to 'x64' in UE4.20.
     sln = env.format('{unreal_dir}/Engine/Source/Programs/NetworkProfiler/NetworkProfiler.sln')
     if not nimp.build.vsbuild(sln, 'Any CPU', 'Development',
@@ -545,7 +545,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
             return False
 
     if env.platform != 'mac':
-        if not _ue4_build_swarmagent(env, vs_version):
+        if not _unreal_build_swarmagent(env, vs_version):
             return False
 
     # These tools seem to be Windows only for now
@@ -557,7 +557,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
             logging.error("Could not build SwarmInterface")
             return False
 
-        if not _ue4_build_project(env, solution, 'BootstrapPackagedGame',
+        if not _unreal_build_project(env, solution, 'BootstrapPackagedGame',
                                   'Win64', 'Shipping', vs_version, 'Build'):
             return False
 
@@ -571,7 +571,7 @@ def _ue4_build_extra_tools_legacy(env, solution, vs_version):
 
     return True
 
-def _ue4_list_common_tools_legacy(env):
+def _unreal_list_common_tools_legacy(env):
     # List of tools to build
     tools = [ 'UnrealHeaderTool' ]
 
