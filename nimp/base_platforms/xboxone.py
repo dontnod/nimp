@@ -16,6 +16,6 @@ class XboxOne(nimp.sys.platform.Platform):
         self.layout_file_extension = 'xml'
         self.package_tool_path = os.path.join(os.getenv('DurangoXDK', default='.'), 'bin', 'MakePkg.exe')
 
-        self.ue4_name = 'XboxOne'
-        self.ue4_config_name = 'XboxOne'
-        self.ue4_cook_name = 'XboxOne'
+        self.unreal_name = 'XboxOne'
+        self.unreal_config_name = 'XboxOne'
+        self.unreal_cook_name = 'XboxOne'

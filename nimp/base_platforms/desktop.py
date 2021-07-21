@@ -11,9 +11,9 @@ class Win32(nimp.sys.platform.Platform):
         self.aliases = set(['pcconsole'])
         self.is_microsoft = True
 
-        self.ue4_name = 'Win32'
-        self.ue4_config_name = 'Windows'
-        self.ue4_cook_name = 'WindowsNoEditor'
+        self.unreal_name = 'Win32'
+        self.unreal_config_name = 'Windows'
+        self.unreal_cook_name = 'WindowsNoEditor'
 
 
 class Win64(nimp.sys.platform.Platform):
@@ -26,9 +26,9 @@ class Win64(nimp.sys.platform.Platform):
         self.aliases = set(['pc', 'windows'])
         self.is_microsoft = True
 
-        self.ue4_name = 'Win64'
-        self.ue4_config_name = 'Windows'
-        self.ue4_cook_name = 'WindowsNoEditor'
+        self.unreal_name = 'Win64'
+        self.unreal_config_name = 'Windows'
+        self.unreal_cook_name = 'WindowsNoEditor'
 
     def launch_package(self, package_name, env):
         if not package_name:
@@ -44,9 +44,9 @@ class Linux(nimp.sys.platform.Platform):
 
         self.name = 'linux'
 
-        self.ue4_name = 'Linux'
-        self.ue4_config_name = 'Linux'
-        self.ue4_cook_name = 'LinuxNoEditor'
+        self.unreal_name = 'Linux'
+        self.unreal_config_name = 'Linux'
+        self.unreal_cook_name = 'LinuxNoEditor'
 
 
 class Mac(nimp.sys.platform.Platform):
@@ -58,6 +58,6 @@ class Mac(nimp.sys.platform.Platform):
         self.name = 'mac'
         self.aliases = set(['macos', 'osx'])
 
-        self.ue4_name = 'Mac'
-        self.ue4_config_name = 'Mac'
-        self.ue4_cook_name = 'MacNoEditor'
+        self.unreal_name = 'Mac'
+        self.unreal_config_name = 'Mac'
+        self.unreal_cook_name = 'MacNoEditor'

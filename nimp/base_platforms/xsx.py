@@ -22,7 +22,7 @@ class XSX(nimp.sys.platform.Platform):
         self.unreal_name = 'XSX'
         self.unreal_config_name = 'XSX'
         self.unreal_cook_name = 'XSX'
-        self.ue4_package_directory = '{uproject_dir}/Binaries/XSX'
+        self.unreal_package_directory = '{uproject_dir}/Binaries/XSX'
 
     def install_package(self, package_directory, env):
         xvcs = glob.glob(package_directory + '/*.xvc')
@@ -44,7 +44,7 @@ class XSX(nimp.sys.platform.Platform):
             package_name = self.get_package_name_from_ini(env.uproject_dir, env.variant)
 
         installed_packages = self.get_installed_packages(env.device)
-        package_name = self.pick_package(installed_packages, package_name, env.ue4_config)
+        package_name = self.pick_package(installed_packages, package_name, env.unreal_config)
 
         args = [ 'launch', package_name ]
         if env.device:

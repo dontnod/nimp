@@ -35,7 +35,7 @@ import nimp.sys.platform
 import nimp.sys.process
 import nimp.summary
 
-from nimp.sys.platform import create_platform_desc_ue4
+from nimp.sys.platform import create_platform_desc_unreal
 
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
@@ -178,9 +178,9 @@ def load_arguments(env):
             else:
                 env.platform = 'linux'
 
-    # This is safe even when we failed to detect UE4
-    _ue4_sanitize_arguments(env)
-    _ue4_set_env(env)
+    # This is safe even when we failed to detect Unreal
+    _unreal_sanitize_arguments(env)
+    _unreal_set_env(env)
 
     if env.is_unreal:
         if not hasattr(env, 'target') or env.target is None:
@@ -204,16 +204,16 @@ def get_host_platform():
     raise ValueError('Unsupported platform: ' + platform.system())
 
 
-def get_configuration_platform(ue4_platform):
+def get_configuration_platform(unreal_platform):
     ''' Gets the platform name used for configuration files '''
     # From PlatformProperties IniPlatformName
-    return create_platform_desc_ue4(ue4_platform).ue4_config_name
+    return create_platform_desc_unreal(unreal_platform).unreal_config_name
 
 
-def get_cook_platform(ue4_platform):
+def get_cook_platform(unreal_platform):
     ''' Gets the platform name used for cooking assets '''
     # From Automation GetCookPlatform
-    return create_platform_desc_ue4(ue4_platform).ue4_cook_name
+    return create_platform_desc_unreal(unreal_platform).unreal_cook_name
 
 
 def commandlet(env, command, *args, heartbeat = 0):
@@ -268,7 +268,7 @@ def _unreal_commandlet(env, command, *args, heartbeat = 0):
     return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
 
 
-def _ue4_sanitize_arguments(env):
+def _unreal_sanitize_arguments(env):
 
     if hasattr(env, "platform") and env.platform is not None:
 
@@ -309,16 +309,16 @@ def _ue4_sanitize_arguments(env):
                 return ""
             return std_configs[config.lower()]
 
-        ue4_configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
+        unreal_configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
 
         if env.is_unreal:
-            env.configuration = ue4_configuration
+            env.configuration = unreal_configuration
 
 
-def _ue4_set_env(env):
+def _unreal_set_env(env):
 
-    ''' Sets some variables for use with unreal 4 '''
-    def _get_ue4_config(config):
+    ''' Sets some variables for use with Unreal '''
+    def _get_unreal_config(config):
         configs = { "debug"    : "Debug",
                     "devel"    : "Development",
                     "test"     : "Test",
@@ -329,24 +329,28 @@ def _ue4_set_env(env):
             return None
         return configs[config]
 
-    def _get_ue4_platform(in_platform):
+    def _get_unreal_platform(in_platform):
         if not env.is_unreal:
             return in_platform
-        return nimp.sys.platform.create_platform_desc(in_platform).ue4_name
+        return nimp.sys.platform.create_platform_desc(in_platform).unreal_name
 
     if hasattr(env, 'platform') and env.platform is not None:
-        platform_list = list(map(_get_ue4_platform, env.platform.split('+')))
+        platform_list = list(map(_get_unreal_platform, env.platform.split('+')))
         if None not in platform_list:
-            env.ue4_platform = '+'.join(platform_list)
+            env.unreal_platform = '+'.join(platform_list)
+            if env.is_ue4:
+                env.unreal_platform= '+'.join(platform_list)
 
     # Transform configuration list, default to 'devel'
     if hasattr(env, 'configuration') and env.configuration is not None:
         config = env.configuration
     else:
         config = 'devel'
-    config_list = list(map(_get_ue4_config, config.split('+')))
+    config_list = list(map(_get_unreal_config, config.split('+')))
     if None not in config_list:
-        env.ue4_config = '+'.join(config_list)
+        env.unreal_config = '+'.join(config_list)
+        if env.is_ue4:
+            envunreal_config = '+'.join(config_list)
 
 
 def _cant_find_file(_, group_dict):

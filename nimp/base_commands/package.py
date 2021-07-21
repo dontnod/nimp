@@ -180,7 +180,7 @@ class Package(nimp.command.Command):
             raise ValueError(f'Invalid platform {env.platform}')
 
         env.unreal_dir = env.unreal_dir.replace('\\', '/')
-        env.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
+        env.cook_platform = nimp.unreal.get_cook_platform(env.unreal_platform)
 
         # Warning: do not move this outside env, because some .nimp.confs need it
         env.layout_file_extension = platform_desc.layout_file_extension
@@ -192,11 +192,11 @@ class Package(nimp.command.Command):
         package_configuration.engine_directory = nimp.system.standardize_path(env.format('{unreal_dir}/Engine'))
         package_configuration.project_directory = nimp.system.standardize_path(env.format('{uproject_dir}'))
         package_configuration.configuration_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Config'))
-        package_configuration.resource_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Build/{ue4_platform}/Resources'))
+        package_configuration.resource_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Build/{unreal_platform}/Resources'))
         package_configuration.cook_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/Cooked/{cook_platform}'))
         package_configuration.patch_base_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/StagedBuilds/{cook_platform}-PatchBase'))
         package_configuration.stage_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/StagedBuilds/{cook_platform}'))
-        package_configuration.package_directory = nimp.system.standardize_path(env.format(platform_desc.ue4_package_directory))
+        package_configuration.package_directory = nimp.system.standardize_path(env.format(platform_desc.unreal_package_directory))
         package_configuration.uat_logs_directory = package_configuration.engine_directory + '/Programs/AutomationTool/Saved/Logs'
 
 
@@ -209,10 +209,10 @@ class Package(nimp.command.Command):
                 package_configuration.resource_directory = variant_resource_directory
 
         package_configuration.project = env.game
-        package_configuration.binary_configuration = env.ue4_config
+        package_configuration.binary_configuration = env.unreal_config
         package_configuration.worker_platform = env.unreal_host_platform
         package_configuration.cook_platform = env.cook_platform
-        package_configuration.target_platform = env.ue4_platform
+        package_configuration.target_platform = env.unreal_platform
         package_configuration.shader_debug_info = env.shader_debug_info
         package_configuration.iterative_cook = env.iterate
         package_configuration.extra_options = env.extra_options
@@ -275,7 +275,7 @@ class Package(nimp.command.Command):
                 package_configuration.pak_collection = env.content_paks_by_variant[env.variant]
             if env.variant and env.platform in [ 'ps4', 'xboxone' ]:
                 layout_file_name = ('PatchLayout' if env.patch else 'PackageLayout') + '.{variant}.{layout_file_extension}'
-                package_configuration.layout_file_path = '{uproject_dir}/Build/{ue4_platform}/' + layout_file_name
+                package_configuration.layout_file_path = '{uproject_dir}/Build/{unreal_platform}/' + layout_file_name
 
         if env.layout:
             package_configuration.layout_file_path = env.layout

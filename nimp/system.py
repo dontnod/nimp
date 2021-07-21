@@ -340,7 +340,7 @@ class FileMapper():
         format_args = self._format_args.copy()
         # Hackish : We construct a new Environment to load load_arguments so
         # values computed from others parameters are correctly set
-        # (like ue4_config, for example)
+        # (like unreal_config, for example)
         new_env = nimp.environment.Environment()
         format_args.update(fmt)
         for key, value in format_args.items():

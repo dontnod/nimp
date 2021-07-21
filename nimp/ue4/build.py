@@ -43,8 +43,8 @@ def build(env):
     if not nimp.unreal._check_for_unreal(env):
         return False
 
-    assert hasattr(env, 'ue4_config')
-    assert env.ue4_config is not None
+    assert hasattr(env, 'unreal_config')
+    assert env.unreal_config is not None
 
     if env.disable_unity:
         os.environ['UBT_bUseUnityBuild'] = 'false'
@@ -273,8 +273,8 @@ def _ue4_run_uat(env, target, build_platforms, flags=None):
 
 def _ue4_build_game(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
-        return _ue4_build_project(env, solution, env.game, env.ue4_platform,
-                                  env.ue4_config, vs_version, 'Build')
+        return _ue4_build_project(env, solution, env.game, env.unreal_platform,
+                                  env.unreal_config, vs_version, 'Build')
 
     if env.platform == 'xboxone' or env.platform == 'mpx':
         if not _ue4_build_tool_ubt(env, 'XboxOnePDBFileUtil', vs_version):
@@ -289,7 +289,7 @@ def _ue4_build_game(env, solution, vs_version):
             return False
 
     game = env.game if hasattr(env, 'game') else 'UE4'
-    if not _ue4_run_ubt(env, game, env.ue4_platform, env.ue4_config, vs_version=vs_version, flags=['-verbose']):
+    if not _ue4_run_ubt(env, game, env.unreal_config, envunreal_config, vs_version=vs_version, flags=['-verbose']):
         logging.error("Could not build game project")
         return False
 
@@ -329,7 +329,7 @@ def _ue4_build_editor(env, solution, vs_version):
     editors_to_build = [ game + 'Editor' for game in editors_to_build]
 
     for editor in editors_to_build:
-        if not _ue4_run_ubt(env, editor, env.ue4_platform, env.ue4_config, vs_version=vs_version):
+        if not _ue4_run_ubt(env, editor, env.unreal_platform, env.unreal_config, vs_version=vs_version):
             logging.error("Could not build editor project")
             return False
 
@@ -387,7 +387,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _ue4_build_extra_tools_legacy(env, solution, vs_version)
 
-    uat_platforms = [ env.ue4_platform ]
+    uat_platforms = [ env.unreal_platform]
     need_ps4tools = ( env.platform == 'ps4' )
 
     # also compile console tools on Win64
@@ -507,12 +507,12 @@ def _ue4_build_editor_legacy(env, solution, vs_version):
     game = env.game if hasattr(env, 'game') else 'UE4'
     if env.platform in ['linux', 'mac']:
         project = game + 'Editor'
-        config = env.ue4_config
+        config = env.unreal_config
     else:
         project = game
-        config = env.ue4_config + ' Editor'
+        config = env.unreal_config + ' Editor'
 
-    return _ue4_build_project(env, solution, project, env.ue4_platform,
+    return _ue4_build_project(env, solution, project, env.unreal_platform,
                               config, vs_version, 'Build')
 
 

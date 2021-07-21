@@ -250,7 +250,7 @@ class _Staged(ConsoleGameCommand):
 
         cmdline = [
             env.unreal_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
-            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
+            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
             '-stagingdirectory=' + absolute_path, 
             '-skipcook', '-skipstage', '-deploy'
         ]
@@ -270,7 +270,7 @@ class _Staged(ConsoleGameCommand):
 
         cmdline = [
             env.unreal_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
-            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
+            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
             '-stagingdirectory=' + absolute_path,
             '-skipcook', '-skipstage', '-deploy', '-run'
         ]

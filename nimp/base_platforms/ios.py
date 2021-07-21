@@ -10,6 +10,6 @@ class IOS(nimp.sys.platform.Platform):
         self.name = 'ios'
         self.is_mobile = True
 
-        self.ue4_name = 'IOS'
-        self.ue4_config_name = 'IOS'
-        self.ue4_cook_name = 'IOS'
+        self.unreal_name = 'IOS'
+        self.unreal_config_name = 'IOS'
+        self.unreal_cook_name = 'IOS'

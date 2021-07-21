@@ -13,7 +13,7 @@ from nimp.utils.python import get_class_instances
 
 _all_platforms = {}
 _all_aliases = {}
-_all_ue4_platforms = {}
+_all_unreal_platforms = {}
 
 
 class Platform(metaclass=abc.ABCMeta):
@@ -32,10 +32,10 @@ class Platform(metaclass=abc.ABCMeta):
         ''' Packaging information '''
         self.layout_file_extension = 'txt'
         self.package_tool_path = None
-        self.ue4_package_directory = '{uproject_dir}/Saved/Packages/{cook_platform}'
-        self.ue4_name = None
-        self.ue4_config_name = None
-        self.ue4_cook_name = None
+        self.unreal_package_directory = '{uproject_dir}/Saved/Packages/{cook_platform}'
+        self.unreal_name = None
+        self.unreal_config_name = None
+        self.unreal_cook_name = None
 
     def install_package(self, package_directory, env):
         return False
@@ -48,9 +48,9 @@ class NullPlatform(Platform):
     def __init__(self):
         super().__init__()
         self.name = 'null'
-        self.ue4_name = 'Null'
-        self.ue4_config_name = 'Null'
-        self.ue4_cook_name = 'Null'
+        self.unreal_name = 'Null'
+        self.unreal_config_name = 'Null'
+        self.unreal_cook_name = 'Null'
         self.is_valid = False
 
 
@@ -62,12 +62,12 @@ def create_platform_desc(name):
     return _all_platforms[_all_aliases[name]]
 
 
-def create_platform_desc_ue4(ue4_name):
+def create_platform_desc_unreal(unreal_name):
     ''' Create a platform description from a Unreal name (PS4, Win64, …) '''
-    if ue4_name not in _all_ue4_platforms:
-        logging.warn(f'No UE4 support for platform {name}')
+    if unreal_name not in _all_unreal_platforms:
+        logging.warn(f'No Unreal support for platform {name}')
         return NullPlatform()
-    return _all_ue4_platforms[ue4_name]
+    return _all_unreal_platforms[unreal_name]
     
 
 
@@ -91,7 +91,7 @@ def discover(env):
 
         # Register platform classes under their names and aliases
         _all_platforms[platform.name] = platform
-        _all_ue4_platforms[platform.ue4_name] = platform
+        _all_unreal_platforms[platform.unreal_name] = platform
 
         for n in [platform.name, *platform.aliases]:
             _all_aliases[n] = platform.name

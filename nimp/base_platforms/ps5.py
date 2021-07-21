@@ -26,17 +26,17 @@ class PS5(nimp.sys.platform.Platform):
         self.unreal_name = 'PS5'
         self.unreal_config_name = 'PS5'
         self.unreal_cook_name = 'PS5'
-        self.ue4_package_directory = '{uproject_dir}/Binaries/PS5'
+        self.unreal_package_directory = '{uproject_dir}/Binaries/PS5'
 
     def install_package(self, package_directory, env):
-        pkgs = glob.glob(package_directory + '/*' + env.ue4_config + '.pkg')
+        pkgs = glob.glob(package_directory + '/*' + env.unreal_config + '.pkg')
         if not pkgs:
-            raise RuntimeError('No pkg file for configuration ' + env.ue4_config + ' in ' + package_directory)
+            raise RuntimeError('No pkg file for configuration ' + env.unreal_config + ' in ' + package_directory)
         if len(pkgs) != 1:
             logging.info('Found pkgs:')
             for pkg in pkgs:
                 logging.info('\t\t' + pkg)
-            raise RuntimeError('Multiple pkg files in ' + package_directory + ' for configuration ' + env.ue4_config)
+            raise RuntimeError('Multiple pkg files in ' + package_directory + ' for configuration ' + env.unreal_config)
 
         return PS5.prospero_ctrl([ 'package', 'install', pkgs[0] ], env.device, dry_run=env.dry_run)
 
