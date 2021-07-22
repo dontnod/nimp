@@ -74,9 +74,9 @@ class UpdateSymbolServer(nimp.command.Command):
 
         if hasattr(env, 'is_unreal') and env.is_unreal and symbol_server.server_type == 'shaders':
             symbol_source = '{uproject_dir}/Saved/ShaderDebugInfo/'
-            if env.unreal_platform== 'PS4':
+            if env.unreal_platform == 'PS4':
                 platform_symbol_source = 'SF_PS4/sdb'
-            # elif env.unreal_platform== 'PS5':
+            # elif env.unreal_platform == 'PS5':
             #     platform_symbol_source = 'SF_PS5/agsd'
             else:
                 platform_symbol_source = env.unreal_platform
