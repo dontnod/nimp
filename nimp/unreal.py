@@ -82,6 +82,7 @@ def load_config(env):
         env.is_ue5 = env.is_unreal
         env.is_ue4 = False
     env.unreal_dir = unreal_dir
+    env.unreal_root_path = os.path.basename(unreal_dir)
     if env.is_ue4: # legacy compat for old conf
         env.ue4_dir = unreal_dir
     # Backward compatibility (TODO: remove later)

@@ -302,9 +302,9 @@ class Environment:
 
         # Assume Unreal dir is at root
         # TODO: This is a clumsy way to find root, find another way.
-        root_unreal_dir = os.path.basename(self.unreal_dir)
-        unreal_file = os.path.join(root_unreal_dir, 'Engine', 'Build', 'Build.version')
+        unreal_file = os.path.join(self.unreal_root_path, 'Engine', 'Build', 'Build.version')
         root_dir = nimp.system.find_dir_containing_file(unreal_file)
+
 
         if not root_dir:
             logging.error('%s not found. It is now a nimp requirement.' % unreal_file)
