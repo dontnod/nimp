@@ -44,7 +44,7 @@ setup_info = dict(
         'nimp/base_platforms',
         'nimp/model',
         'nimp/sys',
-        'nimp/ue4',
+        'nimp/unreal_engine',
         'nimp/utils',
     ],
 

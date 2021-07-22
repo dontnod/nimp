@@ -6,7 +6,7 @@ __all__ = [
     'base_commands',
     'base_platforms',
     'sys',
-    'ue4',
+    'unreal_engine',
     'utils',
     'tests',
 ]

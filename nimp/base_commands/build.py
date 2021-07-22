@@ -29,7 +29,7 @@ import re
 import nimp.build
 import nimp.command
 import nimp.environment
-import nimp.ue4.build
+import nimp.unreal_engine.build
 
 class Build(nimp.command.Command):
     ''' Build a project '''
@@ -73,7 +73,7 @@ class Build(nimp.command.Command):
         if env.is_unreal:
             # Use distcc and/or ccache if available
             nimp.build.install_distcc_and_ccache()
-            return nimp.ue4.build.build(env)
+            return nimp.unreal_engine.build.build(env)
 
         nimp.environment.execute_hook('prebuild', env)
 
