@@ -50,6 +50,7 @@ setup_info = dict(
 
     install_requires = [
         'glob2',
+        'packaging',
         'python-magic',
         'requests',
         'giteapy',

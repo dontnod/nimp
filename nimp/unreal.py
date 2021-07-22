@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Unreal Engine 4 related stuff '''
+''' Unreal Engine related stuff '''
 
 import json
 import logging
@@ -28,6 +28,7 @@ import os
 import platform
 import re
 import glob
+from packaging import version
 
 import nimp.build
 import nimp.system
@@ -65,6 +66,7 @@ def load_config(env):
         env.unreal_minor = data['MinorVersion']
         env.unreal_patch = data['PatchVersion']
         env.unreal_version = float(f'{data["MajorVersion"]}.{data["MinorVersion"]}')
+        env.unreal_full_version = version.parse(str(f'{data["MajorVersion"]}.{data["MinorVersion"]}.{data["PatchVersion"]}'))
         if env.unreal_major == 4: # Legacy, for older UE4 project conf
             env.ue4_major = env.unreal_major
             env.ue4_minor = env.unreal_minor

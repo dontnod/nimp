@@ -26,6 +26,7 @@ import os
 import platform
 import re
 import time
+from packaging import version
 from pathlib import Path
 
 import nimp.build
@@ -297,7 +298,7 @@ def _unreal_build_game(env, solution, vs_version):
 
 def _unreal_build_ps5_common_tools(env, solution, vs_version):
     dep = env.format('{unreal_dir}/Engine/Platforms/PS5/Source/Programs/PS5SymbolTool/PS5SymbolTool.csproj')
-    configuration = 'Release' if env.unreal_version <= 4.26 else 'Development'
+    configuration = 'Release' if env.unreal_full_version < version.parse('4.26.1') else 'Development'
     if not nimp.build.msbuild(dep, 'AnyCPU', configuration, vs_version=vs_version, dotnet_version=env.dotnet_version):
         logging.error("Could not build PS5SymbolTool")
         return False
