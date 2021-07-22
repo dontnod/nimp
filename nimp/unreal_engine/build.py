@@ -55,7 +55,7 @@ def build(env):
         os.environ['UBT_bUseUnityBuild'] = 'false'
 
     # The main solution file and vs version needed
-    solution = env.format('{unreal_dir}/UE4.sln')
+    solution = env.format('{unreal_dir}/UE{unreal_major}.sln')
     vs_version = _get_solution_vs_version(env, solution)
     env.dotnet_version = False if env.unreal_version >= 5 else '4.6'
 
@@ -192,7 +192,7 @@ def _unreal_generate_project(env):
     else:
         # We do not use GitDependencies.exe but the build scripts depend on its
         # successful run, so create this .ue4dependencies file instead.
-        Path(env.format('{unreal_dir}/.ue4dependencies')).touch()
+        Path(env.format('{unreal_dir}/.ue{unreal_major}dependencies')).touch()
         logging.debug("Skipping prereq for the reboot (already done by GenerateProjectFiles)")
 
     # Generate project files
@@ -289,7 +289,7 @@ def _unreal_build_game(env, solution, vs_version):
         if not _unreal_build_ps5_common_tools(env, solution, vs_version):
             return False
 
-    game = env.game if hasattr(env, 'game') else 'UE4'
+    game = env.game if hasattr(env, 'game') else env.format('UE{unreal_major}')
     if not _unreal_run_ubt(env, game, env.unreal_config, env.unreal_config, vs_version=vs_version, flags=['-verbose']):
         logging.error("Could not build game project")
         return False
@@ -321,7 +321,7 @@ def _unreal_build_editor(env, solution, vs_version):
     _unreal_build_editor_swarm_interface(env, solution, vs_version)
 
     # Legacy - one game compilation
-    game = env.game if hasattr(env, 'game') else 'UE4'
+    game = env.game if hasattr(env, 'game') else env.format('UE{unreal_major}')
     editors_to_build = [game]
     # for testing
     if hasattr(env, 'build_multiple_editors') and env.build_multiple_editors is True and\
@@ -505,7 +505,7 @@ def _unreal_build_project(env, sln_file, project, build_platform,
 
 
 def _unreal_build_editor_legacy(env, solution, vs_version):
-    game = env.game if hasattr(env, 'game') else 'UE4'
+    game = env.game if hasattr(env, 'game') else env.format('UE{unreal_major}')
     if env.platform in ['linux', 'mac']:
         project = game + 'Editor'
         config = env.unreal_config
