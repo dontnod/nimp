@@ -288,6 +288,8 @@ class Environment:
         ''' Loads project conf inside uproject folder - leaves ability to have xpj conf in xpj folder '''
         if not hasattr(self, 'uproject_dir') or not self.uproject_dir:
             return True
+        if not hasattr(self, 'unreal_dir') or not self.unreal_dir:
+            return True
 
         nimp_conf_file = '.nimp.conf'
 
@@ -298,8 +300,12 @@ class Environment:
             logging.error('Error loading project conf : %s', nimp_conf_file)
             return False
 
-        unreal_file = os.path.join('UE4', 'Engine', 'Build', 'Build.version')
+        # Assume Unreal dir is at root
+        # TODO: This is a clumsy way to find root, find another way.
+        root_unreal_dir = os.path.basename(self.unreal_dir)
+        unreal_file = os.path.join(root_unreal_dir, 'Engine', 'Build', 'Build.version')
         root_dir = nimp.system.find_dir_containing_file(unreal_file)
+
         if not root_dir:
             logging.error('%s not found. It is now a nimp requirement.' % unreal_file)
             return False
