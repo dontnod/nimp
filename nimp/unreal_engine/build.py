@@ -290,7 +290,7 @@ def _unreal_build_game(env, solution, vs_version):
             return False
 
     game = env.game if hasattr(env, 'game') else env.format('UE{unreal_major}')
-    if not _unreal_run_ubt(env, game, env.unreal_config, env.unreal_config, vs_version=vs_version, flags=['-verbose']):
+    if not _unreal_run_ubt(env, game, env.unreal_platform, env.unreal_config, vs_version=vs_version, flags=['-verbose']):
         logging.error("Could not build game project")
         return False
 
