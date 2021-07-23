@@ -342,7 +342,7 @@ def _unreal_set_env(env):
         if None not in platform_list:
             env.unreal_platform = '+'.join(platform_list)
             if env.is_ue4:
-                env.unreal_platform= '+'.join(platform_list)
+                env.ue4_platform= '+'.join(platform_list)
 
     # Transform configuration list, default to 'devel'
     if hasattr(env, 'configuration') and env.configuration is not None:
@@ -353,7 +353,7 @@ def _unreal_set_env(env):
     if None not in config_list:
         env.unreal_config = '+'.join(config_list)
         if env.is_ue4:
-            env.unreal_config = '+'.join(config_list)
+            env.ue4_config = '+'.join(config_list)
 
 
 def _cant_find_file(_, group_dict):
