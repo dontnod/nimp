@@ -177,11 +177,8 @@ class Environment:
                 # PATCHING ROOT LOGGER
                 logging.getLogger().addHandler(log_handler.log_all_handler)
 
-            # Alawys display uproject selected
-            if hasattr(self, 'uproject') and hasattr(self, 'uproject_dir'):
-                logging.info('Found UE%s project %s in %s' % (self.unreal_version, self.uproject, self.uproject_dir))
-            else:
-                logging.info('No Unreal project loaded')
+            # Always display engine and selected uproject info
+            self.display_unreal_info()
 
             if hasattr(self, 'environment'):
                 for key, val in self.environment.items():
@@ -334,6 +331,17 @@ class Environment:
             self._uproject = re.findall(search_pattern, self._uproject_path)[0].upper()
         # TODO: we could try and auto-detect branch based off vcs feedback - especially for buildbot
         logging.debug('uproject specified by user : %s' % self._uproject)
+
+    def display_unreal_info(self):
+        ''' display engine and selected uproject info '''
+        if hasattr(self, 'unreal_full_version') and hasattr(self, 'unreal_dir'):
+            logging.info(f'Found Unreal engine {self.unreal_full_version} in {self.unreal_dir}')
+        else:
+            logging.info('No Unreal engine loaded')
+        if hasattr(self, 'uproject') and hasattr(self, 'uproject_dir'):
+            logging.info(f'Found Unreal project {self.uproject} in {self.uproject_dir}')
+        else:
+            logging.info('No Unreal project loaded')
 
 
 def execute_hook(hook_name, *args):

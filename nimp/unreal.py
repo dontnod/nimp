@@ -101,9 +101,6 @@ def load_config(env):
                            else 'Mac' if platform.system() == 'Darwin' \
                            else 'Linux'
 
-    logging.debug(f'Found UE {env.unreal_major}.{env.unreal_minor}.{env.unreal_patch} '
-                  f'for {env.unreal_host_platform} in {env.unreal_dir}')
-
     # Forward compatibility (TODO: remove later when all configuration files use uproject)
     if hasattr(env, 'game'):
         env.uproject = env.format(env.game)
