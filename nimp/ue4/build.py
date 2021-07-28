@@ -405,7 +405,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     # these are not built by Epic by default
     extra_tools = [
         'CrashReportClient',
-        'LiveCodingConsole',
+        # 'LiveCodingConsole',
         'UnrealFrontend',
         'UnrealInsights',
     ]
@@ -419,6 +419,7 @@ def _ue4_build_extra_tools(env, solution, vs_version):
     # MinidumpDiagnostics not in use in 4.25+ ue4 iterations
     # Not build in UE5
     if env.ue4_major == 4 and env.ue4_minor  <= 24:
+        extra_tools.append('LiveCodingConsole')
         extra_tools.append('MinidumpDiagnostics')
         extra_tools.append('SymbolDebugger')
 
