@@ -13,7 +13,7 @@ class Win32(nimp.sys.platform.Platform):
 
         self.unreal_name = 'Win32'
         self.unreal_config_name = 'Windows'
-        self.unreal_cook_name = 'WindowsNoEditor'
+        self.unreal_cook_name = 'Windows'
 
 
 class Win64(nimp.sys.platform.Platform):
@@ -28,11 +28,11 @@ class Win64(nimp.sys.platform.Platform):
 
         self.unreal_name = 'Win64'
         self.unreal_config_name = 'Windows'
-        self.unreal_cook_name = 'WindowsNoEditor'
+        self.unreal_cook_name = 'Windows'
 
     def launch_package(self, package_name, env):
         if not package_name:
-            package_name = env.uproject_dir + '/Saved/Packages/WindowsNoEditor/Default/' + env.game + '.exe'
+            package_name = env.uproject_dir + '/Saved/Packages/Windows/Default/' + env.game + '.exe'
         result = nimp.sys.process.call([ package_name ])
         return result == 0
 
@@ -46,7 +46,7 @@ class Linux(nimp.sys.platform.Platform):
 
         self.unreal_name = 'Linux'
         self.unreal_config_name = 'Linux'
-        self.unreal_cook_name = 'LinuxNoEditor'
+        self.unreal_cook_name = 'Linux'
 
 
 class Mac(nimp.sys.platform.Platform):
@@ -60,4 +60,4 @@ class Mac(nimp.sys.platform.Platform):
 
         self.unreal_name = 'Mac'
         self.unreal_config_name = 'Mac'
-        self.unreal_cook_name = 'MacNoEditor'
+        self.unreal_cook_name = 'Mac'
