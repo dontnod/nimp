@@ -10,7 +10,6 @@ import nimp.base_platforms
 
 from nimp.utils.python import get_class_instances
 
-
 _all_platforms = {}
 _all_aliases = {}
 _all_unreal_platforms = {}
@@ -19,7 +18,7 @@ _all_unreal_platforms = {}
 class Platform(metaclass=abc.ABCMeta):
     ''' Describe a platform and its specific quirks '''
 
-    def __init__(self):
+    def __init__(self, env):
         self.name = None
         self.aliases = set()
 
@@ -45,8 +44,8 @@ class Platform(metaclass=abc.ABCMeta):
 
 
 class NullPlatform(Platform):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
         self.name = 'null'
         self.unreal_name = 'Null'
         self.unreal_config_name = 'Null'
@@ -65,7 +64,7 @@ def create_platform_desc(name):
 def create_platform_desc_unreal(unreal_name):
     ''' Create a platform description from a Unreal name (PS4, Win64, …) '''
     if unreal_name not in _all_unreal_platforms:
-        logging.warn(f'No Unreal support for platform {name}')
+        logging.warn(f'No Unreal support for platform {unreal_name}')
         return NullPlatform()
     return _all_unreal_platforms[unreal_name]
     
@@ -75,12 +74,12 @@ def discover(env):
     ''' Import platforms from base nimp and from plugins '''
 
     tmp = {}
-    get_class_instances(nimp.base_platforms, Platform, tmp)
+    get_class_instances(nimp.base_platforms, Platform, tmp, instance_args=[env])
 
     for e in pkg_resources.iter_entry_points('nimp.plugins'):
         try:
             module = e.load()
-            get_class_instances(module, Platform, tmp)
+            get_class_instances(module, Platform, tmp, instance_args=[env])
         except:
             pass
 

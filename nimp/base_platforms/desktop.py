@@ -4,8 +4,8 @@ import nimp.sys.platform
 class Win32(nimp.sys.platform.Platform):
     ''' Win32 platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         self.name = 'win32'
         self.aliases = set(['pcconsole'])
@@ -19,8 +19,8 @@ class Win32(nimp.sys.platform.Platform):
 class Win64(nimp.sys.platform.Platform):
     ''' Win64 platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         self.name = 'win64'
         self.aliases = set(['pc', 'windows'])
@@ -39,8 +39,8 @@ class Win64(nimp.sys.platform.Platform):
 class Linux(nimp.sys.platform.Platform):
     ''' Linux platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         self.name = 'linux'
 
@@ -52,8 +52,8 @@ class Linux(nimp.sys.platform.Platform):
 class Mac(nimp.sys.platform.Platform):
     ''' Mac platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         self.name = 'mac'
         self.aliases = set(['macos', 'osx'])
