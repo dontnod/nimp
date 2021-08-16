@@ -10,8 +10,8 @@ import nimp.sys.platform
 class XSX(nimp.sys.platform.Platform):
     ''' XSX platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
         self.name = 'xsx'
         self.is_microsoft = True
 

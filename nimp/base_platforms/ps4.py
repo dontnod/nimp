@@ -6,8 +6,8 @@ import nimp.sys.platform
 class PS4(nimp.sys.platform.Platform):
     ''' PS4 platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         sce_root = os.environ.get('SCE_ROOT_DIR', None) or '/'
 

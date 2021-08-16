@@ -11,8 +11,8 @@ import nimp.sys.platform
 class PS5(nimp.sys.platform.Platform):
     ''' PS5 platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         self.name = 'ps5'
         #self.aliases = set(['prospero', 'dpx'])
