@@ -5,8 +5,8 @@ import nimp.sys.platform
 class XboxOne(nimp.sys.platform.Platform):
     ''' XboxOne platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         xdk_root = os.environ.get('DurangoXDK', None) or '/'
 

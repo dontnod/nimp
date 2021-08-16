@@ -6,8 +6,8 @@ import nimp.sys.platform
 class Switch(nimp.sys.platform.Platform):
     ''' Switch platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         self.name = 'switch'
 
