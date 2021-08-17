@@ -454,8 +454,10 @@ class Package(nimp.command.Command):
         cook_command = [
             package_configuration.editor_path, package_configuration.project,
             '-Run=Cook', '-TargetPlatform=' + package_configuration.cook_platform,
-            '-BuildMachine', '-Unattended', '-StdOut', '-UTF8Output', '-unversioned'
+            '-BuildMachine', '-Unattended', '-StdOut', '-UTF8Output',
         ]
+        if env.is_ue5:
+            cook_command += [ '-unversioned' ]
         if package_configuration.iterative_cook:
             cook_command += [ '-Iterate', '-IterateHash' ]
         cook_command += package_configuration.extra_options
