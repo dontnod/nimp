@@ -60,7 +60,7 @@ class PS5(nimp.sys.platform.Platform):
         status, output = subprocess.getstatusoutput(cmdline)
         if status != 0:
             raise RuntimeError('Failed to get list of packages')
-        
+
         last_title_id = None
         installed_titles = {}
         for line in output.split('\n'):
@@ -80,7 +80,7 @@ class PS5(nimp.sys.platform.Platform):
             last_title_id = None
 
         return installed_titles
-    
+
     def pick_title_id(self, installed_titles, package_name):
         matching_title_ids = []
         for title_name, title_id in installed_titles.items():
@@ -134,7 +134,12 @@ class PS5(nimp.sys.platform.Platform):
     def prospero_ctrl(args, ip=None, dry_run=False):
         if ip:
             args.append('/target:' + ip)
-        result = nimp.sys.process.call([PS5.PROSPERO_CTRL] + args, dry_run=dry_run)
+        cmdline = [PS5.PROSPERO_CTRL] + args
+        logging.info('Running "%s"', ' '.join(cmdline))
+        if dry_run:
+            return True
+        result = subprocess.call(
+            cmdline)  # Call subprocess directly to allow "dynamic" output (with progress percentage)
         return result == 0
 
     @staticmethod
