@@ -91,9 +91,9 @@ class _Update(nimp.command.Command):
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
 
-        if hasattr(env, 'is_ue4') and env.is_ue4 and symbol_server.server_type == 'shaders':
+        if hasattr(env, 'is_unreal') and env.is_unreal and symbol_server.server_type == 'shaders':
             symbol_source = '{uproject_dir}/Saved/ShaderDebugInfo'
-            symbol_source += '/' + ('SF_PS4/sdb' if env.ue4_platform == 'PS4' else env.ue4_platform)
+            symbol_source += '/' + ('SF_PS4/sdb' if env.unreal_platform== 'PS4' else env.unreal_platform)
             symbol_source = nimp.system.sanitize_path(env.format(symbol_source))
             symbol_server.update_symbols(symbol_source, env.dry_run)
 

@@ -103,6 +103,7 @@ class UnrealPackageConfiguration():
 
         self.editor_path = None
         self.engine_directory = None
+        self.uat_directory = None
         self.project_directory = None
         self.configuration_directory = None
         self.resource_directory = None
@@ -113,6 +114,9 @@ class UnrealPackageConfiguration():
         self.uat_logs_directory = None
 
         self.project = None
+        self.unreal_version = None
+        self.unreal_major = None
+        self.unreal_minor = None
         self.binary_configuration = None
         self.worker_platform = None
         self.cook_platform = None
@@ -170,7 +174,7 @@ class Package(nimp.command.Command):
 
 
     def is_available(self, env):
-        return nimp.unreal.is_unreal4_available(env)
+        return nimp.unreal.is_unreal_available(env)
 
 
     def run(self, env):
@@ -179,8 +183,8 @@ class Package(nimp.command.Command):
         if not platform_desc.is_valid:
             raise ValueError(f'Invalid platform {env.platform}')
 
-        env.ue4_dir = env.ue4_dir.replace('\\', '/')
-        env.cook_platform = nimp.unreal.get_cook_platform(env.ue4_platform)
+        env.unreal_dir = env.unreal_dir.replace('\\', '/')
+        env.cook_platform = nimp.unreal.get_cook_platform(env.unreal_platform)
 
         # Warning: do not move this outside env, because some .nimp.confs need it
         env.layout_file_extension = platform_desc.layout_file_extension
@@ -189,14 +193,15 @@ class Package(nimp.command.Command):
 
         package_configuration = UnrealPackageConfiguration(env)
 
-        package_configuration.engine_directory = nimp.system.standardize_path(env.format('{ue4_dir}/Engine'))
+        package_configuration.engine_directory = nimp.system.standardize_path(env.format('{unreal_dir}/Engine'))
+        package_configuration.uat_directory = package_configuration.engine_directory + '/Binaries/DotNET' + ('/AutomationTool' if env.is_ue5 else '')
         package_configuration.project_directory = nimp.system.standardize_path(env.format('{uproject_dir}'))
         package_configuration.configuration_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Config'))
-        package_configuration.resource_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Build/{ue4_platform}/Resources'))
+        package_configuration.resource_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Build/{unreal_platform}/Resources'))
         package_configuration.cook_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/Cooked/{cook_platform}'))
         package_configuration.patch_base_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/StagedBuilds/{cook_platform}-PatchBase'))
         package_configuration.stage_directory = nimp.system.standardize_path(env.format('{uproject_dir}/Saved/StagedBuilds/{cook_platform}'))
-        package_configuration.package_directory = nimp.system.standardize_path(env.format(platform_desc.ue4_package_directory))
+        package_configuration.package_directory = nimp.system.standardize_path(env.format(platform_desc.unreal_package_directory))
         package_configuration.uat_logs_directory = package_configuration.engine_directory + '/Programs/AutomationTool/Saved/Logs'
 
 
@@ -209,10 +214,13 @@ class Package(nimp.command.Command):
                 package_configuration.resource_directory = variant_resource_directory
 
         package_configuration.project = env.game
-        package_configuration.binary_configuration = env.ue4_config
-        package_configuration.worker_platform = env.ue4_host_platform
+        package_configuration.unreal_version = env.unreal_version
+        package_configuration.unreal_major = env.unreal_major
+        package_configuration.unreal_minor = env.unreal_minor
+        package_configuration.binary_configuration = env.unreal_config
+        package_configuration.worker_platform = env.unreal_host_platform
         package_configuration.cook_platform = env.cook_platform
-        package_configuration.target_platform = env.ue4_platform
+        package_configuration.target_platform = env.unreal_platform
         package_configuration.shader_debug_info = env.shader_debug_info
         package_configuration.iterative_cook = env.iterate
         package_configuration.extra_options = env.extra_options
@@ -232,19 +240,19 @@ class Package(nimp.command.Command):
         # https://jira.dont-nod.com/browse/XPJ-4747
         # https://gitea.dont-nod.com/devs/monorepo/commit/ceacad5c42cd0be34946236d36201e646b393d60
         #TODO: use .nimp.conf uniqueBuildEnvironment
-        package_configuration.editor_path = package_configuration.engine_directory + '/Binaries/' + package_configuration.worker_platform
-        package_configuration.editor_path += '/UE4Editor' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
+        package_configuration.editor_path = f'{package_configuration.engine_directory}/Binaries/{package_configuration.worker_platform}'
+        package_configuration.editor_path += f'/{env.unreal_exe_name}' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
         if not os.path.exists(package_configuration.editor_path):
-            package_configuration.editor_path = package_configuration.project_directory + '/Binaries/' + package_configuration.worker_platform + '/'
-            package_configuration.editor_path += package_configuration.project + 'Editor' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
-        package_configuration.editor_cmd_exe = 'UE4Editor-Cmd.exe'
-        if not os.path.exists(package_configuration.engine_directory + '/Binaries/Win64/' +  package_configuration.editor_cmd_exe):
-            package_configuration.editor_cmd_exe = package_configuration.project + 'Editor-Cmd.exe'
+            package_configuration.editor_path = f'{package_configuration.project_directory}/Binaries/{package_configuration.worker_platform}/'
+            package_configuration.editor_path += f'{package_configuration.project}Editor' + ('.exe' if package_configuration.worker_platform == 'Win64' else '')
+        package_configuration.editor_cmd_exe = f'{env.unreal_exe_name}-Cmd.exe'
+        if not os.path.exists(f'{package_configuration.engine_directory}/Binaries/Win64/{package_configuration.editor_cmd_exe}'):
+            package_configuration.editor_cmd_exe = f'{package_configuration.project}Editor-Cmd.exe'
 
         ps4_title_directory_collection = []
 
         # ignore possible  legacy config for pre-monorepo projects
-        if hasattr(env, 'package_variants') and env.ue4_minor < 24:
+        if hasattr(env, 'package_variants') and env.unreal_version < 4.24:
             if not env.variant:
                 raise ValueError('Variant parameter is required')
 
@@ -275,7 +283,7 @@ class Package(nimp.command.Command):
                 package_configuration.pak_collection = env.content_paks_by_variant[env.variant]
             if env.variant and env.platform in [ 'ps4', 'xboxone' ]:
                 layout_file_name = ('PatchLayout' if env.patch else 'PackageLayout') + '.{variant}.{layout_file_extension}'
-                package_configuration.layout_file_path = '{uproject_dir}/Build/{ue4_platform}/' + layout_file_name
+                package_configuration.layout_file_path = '{uproject_dir}/Build/{unreal_platform}/' + layout_file_name
 
         if env.layout:
             package_configuration.layout_file_path = env.layout
@@ -321,7 +329,7 @@ class Package(nimp.command.Command):
                 with open(config_file, 'a'):
                     pass
 
-        is_monorepo_behavior = env.ue4_minor > 24
+        is_monorepo_behavior = env.unreal_version > 4.24
         should_configure_variant = is_monorepo_behavior and env.variant is not None
         active_configuration_directory = f'{project_directory}/Config/Variants/Active'
 
@@ -448,6 +456,8 @@ class Package(nimp.command.Command):
             '-Run=Cook', '-TargetPlatform=' + package_configuration.cook_platform,
             '-BuildMachine', '-Unattended', '-StdOut', '-UTF8Output',
         ]
+        if env.is_ue5:
+            cook_command += [ '-unversioned' ]
         if package_configuration.iterative_cook:
             cook_command += [ '-Iterate', '-IterateHash' ]
         cook_command += package_configuration.extra_options
@@ -512,8 +522,8 @@ class Package(nimp.command.Command):
         # AutomationTool is used here for the staging parts which are not done by nimp itself yet
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             stage_command = [
-                package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
-                'BuildCookRun', '-UE4exe=' + package_configuration.editor_cmd_exe, '-UTF8Output',
+                package_configuration.uat_directory + '/AutomationTool.exe',
+                'BuildCookRun', f'-UE{package_configuration.unreal_major}exe=' + package_configuration.editor_cmd_exe, '-UTF8Output',
                 '-Project=' + package_configuration.project,
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,
@@ -532,7 +542,7 @@ class Package(nimp.command.Command):
                 raise RuntimeError('Stage failed')
 
         Package._stage_uat_logs(package_configuration, env.dry_run)
-        if env.ue4_minor < 24: # legacy
+        if env.unreal_version < 4.24: # legacy
             Package._stage_binaries(package_configuration, env.dry_run)
             Package._stage_title_files(package_configuration, env.dry_run)
             Package._stage_layout(package_configuration, env.dry_run)
@@ -883,8 +893,8 @@ class Package(nimp.command.Command):
 
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
-                package_configuration.engine_directory + '/Binaries/DotNET/AutomationTool.exe',
-                'BuildCookRun', '-UE4exe=' + package_configuration.editor_cmd_exe, '-UTF8Output',
+                package_configuration.uat_directory + '/AutomationTool.exe',
+                'BuildCookRun', f'-UE{package_configuration.unreal_major}exe=' + package_configuration.editor_cmd_exe, '-UTF8Output',
                 '-Project=' + package_configuration.project,
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,

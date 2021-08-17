@@ -138,8 +138,8 @@ class _Processes(CheckCommand):
         if not nimp.sys.platform.is_windows():
             return True
 
-        # Irrelevant if we’re not a UE4 project
-        if not hasattr(env, 'is_ue4') or not env.is_ue4:
+        # Irrelevant if we’re not a Unreal project
+        if not hasattr(env, 'is_unreal') or not env.is_unreal:
             return True
 
         prefix = os.path.abspath(env.root_dir).replace('/', '\\').lower()

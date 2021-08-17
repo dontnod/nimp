@@ -84,7 +84,7 @@ class _Commandlet(RunCommand):
         super(_Commandlet, self).__init__()
 
     def run(self, env):
-        if not nimp.unreal.is_unreal4_available(env):
+        if not nimp.unreal.is_unreal_available(env):
             logging.error('Not an Unreal Engine project')
             return False
         return nimp.unreal.commandlet(env, env.parameters[0], *env.parameters[1:])
@@ -249,8 +249,8 @@ class _Staged(ConsoleGameCommand):
         absolute_path = os.path.abspath(env.deploy + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
         cmdline = [
-            env.ue4_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
-            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
+            env.unreal_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
+            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
             '-stagingdirectory=' + absolute_path, 
             '-skipcook', '-skipstage', '-deploy'
         ]
@@ -269,8 +269,8 @@ class _Staged(ConsoleGameCommand):
         absolute_path = os.path.abspath(env.launch + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
         cmdline = [
-            env.ue4_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
-            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.ue4_config,
+            env.unreal_dir + '/Engine/Binaries/DotNet/AutomationTool.exe',
+            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
             '-stagingdirectory=' + absolute_path,
             '-skipcook', '-skipstage', '-deploy', '-run'
         ]

@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Unreal Engine 4 related stuff '''
+''' Unreal Engine related stuff '''
 
 import json
 import logging
@@ -28,6 +28,7 @@ import os
 import platform
 import re
 import glob
+from packaging import version
 
 import nimp.build
 import nimp.system
@@ -35,7 +36,7 @@ import nimp.sys.platform
 import nimp.sys.process
 import nimp.summary
 
-from nimp.sys.platform import create_platform_desc_ue4
+from nimp.sys.platform import create_platform_desc_unreal
 
 def load_config(env):
     ''' Loads Unreal specific configuration values on env before parsing
@@ -54,18 +55,6 @@ def load_config(env):
             unreal_dir = os.path.join(unreal_dir, unreal_path)
             break
 
-    # Legacy code, left there for testing
-    # TODO: Remove when new unreal_dir method has shown it's robust enough with older projects
-    # unreal_file = 'UE4/Engine/Build/Build.version'
-    # unreal_dir = nimp.system.find_dir_containing_file(unreal_file)
-    #
-    # ''' Retry by looking for a Engine/ folder if failed to find UE4/ (pre-reboot compatibility) '''
-    # unreal_file = 'Engine/Build/Build.version'
-    # if not unreal_dir:
-    #     unreal_dir = nimp.system.find_dir_containing_file(unreal_file)
-    # else:
-    #     unreal_dir = os.path.join(unreal_dir, 'UE4') # (backward compatibility)
-
     if not unreal_dir:
         env.is_unreal = env.is_ue4 = env.is_ue5 = False
         env.is_dne_legacy_ue4 = True
@@ -77,22 +66,25 @@ def load_config(env):
         env.unreal_minor = data['MinorVersion']
         env.unreal_patch = data['PatchVersion']
         env.unreal_version = float(f'{data["MajorVersion"]}.{data["MinorVersion"]}')
-        #TODO: deprecate ue4_* use in nimp and ue5 conf before proceeding with the following
-        # if env.unreal_major == 4: # Legacy, for older UE4 project conf
-        env.ue4_major = env.unreal_major
-        env.ue4_minor = env.unreal_minor
-        env.ue4_patch = env.unreal_patch
+        env.unreal_full_version = version.parse(str(f'{data["MajorVersion"]}.{data["MinorVersion"]}.{data["PatchVersion"]}'))
+        if env.unreal_major == 4: # Legacy, for older UE4 project conf
+            env.ue4_major = env.unreal_major
+            env.ue4_minor = env.unreal_minor
+            env.ue4_patch = env.unreal_patch
 
     env.is_unreal = True
     env.is_ue4 = False
     env.is_ue5 = False
     if env.unreal_major == 4:
         env.is_ue4 = env.is_unreal
+        env.is_ue5 = False
     if env.unreal_major == 5:
-        #TODO: remove is_ue5/is_ue4 equivalence when is_ue4 has been factored out of ue5 conf
-        env.is_ue5 = env.is_ue4 = env.is_unreal
-    # TODO: Deprecate ue4_dir for older UE4 confs
-    env.unreal_dir = env.ue4_dir = unreal_dir
+        env.is_ue5 = env.is_unreal
+        env.is_ue4 = False
+    env.unreal_dir = unreal_dir
+    env.unreal_root_path = os.path.basename(unreal_dir)
+    if env.is_ue4: # legacy compat for old conf
+        env.ue4_dir = unreal_dir
     # Backward compatibility (TODO: remove later)
     if not hasattr(env, 'is_dne_legacy_ue4'):
         env.is_dne_legacy_ue4 = env.unreal_version < 4.22
@@ -104,13 +96,10 @@ def load_config(env):
     env.unreal_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
                           else 'Mac' if platform.system() == 'Darwin' \
                           else 'Linux'
-    # TODO: Deprecate ue4_host_platform for older UE4 confs
-    env.ue4_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
-                       else 'Mac' if platform.system() == 'Darwin' \
-                       else 'Linux'
-
-    logging.debug(f'Found UE {env.unreal_major}.{env.unreal_minor}.{env.unreal_patch} '
-                  f'for {env.unreal_host_platform} in {env.unreal_dir}')
+    if env.is_ue4: # legacy for old conf
+        env.ue4_host_platform = 'Win64' if nimp.sys.platform.is_windows() \
+                           else 'Mac' if platform.system() == 'Darwin' \
+                           else 'Linux'
 
     # Forward compatibility (TODO: remove later when all configuration files use uproject)
     if hasattr(env, 'game'):
@@ -189,9 +178,9 @@ def load_arguments(env):
             else:
                 env.platform = 'linux'
 
-    # This is safe even when we failed to detect UE4
-    _ue4_sanitize_arguments(env)
-    _ue4_set_env(env)
+    # This is safe even when we failed to detect Unreal
+    _unreal_sanitize_arguments(env)
+    _unreal_set_env(env)
 
     if env.is_unreal:
         if not hasattr(env, 'target') or env.target is None:
@@ -203,7 +192,7 @@ def load_arguments(env):
     return True
 
 
-# TODO: deprecate this in favour of env.ue4_host_platform
+# TODO: deprecate this in favour of env.unreal_host_platform
 def get_host_platform():
     ''' Get the Unreal platform for the host platform '''
     if platform.system() == 'Windows':
@@ -215,16 +204,16 @@ def get_host_platform():
     raise ValueError('Unsupported platform: ' + platform.system())
 
 
-def get_configuration_platform(ue4_platform):
+def get_configuration_platform(unreal_platform):
     ''' Gets the platform name used for configuration files '''
     # From PlatformProperties IniPlatformName
-    return create_platform_desc_ue4(ue4_platform).ue4_config_name
+    return create_platform_desc_unreal(unreal_platform).unreal_config_name
 
 
-def get_cook_platform(ue4_platform):
+def get_cook_platform(unreal_platform):
     ''' Gets the platform name used for cooking assets '''
     # From Automation GetCookPlatform
-    return create_platform_desc_ue4(ue4_platform).ue4_cook_name
+    return create_platform_desc_unreal(unreal_platform).unreal_cook_name
 
 
 def commandlet(env, command, *args, heartbeat = 0):
@@ -234,8 +223,18 @@ def commandlet(env, command, *args, heartbeat = 0):
         return False
     return _unreal_commandlet(env, command, *args, heartbeat = heartbeat)
 
-def is_unreal4_available(env):
+def is_unreal_available(env):
     ''' Returns a tuple containing unreal availability and a help text
+        giving a reason of why it isn't if it's the case '''
+    return env.is_unreal, ('No .nimp.conf configured for Unreal was found in '
+                           'this directory or one of its parents. Check that you '
+                           'are launching nimp from inside an UE project directory '
+                           'and that you have a properly configured .nimp.conf. '
+                           'Check documentation for more details on .nimp.conf.')
+
+def is_unreal4_available(env):
+    ''' Legacy UE4 projects
+        Returns a tuple containing unreal availability and a help text
         giving a reason of why it isn't if it's the case '''
     return env.is_ue4, ('No .nimp.conf configured for Unreal 4 was found in '
                         'this directory or one of its parents. Check that you '
@@ -269,7 +268,7 @@ def _unreal_commandlet(env, command, *args, heartbeat = 0):
     return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
 
 
-def _ue4_sanitize_arguments(env):
+def _unreal_sanitize_arguments(env):
 
     if hasattr(env, "platform") and env.platform is not None:
 
@@ -310,16 +309,16 @@ def _ue4_sanitize_arguments(env):
                 return ""
             return std_configs[config.lower()]
 
-        ue4_configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
+        unreal_configuration = '+'.join(map(sanitize_config, env.configuration.split('+')))
 
         if env.is_unreal:
-            env.configuration = ue4_configuration
+            env.configuration = unreal_configuration
 
 
-def _ue4_set_env(env):
+def _unreal_set_env(env):
 
-    ''' Sets some variables for use with unreal 4 '''
-    def _get_ue4_config(config):
+    ''' Sets some variables for use with Unreal '''
+    def _get_unreal_config(config):
         configs = { "debug"    : "Debug",
                     "devel"    : "Development",
                     "test"     : "Test",
@@ -330,24 +329,28 @@ def _ue4_set_env(env):
             return None
         return configs[config]
 
-    def _get_ue4_platform(in_platform):
+    def _get_unreal_platform(in_platform):
         if not env.is_unreal:
             return in_platform
-        return nimp.sys.platform.create_platform_desc(in_platform).ue4_name
+        return nimp.sys.platform.create_platform_desc(in_platform).unreal_name
 
     if hasattr(env, 'platform') and env.platform is not None:
-        platform_list = list(map(_get_ue4_platform, env.platform.split('+')))
+        platform_list = list(map(_get_unreal_platform, env.platform.split('+')))
         if None not in platform_list:
-            env.ue4_platform = '+'.join(platform_list)
+            env.unreal_platform = '+'.join(platform_list)
+            if env.is_ue4:
+                env.ue4_platform= '+'.join(platform_list)
 
     # Transform configuration list, default to 'devel'
     if hasattr(env, 'configuration') and env.configuration is not None:
         config = env.configuration
     else:
         config = 'devel'
-    config_list = list(map(_get_ue4_config, config.split('+')))
+    config_list = list(map(_get_unreal_config, config.split('+')))
     if None not in config_list:
-        env.ue4_config = '+'.join(config_list)
+        env.unreal_config = '+'.join(config_list)
+        if env.is_ue4:
+            env.ue4_config = '+'.join(config_list)
 
 
 def _cant_find_file(_, group_dict):
@@ -413,6 +416,7 @@ def _set_unreal_exe_name(env):
     if _is_unique_build_env:
         unreal_exe_name = env.game + 'Editor'
     return unreal_exe_name
+
 
 class UnrealSummaryHandler(nimp.summary.SummaryHandler):
     """ Default summary handler, showing one line by error / warning and

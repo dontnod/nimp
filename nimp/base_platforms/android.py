@@ -4,11 +4,11 @@ import nimp.sys.platform
 class Android(nimp.sys.platform.Platform):
     ''' Android platform description '''
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, env):
+        super().__init__(env)
 
         self.name = 'android'
         self.is_mobile = True
-        self.ue4_name = 'Android'
-        self.ue4_config_name = 'Android'
-        self.ue4_cook_name = 'Android'
+        self.unreal_name = 'Android'
+        self.unreal_config_name = 'Android'
+        self.unreal_cook_name = 'Android'

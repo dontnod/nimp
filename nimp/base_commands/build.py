@@ -29,7 +29,7 @@ import re
 import nimp.build
 import nimp.command
 import nimp.environment
-import nimp.ue4.build
+import nimp.unreal_engine.build
 
 class Build(nimp.command.Command):
     ''' Build a project '''
@@ -62,18 +62,18 @@ class Build(nimp.command.Command):
         return True
 
     def is_available(self, env):
-        available = env.is_ue4 or Build._find_vs_solution() is not None
+        available = env.is_unreal or Build._find_vs_solution() is not None
         return (available, ('Nothing found to build. Check that you are either'
                             ' in an Unreal Engine project directory, or that'
                             ' there is a .sln file in current directory'))
 
     def run(self, env):
 
-        # Special support for UE4 projects
-        if env.is_ue4:
+        # Special support for Unreal projects
+        if env.is_unreal:
             # Use distcc and/or ccache if available
             nimp.build.install_distcc_and_ccache()
-            return nimp.ue4.build.build(env)
+            return nimp.unreal_engine.build.build(env)
 
         nimp.environment.execute_hook('prebuild', env)
 

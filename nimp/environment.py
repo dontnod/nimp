@@ -119,8 +119,8 @@ class Environment:
         # parses sys.argv in search of a manual uproject input
         parent_parser = argparse.ArgumentParser(add_help=False)
         parent_parser.add_argument('--uproject',
-                                   metavar='<ue4 project>',
-                                   help='Select a ue4 project to work with, i.e. PRO/PRO.uproject',
+                                   metavar='<unreal project>',
+                                   help='Select an Unreal project to work with, i.e. PRO/PRO.uproject',
                                    type=str)
         parent_parser.add_argument('--branch',
                                    metavar='<project branch>',
@@ -177,11 +177,8 @@ class Environment:
                 # PATCHING ROOT LOGGER
                 logging.getLogger().addHandler(log_handler.log_all_handler)
 
-            # Alawys display uproject selected
-            if hasattr(self, 'uproject') and hasattr(self, 'uproject_dir'):
-                logging.info('Found UE4 project %s in %s' % (self.uproject, self.uproject_dir))
-            else:
-                logging.info('No UE4 project loaded')
+            # Always display engine and selected uproject info
+            self.display_unreal_info()
 
             if hasattr(self, 'environment'):
                 for key, val in self.environment.items():
@@ -288,6 +285,8 @@ class Environment:
         ''' Loads project conf inside uproject folder - leaves ability to have xpj conf in xpj folder '''
         if not hasattr(self, 'uproject_dir') or not self.uproject_dir:
             return True
+        if not hasattr(self, 'unreal_dir') or not self.unreal_dir:
+            return True
 
         nimp_conf_file = '.nimp.conf'
 
@@ -298,10 +297,14 @@ class Environment:
             logging.error('Error loading project conf : %s', nimp_conf_file)
             return False
 
-        ue4_file = os.path.join('UE4', 'Engine', 'Build', 'Build.version')
-        root_dir = nimp.system.find_dir_containing_file(ue4_file)
+        # Assume Unreal dir is at root
+        # TODO: This is a clumsy way to find root, find another way.
+        unreal_file = os.path.join(self.unreal_root_path, 'Engine', 'Build', 'Build.version')
+        root_dir = nimp.system.find_dir_containing_file(unreal_file)
+
+
         if not root_dir:
-            logging.error('%s not found. It is now a nimp requirement.' % ue4_file)
+            logging.error('%s not found. It is now a nimp requirement.' % unreal_file)
             return False
         self.root_dir = root_dir
 
@@ -328,6 +331,17 @@ class Environment:
             self._uproject = re.findall(search_pattern, self._uproject_path)[0].upper()
         # TODO: we could try and auto-detect branch based off vcs feedback - especially for buildbot
         logging.debug('uproject specified by user : %s' % self._uproject)
+
+    def display_unreal_info(self):
+        ''' display engine and selected uproject info '''
+        if hasattr(self, 'unreal_full_version') and hasattr(self, 'unreal_dir'):
+            logging.info(f'Found Unreal engine {self.unreal_full_version} in {self.unreal_dir}')
+        else:
+            logging.info('No Unreal engine loaded')
+        if hasattr(self, 'uproject') and hasattr(self, 'uproject_dir'):
+            logging.info(f'Found Unreal project {self.uproject} in {self.uproject_dir}')
+        else:
+            logging.info('No Unreal project loaded')
 
 
 def execute_hook(hook_name, *args):

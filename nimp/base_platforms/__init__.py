@@ -6,6 +6,8 @@ __all__ = [
     'desktop',
     'ios',
     'ps4',
+    'ps5',
     'switch',
     'xboxone',
+    'xsx',
 ]
