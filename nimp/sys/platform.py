@@ -44,7 +44,7 @@ class Platform(metaclass=abc.ABCMeta):
 
 
 class NullPlatform(Platform):
-    def __init__(self, env):
+    def __init__(self, env=None):
         super().__init__(env)
         self.name = 'null'
         self.unreal_name = 'Null'
