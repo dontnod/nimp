@@ -341,16 +341,17 @@ def _unreal_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _unreal_build_common_tools_legacy(env, solution, vs_version)
 
-    dep = os.path.abspath(env.format('{unreal_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
-    # UE5 : use flag to perform a dotnet restore command to avoid NETSDK1004 error that happens at first build
-    # The restore process only rebuilds what's not yet rebuilt so it doesn't slow down the process.
-    # source : https://docs.microsoft.com/en-us/dotnet/core/tools/sdk-errors/netsdk1004
-    #TODO: is it a good default flag for farm compil?
-    command_flags = ['/t:Restore'] if env.unreal_version >= 5 else None
-    if not nimp.build.msbuild(dep, 'AnyCPU', 'Development',
-                              vs_version=vs_version, dotnet_version=env.dotnet_version, additional_flags=command_flags):
-        logging.error("Could not build DotNETUtilities")
-        return False
+    if env.is_ue5: # DotNetUtilities has been dropped in UE5
+        dep = os.path.abspath(env.format('{unreal_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
+        # UE5 : use flag to perform a dotnet restore command to avoid NETSDK1004 error that happens at first build
+        # The restore process only rebuilds what's not yet rebuilt so it doesn't slow down the process.
+        # source : https://docs.microsoft.com/en-us/dotnet/core/tools/sdk-errors/netsdk1004
+        #TODO: is it a good default flag for farm compil?
+        command_flags = ['/t:Restore'] if env.unreal_version >= 5 else None
+        if not nimp.build.msbuild(dep, 'AnyCPU', 'Development',
+                                  vs_version=vs_version, dotnet_version=env.dotnet_version, additional_flags=command_flags):
+            logging.error("Could not build DotNETUtilities")
+            return False
 
     # Compile previous prebuild stuff for UE5+ here
     if env.target == 'editor' and env.unreal_version >= 5:
