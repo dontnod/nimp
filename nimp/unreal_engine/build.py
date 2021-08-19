@@ -431,6 +431,10 @@ def _unreal_build_extra_tools(env, solution, vs_version):
     if env.unreal_version >= 4.24:
         extra_tools.append('CrashReportClientEditor')
 
+    # extra stuff needed by ue5 only
+    if env.is_ue5:
+        extra_tools.append('EpicWebHelper')
+
     # build projects are currently broken for PS4SymbolTool
     # and BuildCommonTools.Automation.cs (4.22)
     if need_ps4tools:
@@ -477,9 +481,12 @@ def _unreal_build_ps4_tools_workaround(env, solution, vs_version):
 def _unreal_select_tool_configuration(tool):
     # CrashReportClient is not built in Shipping by default,
     # however this is required by the staging process
-    need_shipping = ['CrashReportClient',
-                     'CrashReportClientEditor',
-                     'UnrealCEFSubProcess']
+    need_shipping = [
+        'CrashReportClient',
+        'CrashReportClientEditor',
+        'UnrealCEFSubProcess',
+        'EpicWebHelper',
+    ]
     if tool in need_shipping:
         return 'Shipping'
     return 'Development'
