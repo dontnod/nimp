@@ -93,7 +93,9 @@ class UploadFileset(nimp.command.Command):
         if not env.dry_run:
             os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
         nimp.system.try_execute(
-            lambda: nimp.artifacts.create_artifact(artifact_path, all_files, env.archive, env.compress, env.dry_run),
+            lambda: nimp.artifacts.create_artifact(
+                artifact_path, all_files, env.archive, env.compress, env.dry_run, tmp_path=env.root_dir
+            ),
             (OSError, ValueError, zipfile.BadZipFile),
         )
         if env.torrent:

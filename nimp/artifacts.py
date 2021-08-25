@@ -23,8 +23,8 @@
 '''Provides functions for build artifacts'''
 
 import copy
-import hashlib
 import glob
+import hashlib
 import json
 import logging
 import os
@@ -32,13 +32,13 @@ import platform
 import re
 import shutil
 import stat
+import tempfile
 import zipfile
 
 import requests
 
 import nimp.system
 import nimp.utils.git
-
 
 if platform.system() != 'Windows':
     try:
@@ -240,7 +240,7 @@ def _try_rename(src, dst, max_attempts=5, retry_delay=2):
     nimp.system.try_execute(_rename, OSError, attempt_maximum=max_attempts, retry_delay=retry_delay)
 
 
-def create_artifact(artifact_path, file_collection, archive, compress, dry_run):
+def create_artifact(artifact_path, file_collection, archive, compress, dry_run, tmp_path):
     '''Create an artifact'''
 
     if os.path.isfile(artifact_path + '.zip') or os.path.isdir(artifact_path):
@@ -260,18 +260,25 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run):
 
     elif archive:
         archive_path = artifact_path + '.zip'
-        compression = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
-        with zipfile.ZipFile(archive_path + '.tmp', 'w', compression=compression) as archive_file:
-            for source, destination in file_collection:
-                if os.path.isdir(source):
-                    continue
-                logging.debug('Adding %s as %s', source, destination)
-                archive_file.write(source, destination)
-        with zipfile.ZipFile(archive_path + '.tmp', 'r') as archive_file:
-            if archive_file.testzip():
-                raise OSError('Archive is corrupted')
-        logging.debug('Renaming %s to %s' % (archive_path + '.tmp', artifact_path))
-        shutil.move(archive_path + '.tmp', archive_path)
+        root_tmp_path = os.path.join(tmp_path, '.nimp', 'uploads') if tmp_path else None
+        if root_tmp_path and not os.path.isdir(root_tmp_path):
+            os.makedirs(root_tmp_path)
+        with tempfile.NamedTemporaryFile(dir=root_tmp_path, suffix='.zip.tmp', delete=False) as temp_file:
+            compression = zipfile.ZIP_DEFLATED if compress else zipfile.ZIP_STORED
+            with zipfile.ZipFile(temp_file, 'w', compression=compression) as archive_file:
+                for source, destination in file_collection:
+                    if os.path.isdir(source):
+                        continue
+                    logging.debug('Adding (local) %s as %s', source, destination)
+                    archive_file.write(source, destination)
+            with zipfile.ZipFile(temp_file, 'r') as archive_file:
+                logging.debug('Testing archive integrity...')
+                if archive_file.testzip():
+                    raise OSError('Archive is corrupted')
+        logging.debug('Uploading %s to %s', temp_file.name, archive_path)
+        shutil.copyfile(temp_file.name, archive_path)
+        logging.debug('Delete local %s', temp_file.name)
+        os.remove(temp_file.name)
 
     else:
         artifact_path_tmp = artifact_path + '.tmp'
