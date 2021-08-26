@@ -961,7 +961,7 @@ class Package(nimp.command.Command):
             package_command += [ '/f', layout_file_path, '/d', source, '/pd', destination ]
             package_command += [ '/productid', package_configuration.xbox_product_id ]
             package_command += [ '/contentid', package_configuration.xbox_content_id ]
-            package_command += [ '/l' ] if package_configuration.is_final_submission else []
+            package_command += [ '/lt' ] if package_configuration.is_final_submission else []
 
             if package_configuration.package_type in [ 'application', 'application_patch' ]:
                 package_command += [ '/genappdata', '/gameos', source + '/era.xvd' ]
