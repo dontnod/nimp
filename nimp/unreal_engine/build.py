@@ -341,7 +341,7 @@ def _unreal_build_common_tools(env, solution, vs_version):
     if env.is_dne_legacy_ue4:
         return _unreal_build_common_tools_legacy(env, solution, vs_version)
 
-    if env.is_ue5: # DotNetUtilities has been dropped in UE5
+    if env.is_ue4: # DotNetUtilities has been dropped in UE5
         dep = os.path.abspath(env.format('{unreal_dir}/Engine/Source/Programs/DotNETCommon/DotNETUtilities/DotNETUtilities.csproj'))
         # UE5 : use flag to perform a dotnet restore command to avoid NETSDK1004 error that happens at first build
         # The restore process only rebuilds what's not yet rebuilt so it doesn't slow down the process.
