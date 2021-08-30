@@ -756,6 +756,7 @@ class Package(nimp.command.Command):
             for title_data in package_configuration.ps4_title_collection:
                 transform_parameters = copy.deepcopy(title_data)
                 transform_parameters['title_directory'] = transform_parameters['title_directory'].lower()
+                transform_parameters['region'] = title_data['region'].lower()
                 for binary_configuration in package_configuration.binary_configuration.split('+'):
                     format_parameters['configuration'] = binary_configuration
                     format_parameters['region'] = title_data['region']
@@ -819,7 +820,31 @@ class Package(nimp.command.Command):
             file_content = source_file.read()
         file_content = file_content.format(**transform_parameters)
         if transform_parameters['configuration'].lower() == 'shipping':
+            # Remove debug lines and markers in shipping builds
             file_content = re.sub(r'<!-- #if Debug -->(.*?)<!-- #endif Debug -->', '', file_content, 0, re.DOTALL)
+
+        if 'region' in transform_parameters:
+            # Handle PS4 regions; should look like this:
+            #    < !-- # if SCEE -->
+            #    < any number of gp4 lines for SCEE only... />
+            #    < !-- # endif SCEE -->
+            #    < !-- # if SCEA,SCEJ -->
+            #    < any number of gp4 lines for SCEE and SCEA only... />
+            #    < !-- # endif SCEA,SCEJ -->
+            all_sce_regions = ['SCEE', 'SCEA', 'SCEJ']
+            for current_region in all_sce_regions:
+                all_regions_final_letter = {region[-1] for region in all_sce_regions}
+                current_region_final_letter = {transform_parameters['region'][-1].upper()}
+                other_regions = 'SCE[' + ''.join(list(all_regions_final_letter - current_region_final_letter)) + ']'
+                if current_region.upper() == transform_parameters['region'].upper():
+                    # Keep region specifc lines but remove region markers
+                    pattern = rf'\s*<!-- #(end)?if ({other_regions},)*{current_region}(,{other_regions})* -->'
+                    file_content = re.sub(pattern, '', file_content, 0, re.DOTALL)
+                else:
+                    # Remove lines and markers that are not region specific
+                    pattern = rf'\s*<!-- #if ({other_regions},)*{current_region}(,{other_regions})* -->' \
+                              rf'(.*?)<!-- #endif ({other_regions},)*{current_region}(,{other_regions})* -->'
+                    file_content = re.sub(pattern, '', file_content, 0, re.DOTALL)
 
         if not dry_run:
             with open(stage_directory + '/' + destination, 'w') as destination_file:
