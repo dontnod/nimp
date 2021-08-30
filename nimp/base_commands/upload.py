@@ -68,10 +68,12 @@ class _Symbols(nimp.command.Command):
             target = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
 
             symbols_to_publish = nimp.system.map_files(env)
-            tmp_symbols_to_publish = symbols_to_publish.override(configuration = config, target = target)
+            symbols_to_publish.root_based = False
+            tmp_symbols_to_publish = symbols_to_publish.override(configuration=config, target=target)
             tmp_symbols_to_publish.load_set("symbols")
             binaries_to_publish = nimp.system.map_files(env)
-            tmp_binaries_to_publish = binaries_to_publish.override(configuration = config, target = target)
+            binaries_to_publish.root_based = False
+            tmp_binaries_to_publish = binaries_to_publish.override(configuration=config, target=target)
             tmp_binaries_to_publish.load_set("binaries")
             nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(
                 symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file), config)
