@@ -441,8 +441,9 @@ def _unreal_build_extra_tools(env, solution, vs_version):
         # extra_tools.append('PS4MapFileUtil') # removed in 4.22
         _unreal_build_ps4_tools_workaround(env, solution, vs_version)
 
-    # this is DNE specific
-    if os.path.exists(nimp.system.sanitize_path(env.format('{unreal_dir}/Game/Tools/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
+    # this is DNE Specific
+    # TODO: get DNE specific out of public code
+    if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/DNE/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
         extra_tools.append('DNEAssetRegistryQuery')
 
     # use UBT for remaining extra tool targets
