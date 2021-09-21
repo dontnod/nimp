@@ -441,15 +441,13 @@ def _unreal_build_extra_tools(env, solution, vs_version):
         # extra_tools.append('PS4MapFileUtil') # removed in 4.22
         _unreal_build_ps4_tools_workaround(env, solution, vs_version)
 
-    # this is DNE Specific
-    # TODO: get DNE specific out of public code
-    if os.path.exists(nimp.system.sanitize_path(env.format('{root_dir}/DNE/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'))):
-        extra_tools.append('DNEAssetRegistryQuery')
-
     # use UBT for remaining extra tool targets
     for tool in extra_tools:
         if not _unreal_build_tool_ubt(env, tool, vs_version):
             return False
+
+    # Build DNEAssetRegistry
+    _unreal_build_DNEAssetRegistry(env, solution, vs_version)
 
     # Build CSVTools
     csv_tools_sln = env.format('{unreal_dir}/Engine/Source/Programs/CSVTools/CSVTools.sln')
@@ -635,3 +633,20 @@ def _unreal_list_common_tools_legacy(env):
 
     return tools
 
+def _unreal_build_DNEAssetRegistry(env, solution, vs_version):
+    ''' Build DNEAssetRegistry DNE specific plugin code '''
+    csproj = '{root_dir}/DNE/Source/Programs/DNEAssetRegistryQueryUpdater/DNEAssetRegistryQueryUpdater.csproj'
+    dne_tool_path = '{root_dir}/DNE/Source/Programs/DNEAssetRegistryQuery/DNEAssetRegistryQuery.Build.cs'
+    csproj = nimp.system.sanitize_path(env.format(csproj))
+    dne_tool_path = nimp.system.sanitize_path(env.format(dne_tool_path))
+
+    can_build = os.path.exists(csproj) and os.path.exists(dne_tool_path)
+
+    if can_build:
+        # DNEAssetRegistryQueryUpdater.exe is required by DNEAssetRegistryQuery and must be compiled first
+        if not nimp.build.msbuild(csproj, 'AnyCPU', 'Development', vs_version=vs_version, dotnet_version=env.dotnet_version):
+            logging.error("Could not build DNEAssetRegistryQueryUpdater")
+            return False
+        if not _unreal_build_tool_ubt(env, 'DNEAssetRegistryQuery', vs_version):
+            logging.error("Could not build DNEAssetRegistryQuery")
+            return False
