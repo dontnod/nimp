@@ -23,6 +23,7 @@
 ''' Perforce related commands. '''
 
 import abc
+import argparse
 import shutil
 
 import nimp.command
@@ -56,7 +57,8 @@ class P4(nimp.command.CommandGroup):
     def __init__(self):
         super(P4, self).__init__([_RevertWorkspace(),
                                   _Submit(),
-                                  _Fileset()])
+                                  _Fileset(),
+                                  _Sync()])
 
     def configure_arguments(self, env, parser):
         super(P4, self).configure_arguments(env, parser)
@@ -168,3 +170,32 @@ class _Submit(P4Command):
         changelist = p4.get_or_create_changelist(description)
 
         return p4.submit(changelist)
+
+
+class _Sync(P4Command):
+    ''' Performs a p4 sync on a given workspace  '''
+    def __init__(self):
+        super(_Sync, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        super(_Sync, self).configure_arguments(env, parser)
+        nimp.command.add_common_arguments(parser, 'revision')
+        parser.add_argument('files',
+                            nargs = '*',
+                            default = ['...'],
+                            metavar = '<files>',
+                            help = 'Specific files or file patterns to update.')
+        parser.add_argument('--extra-args',
+                            nargs = argparse.REMAINDER,
+                            help = 'Additionnal perforce args.')
+
+    def is_available(self, env):
+        return _is_p4_available()
+
+    def run(self, env):
+        if not nimp.utils.p4.check_for_p4(env):
+            return False
+
+        p4 = nimp.utils.p4.get_client(env)
+
+        return p4.sync(*env.files, cl_number=env.revision ,extra_args=env.extra_args)

@@ -335,9 +335,12 @@ class P4:
 
         return True
 
-    def sync(self, *files, cl_number = None):
+    def sync(self, *files, cl_number=None, extra_args=None):
         ''' Udpate given file '''
+        if extra_args is None:
+            extra_args = []
         command = ["sync"]
+        command.extend(extra_args)
 
         file_list = [self._escape_filename(x) for x in files]
         if cl_number is not None:
