@@ -154,10 +154,9 @@ class _Processes(CheckCommand):
                 if not info[0].lower().startswith(prefix):
                     continue
                 process_basename = os.path.basename(info[0])
-                processes_ignore_patterns = [
-                    r'^CrashReportClient\.exe$',
-                ]
+                processes_ignore_patterns = _Processes.get_processes_ignore_patterns()
                 if any([re.match(p, process_basename, re.IGNORECASE) for p in processes_ignore_patterns]):
+                    logging.info(f'process {pid} {info[0]} will be kept alive')
                     continue
                 logging.warning('Found problematic process %s (%s)', pid, info[0])
                 found_problem = True
@@ -174,6 +173,13 @@ class _Processes(CheckCommand):
             time.sleep(5)
 
         return False
+
+    @staticmethod
+    def get_processes_ignore_patterns():
+        return [
+            r'^CrashReportClient\.exe$',
+            r'^dotnet\.exe$',
+        ]
 
     @staticmethod
     def _list_windows_processes():
