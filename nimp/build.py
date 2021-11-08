@@ -28,10 +28,51 @@ import glob
 import socket
 import subprocess
 import re
+import time
 
 import nimp.system
 import nimp.sys.platform
 import nimp.sys.process
+
+
+def _try_excecute(command, max_attemtps=3, delay=5, time_out=120):
+    ''' retry in case autoSDK or devenv cache fails us '''
+    attempt = 1
+    while attempt <= max_attemtps:
+        retry = False
+        start_time = time.time()
+        result, output, err = nimp.sys.process.call(command, capture_output=True)
+        time_passed = time.time() - start_time
+
+        if result != 0:
+            # Legacy
+            if "Cannot run if when setup is in progress." in output:
+                logging.error('Visual Studio appears to have failed')
+                return False
+
+            if attempt > max_attemtps:
+                logging.error('Max attempts reached, bailing...')
+                return result
+            if "ERROR: Unhandled exception: System." in output and ":\\autoSDK\\HostWin64\\" in output:
+                logging.warn(f'AutoSDK error.')
+                retry = True
+            if "Package 'RoslynPackage' failed to load." in output or "Package 'Visual Studio Build Manager Package' failed to load." in output:
+                logging.warn(f'Devenv cache error')
+                retry = True
+
+            if retry:
+                if time_passed > time_out:
+                    logging.warn(f'Not retrying error that happened late in the process')
+                    return result
+                logging.warn(f'Retrying : attempt {attempt} out of {max_attemtps}...')
+                attempt += 1
+                time.sleep(delay)
+            else:
+                return result
+        else:
+            return result
+    return result
+
 
 def msbuild(project_file, platform_name, configuration, project=None,
             vs_version='14', dotnet_version='4.6', additional_flags=None ):
@@ -93,10 +134,7 @@ def vsbuild(solution, platform_name, configuration, project=None,
         if project is not None:
             command = command + [ '/project', project ]
 
-        result, output, _ = nimp.sys.process.call(command, capture_output=True)
-        if 'Cannot run if when setup is in progress.' in output:
-            logging.error('Visual Studio appears to have failed')
-            return False
+        result = _try_excecute(command)
 
         return result == 0
 
@@ -108,6 +146,7 @@ def vsbuild(solution, platform_name, configuration, project=None,
                 '/p:TargetFrameworkProfile=' ]
     if project is not None:
         command = command + [ '/target:' + project ]
+
     return nimp.sys.process.call(command) == 0
 
 def _find_msbuild_path(vs_version):
