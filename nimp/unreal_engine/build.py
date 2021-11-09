@@ -204,28 +204,7 @@ def _unreal_generate_project(env):
     else:
         command = ['/bin/sh', './GenerateProjectFiles.sh']
 
-
-    # Inline this here - minimal change for now - for testing
-    def _try_excecute(env, command, max_attemtps=3, delay=5, time_out=60):
-        ''' retry in cause autoSDK fails us '''
-        attempt = 1
-        while attempt <= max_attemtps:
-            start_time = time.time()
-            result, output, err = nimp.sys.process.call(command, cwd=env.unreal_dir, capture_output=True)
-            time_passed = time.time() - start_time
-            # We don't want to retry long processes and block build machines, just retry quick autoSDK errors.
-            if time_passed > time_out:
-                return result
-            if result != 0 and "ERROR: Unhandled exception: System." in output and ":\\autoSDK\\HostWin64\\" in output:
-                logging.info('AutoSDK issue, retrying : attempt {attempt} out of {max_attemtps}...'.format(**locals()))
-                if attempt > max_attemtps:
-                    return result
-                attempt += 1
-                time.sleep(delay)
-            else:
-                return result
-
-    return _try_excecute(env, command)
+    return nimp.build._try_excecute(command, cwd=env.unreal_dir)
 
 
 def _unreal_build_tool_ubt(env, tool, vs_version=None):
@@ -250,7 +229,7 @@ def _unreal_run_ubt(env, target, build_platform, build_configuration, vs_version
     if flags is not None:
         command += flags
 
-    return nimp.sys.process.call(command, cwd=env.unreal_dir) == 0
+    return nimp.build._try_excecute(command, cwd=env.unreal_dir) == 0
 
 
 def _unreal_run_uat(env, target, build_platforms, flags=None):
@@ -267,7 +246,7 @@ def _unreal_run_uat(env, target, build_platforms, flags=None):
     if flags is not None:
         command += flags
 
-    return nimp.sys.process.call(command, cwd=env.unreal_dir) == 0
+    return nimp.build._try_excecute(command, cwd=env.unreal_dir) == 0
 
 
 ### Targets

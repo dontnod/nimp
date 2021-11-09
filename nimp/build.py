@@ -35,13 +35,13 @@ import nimp.sys.platform
 import nimp.sys.process
 
 
-def _try_excecute(command, max_attemtps=3, delay=5, time_out=120):
+def _try_excecute(command, cwd='.', capture_output=True, max_attemtps=5, delay=5, time_out=120):
     ''' retry in case autoSDK or devenv cache fails us '''
-    attempt = 1
+    attempt = 0
     while attempt <= max_attemtps:
         retry = False
         start_time = time.time()
-        result, output, err = nimp.sys.process.call(command, capture_output=True)
+        result, output, err = nimp.sys.process.call(command, cwd=cwd, capture_output=True)
         time_passed = time.time() - start_time
 
         if result != 0:
@@ -50,22 +50,25 @@ def _try_excecute(command, max_attemtps=3, delay=5, time_out=120):
                 logging.error('Visual Studio appears to have failed')
                 return False
 
-            if attempt > max_attemtps:
-                logging.error('Max attempts reached, bailing...')
-                return result
             if "ERROR: Unhandled exception: System." in output and ":\\autoSDK\\HostWin64\\" in output:
                 logging.warn(f'AutoSDK error.')
                 retry = True
-            if "Package 'RoslynPackage' failed to load." in output or "Package 'Visual Studio Build Manager Package' failed to load." in output:
+            if "Package 'RoslynPackage' failed to load" in output:
+                logging.warn(f'Devenv cache error')
+                retry = True
+            if "Package 'Visual Studio Build Manager Package' failed to load" in output:
                 logging.warn(f'Devenv cache error')
                 retry = True
 
             if retry:
+                if attempt >= max_attemtps:
+                    logging.error('Max attempts reached, bailing...')
+                    return result
                 if time_passed > time_out:
                     logging.warn(f'Not retrying error that happened late in the process')
                     return result
-                logging.warn(f'Retrying : attempt {attempt} out of {max_attemtps}...')
                 attempt += 1
+                logging.warn(f'Retrying : attempt {attempt} out of {max_attemtps}...')
                 time.sleep(delay)
             else:
                 return result
@@ -111,11 +114,7 @@ def msbuild(project_file, platform_name, configuration, project=None,
     if additional_flags is not None:
         command += additional_flags
 
-    result, output, _ = nimp.sys.process.call(command, capture_output=needCapture)
-
-    if nimp.sys.platform.is_windows() and 'Cannot run if when setup is in progress.' in output:
-        logging.error('Visual Studio appears to have failed')
-        return False
+    result = _try_excecute(command, capture_output=needCapture)
 
     return result == 0
 
