@@ -332,17 +332,29 @@ def upload_symbols(env, symbols, config):
     sym_tool_path = nimp.system.sanitize_path(sym_tool_path)
     logging.debug('Using sym-too-path -> %s' % sym_tool_path)
 
+    compress_symbols = hasattr(env, 'compress') and env.compress
+    compression_type = None
+    # Approx. 2GB
+    cab_src_size_limit = 2 * 1000 * 1000 * 1000
+
     # Create response file
     index_file = "symbols_index.txt"
     with open(index_file, "w") as symbols_index:
         for src, _ in symbols:
             logging.debug("adding %s to response file %s" % (src, index_file))
             symbols_index.write(src + "\n")
+            try:
+                # CAB compression has a hard limit on source file size of 2GB.
+                # Switch to ZIP compression if a file exceed this limit to prevent corrupted archives
+                # (benefits are faster compression time and handle file size > 2GB but compress less)
+                if compress_symbols and compression_type is None and os.path.getsize(src) >= cab_src_size_limit:
+                    compression_type = "ZIP"
+            except OSError as ex:
+                logging.debug("Failed to get %s size", src, exc_info=ex)
     # transaction tag
     transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, config, env.revision)
 
     # common cmd params
-    compress = "/compress" if hasattr(env, 'compress') and env.compress else ""
     cmd = [
         sym_tool_path,
         "add",
@@ -350,8 +362,11 @@ def upload_symbols(env, symbols, config):
         "/f", "@" + index_file, # add files from response file
         "/s", store_root, # target symbol store
         "/o", # Verbose output
-        compress, # compression
     ]
+    if compress_symbols:
+        cmd.append('/compress')
+        if compression_type is not None:
+            cmd.append(compression_type)
     # platform specific cmd params
     if env.is_ps5:
         cmd += [
