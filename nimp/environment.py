@@ -134,22 +134,15 @@ class Environment:
         # verify that uproject seems somewhat legit
         self.validate_uproject(parent_args.uproject)
 
-        # base_conf for monorepo
-        if not self._load_nimp_conf('.baseNimp.conf'):
-            return exit_error
-        # legacy conf
-        if not hasattr(self, 'root_dir') or not self.root_dir:
-            if not self._load_nimp_conf('.nimp.conf'):
-                return exit_error
-
         for config_loader in Environment.config_loaders:
             if not config_loader(self):
                 logging.error('Error while loading nimp config')
                 return exit_error
 
-        if not self._load_project_conf():
+        if not self._load_nimp_conf('.nimp.conf'):
             return exit_error
-
+        if not self._load_monorepo_project_conf():
+            return exit_error
         if not hasattr(self, 'root_dir') or not self.root_dir:
             self.root_dir = '.'
 
@@ -265,12 +258,16 @@ class Environment:
         ''' Applies environment variables from .nimp.conf '''
 
     def _load_nimp_conf(self, conf_file):
-        ''' legacy - loads project conf before pg8 4.24 preiew - xpj_conf in the future ? '''
+        ''' Default nimp conf loading scheme '''
+        if self.is_unreal and self.unreal_version > 4.24:
+            return True
+
         nimp_conf_file = conf_file
         nimp_conf_dir = nimp.system.find_dir_containing_file(nimp_conf_file)
 
-        if not nimp_conf_dir:
-            logging.debug('No xpj conf it seems.')
+        # It's fine to not have any config setup if it's not an unreal workspace
+        if not self.is_unreal and not nimp_conf_dir:
+            logging.debug('No nimp configuration.')
             return True
 
         if not self.load_config_file(os.path.join(nimp_conf_dir, nimp_conf_file)):
@@ -281,34 +278,40 @@ class Environment:
 
         return True
 
-    def _load_project_conf(self):
-        ''' Loads project conf inside uproject folder - leaves ability to have xpj conf in xpj folder '''
+    def _load_monorepo_project_conf(self):
+        ''' Loads xpj project conf at root; overrides with conf inside uproject folder '''
+        if not hasattr(self, 'is_unreal') or not self.is_unreal:
+            return True
         if not hasattr(self, 'uproject_dir') or not self.uproject_dir:
             return True
         if not hasattr(self, 'unreal_dir') or not self.unreal_dir:
             return True
-
-        nimp_conf_file = '.nimp.conf'
-
-        if not os.path.isfile(os.path.join(self.uproject_dir, nimp_conf_file)):
+        if self.unreal_version <= 4.24:
             return True
 
-        if not self.load_config_file(os.path.join(self.uproject_dir, nimp_conf_file)):
-            logging.error('Error loading project conf : %s', nimp_conf_file)
-            return False
+        nimp_conf_file = '.nimp.conf'
+        unreal_file = os.path.join(self.unreal_root_path, 'Engine', 'Build', 'Build.version')
 
         # Assume Unreal dir is at root
-        # TODO: This is a clumsy way to find root, find another way.
-        unreal_file = os.path.join(self.unreal_root_path, 'Engine', 'Build', 'Build.version')
         root_dir = nimp.system.find_dir_containing_file(unreal_file)
-
-
         if not root_dir:
-            logging.error('%s not found. It is now a nimp requirement.' % unreal_file)
+            logging.error(f'{unreal_file} not found.')
             return False
         self.root_dir = root_dir
 
-        logging.debug('nimp_file %s', os.path.join(self.uproject_dir, nimp_conf_file))
+        # load xpj config for monorepo
+        for base_conf_file in ['.baseNimp.conf', #legacy, will delte, we want to keep .nimp.conf only
+                                nimp_conf_file]:
+            base_conf_path = os.path.join(self.root_dir, base_conf_file)
+            if os.path.exists(base_conf_path):
+                if not self.load_config_file(base_conf_path):
+                    logging.error('Error loading xpj project conf : %s', base_conf_path)
+                    return False
+
+        # load project specific config, overrides existing base settings
+        if not self.load_config_file(os.path.join(self.uproject_dir, nimp_conf_file)):
+            logging.error('Error loading project conf : %s', nimp_conf_file)
+            return False
 
         # this can override settings from .nimp.conf
         additionnal_conf_file = os.path.join(self.uproject_dir, '.nimp', 'config.py')
