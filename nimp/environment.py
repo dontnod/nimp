@@ -382,9 +382,9 @@ class Environment:
     def display_unreal_info(self):
         '''display engine and selected uproject info'''
         if hasattr(self, 'unreal_full_version') and hasattr(self, 'unreal_dir'):
-            logging.info(f'Found Unreal engine {self.unreal_full_version} in {self.unreal_dir}')
+            logging.info(f'Found Unreal Engine {self.unreal_full_version} in {self.unreal_dir}')
         else:
-            logging.info('No Unreal engine loaded')
+            logging.info('No Unreal Engine found')
         if hasattr(self, 'uproject') and hasattr(self, 'uproject_dir'):
             logging.info(f'Found Unreal project {self.uproject} in {self.uproject_dir}')
         else:
