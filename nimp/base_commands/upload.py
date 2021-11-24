@@ -61,6 +61,7 @@ class _Symbols(nimp.command.Command):
         return True, ''
 
     def run(self, env):
+        success = True
         # ps5 shipping has no corresponding symbols, they're in the elf/self unstripped binary file
         has_symbols_inside_binary_file = env.platform in ['ps5']
         for config_or_target in env.configurations:
@@ -75,10 +76,11 @@ class _Symbols(nimp.command.Command):
             binaries_to_publish.root_based = False
             tmp_binaries_to_publish = binaries_to_publish.override(configuration=config, target=target)
             tmp_binaries_to_publish.load_set("binaries")
-            nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(
-                symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file), config)
+            if not nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(
+                    symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file), config):
+                success = False
 
-        return True
+        return success
 
     @staticmethod
     def _chain_symbols_and_binaries(symbols, binaries, has_symbols_inside_binary_file=False):
