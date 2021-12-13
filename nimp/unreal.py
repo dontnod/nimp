@@ -223,6 +223,12 @@ def commandlet(env, command, *args, heartbeat = 0):
         return False
     return _unreal_commandlet(env, command, *args, heartbeat = heartbeat)
 
+def unreal_cli(env, *args, heartbeat=0, commandlet=None):
+    ''' Runs an Unreal CLI exe '''
+    if not _check_for_unreal(env):
+        return False
+    return _unreal_cli(env, *args, heartbeat=heartbeat, commandlet=commandlet)
+
 def is_unreal_available(env):
     ''' Returns a tuple containing unreal availability and a help text
         giving a reason of why it isn't if it's the case '''
@@ -252,6 +258,19 @@ def _check_for_unreal(env):
         return False
     return True
 
+
+def _unreal_cli(env, *args, heartbeat=0, commandlet=None):
+    ''' Runs an Unreal command line '''
+
+    exe = '{unreal_dir}/Engine/Binaries/{unreal_host_platform}/{unreal_exe_name}-cmd.exe'
+    cmdline = [nimp.system.sanitize_path(env.format(exe)), env.game]
+
+    if commandlet:
+        cmdline += [f'-run={commandlet}']
+    cmdline += list(args)
+    cmdline += ['-buildmachine', '-nopause', '-unattended', '-noscriptcheck']
+
+    return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
 
 def _unreal_commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an Unreal commandlet '''

@@ -42,6 +42,7 @@ class Run(nimp.command.CommandGroup):
     def __init__(self):
         super(Run, self).__init__([_Hook(),
                                    _Commandlet(),
+                                   _Unreal_cli(),
                                    _Exec_cmds(),
                                    _Staged(),
                                    _Package()])
@@ -88,6 +89,18 @@ class _Commandlet(RunCommand):
             logging.error('Not an Unreal Engine project')
             return False
         return nimp.unreal.commandlet(env, env.parameters[0], *env.parameters[1:])
+
+class _Unreal_cli(RunCommand):
+    ''' Runs an unrel cli command '''
+
+    def __init__(self):
+        super(_Unreal_cli, self).__init__()
+
+    def run(self, env):
+        if not nimp.unreal.is_unreal_available(env):
+            logging.error('Not an Unreal Engine project')
+            return False
+        return nimp.unreal.unreal_cli(env, *env.parameters)
 
 class _Exec_cmds(RunCommand):
     ''' Runs executables on the local host '''
