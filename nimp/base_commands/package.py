@@ -29,6 +29,7 @@ import logging
 import os
 import re
 import stat
+import shlex
 import shutil
 import subprocess
 import xml.etree.ElementTree
@@ -460,7 +461,8 @@ class Package(nimp.command.Command):
             cook_command += [ '-unversioned' ]
         if package_configuration.iterative_cook:
             cook_command += [ '-Iterate', '-IterateHash' ]
-        cook_command += package_configuration.extra_options
+        for option in package_configuration.extra_options:
+            cook_command += shlex.split(option)
 
         if package_configuration.shader_debug_info:
             sdb_path = package_configuration.project_directory + '/Saved/ShaderDebugInfo/' + package_configuration.target_platform
@@ -532,7 +534,8 @@ class Package(nimp.command.Command):
                 # '-NoDebugInfo',
             ]
 
-            stage_command += package_configuration.extra_options
+            for option in package_configuration.extra_options:
+                stage_command += shlex.split(option)
 
             if env.is_dne_legacy_ue4:
                 stage_command += [ '-SkipPak' ]
@@ -926,7 +929,8 @@ class Package(nimp.command.Command):
                 '-SkipCook', '-SkipStage', '-Package',
             ]
 
-            package_command += package_configuration.extra_options
+            for option in package_configuration.extra_options:
+                package_command += shlex.split(option)
 
             package_success = nimp.sys.process.call(package_command, dry_run = dry_run)
             if package_success != 0:
