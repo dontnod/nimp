@@ -540,7 +540,11 @@ class Package(nimp.command.Command):
             if env.is_dne_legacy_ue4:
                 stage_command += [ '-SkipPak' ]
 
-            stage_success = nimp.sys.process.call(stage_command, dry_run = env.dry_run)
+            # for testing, to remove when the problem of blocked staging is understood
+            heartbeat = 0
+            if hasattr(env, 'branch') and env.branch in ['preview-ue5', 'preview-ue5-testing']:
+                heartbeat = 60
+            stage_success = nimp.sys.process.call(stage_command, dry_run=env.dry_run, heartbeat=heartbeat)
             if stage_success != 0:
                 raise RuntimeError('Stage failed')
 
