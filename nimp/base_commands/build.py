@@ -59,8 +59,8 @@ class Build(nimp.command.Command):
                             help='version of Visual Studio to use, if applicable',
                             default=(env.vs_version if hasattr(env, 'vs_version') else None))
 
-        parser.add_argument('--ubt-versioning',
-                            help='activate binaries versioning through ubt',
+        parser.add_argument('--enable-binaries-versioning',
+                            help='activate binaries versioning, useful for build systems',
                             action='store_true')
 
         return True
@@ -76,11 +76,8 @@ class Build(nimp.command.Command):
         # Special support for Unreal projects
         if env.is_unreal:
             env.ubt_version = False
-            if Build._has_ubt_versioning(env):
-                ubt_revision = env.revision
-                if nimp.utils.git.is_full_sha1(ubt_revision):
-                    ubt_revision = env.revision[:8]
-                env.ubt_version = f'{env.branch}-{ubt_revision}'
+            if Build._has_binaries_versioning(env):
+                env.ubt_version = Build._compute_versioning_tag(env)
 
             # Use distcc and/or ccache if available
             nimp.build.install_distcc_and_ccache()
@@ -130,11 +127,23 @@ class Build(nimp.command.Command):
         return True
 
     @staticmethod
-    def _has_ubt_versioning(env):
-        has_ubt_versioning = hasattr(env, 'ubt_versioning') and env.ubt_versioning
-        has_ubt_versioning = has_ubt_versioning and hasattr(env, 'revision') and env.revision is not None
-        has_ubt_versioning = has_ubt_versioning and hasattr(env, 'branch') and env.branch is not None
-        return has_ubt_versioning
+    def _has_binaries_versioning(env):
+        has_binaries_versioning = hasattr(env, 'enable_binaries_versioning') and env.enable_binaries_versioning
+        has_revision = hasattr(env, 'revision') and env.revision is not None
+        if has_binaries_versioning:
+            assert has_revision, "A revision is needed for binaries versioning"
+        return has_binaries_versioning and has_revision
+
+    @staticmethod
+    def _compute_versioning_tag(env):
+        branch = ""
+        if hasattr(env, 'branch') and env.branch is not None:
+            branch = f'{env.branch}-'
+        revision = env.revision
+        if nimp.utils.git.is_full_sha1(revision):
+            revision = env.revision[:8]
+
+        return f'{branch}{revision}'
 
     @staticmethod
     def _find_vs_solution():
