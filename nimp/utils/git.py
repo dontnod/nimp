@@ -74,7 +74,13 @@ def get_commit_version(commit_hash):
 
 def is_full_sha1(string):
     ''' cheap logic to check if we have full git commit sha1 string '''
-    return len(string) == 40 and int(string, 16)
+    if len(string) != 40:
+        return False
+    try:
+        int(string, 16)
+    except ValueError:
+        return False
+    return True
 
 def gitea_has_missing_params(env):
     needed_params = ['gitea_host', 'gitea_access_token', 'gitea_repo_owner', 'gitea_repo_name']
