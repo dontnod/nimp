@@ -59,6 +59,10 @@ class Build(nimp.command.Command):
                             help='version of Visual Studio to use, if applicable',
                             default=(env.vs_version if hasattr(env, 'vs_version') else None))
 
+        parser.add_argument('--ubt-versioning',
+                            help='activate binaries versioning through ubt',
+                            action='store_true')
+
         return True
 
     def is_available(self, env):
@@ -71,6 +75,13 @@ class Build(nimp.command.Command):
 
         # Special support for Unreal projects
         if env.is_unreal:
+            env.ubt_version = False
+            if Build._has_ubt_versioning(env):
+                ubt_revision = env.revision
+                if nimp.utils.git.is_full_sha1(ubt_revision):
+                    ubt_revision = env.revision[:8]
+                env.ubt_version = f'{env.branch}-{ubt_revision}'
+
             # Use distcc and/or ccache if available
             nimp.build.install_distcc_and_ccache()
             return nimp.unreal_engine.build.build(env)
@@ -117,6 +128,13 @@ class Build(nimp.command.Command):
         nimp.environment.execute_hook('postbuild', env)
 
         return True
+
+    @staticmethod
+    def _has_ubt_versioning(env):
+        has_ubt_versioning = hasattr(env, 'ubt_versioning') and env.ubt_versioning
+        has_ubt_versioning = has_ubt_versioning and hasattr(env, 'revision') and env.revision is not None
+        has_ubt_versioning = has_ubt_versioning and hasattr(env, 'branch') and env.branch is not None
+        return has_ubt_versioning
 
     @staticmethod
     def _find_vs_solution():
