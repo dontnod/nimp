@@ -230,7 +230,7 @@ def _unreal_run_ubt(env, target, build_platform, build_configuration, vs_version
         command += flags
 
     if hasattr(env, 'ubt_version') and env.ubt_version:
-        command += [ f'-BuildVersion=\\"{env.ubt_version}\\"' ]
+        command += [ f'-BuildVersion={env.ubt_version}' ]
 
     return nimp.build._try_excecute(command, cwd=env.unreal_dir) == 0
 
