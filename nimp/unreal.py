@@ -287,10 +287,21 @@ def _unreal_commandlet(env, command, *args, heartbeat = 0):
     return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
 
 
+def _unreal_sanitize_arguments_for_retro_compat(env, *params):
+    ''' convert one item list param to string, for legacy '''
+    for param in params:
+        if hasattr(env, param):
+            env_param = getattr(env, param)
+            if env_param is not None:
+                setattr(env, param, env_param[0] if isinstance(env_param, list) and len(env_param) == 1 else env_param)
+
+
 def _unreal_sanitize_arguments(env):
 
-    if hasattr(env, "platform") and env.platform is not None:
+    # some params in build command can now be a list of strings instead of one string
+    _unreal_sanitize_arguments_for_retro_compat(env, 'platform', 'configuration', 'target')
 
+    if hasattr(env, "platform") and env.platform is not None:
         env.is_microsoft_platform = False
         env.is_sony_platform      = False
         env.is_nintendo_platform  = False
