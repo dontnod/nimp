@@ -30,6 +30,8 @@ import subprocess
 import re
 import time
 
+from datetime import datetime, timedelta
+
 import nimp.system
 import nimp.sys.platform
 import nimp.sys.process
@@ -274,12 +276,10 @@ def install_distcc_and_ccache():
             logging.debug('Setting UBT_PARALLEL=%s', workers)
             os.environ['UBT_PARALLEL'] = workers
 
-def upload_symbols(env, symbols, config):
-    ''' Uploads build symbols to a symbol server '''
-    if not (env.is_win64 or env.is_xsx or env.is_ps5):
-        logging.error("Plafrom must be win64, xsx or ps5")
-        return False
+def get_symstore_root(env):
+    return nimp.system.sanitize_path(os.path.join(env.format(env.publish_symbols), env.platform.lower()))
 
+def get_symstore_tool_path(env, agestore=False):
     def _discover_latest_autosdk(platform):
         '''look for autoSDK on buildmachine '''
         # TODO: get this out of here and in a more generic place like system for example
@@ -313,12 +313,13 @@ def upload_symbols(env, symbols, config):
         return auto_sdk_root
 
     # create store if not available yet
-    store_root = nimp.system.sanitize_path(os.path.join(env.format(env.publish_symbols), env.platform.lower()))
+    store_root = get_symstore_root(env)
     if not os.path.exists(store_root):
         nimp.system.safe_makedirs(store_root)
 
     # find the tool to upload our symbols
-    sym_tool_path = "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/symstore.exe"
+    win64_tool = 'agestore' if agestore else 'symstore'
+    sym_tool_path = f'C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/{win64_tool}.exe'
     if env.is_ps5: # ps5 sym tool
         auto_sdk_root = _discover_latest_autosdk(env.platform)
         prospero_local_root = os.getenv('SCE_PROSPERO_SDK_DIR', default=None)
@@ -326,11 +327,59 @@ def upload_symbols(env, symbols, config):
         ps5_sdk_root = auto_sdk_root if auto_sdk_root else prospero_local_root
         sym_tool_path = os.path.join(ps5_sdk_root, 'host_tools', 'bin', 'prospero-symupload.exe')
     else: # autoSDK win10 sdk
-        win10_sdk_path = 'D:/autoSDK/HostWin64/Win64/Windows Kits/10/Debuggers/x64/symstore.exe'
+        win10_sdk_path = f'D:/autoSDK/HostWin64/Win64/Windows Kits/10/Debuggers/x64/{win64_tool}.exe'
         if os.path.isfile(win10_sdk_path):
             sym_tool_path = win10_sdk_path
     sym_tool_path = nimp.system.sanitize_path(sym_tool_path)
-    logging.debug('Using sym-too-path -> %s' % sym_tool_path)
+
+    logging.debug('Using sym-too-path -> %s' % symstore_tool_path)
+    return sym_tool_path
+
+def has_symstoring(env):
+    if not (env.is_win64 or env.is_xsx or env.is_ps5):
+        logging.error("Plafrom must be win64, xsx or ps5")
+        return False
+    return True
+
+def age_symstore(env):
+    if not has_symstoring(env):
+        return False
+
+    store_root = get_symstore_root(env)
+    symstore_tools_path = get_symstore_tool_path(env, agestore=True)
+    cmd =  [ symstore_tools_path ]
+
+    if env.is_ps5:
+        before_date = (datetime.today() - timedelta(days=env.age_symstore)).strftime("%Y-%m-%d %H:%M:%S")
+        cmd += [
+            "cleanup",
+            "/s", store_root, # target symbol store
+            "/o", # Verbose output
+            f'/before "{before_date}"', # number of days not supported before sdk 4.0+, we have to use dates
+            "/preview" if env.dry_run else "", # preview if dry-run
+        ]
+    elif env.is_microsoft_platform:
+        cmd += [
+            store_root, # target symbol store
+            "-s", # recursive
+            "-y", # no confirmation prompt
+            f"-days={env.age_symstore}",
+            "-l" if env.dry_run else "", # preview if dry-run
+        ]
+    else:
+        logging.error("Platform is not supported")
+        return False
+
+    if nimp.sys.process.call(cmd) != 0:
+        return False
+    return True
+
+def upload_symbols(env, symbols, config):
+    ''' Uploads build symbols to a symbol server '''
+    if not has_symstoring(env):
+        return False
+
+    symstore_tool_path = get_symstore_tool_path(env)
 
     compress_symbols = hasattr(env, 'compress') and env.compress
     compression_type = None
@@ -356,7 +405,7 @@ def upload_symbols(env, symbols, config):
 
     # common cmd params
     cmd = [
-        sym_tool_path,
+        symstore_tool_path,
         "add",
         "/r", # Recursive
         "/f", "@" + index_file, # add files from response file
