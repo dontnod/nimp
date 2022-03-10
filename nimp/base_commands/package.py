@@ -133,6 +133,7 @@ class UnrealPackageConfiguration():
         self.ignored_errors = []
         self.ignored_warnings = []
         self.is_final_submission = False
+        self.no_compile_packaging = False
 
         self.msixvc = False
         self.ps4_title_collection = []
@@ -236,6 +237,9 @@ class Package(nimp.command.Command):
 
         package_configuration.package_tool_path = platform_desc.package_tool_path
         package_configuration.layout_file_extension = env.layout_file_extension
+
+        if hasattr(env, 'no_compile_packaging') and env.no_compile_packaging:
+            package_configuration.no_compile_packaging = env.no_compile_packaging
 
         # Temporary hack : PIO now uses "BuildEnvironment = TargetBuildEnvironment.Unique;"
         # https://jira.dont-nod.com/browse/XPJ-4747
@@ -533,6 +537,9 @@ class Package(nimp.command.Command):
                 # Deactivate NoDebugInfo and let UAT handle symbols
                 # '-NoDebugInfo',
             ]
+
+            if package_configuration.no_compile_packaging:
+                stage_command += [ '-NoCompile' ]
 
             for option in package_configuration.extra_options:
                 stage_command += shlex.split(option)
@@ -932,6 +939,9 @@ class Package(nimp.command.Command):
                 '-ClientConfig=' + package_configuration.binary_configuration,
                 '-SkipCook', '-SkipStage', '-Package',
             ]
+
+            if package_configuration.no_compile_packaging:
+                package_command += [ '-NoCompile' ]
 
             for option in package_configuration.extra_options:
                 package_command += shlex.split(option)
