@@ -213,7 +213,11 @@ class ConsoleGameCommand(RunCommand):
         return param
 
     def get_local_path(self, env):
-        return env.uproject_dir + '/Saved/' + self.local_directory + '/' + self.platform_directory
+        path = env.uproject_dir + '/Saved/' + self.local_directory + '/' + self.platform_directory
+        config_path = os.path.join(path, env.unreal_config)
+        if os.path.exists(config_path):
+            return config_path
+        return path
 
     def fetch_pkg_by_revision(self, env, rev):
         if not env.variant:
