@@ -45,7 +45,7 @@ def load_config(env):
     unreal_dir = None
 
     unreal_base_paths = [
-        # 'UnrealEngine',
+        'UE',
         'UE4',
         '',
     ]
