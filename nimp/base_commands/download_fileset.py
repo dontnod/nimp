@@ -25,6 +25,7 @@
 
 import copy
 import logging
+import os
 import shutil
 
 import nimp.artifacts
@@ -42,7 +43,7 @@ class DownloadFileset(nimp.command.Command):
         parser.add_argument('--max-revision', metavar = '<revision>', help = 'find a revision older or equal to this one')
         parser.add_argument('--min-revision', metavar = '<revision>', help = 'find a revision newer or equal to this one')
         parser.add_argument('--destination', metavar = '<path>', help = 'set a destination relative to the workspace')
-        parser.add_argument('--track', choices = [ 'binaries', 'symbols' ], help = 'track the installed revision in the workspace status')
+        parser.add_argument('--track', choices = [ 'binaries', 'symbols', 'package', 'staged' ], help = 'track the installed revision in the workspace status')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to download')
         return True
 
@@ -75,8 +76,13 @@ class DownloadFileset(nimp.command.Command):
             old_revision = workspace_status[env.track][env.platform] if env.platform in workspace_status[env.track] else None
             logging.info('Tracking for %s %s: %s => %s', env.track, env.platform, old_revision, artifact_to_download['revision'])
             workspace_status[env.track][env.platform] = artifact_to_download['revision']
-            if not env.dry_run:
-                nimp.system.save_status(env, workspace_status)
+            if env.track in ['package', 'staged']:
+                if hasattr(env, 'target'):
+                    workspace_status[env.track]['variant'] = env.target
+                workspace_status[env.track]['path'] = nimp.system.sanitize_path(artifact_to_download['uri'])
+                workspace_status[env.track]['name'] = os.path.basename(os.path.normpath(workspace_status[env.track]['path']))
+            # if not env.dry_run:
+            nimp.system.save_status(env, workspace_status)
 
         return True
 

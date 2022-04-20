@@ -497,7 +497,7 @@ def load_status(env):
     ''' Loads the workspace status '''
     status_file_path = os.path.join(env.root_dir, '.nimp', 'status.json')
     if not os.path.exists(status_file_path):
-        return { 'binaries': {}, 'symbols': {}, }
+        return { 'binaries': {}, 'symbols': {}, 'staged': {}, 'package': {} }
     with open(status_file_path) as status_file:
         return json.load(status_file)
 
