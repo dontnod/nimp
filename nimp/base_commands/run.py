@@ -58,7 +58,7 @@ class RunCommand(nimp.command.Command):
         parser.add_argument('parameters',
                             help='command to run',
                             metavar='<command> [<argument>...]',
-                            nargs=argparse.REMAINDER)
+                            nargs='*')
         parser.add_argument('-n', '--dry-run',
                             action = 'store_true',
                             help = 'perform a test run, without writing changes')
