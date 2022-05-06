@@ -153,10 +153,7 @@ class ConsoleGameCommand(RunCommand):
         parser.add_argument('-v', '--variant', metavar="<variant_name>", help="name of variant")
 
     def run(self, env):
-        if env.platform == 'win64':
-            self.platform_directory = 'WindowsNoEditor'
-        else:
-            self.platform_directory = env.platform
+        self.platform_directory = nimp.sys.platform.create_platform_desc(env.platform).unreal_cook_name
 
         if env.fetch:
             return self.fetch(env)
