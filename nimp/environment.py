@@ -162,7 +162,7 @@ class Environment:
         # Loads argument parser, parses argv with it and adds command line parameters
         # as properties of the environment
         parser = self.load_argument_parser(parent_parser)
-        arguments = parser.parse_args(argv[1:])
+        arguments, unknown = parser.parse_known_args(argv[1:])
         # TODO: remove this crappy hacks
         arguments.branch = self.branch if hasattr(self, 'branch') and arguments.branch is None else arguments.branch
         arguments.uproject = self.uproject if hasattr(self, 'uproject') else arguments.uproject
@@ -170,6 +170,10 @@ class Environment:
         self.parser = arguments
         for key, value in vars(arguments).items():
             setattr(self, key, value)
+
+        if unknown and any(unknown):
+            parser.print_usage(sys.stderr)
+            parser.exit(1, '%s: error: unrecognized arguments: %s\n' % (parser.prog, ' '.join(unknown)))
 
         summary_format = getattr(self, 'summary_format')
         with _SUMMARY_HANDLERS[summary_format](self) as log_handler:
