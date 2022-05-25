@@ -43,6 +43,10 @@ class Build(nimp.command.Command):
                                           'target',
                                           'revision')
 
+        parser.add_argument('--sln',
+                            help='Visual Studio solution to build)',
+                            metavar = '<sln>')
+
         parser.add_argument('--bootstrap',
                             help='bootstrap or regenerate project files, if applicable',
                             action='store_true')
@@ -66,10 +70,7 @@ class Build(nimp.command.Command):
         return True
 
     def is_available(self, env):
-        available = env.is_unreal or Build._find_vs_solution() is not None
-        return (available, ('Nothing found to build. Check that you are either'
-                            ' in an Unreal Engine project directory, or that'
-                            ' there is a .sln file in current directory'))
+        return True, ''
 
     def run(self, env):
 
@@ -85,8 +86,14 @@ class Build(nimp.command.Command):
 
         nimp.environment.execute_hook('prebuild', env)
 
-        sln = Build._find_vs_solution()
+        sln = env.sln
         if sln is None:
+            sln = Build._find_vs_solution()
+            if sln is None:
+                logging.error('Could not find a solution in current working directory. Use --sln to specify one')
+                return False
+        if not os.path.isfile(sln) or os.path.splitext(sln)[1] != '.sln':
+            logging.error('sln filepath provided is invalid (sln: "%s")', sln)
             return False
 
         # Try to use the best default config/platform combination
