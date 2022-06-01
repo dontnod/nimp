@@ -232,6 +232,10 @@ def _unreal_run_ubt(env, target, build_platform, build_configuration, vs_version
     if hasattr(env, 'ubt_version') and env.ubt_version:
         command += [ f'-BuildVersion={env.ubt_version}' ]
 
+    ubt_verbose_flag = '-verbose'
+    if (hasattr(env, 'verbose') and env.verbose) and (ubt_verbose_flag not in command):
+        command.append(ubt_verbose_flag)
+
     return nimp.build._try_excecute(command, cwd=env.unreal_dir) == 0
 
 

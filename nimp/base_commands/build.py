@@ -67,6 +67,10 @@ class Build(nimp.command.Command):
                             help='activate binaries versioning, useful for build systems',
                             action='store_true')
 
+        parser.add_argument('--verbose',
+                            help='activate most verbose mode when available',
+                            action='store_true')
+
         return True
 
     def is_available(self, env):
