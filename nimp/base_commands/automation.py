@@ -39,19 +39,14 @@ class Automation(nimp.command.Command):
 		return True, ''
 
 	def run(self, env):
-		cmd = ''
-		if env.dnefilter:
-			cmd += 'dne.AutomationTestFilter 1,'
-		cmd += 'Automation SetFilter ' + env.filter + ';'
+		dne_filter_cmd = 'dne.AutomationTestFilter 1,' if env.dnefilter else ''
 
 		tests = self.get_tests(env)
-		if not tests:
-			cmd += 'RunAll'
-		else:
-			cmd += 'RunTests ' + '+'.join(tests)
-		cmd += ';Quit'
+		tests_cmd = f"RunTests {'+'.join(tests)}" if tests else 'RunAll'
 
-		return nimp.unreal.unreal_cli(env, '-execcmds=' + cmd)
+		cmd = f'{dne_filter_cmd} Automation SetFilter {env.filter}; {tests_cmd}; Quit'
+
+		return nimp.unreal.unreal_cli(env, f'-execcmds={cmd}', *env.args)
 
 	def get_tests(self, env):
 		tests = []
