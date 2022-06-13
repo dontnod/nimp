@@ -51,8 +51,8 @@ class Automation(nimp.command.Command):
 	def get_tests(self, env):
 		tests = []
 		if env.loadlist:
-			loadlist = open(env.loadlist, 'r')
-			for file in loadlist:
-				tests.append(os.path.splitext(file)[0])
+			with open(env.loadlist, 'r') as loadlist:
+				for file in loadlist:
+					tests.append(os.path.splitext(file)[0])
 		tests.extend(env.tests)
 		return tests

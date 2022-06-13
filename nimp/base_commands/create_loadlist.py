@@ -37,11 +37,17 @@ class CreateLoadlist(nimp.command.Command):
 
 	def run(self, env):
 		p4 = nimp.utils.p4.get_client(env)
-		output = open(env.output, 'w') if env.output else None
+
+		modified_files = []
 		for path, action in p4.get_modified_files(*env.changelists):
-			file = os.path.basename(path)
-			if output:
-				output.write(file + '\n')
-			else:
+			modified_files.append(os.path.basename(path))
+
+		if env.output:
+			with open(env.output, 'w') as output:
+				for file in modified_files:
+					output.write(f'{file}\n')
+		else:
+			for file in modified_files:
 				print(file)
+
 		return True
