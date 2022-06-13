@@ -20,6 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import argparse
 import os
 import nimp.command
 
@@ -31,6 +32,7 @@ class Automation(nimp.command.Command):
 		parser.add_argument('-l', '--loadlist', help = 'file containing a list of assets to check')
 		parser.add_argument('-f', '--filter', default = 'All', help = 'Automation Framework filter to use')
 		parser.add_argument('--dnefilter', action = 'store_true', help = 'use DNEAutomationTestFilter')
+		parser.add_argument('args', help = 'extra arguments', nargs = argparse.REMAINDER)
 		return True
 
 	def is_available(self, env):
