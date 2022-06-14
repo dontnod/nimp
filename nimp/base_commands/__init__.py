@@ -23,9 +23,11 @@
 ''' Nimp subcommands declarations '''
 
 __all__ = [
+	'automation',
     'build',
     'check',
     'commandlet',
+	'create_loadlist',
     'dev',
     'download_fileset',
     'fileset',

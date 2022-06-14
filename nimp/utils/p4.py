@@ -357,7 +357,8 @@ class P4:
         for cl_number in cl_numbers:
             for filename, action in self._parse_command_output(["fstat", "-e", cl_number , root],
                                                                r"^\.\.\. depotFile(.*)$",
-                                                               r"^\.\.\. headAction(.*)"):
+                                                               r"^\.\.\. headAction(.*)",
+                                                               hide_output=True):
                 filename = os.path.normpath(filename) if filename is not None else ''
                 yield filename, action
 
@@ -383,11 +384,11 @@ class P4:
         command += list(args)
         return command
 
-    def _run(self, *args, stdin=None):
+    def _run(self, *args, stdin=None, hide_output=False):
         command = self._get_p4_command(*args)
 
         for _ in range(5):
-            result, output, error = nimp.sys.process.call(command, stdin=stdin, encoding='cp437', capture_output=True)
+            result, output, error = nimp.sys.process.call(command, stdin=stdin, encoding='cp437', capture_output=True, hide_output=hide_output)
 
             if 'Operation took too long ' in error:
                 continue
@@ -404,8 +405,8 @@ class P4:
 
             return output
 
-    def _parse_command_output(self, command, *patterns, stdin = None):
-        output = self._run(*command, stdin = stdin)
+    def _parse_command_output(self, command, *patterns, stdin = None, hide_output = False):
+        output = self._run(*command, stdin = stdin, hide_output = hide_output)
 
         if output is not None:
             match_list = []
