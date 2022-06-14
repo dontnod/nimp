@@ -29,6 +29,7 @@ class CreateLoadlist(nimp.command.Command):
 	def configure_arguments(self, env, parser):
 		parser.add_argument('changelists', nargs = '+', help = 'select the changelists to list files from')
 		parser.add_argument('-o', '--output', help = 'output file')
+		parser.add_argument('-e', '--extensions', nargs = '*', help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		nimp.utils.p4.add_arguments(parser)
 		return True
 
@@ -40,7 +41,11 @@ class CreateLoadlist(nimp.command.Command):
 
 		modified_files = []
 		for path, action in p4.get_modified_files(*env.changelists):
-			modified_files.append(os.path.basename(path))
+			file = os.path.basename(path)
+			for extension in env.extensions:
+				if file.endswith(extension):
+					modified_files.append(file)
+					break
 
 		if env.output:
 			with open(env.output, 'w') as output:
