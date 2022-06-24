@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
+import re
 
 import nimp.command
 
@@ -37,11 +38,19 @@ class CreateLoadlist(nimp.command.Command):
 	def is_available(self, env):
 		return env.is_unreal, ''
 
+	def sanitized_changelists(self, env):
+		changelists = []
+		# deal with possible nimp create-laodlist changelists '12 23 43' "23"
+		for possible_cl_streak_string in env.changelists[1:]:
+			changelists += re.sub(' +', ';', possible_cl_streak_string).split(';')
+		return [cl for cl in changelists if cl]
+
+
 	def run(self, env):
 		p4 = nimp.utils.p4.get_client(env)
 
 		modified_files = []
-		for path, action in p4.get_modified_files(*env.changelists):
+		for path, action in p4.get_modified_files(*self.sanitized_changelists(env)):
 			file = os.path.basename(path)
 			for extension in env.extensions:
 				if file.endswith(extension):
