@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
+
 import nimp.command
 
 class CreateLoadlist(nimp.command.Command):
@@ -34,7 +35,7 @@ class CreateLoadlist(nimp.command.Command):
 		return True
 
 	def is_available(self, env):
-		return True, ''
+		return env.is_unreal, ''
 
 	def run(self, env):
 		p4 = nimp.utils.p4.get_client(env)
@@ -47,12 +48,14 @@ class CreateLoadlist(nimp.command.Command):
 					modified_files.append(file)
 					break
 
-		if env.output:
-			with open(env.output, 'w') as output:
-				for file in modified_files:
-					output.write(f'{file}\n')
-		else:
+		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
+		loadlist_path = os.path.abspath(env.format(nimp.system.sanitize_path(loadlist_path)))
+
+		with open(env.format(loadlist_path), 'w+') as output:
+			lines = output.readlines()
 			for file in modified_files:
-				print(file)
+				if file not in lines:
+					print(file)
+					output.write(f'{file}\n')
 
 		return True

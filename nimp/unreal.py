@@ -163,6 +163,9 @@ def load_config(env):
     if not hasattr(env, 'unreal_exe_name') or env.unreal_exe_name is None:
         env.unreal_exe_name = _set_unreal_exe_name(env)
 
+    if not hasattr(env, 'unreal_loadlist') or env.unreal_loadlist is None:
+        env.unreal_loadlist = f'{env.root_dir}/.nimp/loadlist'
+
     return True
 
 
