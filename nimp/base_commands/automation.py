@@ -29,8 +29,8 @@ class Automation(nimp.command.Command):
 
 	def configure_arguments(self, env, parser):
 		parser.add_argument('tests', nargs = '*', help = 'list of test patterns to run')
-		parser.add_argument('-l', '--loadlist', help = 'file containing a list of assets to check')
-		parser.add_argument('-f', '--filter', default = 'All', help = 'Automation Framework filter to use')
+		parser.add_argument('--loadlist', '-l', help = 'file containing a list of assets to check')
+		parser.add_argument('--filter', '-f', default = 'All', help = 'Automation Framework filter to use')
 		parser.add_argument('--dnefilter', action = 'store_true', help = 'use DNEAutomationTestFilter')
 		parser.add_argument('--extra-options', help = 'extra arguments', nargs=argparse.REMAINDER, default = [])
 		return True
@@ -39,14 +39,17 @@ class Automation(nimp.command.Command):
 		return env.is_unreal, ''
 
 	def run(self, env):
-		dne_filter_cmd = 'dne.AutomationTestFilter 1,' if env.dnefilter else ''
+		extra_options = ['-stdout'] # this outputs command in console
+		extra_options += env.extra_options
+
+		dne_filter_cmd = 'dne.AutomationTestFilter 1, ' if env.dnefilter else ''
 
 		tests = self.get_tests(env)
 		tests_cmd = f"RunTests {'+'.join(tests)}" if tests else 'RunAll'
 
-		cmd = f'{dne_filter_cmd} Automation SetFilter {env.filter}; {tests_cmd}; Quit'
+		cmd = f'{dne_filter_cmd}Automation SetFilter {env.filter}; {tests_cmd}; Quit'
 
-		return nimp.unreal.unreal_cli(env, f'-execcmds={cmd}', *env.args)
+		return nimp.unreal.unreal_cli(env, f'-execcmds={cmd}', *extra_options)
 
 	def get_tests(self, env):
 		tests = []
