@@ -32,11 +32,11 @@ class Automation(nimp.command.Command):
 		parser.add_argument('-l', '--loadlist', help = 'file containing a list of assets to check')
 		parser.add_argument('-f', '--filter', default = 'All', help = 'Automation Framework filter to use')
 		parser.add_argument('--dnefilter', action = 'store_true', help = 'use DNEAutomationTestFilter')
-		parser.add_argument('args', help = 'extra arguments', nargs = argparse.REMAINDER)
+		parser.add_argument('--extra-options', help = 'extra arguments', nargs=argparse.REMAINDER, default = [])
 		return True
 
 	def is_available(self, env):
-		return True, ''
+		return env.is_unreal, ''
 
 	def run(self, env):
 		dne_filter_cmd = 'dne.AutomationTestFilter 1,' if env.dnefilter else ''
@@ -51,8 +51,9 @@ class Automation(nimp.command.Command):
 	def get_tests(self, env):
 		tests = []
 		if env.loadlist:
+			env.loadlist = env.format(env.loadlist)
 			with open(env.loadlist, 'r') as loadlist:
 				for file in loadlist:
 					tests.append(os.path.splitext(file)[0])
-		tests.extend(env.tests)
+		tests.extend(env.tests[1:])
 		return tests
