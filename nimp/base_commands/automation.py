@@ -21,7 +21,9 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import argparse
+import logging
 import os
+
 import nimp.command
 
 class Automation(nimp.command.Command):
@@ -29,10 +31,12 @@ class Automation(nimp.command.Command):
 
 	def configure_arguments(self, env, parser):
 		parser.add_argument('tests', nargs = '*', help = 'list of test patterns to run')
+		parser.add_argument('--map', help = 'Specify a map to launch')
 		parser.add_argument('--loadlist', '-l', help = 'file containing a list of assets to check')
 		parser.add_argument('--filter', '-f', default = 'All', help = 'Automation Framework filter to use')
 		parser.add_argument('--dnefilter', action = 'store_true', help = 'use DNEAutomationTestFilter')
-		parser.add_argument('--extra-options', help = 'extra arguments', nargs=argparse.REMAINDER, default = [])
+		parser.add_argument('--loadenv', nargs = '*', help = 'load nimp env variables', default = [])
+		parser.add_argument('--extra-options', help = 'extra manual arguments, must be last', nargs=argparse.REMAINDER, default = [])
 		return True
 
 	def is_available(self, env):
@@ -41,15 +45,38 @@ class Automation(nimp.command.Command):
 	def run(self, env):
 		extra_options = ['-stdout'] # this outputs command in console
 		extra_options += env.extra_options
+		extra_options += self.load_env(env)
 
 		dne_filter_cmd = 'dne.AutomationTestFilter 1, ' if env.dnefilter else ''
 
 		tests = self.get_tests(env)
 		tests_cmd = f"RunTests {'+'.join(tests)}" if tests else 'RunAll'
 
+		map = f'{env.map}' if env.map else ''
+
 		cmd = f'{dne_filter_cmd}Automation SetFilter {env.filter}; {tests_cmd}; Quit'
 
-		return nimp.unreal.unreal_cli(env, f'-execcmds={cmd}', *extra_options)
+		return nimp.unreal.unreal_cli(env, f'{map}', *extra_options, f'-execcmds={cmd}')
+
+	def load_env(self, env):
+		args = []
+		if not env.loadenv:
+			return args
+		env_args = env.loadenv
+
+		for env_arg in env_args:
+			if hasattr(env, env_arg):
+				nimp_env = getattr(env, env_arg)
+				if isinstance(nimp_env, list):
+					args += nimp_env
+				elif isintance(nimp_env, str):
+					args.append(nimp_env)
+				else:
+					logging.warning(f'{nimp_env} type {type(nimp_env)} is not supported')
+			else:
+				logging.warning(f'{env_arg} not found in project env')
+
+		return list(set(args))
 
 	def get_tests(self, env):
 		tests = []
