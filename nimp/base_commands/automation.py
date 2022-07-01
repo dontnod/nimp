@@ -26,6 +26,7 @@ import os
 
 import nimp.command
 
+
 class Automation(nimp.command.Command):
 	''' Runs Unreal Automation Tests '''
 
@@ -43,9 +44,13 @@ class Automation(nimp.command.Command):
 		return env.is_unreal, ''
 
 	def run(self, env):
+		load_env_args, error = self.load_env(env)
+		if error:
+			return False
+
 		extra_options = ['-stdout'] # this outputs command in console
 		extra_options += env.extra_options
-		extra_options += self.load_env(env)
+		extra_options += load_env_args
 
 		dne_filter_cmd = 'dne.AutomationTestFilter 1, ' if env.dnefilter else ''
 
@@ -59,24 +64,28 @@ class Automation(nimp.command.Command):
 		return nimp.unreal.unreal_cli(env, f'{map}', *extra_options, f'-execcmds={cmd}')
 
 	def load_env(self, env):
+		error = False
 		args = []
 		if not env.loadenv:
-			return args
+			return (args, error)
+
 		env_args = env.loadenv
-
 		for env_arg in env_args:
-			if hasattr(env, env_arg):
-				nimp_env = getattr(env, env_arg)
-				if isinstance(nimp_env, list):
-					args += nimp_env
-				elif isintance(nimp_env, str):
-					args.append(nimp_env)
-				else:
-					logging.warning(f'{nimp_env} type {type(nimp_env)} is not supported')
-			else:
-				logging.warning(f'{env_arg} not found in project env')
+			if not hasattr(env, env_arg):
+				error = True
+				logging.error(f'{env_arg} not found in project env')
+				continue
 
-		return list(set(args))
+			nimp_env = getattr(env, env_arg)
+			if isinstance(nimp_env, list):
+				args += nimp_env
+			elif isinstance(nimp_env, str):
+				args.append(nimp_env)
+			else:
+				error = True
+				logging.error(f'{env_arg} type {type(nimp_env)} is not supported')
+
+		return (list(set(args)), error)
 
 	def get_tests(self, env):
 		tests = []
