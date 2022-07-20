@@ -365,7 +365,7 @@ def upload_symbols(env, symbols, config):
     ]
     if compress_symbols:
         cmd.append('/compress')
-        if compression_type is not None:
+        if compression_type is not None and not env.is_ps5:
             cmd.append(compression_type)
     # platform specific cmd params
     if env.is_ps5:
