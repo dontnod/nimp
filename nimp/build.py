@@ -190,6 +190,8 @@ def _find_devenv_path(vs_version):
         vs_version = '15'
     if vs_version == '2019':
         vs_version = '16'
+    if vs_version == '2022':
+        vs_version = '17'
 
     # First try the registry, because the environment variable is unreliable
     # (case of Visual Studio installed on a different drive; it still sets
