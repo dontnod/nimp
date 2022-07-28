@@ -35,6 +35,7 @@ import glob
 import glob2
 
 import nimp.command
+from nimp.exceptions import NimpCommandFailed
 import nimp.summary
 import nimp.sys.platform
 import nimp.system
@@ -203,7 +204,11 @@ class Environment:
                 try:
                     with nimp.utils.profiling.nimp_profile(self):
                         success = self.command.run(self)
+                        if not success:
+                            raise NimpCommandFailed("Nimp command failed.")
                 #pylint: disable=broad-except
+                except NimpCommandFailed:
+                    pass
                 except Exception as exception:
                     logging.exception(exception)
 
