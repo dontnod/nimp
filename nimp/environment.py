@@ -74,6 +74,7 @@ class Environment:
         prog_description = 'Script utilities to ship games, mostly Unreal Engine based ones.'
         parser = argparse.ArgumentParser(description=prog_description, parents=[parent_parser])
         log_group = parser.add_argument_group("Logging")
+        profiling_group = parser.add_argument_group("Profiling")
 
         log_group.add_argument('-s',
                                '--summary',
@@ -98,6 +99,10 @@ class Environment:
                                '--verbose',
                                help='Enable verbose mode',
                                action='store_true')
+
+        profiling_group.add_argument('--nimp-profiling',
+                                     help='Profile nimp command',
+                                     action='store_true')
 
         nimp.command.add_commands_subparser(self.command_list, parser, self)
 
@@ -127,9 +132,6 @@ class Environment:
                                    metavar='<project branch>',
                                    help='Select a project branch to work with',
                                    type=str)
-        parent_parser.add_argument('--nimp-profiling',
-                                   help='Profile nimp command',
-                                   action='store_true')
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
 
         # verify that uproject seems somewhat legit
@@ -167,7 +169,6 @@ class Environment:
         # TODO: remove this crappy hacks
         arguments.branch = self.branch if hasattr(self, 'branch') and arguments.branch is None else arguments.branch
         arguments.uproject = self.uproject if hasattr(self, 'uproject') else arguments.uproject
-        arguments.nimp_profiling = self.nimp_profiling if hasattr(self, 'nimp_profiling') else arguments.nimp_profiling
         self.parser = arguments
         for key, value in vars(arguments).items():
             setattr(self, key, value)
