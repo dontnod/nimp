@@ -56,10 +56,9 @@ class UpdateSymbolServer(nimp.command.Command):
 
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'free_parameters')
+        nimp.command.add_common_arguments(parser, 'dry_run', 'free_parameters')
         parser.add_argument('--symbol-type', required = True, metavar = '<type>', help = 'Set the type of symbols to upload')
         parser.add_argument('--platform', metavar = '<platform>', help = 'Set the platform to upload symbols for')
-        parser.add_argument('-n', '--dry-run', action = "store_true", help = "Do a test run without actually uploading files")
         return True
 
 

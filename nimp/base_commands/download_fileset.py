@@ -37,8 +37,7 @@ class DownloadFileset(nimp.command.Command):
 
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'free_parameters')
-        parser.add_argument('-n', '--dry-run', action = 'store_true', help = 'perform a test run, without writing changes')
+        nimp.command.add_common_arguments(parser, 'dry_run', 'free_parameters')
         parser.add_argument('--revision', metavar = '<revision>', help = 'find a revision equal to this one')
         parser.add_argument('--max-revision', metavar = '<revision>', help = 'find a revision older or equal to this one')
         parser.add_argument('--min-revision', metavar = '<revision>', help = 'find a revision newer or equal to this one')

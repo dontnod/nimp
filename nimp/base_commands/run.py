@@ -55,13 +55,11 @@ class RunCommand(nimp.command.Command):
         super(RunCommand, self).__init__()
 
     def configure_arguments(self, env, parser):
+        nimp.command.add_common_arguments(parser, 'dry_run')
         parser.add_argument('parameters',
                             help='command to run',
                             metavar='<command> [<argument>...]',
                             nargs=argparse.REMAINDER)
-        parser.add_argument('-n', '--dry-run',
-                            action = 'store_true',
-                            help = 'perform a test run, without writing changes')
         return True
 
     def is_available(self, env):

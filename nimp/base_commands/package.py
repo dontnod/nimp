@@ -145,12 +145,11 @@ class Package(nimp.command.Command):
     ''' Packages an unreal project for release '''
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'configuration', 'platform', 'free_parameters')
+        nimp.command.add_common_arguments(parser, 'dry_run', 'configuration', 'platform', 'free_parameters')
 
         all_steps = [ 'cook', 'stage', 'package', 'verify' ]
         default_steps = [ 'cook', 'stage', 'package' ]
 
-        parser.add_argument('-n', '--dry-run', action = 'store_true', help = 'perform a test run, without writing changes')
         parser.add_argument('--steps', nargs = '+', choices = all_steps, default = default_steps, metavar = '<step>',
                             help = 'select the steps to execute\n(%s)' % ', '.join(all_steps))
         parser.add_argument('--variant', metavar = '<variant>', help = 'set the configuration variant to use')
