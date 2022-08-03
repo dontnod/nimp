@@ -134,6 +134,16 @@ class ConsoleGameCommand(RunCommand):
         parser.add_argument('--fetch',
                             metavar='<path | CL# | "latest">',
                             help='copies the game to the default location on this machine')
+
+        if shutil.which('robocopy'):
+            restartable_fetch_help = "If '--fetch' is provided, will invoke robocopy with '/Z' (Recommended for users with poor or unstable connections)"
+        else:
+            restartable_fetch_help = 'This option requires Robocopy which is unavailable on your system'
+
+        # Basic cp does not handle restartable copy
+        parser.add_argument('--restartable-fetch', action = "store_true",
+                            help=restartable_fetch_help)
+
         parser.add_argument('--outdir',
                             nargs='?', default='local',
                             help='output directory for fetch')
@@ -177,7 +187,10 @@ class ConsoleGameCommand(RunCommand):
 
     def fetch_with_robocopy(self, env):
         logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
-        cmdline = [ 'robocopy', '/MIR', '/R:5', '/W:5', '/TBD', '/Z', '/NJH', '/ETA', '/MT', env.fetch, env.outdir ]
+        cmdline = ['robocopy', '/MIR', '/R:5', '/W:5', '/TBD', '/NJH', '/ETA', '/MT']
+        if env.restartable_fetch:
+            cmdline.append('/Z')
+        cmdline += [env.fetch, env.outdir]
         logging.info('Running "%s"', ' '.join(cmdline))
         if env.dry_run:
             return True
