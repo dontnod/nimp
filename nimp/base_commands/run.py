@@ -187,7 +187,7 @@ class ConsoleGameCommand(RunCommand):
 
     def fetch_with_robocopy(self, env):
         logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
-        cmdline = ['robocopy', '/MIR', '/R:5', '/W:5', '/TBD', '/NJH', '/ETA', '/MT']
+        cmdline = ['robocopy', '/MIR', '/R:5', '/W:5', '/TBD', '/NJH', '/ETA', '/MT', '/J']
         if env.restartable_fetch:
             cmdline.append('/Z')
         cmdline += [env.fetch, env.outdir]
