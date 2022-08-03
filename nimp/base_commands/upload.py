@@ -41,10 +41,10 @@ class _Symbols(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser,
+                                          'dry_run'
                                           'platform',
                                           'target',
                                           'revision')
-        parser.add_argument('-n', '--dry-run', action = 'store_true', help = 'perform a test run, without writing changes')
         parser.add_argument('-l',
                             '--configurations',
                             help    = 'Configurations and targets to upload',

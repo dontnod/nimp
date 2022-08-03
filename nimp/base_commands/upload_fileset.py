@@ -45,8 +45,7 @@ class UploadFileset(nimp.command.Command):
     ''' Uploads a fileset to the artifact repository '''
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'revision', 'free_parameters')
-        parser.add_argument('-n', '--dry-run', action = 'store_true', help = 'perform a test run, without writing changes')
+        nimp.command.add_common_arguments(parser, 'dry_run', 'revision', 'free_parameters')
         parser.add_argument('--archive', action = 'store_true', help = 'upload the files as a zip archive')
         parser.add_argument('--compress', action = 'store_true', help = 'if uploading as an archive, compress it')
         parser.add_argument('--torrent', action = 'store_true', help = 'create a torrent for the uploaded fileset')

@@ -85,6 +85,10 @@ def add_common_arguments(parser, *arg_ids):
                                 metavar = '<key>=<value>',
                                 nargs   = '*',
                                 default = [])
+        elif arg_id == 'dry_run':
+            parser.add_argument('-n', '--dry-run',
+                                action = 'store_true',
+                                help = 'perform a dry run')
         else:
             assert False, 'Unknown argument type'
 

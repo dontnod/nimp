@@ -78,7 +78,7 @@ class _Update(nimp.command.Command):
 
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('-n', '--dry-run', action = "store_true", help = "perform the command as a simulation")
+        nimp.command.add_common_arguments(parser, 'dry_run')
         return True
 
 
@@ -106,7 +106,7 @@ class _Clean(nimp.command.Command):
 
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('-n', '--dry-run', action = "store_true", help = "perform the command as a simulation")
+        nimp.command.add_common_arguments(parser, 'dry_run')
         return True
 
 
