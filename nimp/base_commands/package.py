@@ -22,6 +22,7 @@
 
 ''' Commands related to version packaging '''
 
+import argparse
 import copy
 import json
 import glob
@@ -159,7 +160,7 @@ class Package(nimp.command.Command):
         parser.add_argument('--compress', action = 'store_true', help = 'enable pak file compression')
         parser.add_argument('--final', action = 'store_true', help = 'enable package options for final submission')
         parser.add_argument('--trackloadpackage', action = 'store_true', help = 'track LoadPackage calls when cooking')
-        parser.add_argument('--extra-options', nargs = '*', default = [], metavar = '<engine_option>',
+        parser.add_argument('--extra-options', nargs = argparse.REMAINDER, default = [], metavar = '<engine_option>',
                             help = 'pass additional options to the cook command')
         parser.add_argument('--msixvc', action = 'store_true', help = 'create a MSIXVC package')
         parser.add_argument('--ps4-regions', metavar = '<region>', nargs = '+', help = 'set the PS4 regions to package for')
