@@ -142,6 +142,10 @@ class Environment:
                                    metavar='<project branch>',
                                    help='Select a project branch to work with',
                                    type=str)
+        parent_parser.add_argument('--user-config',
+                                   metavar='<config file>',
+                                   help='Custom nimp configuration file',
+                                   type=str)
         self.set_parser_defaults(parent_parser)
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
 
@@ -154,6 +158,10 @@ class Environment:
         # legacy conf
         if not hasattr(self, 'root_dir') or not self.root_dir:
             if not self._load_nimp_conf('.nimp.conf'):
+                return exit_error
+
+        if parent_args.user_config:
+            if not self._load_nimp_conf(parent_args.user_config):
                 return exit_error
 
         for config_loader in Environment.config_loaders:
