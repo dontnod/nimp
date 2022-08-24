@@ -116,6 +116,16 @@ class Environment:
 
         return True
 
+    def set_parser_defaults(self, parser):
+        # Use values from configuration file by default
+        parser.set_defaults(**self.__dict__)
+
+        # Reset `required` attribute when provided from config file
+        for action in parser._actions:
+            if action.dest in self.__dict__:
+                action.required = False
+
+
     def run(self, argv):
         ''' Runs nimp with argv and argc '''
         exit_success = 0
@@ -132,6 +142,7 @@ class Environment:
                                    metavar='<project branch>',
                                    help='Select a project branch to work with',
                                    type=str)
+        self.set_parser_defaults(parent_parser)
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
 
         # verify that uproject seems somewhat legit
@@ -165,7 +176,9 @@ class Environment:
         # Loads argument parser, parses argv with it and adds command line parameters
         # as properties of the environment
         parser = self.load_argument_parser(parent_parser)
+        self.set_parser_defaults(parser)
         arguments, unknown = parser.parse_known_args(argv[1:])
+
         # TODO: remove this crappy hacks
         arguments.branch = self.branch if hasattr(self, 'branch') and arguments.branch is None else arguments.branch
         arguments.uproject = self.uproject if hasattr(self, 'uproject') else arguments.uproject
