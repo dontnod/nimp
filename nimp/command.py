@@ -188,7 +188,8 @@ def add_commands_subparser(commands, parser, env, required = False):
         command_to_run = command_it
         if not enabled:
             command_to_run = DisabledCommand(reason)
-        env.set_parser_defaults(command_parser)
+        if env.default_to_config:
+            env.set_parser_defaults(command_parser)
         command_parser.set_defaults(command = command_to_run)
 
 class CommandGroup(Command):
