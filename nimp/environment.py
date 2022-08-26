@@ -146,8 +146,15 @@ class Environment:
                                    metavar='<config file>',
                                    help='Custom nimp configuration file',
                                    type=str)
+        parent_parser.add_argument('--default-to-config',
+                                   action='store_true',
+                                   default=False,
+                                   help='If enabled, missing arguments will be read from the configuration files')
         self.set_parser_defaults(parent_parser)
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
+
+        # Set this early so we can use it from command.add_commands_subparser
+        self.default_to_config = parent_args.default_to_config
 
         # verify that uproject seems somewhat legit
         self.validate_uproject(parent_args.uproject)
@@ -184,7 +191,8 @@ class Environment:
         # Loads argument parser, parses argv with it and adds command line parameters
         # as properties of the environment
         parser = self.load_argument_parser(parent_parser)
-        self.set_parser_defaults(parser)
+        if self.default_to_config:
+            self.set_parser_defaults(parser)
         arguments, unknown = parser.parse_known_args(argv[1:])
 
         # TODO: remove this crappy hacks
