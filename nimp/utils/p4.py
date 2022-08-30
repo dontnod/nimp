@@ -328,10 +328,13 @@ class P4:
         output = self._run('revert', '-a', '-c', cl_number, '//...')
         return output is not None
 
-    def submit(self, cl_number):
+    def submit(self, cl_number, verbose=False):
         '''Submits given changelist'''
         logging.info("Submiting changelist %s...", cl_number)
-        command = self._get_p4_command('submit', '-f', 'revertunchanged', '-c', cl_number)
+        args = ['submit', '-f', 'revertunchanged', '-c', cl_number]
+        if verbose:
+            args.insert(0, '-I')
+        command = self._get_p4_command(*args)
         _, _, error = nimp.sys.process.call(command, capture_output=True)
 
         if error is not None and error != "":
