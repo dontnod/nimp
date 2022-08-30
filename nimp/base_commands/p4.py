@@ -178,4 +178,4 @@ class _Submit(P4Command):
         description = env.format(env.changelist_description)
         changelist = p4.get_or_create_changelist(description)
 
-        return p4.submit(changelist)
+        return p4.submit(changelist, verbose=env.verbose)
