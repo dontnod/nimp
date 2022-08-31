@@ -59,8 +59,9 @@ def build(env):
     vs_version = _get_solution_vs_version(env, solution)
     env.dotnet_version = False if env.unreal_version >= 5 else '4.6'
 
-    if env.is_dne_legacy_ue4:
-        # Pre-reboot run prebuild *BEFORE* GenerateProjectFiles.bat
+    hook_triggers_before_unreal_generate_project = env.is_dne_legacy_ue4 or env.unreal_version >= 5
+
+    if hook_triggers_before_unreal_generate_project:
         nimp.environment.execute_hook('prebuild', env)
 
     # Bootstrap if necessary
@@ -70,8 +71,7 @@ def build(env):
             logging.error("Error generating Unreal project files")
             return False
 
-    # Post-reboot run prebuild *AFTER* GenerateProjectFiles.bat
-    if not env.is_dne_legacy_ue4:
+    if not hook_triggers_before_unreal_generate_project:
         nimp.environment.execute_hook('prebuild', env)
         if env.unreal_version >= 5: # Compile prebuild stuff for UE5+ here instead of hook
             _pre_build(env, vs_version)
