@@ -150,7 +150,6 @@ class Environment:
                                    action='store_true',
                                    default=False,
                                    help='If enabled, missing arguments will be read from the configuration files')
-        self.set_parser_defaults(parent_parser)
         parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
 
         # Set this early so we can use it from command.add_commands_subparser
