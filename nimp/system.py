@@ -139,7 +139,7 @@ def safe_makedirs(path):
         raise
 
 
-def robocopy(src, dest, ignore_older=False):
+def robocopy(src, dest, ignore_older=False, preserve_metadata=True):
     ''' 'Robust' copy. '''
 
     # Retry up to 5 times after I/O errors
@@ -164,7 +164,8 @@ def robocopy(src, dest, ignore_older=False):
             try:
                 if os.path.exists(dest):
                     os.chmod(dest, stat.S_IRWXU)
-                shutil.copy2(src, dest)
+                copy_function = shutil.copy2 if preserve_metadata else shutil.copy
+                copy_function(src, dest)
                 os.chmod(dest, stat.S_IRWXU)
                 break
             except IOError as ex:
