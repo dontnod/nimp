@@ -73,8 +73,6 @@ def build(env):
 
     if not hook_triggers_before_unreal_generate_project:
         nimp.environment.execute_hook('prebuild', env)
-        if env.unreal_version >= 5: # Compile prebuild stuff for UE5+ here instead of hook
-            _pre_build(env, vs_version)
 
     # Build tools that all targets require
     if not _unreal_build_common_tools(env, solution=solution, vs_version=vs_version):
