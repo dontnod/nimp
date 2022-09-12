@@ -23,6 +23,7 @@
 ''' Perforce utilities '''
 
 import argparse
+import json
 import logging
 import os
 import os.path
@@ -228,6 +229,23 @@ class P4:
 
         return ret
 
+    def reconcile_workspace(self, cl_number=None, workspace_path_to_reconcile=None, dry_run=False):
+        ''' Reconciles given workspace '''
+        p4_reconcile_args = ['reconcile', '-f', '-e', '-a', '-d']
+        if dry_run:
+            p4_reconcile_args.append('-n')
+        if cl_number:
+            p4_reconcile_args.extend(['-c', cl_number])
+        if workspace_path_to_reconcile:
+            if not workspace_path_to_reconcile.endswith('...'):
+                workspace_path_to_reconcile = os.path.join(workspace_path_to_reconcile, '...')
+            workspace_path_to_reconcile = nimp.system.sanitize_path(workspace_path_to_reconcile)
+            p4_reconcile_args.append(workspace_path_to_reconcile)
+
+        if self._run(*p4_reconcile_args) is None:
+            return False
+        return True
+
     def get_changelist_description(self, cl_number):
         ''' Returns description of given changelist '''
         desc, = next(self._parse_command_output(["describe", cl_number], r"\.\.\. desc (.*)"))
@@ -247,6 +265,26 @@ class P4:
             return None
 
         return cl_number
+
+    def get_file_workspace_current_revision(self, file):
+        ''' Returns the file revision currently synced in the workspace '''
+        revision, = next(self._parse_command_output(['have', file], r'\.\.\. haveRev (\d+)'))
+        return revision
+
+    def print_file_by_revision(self, file, revision_number):
+        ''' Prints the file revision for a given revision number '''
+        output = self._run('print', f'{file}#{revision_number}', use_json_format=True)
+        return self.parse_json_output_for_data(output)
+
+    @staticmethod
+    def parse_json_output_for_data(output):
+        data = ''
+        output = [json_element for json_element in output.split('\n') if json_element]
+        for output_chunk in output:
+            output_chunk = json.loads(output_chunk)
+            if 'data' in output_chunk.keys():
+                data += output_chunk['data']
+        return data
 
     def get_or_create_changelist(self, description):
         ''' Creates or returns changelist number if it's not already created '''
@@ -335,6 +373,31 @@ class P4:
 
         return True
 
+    def submit_default_changelist(self, description=None, dry_run=False):
+        ''' Submits given changelist '''
+        assert description is not None
+        logging.info("Submitting default changelist...")
+        command = self._get_p4_command('submit', '-f', 'revertunchanged')
+        # descriptions could be too long for perforce limitations
+        command_length = len(' '.join(command))
+        perforce_cmd_max_characters_limit = 4096
+        if description:
+            d_flag = 4  # accounts for ' -d ' string
+            description_max_characters_limit = perforce_cmd_max_characters_limit - command_length - d_flag
+            description = description[:description_max_characters_limit]
+            command.extend(['-d', description])
+        if dry_run:
+            logging.info(command)
+            return True
+        else:
+            _, _, error = nimp.sys.process.call(command, capture_output=True)
+
+            if error is not None and error != "":
+                logging.error("%s", error)
+                return False
+
+            return True
+
     def sync(self, *files, cl_number = None):
         ''' Udpate given file '''
         command = ["sync"]
@@ -357,8 +420,7 @@ class P4:
         for cl_number in cl_numbers:
             for filename, action in self._parse_command_output(["fstat", "-e", cl_number , root],
                                                                r"^\.\.\. depotFile(.*)$",
-                                                               r"^\.\.\. headAction(.*)",
-                                                               hide_output=True):
+                                                               r"^\.\.\. headAction(.*)"):
                 filename = os.path.normpath(filename) if filename is not None else ''
                 yield filename, action
 
@@ -370,8 +432,10 @@ class P4:
                    .replace('#', '%23') \
                    .replace('*', '%2A')
 
-    def _get_p4_command(self, *args):
+    def _get_p4_command(self, *args, use_json_format=False):
         command = ['p4', '-z', 'tag']
+        if use_json_format:
+            command.append('-Mj')
         if self._port is not None:
             command += ['-p', self._port]
         if self._user is not None:
@@ -384,11 +448,11 @@ class P4:
         command += list(args)
         return command
 
-    def _run(self, *args, stdin=None, hide_output=False):
-        command = self._get_p4_command(*args)
+    def _run(self, *args, stdin=None, use_json_format=False):
+        command = self._get_p4_command(*args, use_json_format=use_json_format)
 
         for _ in range(5):
-            result, output, error = nimp.sys.process.call(command, stdin=stdin, encoding='cp437', capture_output=True, hide_output=hide_output)
+            result, output, error = nimp.sys.process.call(command, stdin=stdin, encoding='cp437', capture_output=True)
 
             if 'Operation took too long ' in error:
                 continue
@@ -405,8 +469,8 @@ class P4:
 
             return output
 
-    def _parse_command_output(self, command, *patterns, stdin = None, hide_output = False):
-        output = self._run(*command, stdin = stdin, hide_output = hide_output)
+    def _parse_command_output(self, command, *patterns, stdin = None):
+        output = self._run(*command, stdin = stdin)
 
         if output is not None:
             match_list = []
