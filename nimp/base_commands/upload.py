@@ -54,6 +54,11 @@ class _Symbols(nimp.command.Command):
                             '--compress',
                             help    = 'Compress symbols when uploading',
                             action  = 'store_true')
+        parser.add_argument('--age-symstore',
+                            default = False,
+                            type = int,
+                            help    = 'Age store, in days')
+                            # action  = 'store_true')
 
         return True
 
@@ -62,6 +67,11 @@ class _Symbols(nimp.command.Command):
 
     def run(self, env):
         success = True
+        if env.age_symstore:
+            if not nimp.build.age_symstore(env):
+                success = False
+            return success
+
         # ps5 shipping has no corresponding symbols, they're in the elf/self unstripped binary file
         has_symbols_inside_binary_file = env.platform in ['ps5']
         for config_or_target in env.configurations:
