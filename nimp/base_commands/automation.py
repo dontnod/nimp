@@ -93,6 +93,9 @@ class Automation(nimp.command.Command):
 			env.loadlist = env.format(env.loadlist)
 			with open(env.loadlist, 'r') as loadlist:
 				for file in loadlist:
-					tests.append(os.path.splitext(file)[0])
-		tests.extend(env.tests[1:])
+
+		start_index = 0
+		if env.tests[0] == 'tests':
+			start_index = 1
+		tests.extend(env.tests[start_index:])
 		return tests
