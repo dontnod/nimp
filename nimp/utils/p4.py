@@ -352,11 +352,19 @@ class P4:
 
         return True
 
-    def get_modified_files(self, *cl_numbers, root = '//...'):
+    def get_modified_files_depot(self, *cl_numbers, root = '//...'):
+        ''' Returns depot files modified by given changelists '''
+        return self._get_modified_files(*cl_numbers, file_regex=r"^\.\.\. depotFile(.*)$", root=root)
+
+    def get_modified_files_client(self, *cl_numbers, root = '//...'):
+        ''' Returns client files modified by given changelists '''
+        return self._get_modified_files(*cl_numbers, file_regex=r"^\.\.\. clientFile(.*)$", root=root)
+
+    def _get_modified_files(self, *cl_numbers, file_regex, root = '//...'):
         ''' Returns files modified by given changelists '''
         for cl_number in cl_numbers:
             for filename, action in self._parse_command_output(["fstat", "-e", cl_number , root],
-                                                               r"^\.\.\. depotFile(.*)$",
+                                                               file_regex,
                                                                r"^\.\.\. headAction(.*)",
                                                                hide_output=True):
                 filename = os.path.normpath(filename) if filename is not None else ''

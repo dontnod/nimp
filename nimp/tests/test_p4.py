@@ -931,9 +931,9 @@ class _P4Tests(unittest.TestCase):
             cl_3 = mock.add_changelist('test_changelist',
                                        ('/p4/file_3', 'recreated'))
 
-            cl_1_modified_files = list(self._p4.get_modified_files(cl_1))
-            cl_2_modified_files = list(self._p4.get_modified_files(cl_2))
-            cl_3_modified_files = list(self._p4.get_modified_files(cl_3))
+            cl_1_modified_files = list(self._p4.get_modified_files_depot(cl_1))
+            cl_2_modified_files = list(self._p4.get_modified_files_depot(cl_2))
+            cl_3_modified_files = list(self._p4.get_modified_files_depot(cl_3))
 
             self.assertListEqual([('/test_client/file_1', 'add'),
                                   ('/test_client/file_2', 'add'),

@@ -56,7 +56,7 @@ class CreateLoadlist(nimp.command.Command):
 		p4 = nimp.utils.p4.get_client(env)
 
 		modified_files = []
-		for path, action in p4.get_modified_files(*self.sanitized_changelists(env)):
+		for path, action in p4.get_modified_files_client(*self.sanitized_changelists(env)):
 			file = os.path.basename(path)
 			for extension in env.extensions:
 				if file.endswith(extension):
