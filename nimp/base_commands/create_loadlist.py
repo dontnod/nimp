@@ -57,10 +57,9 @@ class CreateLoadlist(nimp.command.Command):
 
 		modified_files = []
 		for path, action in p4.get_modified_files_client(*self.sanitized_changelists(env)):
-			file = os.path.basename(path)
 			for extension in env.extensions:
-				if file.endswith(extension):
-					modified_files.append(file)
+				if path.endswith(extension):
+					modified_files.append(path)
 					break
 
 		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
