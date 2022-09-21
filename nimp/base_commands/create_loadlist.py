@@ -41,8 +41,13 @@ class CreateLoadlist(nimp.command.Command):
 
 	def sanitized_changelists(self, env):
 		changelists = []
-		# deal with possible nimp create-laodlist changelists '12 23 43' "23"
-		for possible_cl_streak_string in env.changelists[1:]:
+
+		# deal with possible nimp create-loadlist changelists '12 23 43' "23"
+		starting_index = 0
+		if not str.isnumeric(env.changelists[0]):
+			starting_index = 1
+
+		for possible_cl_streak_string in env.changelists[starting_index:]:
 			changelists += re.sub(' +', ';', possible_cl_streak_string).split(';')
 		return [cl for cl in changelists if cl]
 
