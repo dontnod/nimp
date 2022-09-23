@@ -282,7 +282,7 @@ class P4:
     @staticmethod
     def parse_json_output_for_data(output):
         data = ''
-        output = [json_element for json_element in output.split('\n') if json_element]
+        output = [json_element for json_element in output.splitlines() if json_element]
         for output_chunk in output:
             output_chunk = json.loads(output_chunk)
             if 'data' in output_chunk.keys():
