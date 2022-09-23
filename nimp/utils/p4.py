@@ -376,14 +376,15 @@ class P4:
 
         return True
 
-    def submit_default_changelist(self, description=None, dry_run=False):
+    def submit_default_changelist(self, description=None, revert_unchanged=False, dry_run=False):
         ''' Submits given changelist '''
-        assert description is not None
         logging.info("Submitting default changelist...")
-        command = self._get_p4_command('submit', '-f', 'revertunchanged')
+        command = self._get_p4_command('submit', '-f')
+        if revert_unchanged:
+            command.append('revertunchanged')
         # descriptions could be too long for perforce limitations
         command_length = len(' '.join(command))
-        perforce_cmd_max_characters_limit = 4096
+        perforce_cmd_max_characters_limit = 8191
         if description:
             d_flag = 4  # accounts for ' -d ' string
             description_max_characters_limit = perforce_cmd_max_characters_limit - command_length - d_flag
