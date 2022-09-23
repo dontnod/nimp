@@ -274,9 +274,9 @@ class P4:
             revision = None
         return revision
 
-    def print_file_by_revision(self, file, revision_number):
-        ''' Prints the file revision for a given revision number '''
-        output = self._run('print', f'{file}#{revision_number}', use_json_format=True)
+    def print(self, p4_print_command_args):
+        ''' wrapper for p4 print command '''
+        output = self._run('print', f'{p4_print_command_args}', use_json_format=True)
         return self.parse_json_output_for_data(output)
 
     @staticmethod
