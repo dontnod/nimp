@@ -268,7 +268,10 @@ class P4:
 
     def get_file_workspace_current_revision(self, file):
         ''' Returns the file revision currently synced in the workspace '''
-        revision, = next(self._parse_command_output(['have', file], r'\.\.\. haveRev (\d+)'))
+        try:
+            revision, = next(self._parse_command_output(['have', file], r'\.\.\. haveRev (\d+)'))
+        except StopIteration as e:
+            revision = None
         return revision
 
     def print_file_by_revision(self, file, revision_number):
