@@ -56,10 +56,12 @@ class RunCommand(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
+        nimp.command.add_common_arguments(parser, 'slice_job')
+        nimp.utils.p4.add_arguments(parser)
         parser.add_argument('parameters',
                             help='command to run',
                             metavar='<command> [<argument>...]',
-                            nargs=argparse.REMAINDER)
+                            nargs=argparse.ZERO_OR_MORE)
         return True
 
     def is_available(self, env):
@@ -86,7 +88,10 @@ class _Commandlet(RunCommand):
         if not nimp.unreal.is_unreal_available(env):
             logging.error('Not an Unreal Engine project')
             return False
-
+        if hasattr(env, 'p4port'):
+            env.parameters += nimp.unreal.get_p4_args_for_commandlet(env)
+        if hasattr(env, 'slice_job_index') and hasattr(env, 'slice_job_count'):
+            env.parameters += nimp.unreal.get_slice_args_for_commandlet(env)
         return nimp.unreal.commandlet(env, env.parameters[0], *[env.format(arg) for arg in env.parameters[1:]])
 
 
