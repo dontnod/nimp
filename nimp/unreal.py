@@ -290,8 +290,7 @@ def _unreal_commandlet(env, command, *args, heartbeat = 0):
     if env.dry_run or '--dry-run' in args:
         logging.info("[DRY RUN] Generated command: " + ' '.join(cmdline).replace('--dry-run',''))
         return True
-    else:
-        return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
+    return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
 
 
 def _unreal_sanitize_arguments_for_retro_compat(env, *params):
@@ -523,7 +522,9 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
         return self._unknown_asset
 
 def get_p4_args_for_commandlet(env):
-    p4_args_for_commandlet = ['-SCCProvider=Perforce']
+    p4_args_for_commandlet = []
+    if hasattr(env, 'p4*'):
+        p4_args_for_commandlet.append('-SCCProvider=Perforce')
     if hasattr(env, 'nop4submit') and env.nop4submit:
         p4_args_for_commandlet.append('-DisableSCCSubmit')
     if hasattr(env, 'p4port') and env.p4port:
@@ -534,12 +535,14 @@ def get_p4_args_for_commandlet(env):
         p4_args_for_commandlet.append('-P4Passwd=%s' % env.p4pass)
     if hasattr(env, 'p4client') and env.p4client:
         p4_args_for_commandlet.append('-P4Client=%s' % env.p4client)
+    if hasattr(env, 'auto_submit') and env.auto_submit:
+        p4_args_for_commandlet.append('-AutoSubmit')
     return p4_args_for_commandlet
 
-def get_slice_args_for_commandlet(env):
-    slice_args_for_commandlet = []
-    if env.slice_job_index:
-        slice_args_for_commandlet.append('-SliceJobIndex=%s' % env.slice_job_index)
-    if env.slice_job_count:
-        slice_args_for_commandlet.append('-SliceJobCount=%s' % env.slice_job_count)
-    return slice_args_for_commandlet
+def get_args_for_commandlet(env):
+    args_for_commandlet = []
+    args_for_commandlet += get_p4_args_for_commandlet(env)
+    if hasattr(env, 'slice_*') and env.slice_job_index and env.slice_job_count:
+        args_for_commandlet.append('-SliceJobIndex=%s' % env.slice_job_index)
+        args_for_commandlet.append('-SliceJobCount=%s' % env.slice_job_count)
+    return args_for_commandlet

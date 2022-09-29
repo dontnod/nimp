@@ -60,6 +60,10 @@ def add_arguments(parser):
                         help = 'Perforce workspace',
                         type = str)
 
+    parser.add_argument('--auto-submit',
+                        action='store_true',
+                        help = 'Submit automatically')
+
 def check_for_p4(env):
     ''' Checks for perforce availability.
         This will print an error message if perforce can't be used. '''

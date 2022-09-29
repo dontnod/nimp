@@ -88,10 +88,7 @@ class _Commandlet(RunCommand):
         if not nimp.unreal.is_unreal_available(env):
             logging.error('Not an Unreal Engine project')
             return False
-        if hasattr(env, 'p4port'):
-            env.parameters += nimp.unreal.get_p4_args_for_commandlet(env)
-        if hasattr(env, 'slice_job_index') and hasattr(env, 'slice_job_count'):
-            env.parameters += nimp.unreal.get_slice_args_for_commandlet(env)
+        env.parameters += nimp.unreal.get_args_for_commandlet(env)
         return nimp.unreal.commandlet(env, env.parameters[0], *[env.format(arg) for arg in env.parameters[1:]])
 
 
