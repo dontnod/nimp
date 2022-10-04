@@ -486,17 +486,21 @@ class Package(nimp.command.Command):
                 with open(engine_configuration_file_path, 'a') as configuration_file:
                     configuration_file.write('\n')
                     configuration_file.write('[ConsoleVariables]\n')
-                    configuration_file.write('r.DumpShaderDebugInfo=1\n')
-                    configuration_file.write('r.DumpShaderDebugShortNames=1\n')
-                    configuration_file.write('r.PS4ShaderSDBMode=1\n')
-                    configuration_file.write('r.PS4DumpShaderSDB=1\n')
-                    configuration_file.write('r.PS4SDBZip=0\n')
-                    configuration_file.write('r.PS5ShaderDebugMode=1\n')
-                    configuration_file.write('r.PS5DumpShaderDebug=1\n')
-                    configuration_file.write('r.PS5ShaderDebugZip=0\n')
-                    configuration_file.write('\n')
-                    configuration_file.write('[DevOptions.Shaders]\n')
-                    configuration_file.write('ShaderPDBRoot=' + os.path.abspath(sdb_path) + '\n')
+                    if env.unreal_version >= 5:
+                        configuration_file.write('r.Shaders.Symbols=True\n')
+                        configuration_file.write(f'r.Shaders.SymbolPathOverride="{os.path.abspath(sdb_path)}"\n')
+                    else:
+                        configuration_file.write('r.DumpShaderDebugInfo=1\n')
+                        configuration_file.write('r.DumpShaderDebugShortNames=1\n')
+                        configuration_file.write('r.PS4ShaderSDBMode=1\n')
+                        configuration_file.write('r.PS4DumpShaderSDB=1\n')
+                        configuration_file.write('r.PS4SDBZip=0\n')
+                        configuration_file.write('r.PS5ShaderDebugMode=1\n')
+                        configuration_file.write('r.PS5DumpShaderDebug=1\n')
+                        configuration_file.write('r.PS5ShaderDebugZip=0\n')
+                        configuration_file.write('\n')
+                        configuration_file.write('[DevOptions.Shaders]\n')
+                        configuration_file.write(f'ShaderPDBRoot={os.path.abspath(sdb_path)}\n')
                     configuration_file.write('\n')
 
             # Heartbeart for background shader compilation and existing cook verification
