@@ -30,20 +30,17 @@ import nimp.model.symbol_server
 class SymbolServer(nimp.command.CommandGroup):
     ''' Commands for the symbol servers '''
 
-
     def __init__(self):
         super().__init__([ _Status(), _Update(), _Clean() ])
-
 
     def is_available(self, env):
         if not hasattr(env, 'symbol_servers'):
             return False, 'Symbol servers are not configured'
         return True, ''
 
-
     def configure_arguments(self, env, parser):
-        parser.add_argument('--identifier', required = True, metavar = '<type>', help = 'select a symbol server from the configuration')
-        parser.add_argument('--platform', required = True, metavar = '<platform>', help = 'set the platform for the symbols')
+        parser.add_argument('--identifier', required=True, metavar='<type>', help='select a symbol server from project configuration')
+        parser.add_argument('--platform', required=True, metavar='<platform>', help='set the platform for the symbols')
 
         super().configure_arguments(env, parser)
 
@@ -51,16 +48,13 @@ class SymbolServer(nimp.command.CommandGroup):
 class _Status(nimp.command.Command):
     ''' Show the symbol server status '''
 
-
     def configure_arguments(self, env, parser):
         return True
-
 
     def is_available(self, env):
         if not hasattr(env, 'symbol_servers'):
             return False, 'Symbol servers are not configured'
         return True, ''
-
 
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
@@ -76,45 +70,38 @@ class _Status(nimp.command.Command):
 class _Update(nimp.command.Command):
     ''' Update the symbol server '''
 
-
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
         return True
-
 
     def is_available(self, env):
         if not hasattr(env, 'symbol_servers'):
             return False, 'Symbol servers are not configured'
         return True, ''
 
-
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
 
-        if hasattr(env, 'is_unreal') and env.is_unreal and symbol_server.server_type == 'shaders':
+        if hasattr(env, 'is_unreal') and env.is_unreal and symbol_server.server_type.is_shaders:
             symbol_source = '{uproject_dir}/Saved/ShaderDebugInfo'
-            symbol_source += '/' + ('SF_PS4/sdb' if env.unreal_platform== 'PS4' else env.unreal_platform)
+            symbol_source += '/' + ('SF_PS4/sdb' if env.unreal_platform == 'PS4' else env.unreal_platform)
             symbol_source = nimp.system.sanitize_path(env.format(symbol_source))
             symbol_server.update_symbols(symbol_source, env.dry_run)
 
         return True
 
 
-
 class _Clean(nimp.command.Command):
     ''' Clean the symbol server '''
-
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
         return True
 
-
     def is_available(self, env):
         if not hasattr(env, 'symbol_servers'):
             return False, 'Symbol servers are not configured'
         return True, ''
-
 
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
