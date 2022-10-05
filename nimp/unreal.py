@@ -523,7 +523,7 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
 
 def get_p4_args_for_commandlet(env):
     p4_args_for_commandlet = []
-    if hasattr(env, 'p4*'):
+    if (hasattr(env, 'p4port') or hasattr(env, 'p4user') or hasattr(env, 'p4pass') or hasattr(env, 'p4client')) and (env.p4port or env.p4user or env.p4pass or env.p4client):
         p4_args_for_commandlet.append('-SCCProvider=Perforce')
     if hasattr(env, 'nop4submit') and env.nop4submit:
         p4_args_for_commandlet.append('-DisableSCCSubmit')
@@ -544,7 +544,7 @@ def get_p4_args_for_commandlet(env):
 def get_args_for_commandlet(env):
     args_for_commandlet = []
     args_for_commandlet += get_p4_args_for_commandlet(env)
-    if hasattr(env, 'slice_*') and env.slice_job_index and env.slice_job_count:
+    if hasattr(env, 'slice_job_index') and hasattr(env, 'slice_job_count') and env.slice_job_index and env.slice_job_count:
         args_for_commandlet.append('-SliceJobIndex=%s' % env.slice_job_index)
         args_for_commandlet.append('-SliceJobCount=%s' % env.slice_job_count)
     return args_for_commandlet
