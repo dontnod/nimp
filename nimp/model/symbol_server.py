@@ -32,19 +32,20 @@ import nimp.system
 
 def configure_symbol_server(env, identifier):
     symbol_server = env.symbol_servers[identifier]
-    default_expiration = env.symbol_servers.get('expiration', None)
 
     if isinstance(symbol_server, str):
         symbol_server = {
             "path": symbol_server,
         }
+    default_expiration = env.symbol_servers.get('expiration', None)
+    expiration = symbol_server.get("expiration", symbol_server.get("expiration", default_expiration))
 
     return SymbolServer(
         env=env,
         server_type=identifier,
         server_path=nimp.system.sanitize_path(env.format(symbol_server["path"])),
         platform=env.platform,
-        expiration=symbol_server.get("expiration", symbol_server.get("expiration", default_expiration)),
+        expiration=datetime.timedelta(expiration)
     )
 
 
