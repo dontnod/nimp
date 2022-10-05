@@ -64,6 +64,10 @@ def add_arguments(parser):
                         action='store_true',
                         help = 'Submit automatically')
 
+    parser.add_argument('--auto-checkout',
+                        action='store_true',
+                        help = 'Checkout automatically')
+
 def check_for_p4(env):
     ''' Checks for perforce availability.
         This will print an error message if perforce can't be used. '''

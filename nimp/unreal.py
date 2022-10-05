@@ -537,6 +537,8 @@ def get_p4_args_for_commandlet(env):
         p4_args_for_commandlet.append('-P4Client=%s' % env.p4client)
     if hasattr(env, 'auto_submit') and env.auto_submit:
         p4_args_for_commandlet.append('-AutoSubmit')
+    if hasattr(env, 'auto_checkout') and env.auto_checkout:
+        p4_args_for_commandlet.append('-AutoCheckout')
     return p4_args_for_commandlet
 
 def get_args_for_commandlet(env):
