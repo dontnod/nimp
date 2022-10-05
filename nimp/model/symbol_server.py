@@ -39,13 +39,15 @@ def configure_symbol_server(env, identifier):
         }
     default_expiration = env.symbol_servers.get('expiration', None)
     expiration = symbol_server.get("expiration", symbol_server.get("expiration", default_expiration))
+    if expiration is not None:
+        expiration = datetime.timedelta(int(expiration))
 
     return SymbolServer(
         env=env,
         server_type=identifier,
         server_path=nimp.system.sanitize_path(env.format(symbol_server["path"])),
         platform=env.platform,
-        expiration=datetime.timedelta(expiration)
+        expiration=expiration
     )
 
 
