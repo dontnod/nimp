@@ -83,8 +83,9 @@ class SymbolServer:
             if self.env.is_microsoft_platform:
                 symbols += glob.glob(os.path.join(self.server_path, "*.pdb"), recursive=True)
                 symbols += glob.glob(os.path.join(self.server_path, "**", "*.pdb"), recursive=True)
-            # if self.env.is_nintendo_platform:
-            #     symbols += glob.glob(os.path.join(self.server_path, "**", "*.pdb"), recursive=True)
+            if self.env.is_nintendo_platform:
+                symbols += glob.glob(os.path.join(self.server_path, "*.glslcoutput"), recursive=True)
+                symbols += glob.glob(os.path.join(self.server_path, "**", "*.glslcoutput"), recursive=True)
 
         symbols.sort()
         return symbols
