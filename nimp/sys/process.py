@@ -36,7 +36,8 @@ import nimp.sys.platform
 
 
 def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
-         capture_output=False, capture_debug=False, hide_output=False, dry_run=False):
+         capture_output=False, capture_debug=False, hide_output=False,
+         dry_run=False, timeout=None):
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
     if not hide_output:
@@ -148,7 +149,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
         thread.start()
 
     try:
-        exit_code = process.wait()
+        exit_code = process.wait(timeout)
     finally:
         process = None
         # For some reason, must be done _before_ threads are joined, or
