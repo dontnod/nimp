@@ -34,6 +34,7 @@ __all__ = [
     'p4',
     'package',
     'run',
+    'run_legacy',
     'symbol_server',
     'update_symbol_server',
     'upload',
