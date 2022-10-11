@@ -90,11 +90,11 @@ def add_common_arguments(parser, *arg_ids):
                                 action = 'store_true',
                                 help = 'perform a dry run')
         elif arg_id == 'slice_job':
-            parser.add_argument('-sji', '--slice-job-index',
+            parser.add_argument('-SliceJobIndex', '--slice-job-index',
                                 help    = 'Numerical index of job slicing',
                                 metavar = '<job_slice_index>',
                                 type    = int)
-            parser.add_argument('-sjc', '--slice-job-count',
+            parser.add_argument('-SliceJobCount', '--slice-job-count',
                                 help    = 'Total number of job slicing',
                                 metavar = '<job_slice_total_count>',
                                 type    = int)
