@@ -93,11 +93,13 @@ def add_common_arguments(parser, *arg_ids):
             parser.add_argument('-SliceJobIndex', '--slice-job-index',
                                 help    = 'Numerical index of job slicing',
                                 metavar = '<job_slice_index>',
-                                type    = int)
+                                type    = int,
+                                choices=range(1, 100))
             parser.add_argument('-SliceJobCount', '--slice-job-count',
                                 help    = 'Total number of job slicing',
                                 metavar = '<job_slice_total_count>',
-                                type    = int)
+                                type    = int,
+                                choices=range(1, 100))
         else:
             assert False, 'Unknown argument type'
 

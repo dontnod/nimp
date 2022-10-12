@@ -287,10 +287,8 @@ def _unreal_commandlet(env, command, *args, heartbeat = 0):
     # Remove -forcelogflush because it slows down cooking
     # (https://udn.unrealengine.com/questions/330502/increased-cook-times-in-ue414.html)
     #cmdline += ['-forcelogflush']
-    if env.dry_run or '--dry-run' in args:
-        logging.info("[DRY RUN] Generated command: " + ' '.join(cmdline).replace('--dry-run',''))
-        return True
-    return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
+
+    return nimp.sys.process.call(cmdline, heartbeat=heartbeat, dry_run=env.dry_run) == 0
 
 
 def _unreal_sanitize_arguments_for_retro_compat(env, *params):
@@ -523,21 +521,21 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
 
 def get_p4_args_for_commandlet(env):
     p4_args_for_commandlet = []
-    if (hasattr(env, 'p4port') or hasattr(env, 'p4user') or hasattr(env, 'p4pass') or hasattr(env, 'p4client')) and (env.p4port or env.p4user or env.p4pass or env.p4client):
+    if env.has_attribute('p4*'):
         p4_args_for_commandlet.append('-SCCProvider=Perforce')
-    if hasattr(env, 'nop4submit') and env.nop4submit:
+    if env.has_attribute('nop4submit'):
         p4_args_for_commandlet.append('-DisableSCCSubmit')
-    if hasattr(env, 'p4port') and env.p4port:
+    if env.has_attribute('p4port'):
         p4_args_for_commandlet.append('-P4Port=%s' % env.p4port)
-    if hasattr(env, 'p4user') and env.p4user:
+    if env.has_attribute('p4user'):
         p4_args_for_commandlet.append('-P4User=%s' % env.p4user)
-    if hasattr(env, 'p4pass') and env.p4pass:
+    if env.has_attribute('p4pass'):
         p4_args_for_commandlet.append('-P4Passwd=%s' % env.p4pass)
-    if hasattr(env, 'p4client') and env.p4client:
+    if env.has_attribute('p4client'):
         p4_args_for_commandlet.append('-P4Client=%s' % env.p4client)
-    if hasattr(env, 'auto_submit') and env.auto_submit:
+    if env.has_attribute('auto_submit'):
         p4_args_for_commandlet.append('-AutoSubmit')
-    if hasattr(env, 'auto_checkout') and env.auto_checkout:
+    if env.has_attribute('auto_checkout'):
         p4_args_for_commandlet.append('-AutoCheckout')
     return p4_args_for_commandlet
 

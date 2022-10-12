@@ -88,8 +88,8 @@ class _Commandlet(RunCommand):
         if not nimp.unreal.is_unreal_available(env):
             logging.error('Not an Unreal Engine project')
             return False
-        env.parameters += nimp.unreal.get_args_for_commandlet(env)
-        return nimp.unreal.commandlet(env, env.parameters[0], *[env.format(arg) for arg in env.parameters[1:]])
+        args = env.parameters[1:] + nimp.unreal.get_args_for_commandlet(env)
+        return nimp.unreal.commandlet(env, env.parameters[0], *[env.format(arg) for arg in args])
 
 
 class _Unreal_cli(RunCommand):

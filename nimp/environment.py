@@ -201,6 +201,15 @@ class Environment:
         for key, value in vars(arguments).items():
             setattr(self, key, value)
 
+        # Exit if any problem with SliceJobIndex and SliceJobCount
+        if (self.has_attribute('slice_job_index') and not self.has_attribute('slice_job_count')) \
+                or (self.has_attribute('slice_job_count') and not self.has_attribute('slice_job_index')):
+            parser.exit(1, '[ERROR] SliceJobIndex and SliceJobCount need to be used together\n')
+        if self.has_attribute('slice_job_index') and self.has_attribute('slice_job_count'):
+            if self.slice_job_index > self.slice_job_count:
+                parser.exit(1, '[ERROR] SliceJobIndex should be inferior to SliceJobCount\n')
+
+        # Exit if any unknown argument
         if unknown and any(unknown):
             parser.print_usage(sys.stderr)
             parser.exit(1, '%s: error: unrecognized arguments: %s\n' % (parser.prog, ' '.join(unknown)))
@@ -381,6 +390,18 @@ class Environment:
         else:
             logging.info('No Unreal project loaded')
 
+    def has_attribute(self, attribute_name):
+        ''' Check that the attribute exists and has a value
+            Possible to pass wildcard in argument, e.g. 'p4*'
+        '''
+        if '*' in attribute_name:
+            attribute_name_without_wildcard = attribute_name.replace('*', '')
+            for attr in self.__dict__.keys():
+                if attribute_name_without_wildcard in attr:
+                    return True #stop if any attribute found
+            return False
+        else:
+            return hasattr(self, attribute_name) and getattr(self, attribute_name) is not None
 
 def execute_hook(hook_name, *args):
     ''' Executes a hook in the .nimp/hooks directory '''
