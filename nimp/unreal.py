@@ -521,7 +521,7 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
 
 def get_p4_args_for_commandlet(env):
     p4_args_for_commandlet = []
-    if env.has_attribute('p4*'):
+    if env.has_attribute('p4.*'):
         p4_args_for_commandlet.append('-SCCProvider=Perforce')
     if env.has_attribute('nop4submit'):
         p4_args_for_commandlet.append('-DisableSCCSubmit')
