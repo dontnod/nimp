@@ -391,16 +391,8 @@ class Environment:
 
     def has_attribute(self, attribute_name):
         ''' Check that the attribute exists and has a value
-            Possible to pass regex in argument, e.g. 'p4.*'
         '''
-        # if any non-word character means regex
-        if re.search(r'\W', attribute_name):
-            for attr in self.__dict__.keys():
-                if re.match(attribute_name, attr):
-                    return True #stop if any attribute found
-            return False
-        else:
-            return hasattr(self, attribute_name) and getattr(self, attribute_name) is not None
+        return hasattr(self, attribute_name) and getattr(self, attribute_name) is not None
 
 def execute_hook(hook_name, *args):
     ''' Executes a hook in the .nimp/hooks directory '''

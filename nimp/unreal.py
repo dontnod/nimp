@@ -521,8 +521,6 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
 
 def get_p4_args_for_commandlet(env):
     p4_args_for_commandlet = []
-    if env.has_attribute('p4.*'):
-        p4_args_for_commandlet.append('-SCCProvider=Perforce')
     if env.has_attribute('nop4submit'):
         p4_args_for_commandlet.append('-DisableSCCSubmit')
     if env.has_attribute('p4port'):
@@ -533,6 +531,8 @@ def get_p4_args_for_commandlet(env):
         p4_args_for_commandlet.append('-P4Passwd=%s' % env.p4pass)
     if env.has_attribute('p4client'):
         p4_args_for_commandlet.append('-P4Client=%s' % env.p4client)
+    if len(p4_args_for_commandlet) > 0:
+        p4_args_for_commandlet.append('-SCCProvider=Perforce')
     if env.has_attribute('auto_submit'):
         p4_args_for_commandlet.append('-AutoSubmit')
     if env.has_attribute('auto_checkout'):
