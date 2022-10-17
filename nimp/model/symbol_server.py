@@ -115,11 +115,13 @@ class SymbolServer:
                 symbol_files = glob.glob(os.path.join(symbol_path, "*"))
                 if len(symbol_files) == 0: # pylint: disable = len-as-condition
                     symbols_to_clean.append(symbol_path)
+                    logging.debug(f"Adding for delete: {symbol_path}")
 
                 elif self.expiration is not None:
                     modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(symbol_files[0]))
                     if now - modification_time > self.expiration:
                         symbols_to_clean.append(symbol_path)
+                        logging.debug(f"Adding for delete: {symbol_path}")
 
         if self.server_type.is_shaders:
             for symbol_path in all_symbols:
@@ -127,6 +129,7 @@ class SymbolServer:
                     modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(symbol_path))
                     if now - modification_time > self.expiration:
                         symbols_to_clean.append(symbol_path)
+                        logging.debug(f"Adding for delete: {symbol_path}")
 
         return symbols_to_clean
 
