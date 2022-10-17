@@ -288,7 +288,7 @@ def _unreal_commandlet(env, command, *args, heartbeat = 0):
     # (https://udn.unrealengine.com/questions/330502/increased-cook-times-in-ue414.html)
     #cmdline += ['-forcelogflush']
 
-    return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
+    return nimp.sys.process.call(cmdline, heartbeat=heartbeat, dry_run=env.dry_run) == 0
 
 
 def _unreal_sanitize_arguments_for_retro_compat(env, *params):
@@ -518,3 +518,31 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
             return self._current_asset
 
         return self._unknown_asset
+
+def get_p4_args_for_commandlet(env):
+    p4_args_for_commandlet = []
+    if env.has_attribute('nop4submit'):
+        p4_args_for_commandlet.append('-DisableSCCSubmit')
+    if env.has_attribute('p4port'):
+        p4_args_for_commandlet.append('-P4Port=%s' % env.p4port)
+    if env.has_attribute('p4user'):
+        p4_args_for_commandlet.append('-P4User=%s' % env.p4user)
+    if env.has_attribute('p4pass'):
+        p4_args_for_commandlet.append('-P4Passwd=%s' % env.p4pass)
+    if env.has_attribute('p4client'):
+        p4_args_for_commandlet.append('-P4Client=%s' % env.p4client)
+    if len(p4_args_for_commandlet) > 0:
+        p4_args_for_commandlet.append('-SCCProvider=Perforce')
+    if env.has_attribute('auto_submit'):
+        p4_args_for_commandlet.append('-AutoSubmit')
+    if env.has_attribute('auto_checkout'):
+        p4_args_for_commandlet.append('-AutoCheckout')
+    return p4_args_for_commandlet
+
+def get_args_for_commandlet(env):
+    args_for_commandlet = []
+    args_for_commandlet += get_p4_args_for_commandlet(env)
+    if hasattr(env, 'slice_job_index') and hasattr(env, 'slice_job_count') and env.slice_job_index and env.slice_job_count:
+        args_for_commandlet.append('-SliceJobIndex=%s' % env.slice_job_index)
+        args_for_commandlet.append('-SliceJobCount=%s' % env.slice_job_count)
+    return args_for_commandlet

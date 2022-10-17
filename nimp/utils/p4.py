@@ -44,21 +44,29 @@ def add_arguments(parser):
         parser. Then you can Use :func:`nimp.utils.p4.sanitize` in your
         :func:`Command.sanitize` override to report Perforce misconfiguration. '''
     assert isinstance(parser, argparse.ArgumentParser)
-    parser.add_argument('--p4port',
+    parser.add_argument('-P4Port', '--p4port',
                         help = 'Perforce port',
                         type = str)
 
-    parser.add_argument('--p4user',
+    parser.add_argument('-P4User', '--p4user',
                         help = 'Perforce user',
                         type = str)
 
-    parser.add_argument('--p4pass',
+    parser.add_argument('-P4Passwd', '--p4pass',
                         help = 'Perforce pass',
                         type = str)
 
-    parser.add_argument('--p4client',
+    parser.add_argument('-P4Client', '--p4client',
                         help = 'Perforce workspace',
                         type = str)
+
+    parser.add_argument('-AutoSubmit', '--auto-submit',
+                        action='store_true',
+                        help = 'Submit automatically')
+
+    parser.add_argument('-AutoCheckout', '--auto-checkout',
+                        action='store_true',
+                        help = 'Checkout automatically')
 
 def check_for_p4(env):
     ''' Checks for perforce availability.

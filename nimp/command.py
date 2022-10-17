@@ -28,6 +28,7 @@ import os
 import pkg_resources
 import re
 import sys
+import argparse
 
 import nimp.base_commands
 import nimp.command
@@ -89,6 +90,15 @@ def add_common_arguments(parser, *arg_ids):
             parser.add_argument('-n', '--dry-run',
                                 action = 'store_true',
                                 help = 'perform a dry run')
+        elif arg_id == 'slice_job':
+            parser.add_argument('-SliceJobIndex', '--slice-job-index',
+                                help    = 'Numerical index of job slicing',
+                                metavar = '<job_slice_index>',
+                                type    = check_positive)
+            parser.add_argument('-SliceJobCount', '--slice-job-count',
+                                help    = 'Total number of job slicing',
+                                metavar = '<job_slice_total_count>',
+                                type    = check_positive)
         else:
             assert False, 'Unknown argument type'
 
@@ -223,3 +233,9 @@ class DisabledCommand(Command):
     def run(self, env):
         logging.error('This command is currently unavailable')
         logging.error(self._help)
+
+def check_positive(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is not a posivite int value" % value)
+    return ivalue
