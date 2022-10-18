@@ -117,14 +117,13 @@ class Environment:
         return True
 
     def set_parser_defaults(self, parser):
-        # Use values from configuration file by default
-        parser.set_defaults(**self.__dict__)
-
         # Reset `required` attribute when provided from config file
         for action in parser._actions:
             if action.dest in self.__dict__:
-                action.required = False
-
+                default_value = self.__dict__.get(action.dest, None)
+                if default_value is not None:
+                    action.required = False
+                    action.default = default_value
 
     def run(self, argv):
         ''' Runs nimp with argv and argc '''
