@@ -34,10 +34,9 @@ except ImportError:
 @contextmanager
 def nimp_profile(env):
     has_nimp_profiling_param = env.nimp_profiling if hasattr(env, 'nimp_profiling') else False
-    dry_run = env.dry_run if hasattr(env, 'dry_run') else False
 
     try:
-        if has_nimp_profiling_param and IS_PROFILING_API_AVAILABLE and not dry_run:
+        if has_nimp_profiling_param and IS_PROFILING_API_AVAILABLE:
             with profiling.profile_nimp(env):
                 yield
         else:
