@@ -120,6 +120,8 @@ class _Exec_cmd(RunCommand):
         super(_Exec_cmd, self).__init__()
 
     def run(self, env):
+        if env.verbose:
+            logging.debug("Will run: %s"%shutil.which(env.command_name))
         cmdline = [env.command_name]
         for arg in env.parameters:
             cmdline.append(env.format(arg))
