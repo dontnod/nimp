@@ -274,7 +274,7 @@ def _unreal_cli(env, *args, heartbeat=0, commandlet=None):
     cmdline += list(args)
     cmdline += ['-buildmachine', '-nopause', '-unattended', '-noscriptcheck']
 
-    return nimp.sys.process.call(cmdline, heartbeat=heartbeat) == 0
+    return nimp.sys.process.call(cmdline, heartbeat=heartbeat, dry_run=env.dry_run) == 0
 
 def _unreal_commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an Unreal commandlet '''

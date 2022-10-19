@@ -119,7 +119,7 @@ class _Exec_cmd(RunCommand):
             cmdline.append(env.format(arg))
 
         nimp.environment.execute_hook('prerun', env)
-        ret = nimp.sys.process.call(cmdline)
+        ret = nimp.sys.process.call(cmdline, dry_run=env.dry_run)
         nimp.environment.execute_hook('postrun', env)
 
         return ret == 0
@@ -197,7 +197,7 @@ class ConsoleGameCommand(RunCommand):
         logging.info('Running "%s"', ' '.join(cmdline))
         if env.dry_run:
             return True
-        result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)
+        result = subprocess.call(cmdline, dry_run=env.dry_run) # Call subprocess directly to allow "dynamic" output (with progress percentage)
         return result <= 1 # 0: nothing to copy. 1: some files were copied
     
     def fetch_with_copy(self, env):
