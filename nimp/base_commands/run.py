@@ -56,8 +56,6 @@ class RunCommand(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
-        nimp.command.add_common_arguments(parser, 'slice_job')
-        nimp.utils.p4.add_arguments(parser)
         parser.add_argument('command_name',
                             help='Command name to run',
                             metavar='<command>')
@@ -83,6 +81,10 @@ class _Hook(RunCommand):
 
 class _Commandlet(RunCommand):
     ''' Runs a commandlet '''
+    def configure_arguments(self, env, parser):
+        super().configure_arguments(env, parser)
+        nimp.command.add_common_arguments(parser, 'slice_job')
+        nimp.utils.p4.add_arguments(parser)
 
     def __init__(self):
         super(_Commandlet, self).__init__()
@@ -100,6 +102,10 @@ class _Unreal_cli(RunCommand):
 
     def __init__(self):
         super(_Unreal_cli, self).__init__()
+
+    def configure_arguments(self, env, parser):
+        super().configure_arguments(env, parser)
+        nimp.utils.p4.add_arguments(parser)
 
     def run(self, env):
         if not nimp.unreal.is_unreal_available(env):
