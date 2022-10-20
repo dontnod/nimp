@@ -56,8 +56,6 @@ class RunCommand(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
-        nimp.command.add_common_arguments(parser, 'slice_job')
-        nimp.utils.p4.add_arguments(parser)
         parser.add_argument('command_name',
                             help='Command name to run',
                             metavar='<command>')
@@ -83,6 +81,10 @@ class _Hook(RunCommand):
 
 class _Commandlet(RunCommand):
     ''' Runs a commandlet '''
+    def configure_arguments(self, env, parser):
+        super().configure_arguments(env, parser)
+        nimp.command.add_common_arguments(parser, 'slice_job')
+        nimp.utils.p4.add_arguments(parser)
 
     def __init__(self):
         super(_Commandlet, self).__init__()
@@ -101,6 +103,10 @@ class _Unreal_cli(RunCommand):
     def __init__(self):
         super(_Unreal_cli, self).__init__()
 
+    def configure_arguments(self, env, parser):
+        super().configure_arguments(env, parser)
+        nimp.utils.p4.add_arguments(parser)
+
     def run(self, env):
         if not nimp.unreal.is_unreal_available(env):
             logging.error('Not an Unreal Engine project')
@@ -114,12 +120,14 @@ class _Exec_cmd(RunCommand):
         super(_Exec_cmd, self).__init__()
 
     def run(self, env):
+        if env.verbose:
+            logging.debug("Will run: %s"%shutil.which(env.command_name))
         cmdline = [env.command_name]
         for arg in env.parameters:
             cmdline.append(env.format(arg))
 
         nimp.environment.execute_hook('prerun', env)
-        ret = nimp.sys.process.call(cmdline)
+        ret = nimp.sys.process.call(cmdline, dry_run=env.dry_run)
         nimp.environment.execute_hook('postrun', env)
 
         return ret == 0
@@ -197,7 +205,7 @@ class ConsoleGameCommand(RunCommand):
         logging.info('Running "%s"', ' '.join(cmdline))
         if env.dry_run:
             return True
-        result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)
+        result = subprocess.call(cmdline, dry_run=env.dry_run) # Call subprocess directly to allow "dynamic" output (with progress percentage)
         return result <= 1 # 0: nothing to copy. 1: some files were copied
     
     def fetch_with_copy(self, env):

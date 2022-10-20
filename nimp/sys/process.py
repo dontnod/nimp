@@ -41,7 +41,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
     if not hide_output:
-        logging.info('Running "%s" in "%s"', ' '.join(command), os.path.abspath(cwd))
+        logging.info('%s "%s" in "%s"', '[DRY-RUN]' if dry_run else 'Running',' '.join(command), os.path.abspath(cwd))
 
     if dry_run:
         return 0
