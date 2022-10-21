@@ -132,7 +132,7 @@ class _Exec_cmd(RunCommand):
 
         return ret == 0
 
-class ConsoleGameCommand(RunCommand):
+class ConsoleGameCommand(nimp.command.Command):
     def __init__(self, buildbot_directory_ending, local_directory):
         super(ConsoleGameCommand, self).__init__()
         self.buildbot_directory_ending = buildbot_directory_ending
@@ -174,6 +174,9 @@ class ConsoleGameCommand(RunCommand):
 
         parser.add_argument('--device', metavar = '<host>', help = 'set target device')
         parser.add_argument('-v', '--variant', metavar="<variant_name>", help="name of variant")
+
+    def is_available(self, env):
+        return True, ''
 
     def run(self, env):
         self.platform_directory = nimp.sys.platform.create_platform_desc(env.platform).unreal_cook_name
