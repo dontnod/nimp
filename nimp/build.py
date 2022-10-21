@@ -276,7 +276,7 @@ def install_distcc_and_ccache():
             logging.debug('Setting UBT_PARALLEL=%s', workers)
             os.environ['UBT_PARALLEL'] = workers
 
-def upload_symbols(env, symbols, config):
+def upload_symbols(env, symbols, config, two_tier_mode=True):
     ''' Uploads build symbols to a symbol server '''
     if not (env.is_win64 or env.is_xsx or env.is_ps5):
         logging.error("Plafrom must be win64, xsx or ps5")
@@ -375,6 +375,9 @@ def upload_symbols(env, symbols, config):
             "/tag", transaction_comment, # tag symbols
         ]
     if env.is_microsoft_platform:
+        if two_tier_mode:
+            cmd.append("/3") # Index2 format
+
         cmd += [
             "/t", env.project, # Product name
             "/c", transaction_comment,

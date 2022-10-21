@@ -55,6 +55,10 @@ class _Symbols(nimp.command.Command):
                             help    = 'Compress symbols when uploading',
                             action  = 'store_true')
 
+        parser.add_argument('--single-tier',
+                            help    = 'Do not use symstore /3 option even if available',
+                            action  = 'store_true')
+
         return True
 
     def is_available(self, env):
@@ -77,7 +81,7 @@ class _Symbols(nimp.command.Command):
             tmp_binaries_to_publish = binaries_to_publish.override(configuration=config, target=target)
             tmp_binaries_to_publish.load_set("binaries")
             if not nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(
-                    symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file), config):
+                    symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file), config, two_tier_mode=not env.single_tier):
                 success = False
 
         return success
