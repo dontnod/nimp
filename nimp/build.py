@@ -379,6 +379,8 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
             cmd.append("/3") # Index2 format
 
         cmd += [
+            # no documentation on this but seems to not override files already in store
+            "-:NOFORCECOPY",
             "/t", env.project, # Product name
             "/c", transaction_comment,
             "/v", env.revision,
