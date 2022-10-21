@@ -335,68 +335,93 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
     logging.debug('Using sym-too-path -> %s' % sym_tool_path)
 
     compress_symbols = hasattr(env, 'compress') and env.compress
-    compression_type = None
     # Approx. 2GB
     cab_src_size_limit = 2 * 1000 * 1000 * 1000
 
-    # Create response file
-    index_file = "symbols_index.txt"
-    with open(index_file, "w") as symbols_index:
-        for src, _ in symbols:
-            logging.debug("adding %s to response file %s" % (src, index_file))
-            symbols_index.write(src + "\n")
-            try:
-                # CAB compression has a hard limit on source file size of 2GB.
-                # Switch to ZIP compression if a file exceed this limit to prevent corrupted archives
-                # (benefits are faster compression time and handle file size > 2GB but compress less)
-                if compress_symbols and compression_type is None and os.path.getsize(src) >= cab_src_size_limit:
-                    compression_type = "ZIP"
-            except OSError as ex:
-                logging.debug("Failed to get %s size", src, exc_info=ex)
+    default_compression_symbols = []
+    # Microsoft symstore.exe uses CAB compression  which has a hard limit on source file size of 2GB.
+    # Switch to ZIP compression if a file exceed this limit to prevent corrupted archives
+    # (benefits are faster compression time and handle file size > 2GB but compress less)
+    zip_compression_symbols = []
+    for src, _ in symbols:
+        file_size = None
+        try:
+            file_size = os.path.getsize(src)
+        except OSError as ex:
+            logging.debug("Failed to get %s size", src, exc_info=ex)
+
+        # if we couldn't get the filesize, default to ZIP for msft platforms for safety
+        if env.is_microsoft_platform and (file_size is None or file_size >= cab_src_size_limit):
+            zip_compression_symbols.append(src)
+        else:
+            default_compression_symbols.append(src)
+
+    def run_symstore(base_cmd, symbols_list, index_file, compression_type=None):
+        with open(index_file, "w") as symbols_index:
+            for src in symbols_list:
+                logging.debug("adding %s to response file %s" % (src, index_file))
+                symbols_index.write(src + "\n")
+
+        cmd = base_cmd + ["/f", "@" + index_file]  # add files from response file
+        if compress_symbols:
+            cmd.append('/compress')
+            if compression_type is not None:
+                cmd.append(compression_type)
+
+        success = nimp.sys.process.call(cmd, dry_run=env.dry_run) == 0
+        if success:
+            # Do not remove symbol index; keep it for later debugging
+            os.remove(index_file)
+
+        return success
+
+
     # transaction tag
     transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, config, env.revision)
 
     # common cmd params
-    cmd = [
+    base_cmd = [
         sym_tool_path,
         "add",
-        "/r", # Recursive
-        "/f", "@" + index_file, # add files from response file
-        "/s", store_root, # target symbol store
-        "/o", # Verbose output
+        "/r",  # Recursive
+        "/s", store_root,  # target symbol store
+        "/o",  # Verbose output
     ]
-    if compress_symbols:
-        cmd.append('/compress')
-        if compression_type is not None and not env.is_ps5:
-            cmd.append(compression_type)
     # platform specific cmd params
     if env.is_ps5:
-        cmd += [
-            "/tag", transaction_comment, # tag symbols
+        base_cmd += [
+            "/tag", transaction_comment,  # tag symbols
         ]
     if env.is_microsoft_platform:
         if two_tier_mode:
-            cmd.append("/3") # Index2 format
+            base_cmd.append("/3")  # Index2 format
 
-        cmd += [
+        base_cmd += [
             # no documentation on this but seems to not override files already in store
             "-:NOFORCECOPY",
-            "/t", env.project, # Product name
+            "/t", env.project,  # Product name
             "/c", transaction_comment,
             "/v", env.revision,
         ]
 
-    if env.dry_run:
-        logging.info('dry run : %s' % ' '.join(cmd))
+    is_success = True
 
-    if not env.dry_run:
-        if nimp.sys.process.call(cmd) != 0:
-            # Do not remove symbol index; keep it for later debugging
-            return False
+    compressed_symbols_list = [
+        (None, default_compression_symbols)
+        ('ZIP', zip_compression_symbols),
+    ]
 
-    os.remove(index_file)
+    for (compression_type, symbols_list) in compressed_symbols_list:
+        if not symbols_list:
+            continue
 
-    return True
+        if not run_symstore(base_cmd,
+                    symbols_list, "{}_symbols_index.txt".format(compress_symbols or 'default'),
+                    compression_type
+                ):
+            is_success = False
+
+    return is_success
 
 def get_symbol_transactions(symsrv):
     ''' Retrieves all symbol transactions from a symbol server '''
