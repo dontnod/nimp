@@ -36,6 +36,7 @@ class CreateLoadlist(nimp.command.Command):
 		parser.add_argument('-o', '--output', help = 'output file')
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
+		parser.add_argument('--clean', action='store_true', help='Loadlist cleanup')
 		nimp.utils.p4.add_arguments(parser)
 		nimp.command.add_common_arguments(parser, 'dry_run', 'slice_job')
 		return True
@@ -93,6 +94,8 @@ class CreateLoadlist(nimp.command.Command):
 
 	def run(self, env):
 		loadlist_path = self.setup_loadlist_path(env)
+		if env.clean:
+			nimp.system.try_remove(loadlist_path, dry_run=env.dry_run)
 		loadlist_files = self.get_modified_files(env, env.extensions)
 		if env.check_empty:
 			return self.check_empty_loadlist(loadlist_files)
