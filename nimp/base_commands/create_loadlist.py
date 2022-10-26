@@ -91,23 +91,26 @@ class CreateLoadlist(nimp.command.Command):
 
 		return modified_files
 
-
 	def run(self, env):
+		loadlist_path = self.setup_loadlist_path(env)
 		loadlist_files = self.get_modified_files(env, env.extensions)
-
-		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
-		loadlist_path = os.path.abspath(env.format(nimp.system.sanitize_path(loadlist_path)))
-
 		if env.check_empty:
 			return self.check_empty_loadlist(loadlist_files)
-
-		if not env.dry_run:
-			with open(loadlist_path, 'w') as fp:
-				for file in loadlist_files:
-					print(file)
-					fp.write(f'{file}\n')
+		self.write_and_display_loadlist(env, loadlist_path, loadlist_files)
 
 		return True
+
+	def setup_loadlist_path(self, env):
+		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
+		loadlist_path = os.path.abspath(env.format(nimp.system.sanitize_path(loadlist_path)))
+		return loadlist_path
+
+	def write_and_display_loadlist(self, env, loadlist_path, modified_files):
+		if not env.dry_run:
+			with open(loadlist_path, 'w') as output:
+				for file in modified_files:
+					print(file)
+					output.write(f'{file}\n')
 
 	def check_empty_loadlist(self, modified_files):
 		results = {'loadlist_is_empty': True}
