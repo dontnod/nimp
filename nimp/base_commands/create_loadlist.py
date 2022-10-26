@@ -34,6 +34,7 @@ class CreateLoadlist(nimp.command.Command):
 	def configure_arguments(self, env, parser):
 		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist', default=[])
 		parser.add_argument('-o', '--output', help = 'output file')
+		parser.add_argument('-d', '--in-dirs', nargs=argparse.ZERO_OR_MORE, default=['//{p4client}/...'], help='Specify workspace root paths to search from')
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
 		parser.add_argument('--clean', action='store_true', help='Loadlist cleanup')
@@ -48,22 +49,20 @@ class CreateLoadlist(nimp.command.Command):
 		p4 = nimp.utils.p4.get_client(env)
 
 		# Do not use '//...' which will also list files not mapped to workspace
-		root = f"//{p4._client}/..."
-
-		paths = []
-		for ext in extensions:
-			paths.append(f"{root}{ext}")
-		if len(paths) <= 0:
-			paths.append(root)
+		paths = [env.format(e) for e in env.in_dirs]
 
 		changelists = [f'@{cl}' for cl in env.changelists]
 		if len(changelists) <= 0:
 			changelists = ['#have']
 
+		if len(extensions) <= 0:
+			extensions = ['']
+
 		filespecs = []
-		for cl in changelists:
-			for path in paths:
-				filespecs.append(f"{path}{cl}")
+		for path in paths:
+			for ext in extensions:
+				for cl in changelists:
+					filespecs.append(f"{path}{ext}{cl}")
 
 		base_command = [
 			"fstat",
