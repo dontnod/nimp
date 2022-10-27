@@ -85,6 +85,11 @@ class _Commandlet(RunCommand):
         super().configure_arguments(env, parser)
         nimp.command.add_common_arguments(parser, 'slice_job')
         nimp.utils.p4.add_arguments(parser)
+        parser.add_argument('-v',
+                            '--variant',
+                            help='Select a command variant',
+                            default=None,
+                            metavar='<variant>')
 
     def __init__(self):
         super(_Commandlet, self).__init__()
@@ -93,7 +98,15 @@ class _Commandlet(RunCommand):
         if not nimp.unreal.is_unreal_available(env):
             logging.error('Not an Unreal Engine project')
             return False
-        args = env.parameters + nimp.unreal.get_args_for_commandlet(env)
+
+        args = []
+        if hasattr(env, 'default_parameters') and env.default_parameters:
+            args.extend(env.default_parameters)
+        args += env.parameters + nimp.unreal.get_args_for_commandlet(env)
+        if env.variant:
+            if hasattr(env, env.variant) and getattr(env, env.variant) is not None:
+                args.extend(getattr(env, env.variant))
+
         return nimp.unreal.commandlet(env, env.command_name, *[env.format(arg) for arg in args])
 
 
