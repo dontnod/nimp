@@ -109,13 +109,11 @@ class CreateLoadlist(nimp.command.Command):
 		if env.check_empty:
 			return self.check_empty_loadlist(loadlist_files)
 
-		with open(env.format(loadlist_path), 'w+') as output:
-			lines = output.readlines()
-			for file in loadlist_files:
-				if file not in lines:
+		if not env.dry_run:
+			with open(loadlist_path, 'w') as fp:
+				for file in loadlist_files:
 					print(file)
-					if not env.dry_run:
-						output.write(f'{file}\n')
+					fp.write(f'{file}\n')
 
 		return True
 
