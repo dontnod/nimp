@@ -37,7 +37,7 @@ class CreateLoadlist(nimp.command.Command):
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
 		nimp.utils.p4.add_arguments(parser)
-		nimp.command.add_common_arguments(parser, 'dry_run')
+		nimp.command.add_common_arguments(parser, 'dry_run', 'slice_job')
 		return True
 
 	def is_available(self, env):
@@ -82,7 +82,22 @@ class CreateLoadlist(nimp.command.Command):
 		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$", hide_output=True):
 			modified_files.add(os.path.normpath(filepath))
 
-		return list(modified_files)
+		# Needed for sorting and ease debug
+		modified_files = list(modified_files)
+		modified_files.sort()
+
+		if env.slice_job_count is not None and env.slice_job_count > 1:
+			# slice modified files
+			# use a simple heuristic to spread the load between slices
+			# as demanding files tends to be in the same directory
+			slice = []
+			for idx, elem in enumerate(modified_files):
+				if (idx % env.slice_job_count) == (env.slice_job_index - 1):
+					slice.append(elem)
+
+			modified_files = slice
+
+		return modified_files
 
 
 	def run(self, env):
