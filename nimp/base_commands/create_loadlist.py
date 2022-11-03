@@ -22,7 +22,6 @@
 import json
 import os
 import re
-from pathlib import Path
 
 import nimp.command
 import nimp.utils.p4
@@ -49,7 +48,7 @@ class CreateLoadlist(nimp.command.Command):
 			changelists.update(re.sub(' +', ';', possible_cl_streak_string).split(';'))
 		return [cl for cl in changelists if cl]
 
-	def get_modified_files(self, env):
+	def get_modified_files(self, env, extensions):
 		changelists = self.sanitized_changelists(env)
 		p4 = nimp.utils.p4.get_client(env)
 
@@ -57,11 +56,18 @@ class CreateLoadlist(nimp.command.Command):
 		root = f"//{p4._client}/..."
 
 		paths = []
-		for cl in changelists:
-			paths.append(f"{root}@{cl}")
-
+		for ext in extensions:
+			paths.append(f"{root}{ext}")
 		if len(paths) <= 0:
 			paths.append(root)
+
+		filespecs = []
+		for cl in changelists:
+			for path in paths:
+				filespecs.append(f"{path}@{cl}")
+
+		if len(filespecs) <= 0:
+			filespecs = paths
 
 		base_command = [
 			"fstat",
@@ -70,17 +76,14 @@ class CreateLoadlist(nimp.command.Command):
 		]
 
 		modified_files = set()
-		for (filepath, ) in p4._parse_command_output(base_command + paths, r"^\.\.\. clientFile(.*)$", hide_output=True):
+		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$", hide_output=True):
 			modified_files.add(os.path.normpath(filepath))
 
 		return list(modified_files)
 
 
 	def run(self, env):
-		loadlist_files = []
-		for filepath in self.get_modified_files(env):
-			if f".{Path(filepath).suffix}" in env.extensions:
-				loadlist_files.append(file)
+		loadlist_files = self.get_modified_files(env, env.extensions)
 
 		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
 		loadlist_path = os.path.abspath(env.format(nimp.system.sanitize_path(loadlist_path)))
