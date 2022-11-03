@@ -19,6 +19,7 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+import argparse
 import json
 import os
 import re
@@ -31,9 +32,9 @@ class CreateLoadlist(nimp.command.Command):
 	''' Generates a list of modified files from a set of Perforce changelists '''
 
 	def configure_arguments(self, env, parser):
-		parser.add_argument('changelists', nargs = '+', help = 'select the changelists to list files from')
+		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist')
 		parser.add_argument('-o', '--output', help = 'output file')
-		parser.add_argument('-e', '--extensions', nargs = '*', help = 'file extensions to include', default = [ 'uasset', 'umap' ])
+		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
 		nimp.utils.p4.add_arguments(parser)
 		return True
@@ -61,13 +62,14 @@ class CreateLoadlist(nimp.command.Command):
 		if len(paths) <= 0:
 			paths.append(root)
 
+		changelists = [f'@{cl}' for cl in changelists]
+		if len(changelists) <= 0:
+			changelists = ['#have']
+
 		filespecs = []
 		for cl in changelists:
 			for path in paths:
-				filespecs.append(f"{path}@{cl}")
-
-		if len(filespecs) <= 0:
-			filespecs = paths
+				filespecs.append(f"{path}{cl}")
 
 		base_command = [
 			"fstat",
