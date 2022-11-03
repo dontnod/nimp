@@ -37,6 +37,7 @@ class CreateLoadlist(nimp.command.Command):
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
 		nimp.utils.p4.add_arguments(parser)
+		nimp.command.add_common_arguments(parser, 'dry_run')
 		return True
 
 	def is_available(self, env):
@@ -98,7 +99,8 @@ class CreateLoadlist(nimp.command.Command):
 			for file in loadlist_files:
 				if file not in lines:
 					print(file)
-					output.write(f'{file}\n')
+					if not env.dry_run:
+						output.write(f'{file}\n')
 
 		return True
 
