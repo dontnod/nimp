@@ -24,6 +24,7 @@ import os
 import re
 
 import nimp.command
+import nimp.utils.p4
 
 class CreateLoadlist(nimp.command.Command):
 	''' Generates a list of modified files from a set of Perforce changelists '''
@@ -41,32 +42,56 @@ class CreateLoadlist(nimp.command.Command):
 
 	def sanitized_changelists(self, env):
 		changelists = []
-		# deal with possible nimp create-laodlist changelists '12 23 43' "23"
+		# deal with possible nimp create-loadlist changelists '12 23 43' "23"
 		for possible_cl_streak_string in env.changelists[1:]:
 			changelists += re.sub(' +', ';', possible_cl_streak_string).split(';')
 		return [cl for cl in changelists if cl]
 
-
-	def run(self, env):
+	def get_modified_files(self, env):
+		changelists = self.sanitized_changelists(env)
 		p4 = nimp.utils.p4.get_client(env)
 
-		modified_files = []
-		for path, action in p4.get_modified_files(*self.sanitized_changelists(env)):
-			file = os.path.basename(path)
+		# Do not use '//...' which will also list files not mapped to workspace
+		root = f"//{p4._client}/..."
+
+		paths = []
+		for cl in changelists:
+			paths.append(f"{root}@{cl}")
+
+		if len(paths) <= 0:
+			paths.append(root)
+
+		base_command = [
+			"fstat",
+			# Only list modified files currently accessible
+			"-F", "^headAction=delete & ^headAction=move/delete"
+		]
+
+		modified_files = set()
+		for (filepath, ) in p4._parse_command_output(base_command + paths, r"^\.\.\. clientFile(.*)$", hide_output=True):
+			modified_files.add(os.path.normpath(filepath))
+
+		return list(modified_files)
+
+
+	def run(self, env):
+		loadlist_files = []
+		for filepath in self.get_modified_files(env):
+			file = os.path.basename(filepath)
 			for extension in env.extensions:
 				if file.endswith(extension):
-					modified_files.append(file)
+					loadlist_files.append(file)
 					break
 
 		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
 		loadlist_path = os.path.abspath(env.format(nimp.system.sanitize_path(loadlist_path)))
 
 		if env.check_empty:
-			return self.check_empty_loadlist(modified_files)
+			return self.check_empty_loadlist(loadlist_files)
 
 		with open(env.format(loadlist_path), 'w+') as output:
 			lines = output.readlines()
-			for file in modified_files:
+			for file in loadlist_files:
 				if file not in lines:
 					print(file)
 					output.write(f'{file}\n')
