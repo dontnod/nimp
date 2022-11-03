@@ -41,10 +41,10 @@ class CreateLoadlist(nimp.command.Command):
 		return env.is_unreal, ''
 
 	def sanitized_changelists(self, env):
-		changelists = []
+		changelists = set()
 		# deal with possible nimp create-loadlist changelists '12 23 43' "23"
-		for possible_cl_streak_string in env.changelists[1:]:
-			changelists += re.sub(' +', ';', possible_cl_streak_string).split(';')
+		for possible_cl_streak_string in env.changelists:
+			changelists.update(re.sub(' +', ';', possible_cl_streak_string).split(';'))
 		return [cl for cl in changelists if cl]
 
 	def get_modified_files(self, env):
