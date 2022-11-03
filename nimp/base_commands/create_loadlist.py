@@ -22,9 +22,11 @@
 import json
 import os
 import re
+from pathlib import Path
 
 import nimp.command
 import nimp.utils.p4
+
 
 class CreateLoadlist(nimp.command.Command):
 	''' Generates a list of modified files from a set of Perforce changelists '''
@@ -77,11 +79,8 @@ class CreateLoadlist(nimp.command.Command):
 	def run(self, env):
 		loadlist_files = []
 		for filepath in self.get_modified_files(env):
-			file = os.path.basename(filepath)
-			for extension in env.extensions:
-				if file.endswith(extension):
-					loadlist_files.append(file)
-					break
+			if f".{Path(filepath).suffix}" in env.extensions:
+				loadlist_files.append(file)
 
 		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
 		loadlist_path = os.path.abspath(env.format(nimp.system.sanitize_path(loadlist_path)))
