@@ -32,7 +32,7 @@ class CreateLoadlist(nimp.command.Command):
 	''' Generates a list of modified files from a set of Perforce changelists '''
 
 	def configure_arguments(self, env, parser):
-		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist')
+		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist', default=[])
 		parser.add_argument('-o', '--output', help = 'output file')
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
@@ -43,15 +43,7 @@ class CreateLoadlist(nimp.command.Command):
 	def is_available(self, env):
 		return env.is_unreal, ''
 
-	def sanitized_changelists(self, env):
-		changelists = set()
-		# deal with possible nimp create-loadlist changelists '12 23 43' "23"
-		for possible_cl_streak_string in env.changelists:
-			changelists.update(re.sub(' +', ';', possible_cl_streak_string).split(';'))
-		return [cl for cl in changelists if cl]
-
 	def get_modified_files(self, env, extensions):
-		changelists = self.sanitized_changelists(env)
 		p4 = nimp.utils.p4.get_client(env)
 
 		# Do not use '//...' which will also list files not mapped to workspace
@@ -63,7 +55,7 @@ class CreateLoadlist(nimp.command.Command):
 		if len(paths) <= 0:
 			paths.append(root)
 
-		changelists = [f'@{cl}' for cl in changelists]
+		changelists = [f'@{cl}' for cl in env.changelists]
 		if len(changelists) <= 0:
 			changelists = ['#have']
 
