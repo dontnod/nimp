@@ -19,57 +19,93 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+import argparse
 import json
 import os
 import re
 
 import nimp.command
+import nimp.utils.p4
+
 
 class CreateLoadlist(nimp.command.Command):
 	''' Generates a list of modified files from a set of Perforce changelists '''
 
 	def configure_arguments(self, env, parser):
-		parser.add_argument('changelists', nargs = '+', help = 'select the changelists to list files from')
+		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist', default=[])
 		parser.add_argument('-o', '--output', help = 'output file')
-		parser.add_argument('-e', '--extensions', nargs = '*', help = 'file extensions to include', default = [ 'uasset', 'umap' ])
+		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
 		nimp.utils.p4.add_arguments(parser)
+		nimp.command.add_common_arguments(parser, 'dry_run', 'slice_job')
 		return True
 
 	def is_available(self, env):
 		return env.is_unreal, ''
 
-	def sanitized_changelists(self, env):
-		changelists = []
-		# deal with possible nimp create-laodlist changelists '12 23 43' "23"
-		for possible_cl_streak_string in env.changelists[1:]:
-			changelists += re.sub(' +', ';', possible_cl_streak_string).split(';')
-		return [cl for cl in changelists if cl]
+	def get_modified_files(self, env, extensions):
+		p4 = nimp.utils.p4.get_client(env)
+
+		# Do not use '//...' which will also list files not mapped to workspace
+		root = f"//{p4._client}/..."
+
+		paths = []
+		for ext in extensions:
+			paths.append(f"{root}{ext}")
+		if len(paths) <= 0:
+			paths.append(root)
+
+		changelists = [f'@{cl}' for cl in env.changelists]
+		if len(changelists) <= 0:
+			changelists = ['#have']
+
+		filespecs = []
+		for cl in changelists:
+			for path in paths:
+				filespecs.append(f"{path}{cl}")
+
+		base_command = [
+			"fstat",
+			# Only list modified files currently accessible
+			"-F", "^headAction=delete & ^headAction=move/delete"
+		]
+
+		modified_files = set()
+		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$", hide_output=True):
+			modified_files.add(os.path.normpath(filepath))
+
+		# Needed for sorting and ease debug
+		modified_files = list(modified_files)
+		modified_files.sort()
+
+		if env.slice_job_count is not None and env.slice_job_count > 1:
+			# slice modified files
+			# use a simple heuristic to spread the load between slices
+			# as demanding files tends to be in the same directory
+			slice = []
+			for idx, elem in enumerate(modified_files):
+				if (idx % env.slice_job_count) == (env.slice_job_index - 1):
+					slice.append(elem)
+
+			modified_files = slice
+
+		return modified_files
 
 
 	def run(self, env):
-		p4 = nimp.utils.p4.get_client(env)
-
-		modified_files = []
-		for path, action in p4.get_modified_files(*self.sanitized_changelists(env)):
-			file = os.path.basename(path)
-			for extension in env.extensions:
-				if file.endswith(extension):
-					modified_files.append(file)
-					break
+		loadlist_files = self.get_modified_files(env, env.extensions)
 
 		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
 		loadlist_path = os.path.abspath(env.format(nimp.system.sanitize_path(loadlist_path)))
 
 		if env.check_empty:
-			return self.check_empty_loadlist(modified_files)
+			return self.check_empty_loadlist(loadlist_files)
 
-		with open(env.format(loadlist_path), 'w+') as output:
-			lines = output.readlines()
-			for file in modified_files:
-				if file not in lines:
+		if not env.dry_run:
+			with open(loadlist_path, 'w') as fp:
+				for file in loadlist_files:
 					print(file)
-					output.write(f'{file}\n')
+					fp.write(f'{file}\n')
 
 		return True
 
