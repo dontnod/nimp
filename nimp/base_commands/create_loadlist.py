@@ -37,7 +37,7 @@ class CreateLoadlist(nimp.command.Command):
 		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist', default=[])
 		parser.add_argument('-o', '--output', help = 'output file')
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
-		parser.add_argument('--dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to include', default = None)
+		parser.add_argument('--dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to include', default = ['//{p4client}/...'])
 		parser.add_argument('--exclude-dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to exclude', default = None)
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
 		nimp.utils.p4.add_arguments(parser)
@@ -80,14 +80,9 @@ class CreateLoadlist(nimp.command.Command):
 	def get_modified_files(self, env, extensions):
 		p4 = nimp.utils.p4.get_client(env)
 
-		# Do not use '//...' which will also list files not mapped to workspace
-		root = f"//{p4._client}/..."
-
 		paths = []
 		for dir, ext in self._product_dirs_and_extensions(env, extensions):
-			paths.append(f"{root}{dir}{ext}")
-		if len(paths) <= 0:
-			paths.append(root)
+			paths.append(f"{dir}{ext}")
 
 		filespecs = []
 		for path, cl in self._product_paths_and_changelists(env, paths):
