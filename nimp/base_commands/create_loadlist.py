@@ -21,6 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import argparse
 import json
+import itertools
 import os
 import re
 
@@ -35,6 +36,8 @@ class CreateLoadlist(nimp.command.Command):
 		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist', default=[])
 		parser.add_argument('-o', '--output', help = 'output file')
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
+		parser.add_argument('--dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to include', default = None)
+		parser.add_argument('--exclude-dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to exclude', default = None)
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
 		nimp.utils.p4.add_arguments(parser)
 		nimp.command.add_common_arguments(parser, 'dry_run', 'slice_job')
@@ -43,6 +46,20 @@ class CreateLoadlist(nimp.command.Command):
 	def is_available(self, env):
 		return env.is_unreal, ''
 
+	@staticmethod
+	def _product_dirs_and_extensions(env, extensions):
+		if env.dirs is None:
+			env.dirs = ['']
+		return list(itertools.product(env.dirs, extensions))
+
+	@staticmethod
+	def _exclude_from_modified_files(env, filepath):
+		if env.exclude_dirs is None:
+			return False
+		for exclude_dir in env.exclude_dirs:
+			if os.path.normpath(exclude_dir) in filepath:
+				return True
+
 	def get_modified_files(self, env, extensions):
 		p4 = nimp.utils.p4.get_client(env)
 
@@ -50,8 +67,8 @@ class CreateLoadlist(nimp.command.Command):
 		root = f"//{p4._client}/..."
 
 		paths = []
-		for ext in extensions:
-			paths.append(f"{root}{ext}")
+		for dir, ext in self._product_dirs_and_extensions(env, extensions):
+			paths.append(f"{root}{dir}{ext}")
 		if len(paths) <= 0:
 			paths.append(root)
 
@@ -72,7 +89,9 @@ class CreateLoadlist(nimp.command.Command):
 
 		modified_files = set()
 		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$", hide_output=True):
-			modified_files.add(os.path.normpath(filepath))
+			modified_file_path = os.path.normpath(filepath)
+			if not self._exclude_from_modified_files(env, modified_file_path):
+				modified_files.add(modified_file_path)
 
 		# Needed for sorting and ease debug
 		modified_files = list(modified_files)
