@@ -53,8 +53,13 @@ class CreateLoadlist(nimp.command.Command):
 		return list(itertools.product(env.dirs, extensions))
 
 	@staticmethod
-	def _exclude_from_modified_files(env, filepath):
-		if env.exclude_dirs is None:
+	def _product_paths_and_changelists(env, paths):
+		changelists = [f'@{cl}' for cl in env.changelists]
+		if len(changelists) <= 0:
+			changelists = ['#have']
+		return list(itertools.product(paths, changelists))
+
+
 			return False
 		for exclude_dir in env.exclude_dirs:
 			if os.path.normpath(exclude_dir) in filepath:
@@ -72,14 +77,9 @@ class CreateLoadlist(nimp.command.Command):
 		if len(paths) <= 0:
 			paths.append(root)
 
-		changelists = [f'@{cl}' for cl in env.changelists]
-		if len(changelists) <= 0:
-			changelists = ['#have']
-
 		filespecs = []
-		for cl in changelists:
-			for path in paths:
-				filespecs.append(f"{path}{cl}")
+		for path, cl in self._product_paths_and_changelists(env, paths):
+			filespecs.append(f"{path}{cl}")
 
 		base_command = [
 			"fstat",
