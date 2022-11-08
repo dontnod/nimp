@@ -237,7 +237,7 @@ class P4:
         if cl_number:
             p4_reconcile_args.extend(['-c', cl_number])
         if workspace_path_to_reconcile:
-            if not workspace_path_to_reconcile.endswith('...'):
+            if os.path.isdir(workspace_path_to_reconcile) or workspace_path_to_reconcile.endswith(('/', '\\')):
                 workspace_path_to_reconcile = os.path.join(workspace_path_to_reconcile, '...')
             workspace_path_to_reconcile = nimp.system.sanitize_path(workspace_path_to_reconcile)
             p4_reconcile_args.append(workspace_path_to_reconcile)
