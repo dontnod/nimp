@@ -20,6 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import argparse
+import fnmatch
 import json
 import itertools
 import os
@@ -60,10 +61,20 @@ class CreateLoadlist(nimp.command.Command):
 		return list(itertools.product(paths, changelists))
 
 
+	@staticmethod
+	def _exclude_from_modified_files(exclude_dirs, filepath):
+		if exclude_dirs is None:
 			return False
-		for exclude_dir in env.exclude_dirs:
-			if os.path.normpath(exclude_dir) in filepath:
+		for exclude_dir in exclude_dirs:
+			if fnmatch.fnmatch(filepath, f'*{exclude_dir}*'):
 				return True
+		return False
+
+	@staticmethod
+	def _normpath_dirs(dirs):
+		if dirs is None:
+			return dirs
+		return [os.path.normpath(dir) for dir in dirs]
 
 	def get_modified_files(self, env, extensions):
 		p4 = nimp.utils.p4.get_client(env)
@@ -88,9 +99,10 @@ class CreateLoadlist(nimp.command.Command):
 		]
 
 		modified_files = set()
+		exclude_dirs = self._normpath_dirs(env.exclude_dirs)
 		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$", hide_output=True):
 			modified_file_path = os.path.normpath(filepath)
-			if not self._exclude_from_modified_files(env, modified_file_path):
+			if not self._exclude_from_modified_files(exclude_dirs, modified_file_path):
 				modified_files.add(modified_file_path)
 
 		# Needed for sorting and ease debug
