@@ -51,7 +51,8 @@ class CreateLoadlist(nimp.command.Command):
 	def _product_dirs_and_extensions(env, extensions):
 		if env.dirs is None:
 			env.dirs = ['']
-		return list(itertools.product(env.dirs, extensions))
+		dirs = [env.format(dir) for dir in env.dirs]
+		return list(itertools.product(dirs, extensions))
 
 	@staticmethod
 	def _product_paths_and_changelists(env, paths):
