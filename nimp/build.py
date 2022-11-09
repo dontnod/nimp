@@ -407,7 +407,7 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
     is_success = True
 
     compressed_symbols_list = [
-        (None, default_compression_symbols)
+        (None, default_compression_symbols),
         ('ZIP', zip_compression_symbols),
     ]
 
