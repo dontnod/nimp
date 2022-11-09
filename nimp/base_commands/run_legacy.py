@@ -24,6 +24,7 @@
 
 import abc
 import argparse
+import json
 import logging
 import re
 import os
@@ -33,6 +34,7 @@ import subprocess
 import nimp.command
 import nimp.unreal
 import nimp.sys.process
+import nimp.utils.p4
 from nimp.sys.platform import create_platform_desc
 
 
@@ -127,6 +129,7 @@ class ConsoleGameCommand(RunLegacyCommand):
 
     def configure_arguments(self, env, parser):
         super(ConsoleGameCommand, self).configure_arguments(env, parser)
+        nimp.utils.p4.add_arguments(parser)
         nimp.command.add_common_arguments(parser, 'platform', 'configuration')
 
         parser.add_argument('--fetch',
@@ -141,6 +144,9 @@ class ConsoleGameCommand(RunLegacyCommand):
         # Basic cp does not handle restartable copy
         parser.add_argument('--restartable-fetch', action = "store_true",
                             help=restartable_fetch_help)
+
+        parser.add_argument('--write-version', action = "store_true",
+                            help='Will write a version.json file with package revision informations')
 
         parser.add_argument('--outdir',
                             nargs='?', default='local',
@@ -177,14 +183,45 @@ class ConsoleGameCommand(RunLegacyCommand):
         return False
 
     def fetch(self, env):
+        package_revision = env.fetch
         env.fetch = self.get_path_from_parameter(env.fetch, env)
         if env.outdir == 'local':
             env.outdir = self.get_local_path(env)
 
-        if shutil.which('robocopy'):
-            return self.fetch_with_robocopy(env)
-        else:
-            return self.fetch_with_copy(env)
+        copy_cmd = self.fetch_with_robocopy if shutil.which('robocopy') else self.fetch_with_copy
+
+        if not copy_cmd(env):
+            return False
+
+        if env.write_version:
+            if not self.write_fetched_revision(env, package_revision):
+                return False
+
+        return True
+
+
+    def write_fetched_revision(self, env, package_revision):
+        if not str.isdigit(package_revision):
+            logging.error('--write-revision is not compatible with package not from a CL')
+            return False
+
+        revision_info = {'dne_changelist': package_revision}
+
+        p4 = nimp.utils.p4.get_client(env)
+        output = p4._run('-Mj', 'print', f"//{p4._client}/DNE/Build/Build.version@{package_revision}", hide_output=True)
+        # Ignore first line which is file infos
+        lines = [json.loads(line) for line in output.splitlines(False)[1:]]
+        lines = [l['data'] for l in lines if len(l.keys()) == 1 and l.get('data', None)]
+        revision_info.update(json.loads(''.join(lines)))
+
+        revision_filepath = os.path.join(env.outdir, 'Build.version')
+        with open(revision_filepath, 'w') as fp:
+            json.dump(revision_info, fp, indent=4)
+
+        logging.info('Wrote revision file: %s', revision_filepath)
+
+        return True
+
 
     def fetch_with_robocopy(self, env):
         logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
