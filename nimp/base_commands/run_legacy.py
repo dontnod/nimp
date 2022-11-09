@@ -166,6 +166,9 @@ class ConsoleGameCommand(RunLegacyCommand):
         self.platform_directory = nimp.sys.platform.create_platform_desc(env.platform).unreal_cook_name
 
         if env.fetch:
+            if env.fetch.lower() == 'latest':
+                env.fetch = self.get_latest_pgk_revision(env)
+
             return self.fetch(env)
         if env.deploy:
             return self.deploy(env)
@@ -216,8 +219,6 @@ class ConsoleGameCommand(RunLegacyCommand):
         if str.isdigit(param):
             return self.fetch_pkg_by_revision(env, param)
         # if 'latest' was provided, fetch latest package uploaded to /b/
-        elif param.lower() == 'latest':
-            return self.fetch_pkg_latest(env)
         elif param == 'local':
             return self.get_local_path(env)
         return param
@@ -239,7 +240,7 @@ class ConsoleGameCommand(RunLegacyCommand):
                                     ('%s-%s-%s-%s-%s/%s/' % (env.project, env.variant, rev, env.platform, self.buildbot_directory_ending, self.platform_directory)))
         return deploy_repository
 
-    def fetch_pkg_latest(self, env):
+    def get_latest_pgk_revision(self, env):
         if not env.variant:
             raise RuntimeError('"variant" parameter is required to fetch remote packages')
 
@@ -254,7 +255,7 @@ class ConsoleGameCommand(RunLegacyCommand):
             if m and m.group(1) > rev:
                 rev = m.group(1)
 
-        return self.fetch_pkg_by_revision(env, rev)
+        return rev
 
     @abc.abstractmethod
     def _deploy(self, env):
