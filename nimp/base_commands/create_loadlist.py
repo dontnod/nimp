@@ -20,7 +20,9 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import argparse
+import fnmatch
 import json
+import itertools
 import os
 import re
 
@@ -35,6 +37,8 @@ class CreateLoadlist(nimp.command.Command):
 		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist', default=[])
 		parser.add_argument('-o', '--output', help = 'output file')
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
+		parser.add_argument('--dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to include', default = ['//{p4client}/...'])
+		parser.add_argument('--exclude-dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to exclude', default = None)
 		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
 		nimp.utils.p4.add_arguments(parser)
 		nimp.command.add_common_arguments(parser, 'dry_run', 'slice_job')
@@ -43,26 +47,46 @@ class CreateLoadlist(nimp.command.Command):
 	def is_available(self, env):
 		return env.is_unreal, ''
 
-	def get_modified_files(self, env, extensions):
-		p4 = nimp.utils.p4.get_client(env)
+	@staticmethod
+	def _product_dirs_and_extensions(env, extensions):
+		if env.dirs is None:
+			env.dirs = ['']
+		dirs = [env.format(dir) for dir in env.dirs]
+		return list(itertools.product(dirs, extensions))
 
-		# Do not use '//...' which will also list files not mapped to workspace
-		root = f"//{p4._client}/..."
-
-		paths = []
-		for ext in extensions:
-			paths.append(f"{root}{ext}")
-		if len(paths) <= 0:
-			paths.append(root)
-
+	@staticmethod
+	def _product_paths_and_changelists(env, paths):
 		changelists = [f'@{cl}' for cl in env.changelists]
 		if len(changelists) <= 0:
 			changelists = ['#have']
+		return list(itertools.product(paths, changelists))
+
+
+	@staticmethod
+	def _exclude_from_modified_files(exclude_dirs, filepath):
+		if exclude_dirs is None:
+			return False
+		for exclude_dir in exclude_dirs:
+			if fnmatch.fnmatch(filepath, f'*{exclude_dir}*'):
+				return True
+		return False
+
+	@staticmethod
+	def _normpath_dirs(dirs):
+		if dirs is None:
+			return dirs
+		return [os.path.normpath(dir) for dir in dirs]
+
+	def get_modified_files(self, env, extensions):
+		p4 = nimp.utils.p4.get_client(env)
+
+		paths = []
+		for dir, ext in self._product_dirs_and_extensions(env, extensions):
+			paths.append(f"{dir}{ext}")
 
 		filespecs = []
-		for cl in changelists:
-			for path in paths:
-				filespecs.append(f"{path}{cl}")
+		for path, cl in self._product_paths_and_changelists(env, paths):
+			filespecs.append(f"{path}{cl}")
 
 		base_command = [
 			"fstat",
@@ -71,8 +95,11 @@ class CreateLoadlist(nimp.command.Command):
 		]
 
 		modified_files = set()
+		exclude_dirs = self._normpath_dirs(env.exclude_dirs)
 		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$", hide_output=True):
-			modified_files.add(os.path.normpath(filepath))
+			modified_file_path = os.path.normpath(filepath)
+			if not self._exclude_from_modified_files(exclude_dirs, modified_file_path):
+				modified_files.add(modified_file_path)
 
 		# Needed for sorting and ease debug
 		modified_files = list(modified_files)
