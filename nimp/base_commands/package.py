@@ -303,6 +303,17 @@ class Package(nimp.command.Command):
             package_configuration.layout_file_path = env.format(package_configuration.layout_file_path)
         ps4_title_directory_collection = [ env.format(title) for title in ps4_title_directory_collection ]
 
+        if env.platform == 'ps5':
+            if env.variant:
+                package_configuration.src_title_conf = env.format('{uproject_dir}/Platforms/PS5/Build/Variants/' + env.variant + '/TitleConfiguration.json')
+            else:
+                package_configuration.src_title_conf = env.format('{uproject_dir}/Platforms/PS5/Build/Variants/BaseGame/TitleConfiguration.json')
+                logging.info(f'No variant specified, using {package_configuration.src_title_conf} by default.')
+                if not os.path.exists(package_configuration.src_title_conf):
+                    logging.error(f'Missing file: {package_configuration.src_title_conf}, the BaseGame variant and its configuration is required to exist.')
+                    return False
+            package_configuration.dst_title_conf = env.format('{uproject_dir}/Platforms/PS5/Build/TitleConfiguration.json')
+
         Package._load_configuration(package_configuration, ps4_title_directory_collection)
 
         logging.info('')
@@ -929,6 +940,13 @@ class Package(nimp.command.Command):
         #            item.endswith('.ekb') or item.endswith('.zip') or\
         #            item.endswith('.' + package_configuration.layout_file_extension):
         #             _try_remove(os.path.join(destination, item), dry_run)
+
+        if package_configuration.target_platform == 'PS5':
+            # UE only supports a single TitleConfiguration.json describing builds of the same package.
+            # To have DLCs in their own packages, we need to select the variant's one by copying it
+            # where UAT expects it.
+            logging.info(f"Copying '{package_configuration.src_title_conf}' to '{package_configuration.dst_title_conf}'")
+            shutil.copyfile(package_configuration.src_title_conf, package_configuration.dst_title_conf)
 
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
