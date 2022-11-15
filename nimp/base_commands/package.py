@@ -26,6 +26,7 @@ import argparse
 import copy
 import json
 import glob
+import hashlib
 import logging
 import os
 import re
@@ -164,6 +165,7 @@ class Package(nimp.command.Command):
                             help = 'pass additional options to the cook command')
         parser.add_argument('--msixvc', action = 'store_true', help = 'create a MSIXVC package')
         parser.add_argument('--ps4-regions', metavar = '<region>', nargs = '+', help = 'set the PS4 regions to package for')
+        parser.add_argument('--dlc', action = 'store_true', help = 'package as a DLC (necessary on PS5)')
 
         #region Legacy
         parser.add_argument('--layout', metavar = '<file_path>', help = '(deprecated) set the layout file to use for the package (for consoles)')
@@ -337,6 +339,8 @@ class Package(nimp.command.Command):
         is_monorepo_behavior = env.unreal_version > 4.24
         should_configure_variant = is_monorepo_behavior and env.variant is not None
         active_configuration_directory = f'{project_directory}/Config/Variants/Active'
+        if env.unreal_platform == 'PS5':
+            dst_title_conf = env.format('{uproject_dir}/Platforms/PS5/Build/TitleConfiguration.json')
 
         try:
             if is_monorepo_behavior:
@@ -352,10 +356,27 @@ class Package(nimp.command.Command):
                 _setup_default_config_file(f'{active_configuration_directory}/DefaultGame.ini')
                 if env.write_project_revisions:
                     Package.write_project_revisions(env, active_configuration_directory)
+            if env.unreal_platform == 'PS5':
+                # UE only supports a single TitleConfiguration.json describing builds of the same package.
+                # To have DLCs in their own packages, we need to select the variant's one by copying it
+                # where UAT expects it.
+                if should_configure_variant:
+                    src_title_conf = env.format('{uproject_dir}/Platforms/PS5/Build/Variants/' + env.variant + '/TitleConfiguration.json')
+                else:
+                    src_title_conf = env.format('{uproject_dir}/Platforms/PS5/Build/Variants/BaseGame/TitleConfiguration.json')
+                    logging.info(f'No variant specified, using {src_title_conf} by default.')
+
+                if not os.path.exists(src_title_conf):
+                    raise FileNotFoundError(f'Missing file: {src_title_conf}, the BaseGame variant and its configuration is required to exist.')
+
+                logging.info(f'Copying {src_title_conf} to {dst_title_conf}')
+                shutil.copyfile(src_title_conf, dst_title_conf)
             yield
         finally:
             if is_monorepo_behavior:
                 _try_remove(active_configuration_directory, False)
+            if env.unreal_platform == 'PS5':
+                _try_remove(dst_title_conf, False)
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
@@ -897,7 +918,7 @@ class Package(nimp.command.Command):
             Package.package_for_xboxone(package_configuration, env.dry_run)
         # console packaging using out of the box uat behavior
         elif package_configuration.is_sony or package_configuration.is_microsoft or package_configuration.is_nintendo:
-            Package.package_with_uat(package_configuration, env.dry_run)
+            Package.package_with_uat(env, package_configuration)
 
 
     @staticmethod
@@ -920,18 +941,76 @@ class Package(nimp.command.Command):
             _copy_file(source_file, destination_file, dry_run)
 
 
-    def package_with_uat(package_configuration, dry_run):
-        # Packaging with out of the box UAT behavior
-        # destination = package_configuration.package_directory
-        # if os.path.isdir(destination):
-        #     for item in os.listdir(destination): # Cautionnary cleaning
-        #         if item.endswith('.pkg') or\
-        #            item.endswith('.nsp') or\
-        #            re.match(r'(Run_|Install)_' + package_configuration.env.game + r'(-.*.bat)?', item) or\
-        #            item.endswith('.msixvc') or item.endswith('.msixvc.phd') or\
-        #            item.endswith('.ekb') or item.endswith('.zip') or\
-        #            item.endswith('.' + package_configuration.layout_file_extension):
-        #             _try_remove(os.path.join(destination, item), dry_run)
+    @staticmethod
+    def configure_packaging_for_ps5_dlc(env, package_configuration):
+        # Since UE only supports application packages (with patches), we need to modify the .gp5
+        # files it produced before packaging DLCs.
+        gp5_files = glob.glob(f'{package_configuration.stage_directory}/*.gp5')
+        for gp5 in gp5_files:
+            if '-ForProsperoCompressCmd' in gp5 or '-ForVisualStudio' in gp5:
+                continue # These have "invalid format" for gp5_proj_update
+            logging.info(f'Patching {gp5} to become a DLC package ("additional content with extra data")')
+
+            # Configure it to be an additional package (PSAC)
+            patch_gp5_command = [package_configuration.package_tool_path, 'gp5_proj_update',
+                '--volume_type', 'prospero_ac',
+                # The entitlement key is required, but we don't use it for now
+                '--entitlement_key', hashlib.sha256(env.variant.encode('utf-8')).hexdigest()[0:32],
+                gp5
+            ]
+
+            package_success = nimp.sys.process.call(patch_gp5_command)
+            if package_success != 0:
+                raise RuntimeError('Package generation failed')
+
+            # Remove files that do not belong in PSAC
+            gp5_xml = xml.etree.ElementTree.parse(gp5)
+            psproject = gp5_xml.getroot()
+            volume = psproject.find('volume')
+            volume.remove(volume.find('chunk_info'))
+            files = psproject.find('files')
+
+            for f in files.findall('file'):
+                filename = f.get('dst_path')
+                if filename in ['eboot.bin', 'eboot.uesym'] or filename.endswith('.prx'):
+                    logging.info(f'Removing from package: {filename}')
+                    files.remove(f)
+                    continue
+
+                f.attrib.pop('chunk', None)
+
+            xml.etree.ElementTree.indent(psproject, space=" ", level=0)
+            gp5_xml.write(gp5, encoding="utf-8")
+
+        # Same goes for the param.json files
+        # This list comes from https://p.siedev.net/resources/documents/SDK/6.000/Param_Json-Specification/0003.html#__document_toc_00000008
+        param_whitelist = [
+            'contentId',
+            'titleId',
+            'conceptId',
+            'masterVersion',
+            'contentVersion',
+            'localizedParameters',
+            # For reference, included in 'localizedParameters'
+            # 'localizedParameters/defaultLanguage',
+            # 'localizedParameters/<language code>',
+            # 'localizedParameters/<language code>/titleName',
+            'versionFileUri',
+        ]
+        param_files = glob.glob(f'{package_configuration.stage_directory}/**/param*.json', recursive=True)
+        for param_file in param_files:
+            with open(param_file, 'r') as f:
+                params = json.load(f)
+
+            params = {k: v for k, v in params.items() if k in param_whitelist}
+
+            with open(param_file, 'w+') as f:
+                json.dump(params, f, indent=4)
+
+    @staticmethod
+    def package_with_uat(env, package_configuration):
+        if package_configuration.target_platform == 'PS5' and env.dlc:
+            Package.configure_packaging_for_ps5_dlc(env, package_configuration)
 
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
@@ -949,7 +1028,7 @@ class Package(nimp.command.Command):
             for option in package_configuration.extra_options:
                 package_command += shlex.split(option)
 
-            package_success = nimp.sys.process.call(package_command, dry_run = dry_run)
+            package_success = nimp.sys.process.call(package_command, dry_run = env.dry_run)
             if package_success != 0:
                 raise RuntimeError('Package failed')
 

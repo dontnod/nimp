@@ -26,7 +26,7 @@ class PS5(nimp.sys.platform.Platform):
         self.unreal_name = 'PS5'
         self.unreal_config_name = 'PS5'
         self.unreal_cook_name = 'PS5'
-        self.unreal_package_directory = '{uproject_dir}/Binaries/PS5'
+        self.unreal_package_directory = '{uproject_dir}/Saved/Packages/PS5'
 
     def install_package(self, package_directory, env):
         pkgs = glob.glob(package_directory + '/*' + env.unreal_config + '.pkg')
@@ -43,7 +43,7 @@ class PS5(nimp.sys.platform.Platform):
     def launch_package(self, package_name, env):
         if not package_name:
             package_name = env.game
-            title_id = self.get_title_id_from_json(env.uproject_dir)
+            title_id = self.get_title_id_from_json(env.uproject_dir, env.variant)
 
         if not title_id:
             installed_titles = self.get_installed_titles(env.device)
@@ -99,8 +99,15 @@ class PS5(nimp.sys.platform.Platform):
             raise RuntimeError('Multiple packages found for ' + package_name)
 
     _CONTENT_ID_RE = re.compile(r'[A-Z]{2}[0-9]{4}-([A-Z]{4}[0-9]{5})_00-[A-Z0-9]{16}')
-    def get_title_id_from_json(self, project_directory):
-        json_file_path = project_directory + '/Platforms/PS5/Build/TitleConfiguration.json'
+    def get_title_id_from_json(self, project_directory, variant):
+        if variant:
+            json_file_path = project_directory + '/Platforms/PS5/Build/Variants/' + variant + '/TitleConfiguration.json'
+        else:
+            json_file_path = project_directory + '/Platforms/PS5/Build/Variants/BaseGame/TitleConfiguration.json'
+            logging.info(f'No variant specified, using {json_file_path} by default.')
+        if not os.path.exists(json_file_path):
+            logging.error(f'Missing file: {json_file_path}, the BaseGame variant and its configuration is required to exist.')
+
         if not os.path.exists(json_file_path):
             return None
         with open(json_file_path) as json_file:
