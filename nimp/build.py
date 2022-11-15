@@ -336,7 +336,7 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
 
     compress_symbols = hasattr(env, 'compress') and env.compress
     # Approx. 2GB
-    cab_src_size_limit = 2 * 1000 * 1000 * 1000
+    cab_src_size_limit = 1.5 * 1000 * 1000 * 1000
 
     default_compression_symbols = []
     # Microsoft symstore.exe uses CAB compression  which has a hard limit on source file size of 2GB.
