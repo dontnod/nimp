@@ -417,7 +417,7 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
 
         if not run_symstore(base_cmd,
                     symbols_list,
-                    "{}_symbols_index.txt".format(compress_symbols if compress_symbols is not None else 'default'),
+                    "{}_symbols_index.txt".format(compression_type if compression_type is not None else 'default'),
                     compression_type
                 ):
             is_success = False
