@@ -208,7 +208,26 @@ class ConsoleGameCommand(RunLegacyCommand):
         revision_info = {'dne_changelist': package_revision}
 
         p4 = nimp.utils.p4.get_client(env)
-        output = p4._run('-Mj', 'print', f"//{p4._client}/DNE/Build/Build.version@{package_revision}", hide_output=True)
+
+        # Retrieve P4 Stream root for this project because XPJ Monorepo streams are a thing
+        output = p4._run('-Mj', 'fstat', '-m1', env.format("{uproject_dir}/..."), hide_output=True)
+        lines = [json.loads(line) for line in output.splitlines(False)]
+        if len(lines) != 1 or 'clientFile' not in lines[0] or 'depotFile' not in lines[0]:
+            logging.error('Failed to find stream root')
+            return False
+
+        clientFile = lines[0]['clientFile']
+        depotFile = lines[0]['depotFile']
+
+        relClientFile = os.path.relpath(clientFile, os.path.abspath(env.root_dir))
+        relClientFile = relClientFile.replace('\\', '/')
+        if not depotFile.endswith(relClientFile):
+            logging.error('depotFile does not match clientFile')
+            return False
+
+        depotRoot = depotFile[:-len(relClientFile)]
+
+        output = p4._run('-Mj', 'print', f"{depotRoot}DNE/Build/Build.version@{package_revision}", hide_output=True)
         # Ignore first line which is file infos
         lines = [json.loads(line) for line in output.splitlines(False)[1:]]
         lines = [l['data'] for l in lines if len(l.keys()) == 1 and l.get('data', None)]
