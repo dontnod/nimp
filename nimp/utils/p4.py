@@ -418,7 +418,8 @@ class P4:
         for cl_number in cl_numbers:
             for filename, action in self._parse_command_output(["fstat", "-e", cl_number , root],
                                                                r"^\.\.\. depotFile(.*)$",
-                                                               r"^\.\.\. headAction(.*)"):
+                                                               r"^\.\.\. headAction(.*)",
+                                                               hide_output=True):
                 filename = os.path.normpath(filename) if filename is not None else ''
                 yield filename, action
 
