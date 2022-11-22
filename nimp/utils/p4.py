@@ -391,7 +391,7 @@ class P4:
             _, _, error = nimp.sys.process.call(command, capture_output=True)
 
             if error is not None and error != "":
-                logging.error("%s", error)
+                logging.error("%s", error.strip())
                 return False
 
             return True
