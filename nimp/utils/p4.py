@@ -242,9 +242,7 @@ class P4:
             workspace_path_to_reconcile = nimp.system.sanitize_path(workspace_path_to_reconcile)
             p4_reconcile_args.append(workspace_path_to_reconcile)
 
-        if self._run(*p4_reconcile_args) is None:
-            return False
-        return True
+        return self._run(*p4_reconcile_args) is None
 
     def get_changelist_description(self, cl_number):
         ''' Returns description of given changelist '''
@@ -268,15 +266,11 @@ class P4:
 
     def get_file_workspace_current_revision(self, file):
         ''' Returns the file revision currently synced in the workspace '''
-        try:
-            revision, = next(self._parse_command_output(['have', file], r'\.\.\. haveRev (\d+)'))
-        except StopIteration as e:
-            revision = None
-        return revision
+        return next(self._parse_command_output(['have', file], r'\.\.\. haveRev (\d+)'), default=None)
 
     def print(self, p4_print_command_args):
         ''' wrapper for p4 print command '''
-        output = self._run('print', f'{p4_print_command_args}', use_json_format=True)
+        output = self._run('print', p4_print_command_args, use_json_format=True)
         return self.parse_json_output_for_data(output)
 
     @staticmethod
@@ -285,7 +279,7 @@ class P4:
         output = [json_element for json_element in output.splitlines() if json_element]
         for output_chunk in output:
             output_chunk = json.loads(output_chunk)
-            if 'data' in output_chunk.keys():
+            if 'data' in output_chunk:
                 data += output_chunk['data']
         return data
 
