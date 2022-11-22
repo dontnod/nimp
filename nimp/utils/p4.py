@@ -229,18 +229,18 @@ class P4:
 
         return ret
 
-    def reconcile_workspace(self, cl_number=None, workspace_path_to_reconcile=None, dry_run=False):
+    def reconcile_workspace(self, *paths_to_reconcile, cl_number=None, dry_run=False):
         ''' Reconciles given workspace '''
         p4_reconcile_args = ['reconcile', '-f', '-e', '-a', '-d']
         if dry_run:
             p4_reconcile_args.append('-n')
         if cl_number:
             p4_reconcile_args.extend(['-c', cl_number])
-        if workspace_path_to_reconcile:
-            if os.path.isdir(workspace_path_to_reconcile) or workspace_path_to_reconcile.endswith(('/', '\\')):
-                workspace_path_to_reconcile = os.path.join(workspace_path_to_reconcile, '...')
-            workspace_path_to_reconcile = nimp.system.sanitize_path(workspace_path_to_reconcile)
-            p4_reconcile_args.append(workspace_path_to_reconcile)
+        for path_to_reconcile in paths_to_reconcile:
+            if not path_to_reconcile.endswith('...'):
+                if os.path.isdir(path_to_reconcile) or path_to_reconcile.endswith(('/', '\\')):
+                    path_to_reconcile = os.path.join(path_to_reconcile, '...')
+            p4_reconcile_args.append(path_to_reconcile)
 
         return self._run(*p4_reconcile_args) is None
 
