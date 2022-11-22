@@ -270,12 +270,8 @@ class P4:
 
     def print(self, p4_print_command_args):
         ''' wrapper for p4 print command '''
-        output = self._run('print', p4_print_command_args, use_json_format=True)
-        return self.parse_json_output_for_data(output)
-
-    @staticmethod
-    def parse_json_output_for_data(output):
         data = ''
+        output = self._run('print', p4_print_command_args, use_json_format=True)
         output = [json_element for json_element in output.splitlines() if json_element]
         for output_chunk in output:
             output_chunk = json.loads(output_chunk)
