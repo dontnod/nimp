@@ -28,6 +28,7 @@ import logging
 import os
 import os.path
 import re
+import tempfile
 
 import nimp.sys.process
 import nimp.system
@@ -231,7 +232,8 @@ class P4:
 
     def reconcile_workspace(self, *paths_to_reconcile, cl_number=None, dry_run=False):
         ''' Reconciles given workspace '''
-        p4_reconcile_args = ['reconcile', '-f', '-e', '-a', '-d']
+
+        p4_reconcile_args = ['-f', '-e', '-a', '-d']
         if dry_run:
             p4_reconcile_args.append('-n')
         if cl_number:
@@ -242,7 +244,7 @@ class P4:
                     path_to_reconcile = os.path.join(path_to_reconcile, '...')
             p4_reconcile_args.append(path_to_reconcile)
 
-        return self._run(*p4_reconcile_args) is None
+        return self._run_using_arg_file('reconcile', *p4_reconcile_args) is not None
 
     def get_changelist_description(self, cl_number):
         ''' Returns description of given changelist '''
@@ -271,7 +273,7 @@ class P4:
     def print(self, p4_print_command_args):
         ''' wrapper for p4 print command '''
         data = ''
-        output = self._run('print', p4_print_command_args, use_json_format=True)
+        output = self._run('print', p4_print_command_args, use_json_format=True, hide_output=True)
         output = [json_element for json_element in output.splitlines() if json_element]
         for output_chunk in output:
             output_chunk = json.loads(output_chunk)
@@ -369,28 +371,22 @@ class P4:
     def submit_default_changelist(self, description=None, revert_unchanged=False, dry_run=False):
         ''' Submits given changelist '''
         logging.info("Submitting default changelist...")
-        command = self._get_p4_command('submit', '-f')
+        submit_args = []
         if revert_unchanged:
-            command.append('revertunchanged')
-        # descriptions could be too long for perforce limitations
-        command_length = len(' '.join(command))
-        perforce_cmd_max_characters_limit = 8191
+            submit_args.extend(['-f', 'revertunchanged'])
         if description:
-            d_flag = 4  # accounts for ' -d ' string
-            description_max_characters_limit = perforce_cmd_max_characters_limit - command_length - d_flag
-            description = description[:description_max_characters_limit]
-            command.extend(['-d', description])
+            # description has to fit on one line, even when using -x arg_file
+            # there is a perforce limitation to how long the desc can be however, arg_file or not, I tested this.
+            # p4 command failed: Identifiers too long.  Must not be longer than 1024 bytes of UTF-8
+            # ...happens when using 130000-ish bytes utf8 words
+            # anything under that seems to be fine, whatever happened to this 1024 bytes limit...
+            # couldn't find more info on this subject in the perforce documentation
+            description_limit = 120000
+            submit_args.extend(['-d', description[:description_limit]])
         if dry_run:
-            logging.info(command)
+            logging.info(f'{self._get_p4_command("submit")} {submit_args}')
             return True
-        else:
-            _, _, error = nimp.sys.process.call(command, capture_output=True)
-
-            if error is not None and error != "":
-                logging.error("%s", error.strip())
-                return False
-
-            return True
+        return self._run_using_arg_file('submit', *submit_args) is not None
 
     def sync(self, *files, cl_number = None):
         ''' Udpate given file '''
@@ -464,6 +460,19 @@ class P4:
                 return None
 
             return output
+
+    def _run_using_arg_file(self, command, *command_args):
+        ''' runs p4 <args...> -x arg_file_containing_command_args command '''
+        # perforce seems unable to handle a tempfile.TemporaryFile():
+        # p4 command failed: Perforce client error: open for read:
+        # <temp_file_path>: The process cannot access the file because it is being used by another process
+        # Use a temp dir instead so the temp file can be used by perforce...
+        # The dir and file is wiped anyway when exiting the context manager
+        with tempfile.TemporaryDirectory(prefix="p4_arg_file_") as tmp_dir:
+            arg_file_path = os.path.normpath(os.path.join(tmp_dir, 'p4_arg_file'))
+            with open(arg_file_path, 'w') as fp:
+                fp.write('\n'.join(command_args))
+            return self._run(*['-x', arg_file_path, command])
 
     def _parse_command_output(self, command, *patterns, stdin = None, hide_output = False):
         output = self._run(*command, stdin = stdin, hide_output = hide_output)
