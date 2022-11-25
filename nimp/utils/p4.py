@@ -270,15 +270,15 @@ class P4:
         ''' Returns the file revision currently synced in the workspace '''
         return next(self._parse_command_output(['have', file], r'\.\.\. haveRev (\d+)'), default=None)
 
-    def print(self, p4_print_command_args):
+    def print_file_data(self, file, revision=None):
         ''' wrapper for p4 print command '''
-        data = ''
-        output = self._run('print', p4_print_command_args, use_json_format=True, hide_output=True)
-        output = [json_element for json_element in output.splitlines() if json_element]
+        revision = f"#{revision}" if revision is not None else ''
+        data = None
+        output = self._run('print', file+revision, use_json_format=True, hide_output=False)
+        output = [json.loads(json_element) for json_element in output.splitlines() if json_element]
         for output_chunk in output:
-            output_chunk = json.loads(output_chunk)
             if 'data' in output_chunk:
-                data += output_chunk['data']
+                data = output_chunk['data']
         return data
 
     def get_or_create_changelist(self, description):
