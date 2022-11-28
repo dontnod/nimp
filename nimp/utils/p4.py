@@ -353,7 +353,7 @@ class P4:
         output = self._run('revert', '-a', '-c', cl_number, '//...')
         return output is not None
 
-    def submit(self, cl_number):
+    def _submit(self, cl_number):
         ''' Submits given changelist '''
         logging.info("Submiting changelist %s...", cl_number)
         command = self._get_p4_command('submit', '-f', 'revertunchanged', '-c', cl_number)
@@ -387,6 +387,50 @@ class P4:
             logging.info(f'{self._get_p4_command("submit")} {submit_args}')
             return True
         return self._run_using_arg_file('submit', *submit_args) is not None
+
+
+    def _get_cl_spec(self, cl_number=None):
+        command = ['change', '-o']
+        if cl_number is not None:
+            command.append(str(cl_number))
+        # We need the cl_spec with no -z tag, for later use as <p4 change -i>
+        return self._run(*command, hide_output=False, use_ztag=False)
+
+    def _set_cl_spec(self, cl_spec):
+        output = self._run(*['change', '-i'], stdin=cl_spec)
+        pattern = r"Change (\d+) (created|updated)"
+        matches = re.findall(pattern, output, re.MULTILINE)
+        assert len(matches) == 1
+        return matches[0]
+
+    def _update_cl_spec_field(self, cl_spec, spec_field, field_content):
+        assert spec_field in ALL_SPEC_FIELDS
+        possible_following_fields = r":\r\n|".join(ALL_SPEC_FIELDS)
+        # using dotall flag rather than multiline, that stops at first encountered \r\n
+        pattern = re.compile(rf'{spec_field}:\r\n\t(.*)\r\n\r\n({possible_following_fields}:\r\n)', re.DOTALL)
+        matches = re.findall(pattern, cl_spec)
+        if not matches:
+            # It's possible that there is no following field
+            pattern = re.compile(rf'{spec_field}:\r\n\t(.*)(\r\n\r\n)', re.DOTALL)
+            matches = re.findall(pattern, cl_spec)
+        assert len(matches) == 1
+        initial_desc, following_field = matches[0]
+        return re.sub(pattern, f'{spec_field}:\r\n\t{field_content}\r\n\r\n{following_field}', cl_spec)
+
+    def submit(self, cl_number=None, description=None):
+        ''' submit from default if no cl_number is provided
+            or else submit given cl_number
+            description can be set or updated '''
+        assert any(a is not None for a in [cl_number, description])
+
+        if description is not None:
+            cl_spec = self._get_cl_spec(cl_number=cl_number)
+            cl_spec = self._update_cl_spec_field(cl_spec, SpecField.description,
+                                                 "\n\t".join(line for line in description.splitlines()))
+            cl_number, status = self._set_cl_spec(cl_spec)
+
+        return self._submit(cl_number)
+
 
     def sync(self, *files, cl_number = None):
         ''' Udpate given file '''
@@ -423,8 +467,10 @@ class P4:
                    .replace('#', '%23') \
                    .replace('*', '%2A')
 
-    def _get_p4_command(self, *args, use_json_format=False):
-        command = ['p4', '-z', 'tag']
+    def _get_p4_command(self, *args, use_ztag=True, use_json_format=False):
+        command = ['p4']
+        if use_ztag:
+            command += ['-z', 'tag']
         if use_json_format:
             command.append('-Mj')
         if self._port is not None:
@@ -439,8 +485,8 @@ class P4:
         command += list(args)
         return command
 
-    def _run(self, *args, stdin=None, hide_output=False, use_json_format=False):
-        command = self._get_p4_command(*args, use_json_format=use_json_format)
+    def _run(self, *args, stdin=None, hide_output=False, use_json_format=False, use_ztag=True):
+        command = self._get_p4_command(*args, use_json_format=use_json_format, use_ztag=use_ztag)
 
         for _ in range(5):
             result, output, error = nimp.sys.process.call(
@@ -491,3 +537,34 @@ class P4:
 
             for elem in zip(*match_list):
                 yield elem
+
+
+class SpecField():
+    change = 'Change'
+    date = 'Date'
+    client = 'Client'
+    user = 'User'
+    status = 'Status'
+    type = 'Type'
+    description = 'Description'
+    imported_by = 'ImportedBy'
+    identity = 'Identity'
+    jobs = 'jobs'
+    stream = 'Stream'
+    files=  'Files'
+
+
+ALL_SPEC_FIELDS = [
+    SpecField.change,
+    SpecField.date,
+    SpecField.client,
+    SpecField.user,
+    SpecField.status,
+    SpecField.type,
+    SpecField.description,
+    SpecField.imported_by,
+    SpecField.identity,
+    SpecField.jobs,
+    SpecField.stream,
+    SpecField.files
+]
