@@ -405,17 +405,18 @@ class P4:
 
     def _update_cl_spec_field(self, cl_spec, spec_field, field_content):
         assert spec_field in ALL_SPEC_FIELDS
-        possible_following_fields = r":\r\n|".join(ALL_SPEC_FIELDS)
-        # using dotall flag rather than multiline, that stops at first encountered \r\n
-        pattern = re.compile(rf'{spec_field}:\r\n\t(.*)\r\n\r\n({possible_following_fields}:\r\n)', re.DOTALL)
+        possible_following_fields = fr":{os.linesep}|".join(ALL_SPEC_FIELDS) + fr':{os.linesep}'
+        pattern = re.compile(rf'{spec_field}:{os.linesep}\t(.*){os.linesep}{os.linesep}({possible_following_fields})',
+                             # using dotall flag rather than multiline, that stops at first encountered \r\n
+                             re.DOTALL)
         matches = re.findall(pattern, cl_spec)
         if not matches:
             # It's possible that there is no following field
-            pattern = re.compile(rf'{spec_field}:\r\n\t(.*)(\r\n\r\n)', re.DOTALL)
+            pattern = re.compile(rf'{spec_field}:{os.linesep}\t(.*)({os.linesep}{os.linesep})', re.DOTALL)
             matches = re.findall(pattern, cl_spec)
         assert len(matches) == 1
         initial_desc, following_field = matches[0]
-        return re.sub(pattern, f'{spec_field}:\r\n\t{field_content}\r\n\r\n{following_field}', cl_spec)
+        return re.sub(pattern, f'{spec_field}:{os.linesep}\t{field_content}{os.linesep}{os.linesep}{following_field}', cl_spec)
 
     def submit(self, cl_number=None, description=None):
         ''' submit from default if no cl_number is provided
