@@ -416,7 +416,9 @@ class P4:
             matches = re.findall(pattern, cl_spec)
         assert len(matches) == 1
         initial_desc, following_field = matches[0]
-        return re.sub(pattern, f'{spec_field}:{os.linesep}\t{field_content}{os.linesep}{os.linesep}{following_field}', cl_spec)
+        return cl_spec.replace(initial_desc, field_content)
+        # Replace desc rather than re.sub to preserve utf8 chars like \x7A\x3A
+        # return re.sub(pattern, rf'{spec_field}:{os.linesep}\t{field_content}{os.linesep}{os.linesep}{following_field}', cl_spec)
 
     def submit(self, cl_number=None, description=None):
         ''' submit from default if no cl_number is provided
@@ -426,8 +428,8 @@ class P4:
 
         if description is not None:
             cl_spec = self._get_cl_spec(cl_number=cl_number)
-            cl_spec = self._update_cl_spec_field(cl_spec, SpecField.description,
-                                                 "\n\t".join(line for line in description.splitlines()))
+            tabbed_description = "\n\t".join(line for line in description.splitlines())
+            cl_spec = self._update_cl_spec_field(cl_spec, SpecField.description, tabbed_description)
             cl_number, status = self._set_cl_spec(cl_spec)
 
         return self._submit(cl_number)
