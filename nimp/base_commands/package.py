@@ -889,7 +889,7 @@ class Package(nimp.command.Command):
             if package_configuration.target_platform == 'Win64' and package_configuration.msixvc:
                 Package.package_for_windows_msixvc(package_configuration, env.dry_run)
             else:
-                Package.package_for_desktop(package_configuration, vars(env), env.dry_run)
+                Package.package_for_desktop(env, package_configuration, vars(env), env.dry_run)
         # legacy console packaging
         elif package_configuration.target_platform == 'PS4':
             Package.package_for_sony(package_configuration, env.dry_run)
@@ -901,10 +901,13 @@ class Package(nimp.command.Command):
 
 
     @staticmethod
-    def package_for_desktop(package_configuration, file_mapper_arguments, dry_run):
+    def package_for_desktop(env, package_configuration, file_mapper_arguments, dry_run):
         source = package_configuration.stage_directory
         destination = 'Default-Final' if package_configuration.is_final_submission else 'Default'
         destination = package_configuration.package_directory + '/' + destination
+        # dirty hack to transition out of using default intermediate folders
+        if hasattr(env, 'packaging_dont_use_default') and env.packaging_dont_use_default:
+            destination = package_configuration.package_directory
         _try_remove(destination, dry_run)
         _try_create_directory(destination, dry_run)
 
