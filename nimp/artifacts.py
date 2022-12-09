@@ -320,3 +320,74 @@ def create_torrent(artifact_path, announce, dry_run):
         with open(torrent_path + '.tmp', 'wb') as torrent_file:
             torrent_file.write(BitTornado.Meta.bencode.bencode(torrent_metainfo))
         shutil.move(torrent_path + '.tmp', torrent_path)
+
+
+def create_hash(artifact_path, hash_method, dry_run):
+    artifact_full_path = _find_artifact(artifact_path)
+    if not artifact_full_path:
+        raise FileNotFoundError(f'Artifact not found: {artifact_path}')
+
+    file_hash = get_file_hash(artifact_full_path, hash_method)
+    if not file_hash:
+        raise ValueError(f'Something went wrong while hashing {artifact_full_path}')
+
+    if not dry_run:
+        with TempArtifact(f'{artifact_path}.{hash_method}', 'w', force=True) as fh:
+            fh.write(file_hash)
+
+
+def get_file_hash(file_path, hash_method):
+    ''' helper function to parse potentially big files '''
+    assert getattr(hashlib, hash_method)()
+    hash_lib = getattr(hashlib, hash_method)()
+
+    _BLOCK_SIZE = 65536
+
+    with open(file_path, 'rb') as fh:
+        file_buffer = fh.read(_BLOCK_SIZE)
+        while len(file_buffer) > 0:
+            hash_lib.update(file_buffer)
+            file_buffer = fh.read(_BLOCK_SIZE)
+    file_hash = hash_lib.hexdigest()
+
+    logging.debug(f"{file_path} {hash_method}: {file_hash}")
+    return file_hash
+
+
+# TODO (l.cahour): this is workaround the fact we don't use artifact objects containing the info we need
+def _find_artifact(artifact_path):
+    if os.path.isfile(artifact_path + '.zip'):
+        return artifact_path + '.zip'
+    elif os.path.isdir(artifact_path):
+        return artifact_path
+    else:
+        return None
+
+
+# TODO (l.cahour): this is a naive first attempt at using a wrapper class to clean how we handle artifacts saving
+#                  Try to make this better and use it everywhere else in the future
+class TempArtifact(object):
+    def __init__(self, file_path, mode, force=False):
+        self.name = file_path
+        self.temp = f'{file_path}.tmp'
+        self.mode = mode
+        self.force = force
+
+    def __enter__(self):
+        if self.force:
+            self.clear()
+        self.file_handle = open(self.temp, self.mode)
+        return self.file_handle
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.file_handle.close()
+        self.save()
+
+    def clear(self):
+        if os.path.isfile(self.temp):
+            os.remove(self.temp)
+        if os.path.isfile(self.name):
+            os.remove(self.name)
+
+    def save(self):
+        shutil.move(self.temp, self.name)

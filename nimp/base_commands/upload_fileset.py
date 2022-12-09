@@ -28,6 +28,7 @@ import shutil
 import zipfile
 
 import nimp.command
+import nimp.artifacts
 
 
 def _try_remove(file_path, dry_run):
@@ -49,6 +50,7 @@ class UploadFileset(nimp.command.Command):
         parser.add_argument('--archive', action = 'store_true', help = 'upload the files as a zip archive')
         parser.add_argument('--compress', action = 'store_true', help = 'if uploading as an archive, compress it')
         parser.add_argument('--torrent', action = 'store_true', help = 'create a torrent for the uploaded fileset')
+        parser.add_argument('--hash', metavar = '<hashlib>', default = None, help = 'create a hash for the uploaded fs')
         parser.add_argument('--force', action = 'store_true', help = 'if the artifact already exists, overwrite it')
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to upload')
         return True
@@ -97,5 +99,8 @@ class UploadFileset(nimp.command.Command):
         if env.torrent:
             logging.info('Creating torrent for %s', artifact_path)
             nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(artifact_path, env.torrent_tracker_announce, env.dry_run), OSError)
+        if env.hash is not None:
+            logging.info(f'Creating hash for {artifact_path}')
+            nimp.artifacts.create_hash(artifact_path, env.hash, env.dry_run)
 
         return True
