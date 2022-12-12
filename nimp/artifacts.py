@@ -24,6 +24,7 @@
 import copy
 import hashlib
 import glob
+import json
 import logging
 import os
 import platform
@@ -332,8 +333,8 @@ def create_hash(artifact_path, hash_method, dry_run):
         raise ValueError(f'Something went wrong while hashing {artifact_full_path}')
 
     if not dry_run:
-        with TempArtifact(f'{artifact_path}.{hash_method}', 'w', force=True) as fh:
-            fh.write(file_hash)
+        with TempArtifact(f'{artifact_full_path}.hash', 'w', force=True) as fh:
+            json.dump({hash_method: file_hash}, fh)
 
 
 def get_file_hash(file_path, hash_method):
