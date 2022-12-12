@@ -362,21 +362,19 @@ class Package(nimp.command.Command):
                 # where UAT expects it.
                 if should_configure_variant:
                     src_title_conf = env.format('{uproject_dir}/Platforms/PS5/Build/Variants/' + env.variant + '/TitleConfiguration.json')
-                else:
-                    src_title_conf = env.format('{uproject_dir}/Platforms/PS5/Build/Variants/BaseGame/TitleConfiguration.json')
-                    logging.info(f'No variant specified, using {src_title_conf} by default.')
-
-                if not os.path.exists(src_title_conf):
-                    raise FileNotFoundError(f'Missing file: {src_title_conf}, the BaseGame variant and its configuration is required to exist.')
-
-                logging.info(f'Copying {src_title_conf} to {dst_title_conf}')
-                shutil.copyfile(src_title_conf, dst_title_conf)
+                    if os.path.exists(src_title_conf):
+                        logging.info(f'Copying {src_title_conf} to {dst_title_conf}')
+                        shutil.copyfile(src_title_conf, dst_title_conf)
+                    else:
+                        logging.info('No TitleConfiguration.json found, UAT will generate its own configuration for a local package.')
             yield
         finally:
             if is_monorepo_behavior:
                 _try_remove(active_configuration_directory, False)
-            if env.unreal_platform == 'PS5':
-                _try_remove(dst_title_conf, False)
+            if env.unreal_platform == 'PS5' and should_configure_variant:
+                if os.path.exists(dst_title_conf):
+                    # The file exists only if it's been copied from a variant folder.
+                    _try_remove(dst_title_conf, False)
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
