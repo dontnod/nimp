@@ -103,10 +103,12 @@ class PS5(nimp.sys.platform.Platform):
         if variant:
             json_file_path = project_directory + '/Platforms/PS5/Build/Variants/' + variant + '/TitleConfiguration.json'
         else:
+            # We allow to launch without --variant for convenience, and expect a BaseGame variant to exist.
             json_file_path = project_directory + '/Platforms/PS5/Build/Variants/BaseGame/TitleConfiguration.json'
-            logging.info(f'No variant specified, using {json_file_path} by default.')
-        if not os.path.exists(json_file_path):
-            logging.error(f'Missing file: {json_file_path}, the BaseGame variant and its configuration is required to exist.')
+            if os.path.exists(json_file_path):
+                logging.info(f'No variant specified, using {json_file_path} by default.')
+            else:
+                logging.warning('No variant specified, no BaseGame variant found.')
 
         if not os.path.exists(json_file_path):
             return None
