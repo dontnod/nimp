@@ -93,7 +93,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
         in_pipe.write(data)
         in_pipe.close()
 
-    def _output_worker(index):
+    def _output_worker(index, decoding_format):
         in_pipe = all_pipes[index]
         capture_array = all_captures[index]
         if in_pipe is None:
@@ -104,9 +104,12 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
             # Try to decode as UTF-8 with BOM first; if it fails, try CP850 on
             # Windows, or UTF-8 with BOM and error substitution elsewhere. If
             # it fails again, try CP850 with error substitution.
-            encodings = [('ascii', 'backslashreplace') if force_ascii else ('utf-8-sig', 'strict'),
-                         ('cp850', 'strict') if nimp.sys.platform.is_windows() else ('utf-8-sig', 'replace'),
-                         ('cp850', 'replace')]
+            encodings = [
+                (decoding_format, 'strict'),
+                ('ascii', 'backslashreplace') if force_ascii else ('utf-8-sig', 'strict'),
+                ('cp850', 'strict') if nimp.sys.platform.is_windows() else ('utf-8-sig', 'replace'),
+                ('cp850', 'replace')
+            ]
             for data in iter(in_pipe.readline, b''):
                 for encoding, errors in encodings:
                     try:
@@ -135,7 +138,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
 
 
     # Default threads
-    all_workers = [ threading.Thread(target=_output_worker, args=(i,)) for i in range(3) ]
+    all_workers = [threading.Thread(target=_output_worker, args=(i, encoding)) for i in range(3)]
 
     # Thread to feed stdin data if necessary
     if stdin is not None:
