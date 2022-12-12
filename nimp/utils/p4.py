@@ -392,11 +392,11 @@ class P4:
         command += list(args)
         return command
 
-    def _run(self, *args, stdin=None, hide_output=False):
+    def _run(self, *args, stdin=None, hide_output=False, encoding='cp437'):
         command = self._get_p4_command(*args)
 
         for _ in range(5):
-            result, output, error = nimp.sys.process.call(command, stdin=stdin, encoding='cp437', capture_output=True, hide_output=hide_output)
+            result, output, error = nimp.sys.process.call(command, stdin=stdin, encoding=encoding, capture_output=True, hide_output=hide_output)
 
             if 'Operation took too long ' in error:
                 continue
@@ -413,8 +413,8 @@ class P4:
 
             return output
 
-    def _parse_command_output(self, command, *patterns, stdin = None, hide_output = False):
-        output = self._run(*command, stdin = stdin, hide_output = hide_output)
+    def _parse_command_output(self, command, *patterns, stdin = None, hide_output = False, encoding='cp437'):
+        output = self._run(*command, stdin = stdin, hide_output = hide_output, encoding=encoding)
 
         if output is not None:
             match_list = []
