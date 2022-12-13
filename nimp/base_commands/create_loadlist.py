@@ -96,7 +96,8 @@ class CreateLoadlist(nimp.command.Command):
 
 		modified_files = set()
 		exclude_dirs = self._normpath_dirs(env.exclude_dirs)
-		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$", hide_output=True):
+		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$",
+													 hide_output=True, encoding='utf-8'):
 			modified_file_path = os.path.normpath(filepath)
 			if not self._exclude_from_modified_files(exclude_dirs, modified_file_path):
 				modified_files.add(modified_file_path)
