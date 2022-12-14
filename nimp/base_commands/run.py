@@ -192,7 +192,8 @@ class ConsoleGameCommand(nimp.command.Command):
     def fetch(self, env):
         env.fetch = self.get_path_from_parameter(env.fetch, env)
         if env.outdir == 'local':
-            env.outdir = self.get_local_path(env)
+            # We don't use get_local_path here as that would return the config subdirectory (e.g. Saved/StagedBuilds/Development)
+            env.outdir = f'{env.uproject_dir}/Saved/{self.local_directory}/{self.platform_directory}'
 
         if shutil.which('robocopy'):
             return self.fetch_with_robocopy(env)
