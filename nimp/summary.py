@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2014-2019 Dontnod Entertainment
+# Copyright (c) 2014-2022 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -49,6 +49,8 @@ class SummaryHandler(logging.Handler):
         self._context_patterns = []
         self._has_errors = False
         self._has_warnings = False
+        self._errors_stack = []
+        self._warnings_stack = []
 
         error_patterns = [
             # GCC
@@ -246,19 +248,23 @@ class DefaultSummaryHandler(SummaryHandler):
             self._summary += '[  NOTIF  ] %s\n' % (msg,)
 
     def _add_warning(self, msg):
+        self._warnings_stack += ['\n *********************************************\n']
         if len(self._context) == self._context.maxlen:
             self._summary += '\n *********************************************\n'
             while self._context:
-                self._summary += '[  NOTIF  ] %s\n' % (self._context.popleft(),)
-        self._summary += '[ WARNING ] %s\n' % (msg,)
+                self._warnings_stack += ['[  NOTIF  ] %s\n' % (self._context.popleft(),)]
+        self._warnings_stack += ['[ WARNING ] %s\n' % (msg,)]
 
     def _add_error(self, msg):
+        self._errors_stack += ['\n *********************************************\n']
         if len(self._context) == self._context.maxlen:
-            self._summary += '\n *********************************************\n'
             while self._context:
-                self._summary += '[  NOTIF  ] %s\n' % (self._context.popleft(),)
-        self._summary += '[  ERROR  ] %s\n' % (msg,)
+                self._errors_stack += ['[  NOTIF  ] %s\n' % (self._context.popleft(),)]
+        self._errors_stack += ['[  ERROR  ] %s\n' % (msg,)]
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
-        destination.write(self._summary)
+        for lvl in ['errors', 'warnings']:
+            for line in self.__dict__["_{0}_stack".format(lvl)]:
+                destination.write(line)
+        destination.close()
