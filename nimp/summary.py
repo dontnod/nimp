@@ -230,7 +230,6 @@ class DefaultSummaryHandler(SummaryHandler):
     adding three lines of context before / after errors """
     def __init__(self, env):
         super().__init__(env)
-        self._summary = ''
         self._context = collections.deque([], 4)
 
     def _add_notif(self, msg):
@@ -242,15 +241,10 @@ class DefaultSummaryHandler(SummaryHandler):
                     msg = group_dict['message']
                     break
         self._context.append(msg)
-        show_context = len(self._context) < self._context.maxlen
-        show_context = show_context and (self._has_errors or self._has_warnings)
-        if show_context:
-            self._summary += '[  NOTIF  ] %s\n' % (msg,)
 
     def _add_warning(self, msg):
         self._warnings_stack += ['\n *********************************************\n']
         if len(self._context) == self._context.maxlen:
-            self._summary += '\n *********************************************\n'
             while self._context:
                 self._warnings_stack += ['[  NOTIF  ] %s\n' % (self._context.popleft(),)]
         self._warnings_stack += ['[ WARNING ] %s\n' % (msg,)]
