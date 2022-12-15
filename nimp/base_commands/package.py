@@ -1030,6 +1030,7 @@ class Package(nimp.command.Command):
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,
                 '-SkipCook', '-SkipStage', '-Package',
+                '-DNEDlc' if env.dlc else ''
             ]
 
             if package_configuration.no_compile_packaging:
