@@ -192,7 +192,8 @@ class ConsoleGameCommand(nimp.command.Command):
     def fetch(self, env):
         env.fetch = self.get_path_from_parameter(env.fetch, env)
         if env.outdir == 'local':
-            env.outdir = self.get_local_path(env)
+            # We don't use get_local_path here as that would return the config subdirectory (e.g. Saved/StagedBuilds/Development)
+            env.outdir = f'{env.uproject_dir}/Saved/{self.local_directory}/{self.platform_directory}'
 
         if shutil.which('robocopy'):
             return self.fetch_with_robocopy(env)
@@ -200,12 +201,12 @@ class ConsoleGameCommand(nimp.command.Command):
             return self.fetch_with_copy(env)
 
     def fetch_with_robocopy(self, env):
-        logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
+        logging.info(f'Mirroring {env.fetch} into {env.outdir}')
         cmdline = ['robocopy', '/MIR', '/R:5', '/W:5', '/TBD', '/NJH', '/ETA', '/MT', '/J']
         if env.restartable_fetch:
             cmdline.append('/Z')
         cmdline += [env.fetch, env.outdir]
-        logging.info('Running "%s"', ' '.join(cmdline))
+        logging.info(f'Running "{" ".join(cmdline)}"')
         if env.dry_run:
             return True
         result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)
@@ -213,10 +214,10 @@ class ConsoleGameCommand(nimp.command.Command):
     
     def fetch_with_copy(self, env):
         if os.path.exists(env.outdir):
-            logging.warning(env.outdir + ' exists. Deleting it.')
+            logging.warning(f'{env.outdir} exists. Deleting it.')
             if not env.dry_run:
                 shutil.rmtree(env.outdir)
-        logging.info('Copying from ' + env.fetch + ' to ' + env.outdir)
+        logging.info(f'Copying from {env.fetch} to {env.outdir}')
         if env.dry_run:
             return True
         return shutil.copytree(env.fetch, env.outdir)
@@ -225,18 +226,26 @@ class ConsoleGameCommand(nimp.command.Command):
     def deploy(self, env):
         env.deploy = self.get_path_from_parameter(env.deploy, env)
         if not os.path.isdir(env.deploy):
-            raise FileNotFoundError('Invalid path / could not find a valid pkg file in %s' % env.deploy)
+            raise FileNotFoundError(f'Invalid path / could not find a valid pkg file in {env.deploy}')
         return self._deploy(env)
 
     def get_path_from_parameter(self, param, env):
+        path = param
         if str.isdigit(param):
-            return self.fetch_pkg_by_revision(env, param)
+            path = self.fetch_pkg_by_revision(env, param)
         # if 'latest' was provided, fetch latest package uploaded to /b/
         elif param.lower() == 'latest':
-            return self.fetch_pkg_latest(env)
+            path = self.fetch_pkg_latest(env)
         elif param == 'local':
-            return self.get_local_path(env)
-        return param
+            path = self.get_local_path(env)
+
+        # Depending on the game and platform, we may have a path like
+        #   B:\pg0-alf\main\packages\fullgame\pg0-alf-main-fullgame-1146142-xsx-staged\XSX
+        # In that case, get rid of the trailing "\XSX"
+        platform_intermediate_directory = f'{path}/{env.platform}'
+        if os.path.exists(platform_intermediate_directory):
+            path = platform_intermediate_directory
+        return path
 
     def get_local_path(self, env):
         path = env.uproject_dir + '/Saved/' + self.local_directory + '/' + self.platform_directory
@@ -245,27 +254,31 @@ class ConsoleGameCommand(nimp.command.Command):
             return config_path
         return path
 
+    def get_artifact_repository(self, env, rev):
+        return env.format(f'{env.artifact_repository_destination}/{env.artifact_collection[self.buildbot_directory_ending]}', target=env.variant, revision=rev)
+
     def fetch_pkg_by_revision(self, env, rev):
         if not env.variant:
             raise RuntimeError('"variant" parameter is required to fetch remote packages')
 
-        logging.info('Looking for a %s test package at CL#%s' % (env.platform, rev))
-        artifact_repository = env.format(env.artifact_repository_destination)
-        deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant + '/' +
-                                    ('%s-%s-%s-%s-%s/%s/' % (env.project, env.variant, rev, env.platform, self.buildbot_directory_ending, self.platform_directory)))
-        return deploy_repository
+        logging.info(f'Looking for a {env.platform} test package at CL#{rev}')
+        artifact_repository = self.get_artifact_repository(env, rev)
+        return  nimp.system.sanitize_path(artifact_repository)
 
     def fetch_pkg_latest(self, env):
         if not env.variant:
             raise RuntimeError('"variant" parameter is required to fetch remote packages')
 
-        artifact_repository = env.format(env.artifact_repository_destination)
-        deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant)
-        logging.info('Looking for latest %s package in %s' % (env.platform, deploy_repository))
+        artifact_repository = self.get_artifact_repository(env, '<revision>') # Path for a given revision
+        parent_directory =  os.path.dirname(nimp.system.sanitize_path(artifact_repository)) # Path containing all the revisions
+        logging.info(f'Looking for latest {env.platform} package in {parent_directory}')
+
+        pkg_directory_format = os.path.basename(artifact_repository)
+        pkg_directory_format = pkg_directory_format.replace('<revision>', r'(\d+)')
+        regex = re.compile(pkg_directory_format)
 
         rev = '0'
-        regex = re.compile(("%s-%s-" % (env.project, env.variant)) + r'(\d+)' + ('-%s-%s' % (env.platform, self.buildbot_directory_ending)))
-        for d in os.listdir(deploy_repository):
+        for d in os.listdir(parent_directory):
             m = regex.match(d)
             if m and m.group(1) > rev:
                 rev = m.group(1)
