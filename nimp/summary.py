@@ -47,10 +47,9 @@ class SummaryHandler(logging.Handler):
         self._error_patterns = []
         self._warning_patterns = []
         self._context_patterns = []
-        self._has_errors = False
-        self._has_warnings = False
-        self._errors_stack = []
-        self._warnings_stack = []
+        self._summary = {}
+        self._summary['errors'] = []
+        self._summary['warnings'] = []
 
         error_patterns = [
             # GCC
@@ -169,11 +168,11 @@ class SummaryHandler(logging.Handler):
 
     def has_errors(self):
         ''' Returns true if errors were emitted during program execution '''
-        return self._has_errors
+        return len(self._summary['errors']) > 0
 
     def has_warnings(self):
         ''' Returns true if warnings were emitted during program execution '''
-        return self._has_warnings
+        return len(self._summary['warnings']) > 0
 
     def emit(self, record):
         msg = record.getMessage()
@@ -184,41 +183,31 @@ class SummaryHandler(logging.Handler):
                 return
 
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
-            self._add_error(self.format(record))
-            self._has_errors = True
+            self._add_msg('error', self.format(record))
             return
         if record.levelno == logging.WARNING:
-            self._add_warning(self.format(record))
-            self._has_warnings = True
+            self._add_msg('warning', self.format(record))
             return
-
-        if SummaryHandler._match_message(self._error_patterns, msg, self._add_error):
-            self._has_errors = True
-        elif self._match_message(self._warning_patterns, msg, self._add_warning):
-            self._has_warnings = True
         else:
             self._add_notif(msg)
+        self._match_message(self._error_patterns, msg, 'error')
+        self._match_message(self._warning_patterns, msg, 'warning')
 
-    @staticmethod
-    def _match_message(patterns, msg, add_callback):
+    def _match_message(self, patterns, msg, notif_lvl):
         for pattern in patterns:
             match = pattern.match(msg)
             if match is not None:
                 group_dict = match.groupdict()
                 if 'message' in group_dict:
                     msg = group_dict['message']
-
-                add_callback(msg)
+                self._add_msg(notif_lvl, msg)
                 return True
         return False
 
     def _add_notif(self, msg):
         pass
 
-    def _add_warning(self, msg):
-        pass
-
-    def _add_error(self, msg):
+    def _add_msg(self, notif_lvl, msg):
         pass
 
     def _write_summary(self, destination):
@@ -242,23 +231,14 @@ class DefaultSummaryHandler(SummaryHandler):
                     break
         self._context.append(msg)
 
-    def _add_warning(self, msg):
-        self._warnings_stack += ['\n *********************************************\n']
+    def _add_msg(self, notif_lvl, msg):
+        self._summary[f'{notif_lvl}s'] += ['\n *********************************************\n']
         if len(self._context) == self._context.maxlen:
             while self._context:
-                self._warnings_stack += ['[  NOTIF  ] %s\n' % (self._context.popleft(),)]
-        self._warnings_stack += ['[ WARNING ] %s\n' % (msg,)]
-
-    def _add_error(self, msg):
-        self._errors_stack += ['\n *********************************************\n']
-        if len(self._context) == self._context.maxlen:
-            while self._context:
-                self._errors_stack += ['[  NOTIF  ] %s\n' % (self._context.popleft(),)]
-        self._errors_stack += ['[  ERROR  ] %s\n' % (msg,)]
+                self._summary[f'{notif_lvl}s'] += ['[  NOTIF  ] %s\n' % (self._context.popleft(),)]
+        self._summary[f'{notif_lvl}s'] += ['[ ' + notif_lvl.upper() + ' ] %s\n' % (msg,)]
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
         for lvl in ['errors', 'warnings']:
-            for line in self.__dict__["_{0}_stack".format(lvl)]:
-                destination.write(line)
-        destination.close()
+            destination.writelines(self._summary[lvl])
