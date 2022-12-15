@@ -201,12 +201,12 @@ class ConsoleGameCommand(nimp.command.Command):
             return self.fetch_with_copy(env)
 
     def fetch_with_robocopy(self, env):
-        logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
+        logging.info(f'Mirroring {env.fetch} into {env.outdir}')
         cmdline = ['robocopy', '/MIR', '/R:5', '/W:5', '/TBD', '/NJH', '/ETA', '/MT', '/J']
         if env.restartable_fetch:
             cmdline.append('/Z')
         cmdline += [env.fetch, env.outdir]
-        logging.info('Running "%s"', ' '.join(cmdline))
+        logging.info(f'Running "{" ".join(cmdline)}"')
         if env.dry_run:
             return True
         result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)
@@ -214,10 +214,10 @@ class ConsoleGameCommand(nimp.command.Command):
     
     def fetch_with_copy(self, env):
         if os.path.exists(env.outdir):
-            logging.warning(env.outdir + ' exists. Deleting it.')
+            logging.warning(f'{env.outdir} exists. Deleting it.')
             if not env.dry_run:
                 shutil.rmtree(env.outdir)
-        logging.info('Copying from ' + env.fetch + ' to ' + env.outdir)
+        logging.info(f'Copying from {env.fetch} to {env.outdir}')
         if env.dry_run:
             return True
         return shutil.copytree(env.fetch, env.outdir)
@@ -226,7 +226,7 @@ class ConsoleGameCommand(nimp.command.Command):
     def deploy(self, env):
         env.deploy = self.get_path_from_parameter(env.deploy, env)
         if not os.path.isdir(env.deploy):
-            raise FileNotFoundError('Invalid path / could not find a valid pkg file in %s' % env.deploy)
+            raise FileNotFoundError(f'Invalid path / could not find a valid pkg file in {env.deploy}')
         return self._deploy(env)
 
     def get_path_from_parameter(self, param, env):
@@ -261,7 +261,7 @@ class ConsoleGameCommand(nimp.command.Command):
         if not env.variant:
             raise RuntimeError('"variant" parameter is required to fetch remote packages')
 
-        logging.info('Looking for a %s test package at CL#%s' % (env.platform, rev))
+        logging.info(f'Looking for a {env.platform} test package at CL#{rev}')
         artifact_repository = self.get_artifact_repository(env, rev)
         return  nimp.system.sanitize_path(artifact_repository)
 
