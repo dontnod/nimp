@@ -230,14 +230,22 @@ class ConsoleGameCommand(nimp.command.Command):
         return self._deploy(env)
 
     def get_path_from_parameter(self, param, env):
+        path = param
         if str.isdigit(param):
-            return self.fetch_pkg_by_revision(env, param)
+            path = self.fetch_pkg_by_revision(env, param)
         # if 'latest' was provided, fetch latest package uploaded to /b/
         elif param.lower() == 'latest':
-            return self.fetch_pkg_latest(env)
+            path = self.fetch_pkg_latest(env)
         elif param == 'local':
-            return self.get_local_path(env)
-        return param
+            path = self.get_local_path(env)
+
+        # Depending on the game and platform, we may have a path like
+        #   B:\pg0-alf\main\packages\fullgame\pg0-alf-main-fullgame-1146142-xsx-staged\XSX
+        # In that case, get rid of the trailing "\XSX"
+        platform_intermediate_directory = f'{path}/{env.platform}'
+        if os.path.exists(platform_intermediate_directory):
+            path = platform_intermediate_directory
+        return path
 
     def get_local_path(self, env):
         path = env.uproject_dir + '/Saved/' + self.local_directory + '/' + self.platform_directory
