@@ -254,27 +254,31 @@ class ConsoleGameCommand(nimp.command.Command):
             return config_path
         return path
 
+    def get_artifact_repository(self, env, rev):
+        return env.format(f'{env.artifact_repository_destination}/{env.artifact_collection[self.buildbot_directory_ending]}', target=env.variant, revision=rev)
+
     def fetch_pkg_by_revision(self, env, rev):
         if not env.variant:
             raise RuntimeError('"variant" parameter is required to fetch remote packages')
 
         logging.info('Looking for a %s test package at CL#%s' % (env.platform, rev))
-        artifact_repository = env.format(env.artifact_repository_destination)
-        deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant + '/' +
-                                    ('%s-%s-%s-%s-%s/%s/' % (env.project, env.variant, rev, env.platform, self.buildbot_directory_ending, self.platform_directory)))
-        return deploy_repository
+        artifact_repository = self.get_artifact_repository(env, rev)
+        return  nimp.system.sanitize_path(artifact_repository)
 
     def fetch_pkg_latest(self, env):
         if not env.variant:
             raise RuntimeError('"variant" parameter is required to fetch remote packages')
 
-        artifact_repository = env.format(env.artifact_repository_destination)
-        deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant)
-        logging.info('Looking for latest %s package in %s' % (env.platform, deploy_repository))
+        artifact_repository = self.get_artifact_repository(env, '<revision>') # Path for a given revision
+        parent_directory =  os.path.dirname(nimp.system.sanitize_path(artifact_repository)) # Path containing all the revisions
+        logging.info(f'Looking for latest {env.platform} package in {parent_directory}')
+
+        pkg_directory_format = os.path.basename(artifact_repository)
+        pkg_directory_format = pkg_directory_format.replace('<revision>', r'(\d+)')
+        regex = re.compile(pkg_directory_format)
 
         rev = '0'
-        regex = re.compile(("%s-%s-" % (env.project, env.variant)) + r'(\d+)' + ('-%s-%s' % (env.platform, self.buildbot_directory_ending)))
-        for d in os.listdir(deploy_repository):
+        for d in os.listdir(parent_directory):
             m = regex.match(d)
             if m and m.group(1) > rev:
                 rev = m.group(1)
