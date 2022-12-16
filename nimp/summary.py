@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2014-2019 Dontnod Entertainment
+# Copyright (c) 2014-2022 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -47,8 +47,9 @@ class SummaryHandler(logging.Handler):
         self._error_patterns = []
         self._warning_patterns = []
         self._context_patterns = []
-        self._has_errors = False
-        self._has_warnings = False
+        self._summary = {}
+        self._summary['errors'] = []
+        self._summary['warnings'] = []
 
         error_patterns = [
             # GCC
@@ -167,11 +168,11 @@ class SummaryHandler(logging.Handler):
 
     def has_errors(self):
         ''' Returns true if errors were emitted during program execution '''
-        return self._has_errors
+        return len(self._summary['errors']) > 0
 
     def has_warnings(self):
         ''' Returns true if warnings were emitted during program execution '''
-        return self._has_warnings
+        return len(self._summary['warnings']) > 0
 
     def emit(self, record):
         msg = record.getMessage()
@@ -182,41 +183,31 @@ class SummaryHandler(logging.Handler):
                 return
 
         if record.levelno == logging.CRITICAL or record.levelno == logging.ERROR:
-            self._add_error(self.format(record))
-            self._has_errors = True
+            self._add_msg('error', self.format(record))
             return
         if record.levelno == logging.WARNING:
-            self._add_warning(self.format(record))
-            self._has_warnings = True
+            self._add_msg('warning', self.format(record))
             return
-
-        if SummaryHandler._match_message(self._error_patterns, msg, self._add_error):
-            self._has_errors = True
-        elif self._match_message(self._warning_patterns, msg, self._add_warning):
-            self._has_warnings = True
         else:
             self._add_notif(msg)
+        self._match_message(self._error_patterns, msg, 'error')
+        self._match_message(self._warning_patterns, msg, 'warning')
 
-    @staticmethod
-    def _match_message(patterns, msg, add_callback):
+    def _match_message(self, patterns, msg, notif_lvl):
         for pattern in patterns:
             match = pattern.match(msg)
             if match is not None:
                 group_dict = match.groupdict()
                 if 'message' in group_dict:
                     msg = group_dict['message']
-
-                add_callback(msg)
+                self._add_msg(notif_lvl, msg)
                 return True
         return False
 
     def _add_notif(self, msg):
         pass
 
-    def _add_warning(self, msg):
-        pass
-
-    def _add_error(self, msg):
+    def _add_msg(self, notif_lvl, msg):
         pass
 
     def _write_summary(self, destination):
@@ -228,7 +219,6 @@ class DefaultSummaryHandler(SummaryHandler):
     adding three lines of context before / after errors """
     def __init__(self, env):
         super().__init__(env)
-        self._summary = ''
         self._context = collections.deque([], 4)
 
     def _add_notif(self, msg):
@@ -240,25 +230,15 @@ class DefaultSummaryHandler(SummaryHandler):
                     msg = group_dict['message']
                     break
         self._context.append(msg)
-        show_context = len(self._context) < self._context.maxlen
-        show_context = show_context and (self._has_errors or self._has_warnings)
-        if show_context:
-            self._summary += '[  NOTIF  ] %s\n' % (msg,)
 
-    def _add_warning(self, msg):
+    def _add_msg(self, notif_lvl, msg):
+        self._summary[f'{notif_lvl}s'] += ['\n *********************************************\n']
         if len(self._context) == self._context.maxlen:
-            self._summary += '\n *********************************************\n'
             while self._context:
-                self._summary += '[  NOTIF  ] %s\n' % (self._context.popleft(),)
-        self._summary += '[ WARNING ] %s\n' % (msg,)
-
-    def _add_error(self, msg):
-        if len(self._context) == self._context.maxlen:
-            self._summary += '\n *********************************************\n'
-            while self._context:
-                self._summary += '[  NOTIF  ] %s\n' % (self._context.popleft(),)
-        self._summary += '[  ERROR  ] %s\n' % (msg,)
+                self._summary[f'{notif_lvl}s'] += ['[  NOTIF  ] %s\n' % (self._context.popleft(),)]
+        self._summary[f'{notif_lvl}s'] += ['[ ' + notif_lvl.upper() + ' ] %s\n' % (msg,)]
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
-        destination.write(self._summary)
+        for lvl in ['errors', 'warnings']:
+            destination.writelines(self._summary[lvl])
