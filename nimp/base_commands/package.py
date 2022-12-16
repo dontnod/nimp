@@ -1013,7 +1013,7 @@ class Package(nimp.command.Command):
         dst_microsoft_game_config = env.format('{uproject_dir}/Saved/StagedBuilds/XSX/Manifest/{unreal_config}/MicrosoftGame.config')
         logging.info(f'Copying %s to %s', src_microsoft_game_config, dst_microsoft_game_config)
         shutil.copyfile(src_microsoft_game_config, dst_microsoft_game_config)
-        package_configuration.extra_option.append('-DNEDlc')
+        package_configuration.extra_options.append('-NoGameOs')
 
     @staticmethod
     def package_with_uat(env, package_configuration):
