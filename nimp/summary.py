@@ -232,11 +232,11 @@ class DefaultSummaryHandler(SummaryHandler):
         self._context.append(msg)
 
     def _add_msg(self, notif_lvl, msg):
-        self._summary[f'{notif_lvl}s'] += ['\n *********************************************\n']
+        self._summary[f'{notif_lvl}s'].append('\n *********************************************\n')
         if len(self._context) == self._context.maxlen:
             while self._context:
-                self._summary[f'{notif_lvl}s'] += ['[  NOTIF  ] %s\n' % (self._context.popleft(),)]
-        self._summary[f'{notif_lvl}s'] += ['[ ' + notif_lvl.upper() + ' ] %s\n' % (msg,)]
+                self._summary[f'{notif_lvl}s'].append('[  NOTIF  ] %s\n' % (self._context.popleft(),))
+        self._summary[f'{notif_lvl}s'].append(f'[ {notif_lvl.upper()} ] {msg}\n')
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
