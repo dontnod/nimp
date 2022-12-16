@@ -457,7 +457,9 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
     adding three lines of context before / after errors """
     def __init__(self, env):
         super().__init__(env)
-        self._summary = ''
+        self._summary = {}
+        self._summary['errors'] = []
+        self._summary['warnings'] = []
         self._asset_summaries = {}
         self._hints = {}
         self._load_asset_patterns = {}
