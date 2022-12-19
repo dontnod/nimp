@@ -47,9 +47,7 @@ class SummaryHandler(logging.Handler):
         self._error_patterns = []
         self._warning_patterns = []
         self._context_patterns = []
-        self._summary = {}
-        self._summary['errors'] = []
-        self._summary['warnings'] = []
+        self._summary = {'errors': [], 'warnings': []}
 
         error_patterns = [
             # GCC

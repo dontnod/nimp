@@ -414,6 +414,13 @@ class _AssetSummary():
         """ Adds a message to this asset's summary """
         self._add_message(msg, self._warnings)
 
+    def _add_msg(self, notif_lvl, msg):
+        self._summary[f'{notif_lvl}s'].append('\n *********************************************\n')
+        if len(self._context) == self._context.maxlen:
+            while self._context:
+                self._summary[f'{notif_lvl}s'].append('[  NOTIF  ] %s\n' % (self._context.popleft(),))
+        self._summary[f'{notif_lvl}s'].append(f'[ {notif_lvl.upper()} ] {msg}\n')
+
     def write(self, destination):
         """ Writes summary for this asset into destination """
         if not self._errors and not self._warnings:
@@ -457,9 +464,7 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
     adding three lines of context before / after errors """
     def __init__(self, env):
         super().__init__(env)
-        self._summary = {}
-        self._summary['errors'] = []
-        self._summary['warnings'] = []
+        self._summary = {'errors': [], 'warnings': []}
         self._asset_summaries = {}
         self._hints = {}
         self._load_asset_patterns = {}
@@ -487,13 +492,13 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
     def _add_notif(self, msg):
         self._update_current_asset(msg)
 
-    def _add_warning(self, msg):
-        current_asset = self._update_current_asset(msg)
-        current_asset.add_warning(msg)
 
-    def _add_error(self, msg):
+    def _add_msg(self, notif_lvl, msg):
         current_asset = self._update_current_asset(msg)
-        current_asset.add_error(msg)
+        if notif_lvl == 'error':
+            current_asset.add_error(msg)
+        else:
+            current_asset.add_warning(msg)
 
     def _write_summary(self, destination):
         ''' Writes summary to destination '''
