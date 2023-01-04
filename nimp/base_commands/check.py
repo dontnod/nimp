@@ -23,6 +23,7 @@
 ''' Environment check command '''
 
 import abc
+import fnmatch
 import json
 import logging
 import os
@@ -127,11 +128,12 @@ class _Processes(CheckCommand):
 
     def configure_arguments(self, env, parser):
         parser.add_argument('-k', '--kill',
-                            help = 'Kill processes that can prevent builds',
-                            action = 'store_true')
+                            help='Kill processes that can prevent builds',
+                            action='store_true')
         parser.add_argument('-f', '--filters',
-                            nargs = '*',
-                            help = 'filter for specific processes')
+                            nargs='*',
+                            help='fnmatch filters, defaults to workspace',
+                            default=[os.path.normpath(f'{os.path.abspath(env.root_dir)}/*')])
         return True
 
     def _run_check(self, env):
@@ -141,11 +143,9 @@ class _Processes(CheckCommand):
         if not nimp.sys.platform.is_windows():
             return True
 
-        # Irrelevant if we’re not a Unreal project
+        # Irrelevant if we’re not an Unreal project
         if not hasattr(env, 'is_unreal') or not env.is_unreal:
             return True
-
-        prefix = os.path.abspath(env.root_dir).replace('/', '\\').lower()
 
         # Find all running binaries launched from the project directory
         # and optionally kill them, unless they’re in the exception list.
@@ -153,13 +153,10 @@ class _Processes(CheckCommand):
         for _ in range(5):
             found_problem = False
             processes = _Processes._list_windows_processes()
+
             for pid, info in processes.items():
-                if env.filters is not None:
-                    if not any(filter.lower() in info[0].lower() for filter in env.filters):
-                        continue
-                else:
-                    if not info[0].lower().startswith(prefix):
-                        continue
+                if not any(fnmatch.fnmatch(info[0], filter) for filter in env.filters):
+                    continue
                 process_basename = os.path.basename(info[0])
                 processes_ignore_patterns = _Processes.get_processes_ignore_patterns()
                 if any([re.match(p, process_basename, re.IGNORECASE) for p in processes_ignore_patterns]):
