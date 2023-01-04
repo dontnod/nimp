@@ -23,6 +23,7 @@
 ''' Environment check command '''
 
 import abc
+import argparse
 import json
 import logging
 import os
@@ -129,6 +130,9 @@ class _Processes(CheckCommand):
         parser.add_argument('-k', '--kill',
                             help = 'Kill processes that can prevent builds',
                             action = 'store_true')
+        parser.add_argument('-f', '--filters',
+                            nargs = argparse.ZERO_OR_MORE,
+                            help = 'filter for specific processes')
         return True
 
     def _run_check(self, env):
@@ -151,8 +155,12 @@ class _Processes(CheckCommand):
             found_problem = False
             processes = _Processes._list_windows_processes()
             for pid, info in processes.items():
-                if not info[0].lower().startswith(prefix):
-                    continue
+                if env.filters is not None:
+                    if not any(filter.lower() in info[0].lower() for filter in env.filters):
+                        continue
+                else:
+                    if not info[0].lower().startswith(prefix):
+                        continue
                 process_basename = os.path.basename(info[0])
                 processes_ignore_patterns = _Processes.get_processes_ignore_patterns()
                 if any([re.match(p, process_basename, re.IGNORECASE) for p in processes_ignore_patterns]):
