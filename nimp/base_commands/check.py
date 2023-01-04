@@ -23,7 +23,6 @@
 ''' Environment check command '''
 
 import abc
-import argparse
 import json
 import logging
 import os
@@ -131,7 +130,7 @@ class _Processes(CheckCommand):
                             help = 'Kill processes that can prevent builds',
                             action = 'store_true')
         parser.add_argument('-f', '--filters',
-                            nargs = argparse.ZERO_OR_MORE,
+                            nargs = '*',
                             help = 'filter for specific processes')
         return True
 
