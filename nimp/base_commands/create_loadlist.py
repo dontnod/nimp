@@ -21,10 +21,8 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import argparse
 import fnmatch
-import json
 import itertools
 import os
-import re
 
 import nimp.command
 import nimp.utils.p4
@@ -39,7 +37,7 @@ class CreateLoadlist(nimp.command.Command):
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
 		parser.add_argument('--dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to include', default = ['//{p4client}/...'])
 		parser.add_argument('--exclude-dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to exclude', default = None)
-		parser.add_argument('--check-empty', action = 'store_true', help = 'Returns check empty in json format')
+		parser.add_argument('--error-on-empty', action = 'store_true', help = 'return an error code if loadlist is empty')
 		nimp.utils.p4.add_arguments(parser)
 		nimp.command.add_common_arguments(parser, 'dry_run', 'slice_job')
 		return True
@@ -126,24 +124,13 @@ class CreateLoadlist(nimp.command.Command):
 		loadlist_path = env.output if env.output else f'{env.unreal_loadlist}'
 		loadlist_path = os.path.abspath(env.format(nimp.system.sanitize_path(loadlist_path)))
 
-		if env.check_empty:
-			return self.check_empty_loadlist(loadlist_files)
-
 		if not env.dry_run:
 			with open(loadlist_path, 'w') as fp:
 				for file in loadlist_files:
 					print(file)
 					fp.write(f'{file}\n')
 
-		return True
+		if env.error_on_empty:
+			return len(loadlist_files) > 0
 
-	def check_empty_loadlist(self, modified_files):
-		results = {'loadlist_is_empty': True}
-		if modified_files:
-			results['loadlist_is_empty'] = False
-
-		json_content = json.dumps(results, indent=4)
-		print('<loadlist_start>')
-		print(json_content)
-		print('<loadlist_end>')
 		return True
