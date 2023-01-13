@@ -1006,10 +1006,24 @@ class Package(nimp.command.Command):
                 json.dump(params, f, indent=4)
 
     @staticmethod
+    def configure_packaging_for_xsx_dlc(env, package_configuration):
+        src_microsoft_game_config = env.format('{uproject_dir}/Platforms/XSX/Build/Variants/' + env.variant + '/MicrosoftGame.config')
+        if not os.path.exists(src_microsoft_game_config):
+            raise FileNotFoundError(f'Missing file: {src_microsoft_game_config}, handcrafted MicrosoftGame.config for the DLC is required to exist.')
+        dst_microsoft_game_config = env.format('{uproject_dir}/Saved/StagedBuilds/XSX/Manifest/{unreal_config}/MicrosoftGame.config')
+        logging.info(f'Copying %s to %s', src_microsoft_game_config, dst_microsoft_game_config)
+        shutil.copyfile(src_microsoft_game_config, dst_microsoft_game_config)
+        # `-NoGameOs` is not a vanilla UAT argument. We use it in an internal patch that remvoves the addition of `/gameos [...]` when packaging for xbox.
+        package_configuration.extra_options.append('-NoGameOs')
+
+    @staticmethod
     def package_with_uat(env, package_configuration):
         if package_configuration.target_platform == 'PS5' and env.dlc:
             Package.configure_packaging_for_ps5_dlc(env, package_configuration)
 
+        if package_configuration.target_platform == 'XSX' and env.dlc:
+            Package.configure_packaging_for_xsx_dlc(env, package_configuration)
+            
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
                 package_configuration.uat_directory + '/AutomationTool.exe',
