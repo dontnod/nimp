@@ -242,13 +242,15 @@ class ConsoleGameCommand(nimp.command.Command):
         # Depending on the game and platform, we may have a path like
         #   B:\pg0-alf\main\packages\fullgame\pg0-alf-main-fullgame-1146142-xsx-staged\XSX
         # In that case, get rid of the trailing "\XSX"
-        platform_intermediate_directory = f'{path}/{env.platform}'
+        platform_desc = create_platform_desc(env.platform)
+        cook_platform = platform_desc.unreal_cook_name
+        platform_intermediate_directory = os.path.join(path, cook_platform)
         if os.path.exists(platform_intermediate_directory):
             path = platform_intermediate_directory
         return path
 
     def get_local_path(self, env):
-        path = env.uproject_dir + '/Saved/' + self.local_directory + '/' + self.platform_directory
+        path = os.path.join(env.uproject_dir, 'Saved', self.local_directory, self.platform_directory)
         config_path = os.path.join(path, env.unreal_config)
         if os.path.exists(config_path):
             return config_path
