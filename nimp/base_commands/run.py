@@ -101,7 +101,7 @@ class BaseUnrealCli(RunCommand):
     def run(self, env):
         args = env.parameters + nimp.unreal.get_args_for_unreal_cli(env)
         args = [env.format(arg) for arg in args]
-        self.run_unreal_command(env, args)
+        return self.run_unreal_command(env, args)
 
 
 class _Commandlet(BaseUnrealCli):
