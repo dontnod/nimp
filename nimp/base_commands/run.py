@@ -79,39 +79,42 @@ class _Hook(RunCommand):
             return False
         return nimp.environment.execute_hook(env.hook, env)
 
-class _Commandlet(RunCommand):
-    ''' Runs a commandlet '''
+class BaseUnrealCli(RunCommand):
+    ''' Base for unreal cli type commands '''
+
+    def __init__(self):
+        super().__init__()
+
     def configure_arguments(self, env, parser):
         super().configure_arguments(env, parser)
         nimp.command.add_common_arguments(parser, 'slice_job')
         nimp.utils.p4.add_arguments(parser)
 
-    def __init__(self):
-        super(_Commandlet, self).__init__()
+    def is_available(self, env):
+        if not nimp.unreal.is_unreal_available(env):
+            return False, 'Not an Unreal Engine project'
+        return True, ''
+
+    def run_unreal_command(self, env, args):
+        pass
 
     def run(self, env):
-        if not nimp.unreal.is_unreal_available(env):
-            logging.error('Not an Unreal Engine project')
-            return False
-        args = env.parameters + nimp.unreal.get_args_for_commandlet(env)
-        return nimp.unreal.commandlet(env, env.command_name, *[env.format(arg) for arg in args])
+        args = env.parameters + nimp.unreal.get_args_for_unreal_cli(env)
+        args = [env.format(arg) for arg in args]
+        self.run_unreal_command(env, args)
 
 
-class _Unreal_cli(RunCommand):
+class _Commandlet(BaseUnrealCli):
+    ''' Runs an unreal commandlet '''
+
+    def run_unreal_command(self, env, args):
+        return nimp.unreal.commandlet(env, env.command_name, *args)
+
+class _Unreal_cli(BaseUnrealCli):
     ''' Runs an unreal cli command '''
 
-    def __init__(self):
-        super(_Unreal_cli, self).__init__()
-
-    def configure_arguments(self, env, parser):
-        super().configure_arguments(env, parser)
-        nimp.utils.p4.add_arguments(parser)
-
-    def run(self, env):
-        if not nimp.unreal.is_unreal_available(env):
-            logging.error('Not an Unreal Engine project')
-            return False
-        return nimp.unreal.unreal_cli(env, env.command_name, *env.parameters)
+    def run_unreal_command(self, env, args):
+        return nimp.unreal.unreal_cli(env, env.command_name, *args)
 
 class _Exec_cmd(RunCommand):
     ''' Runs executables on the local host '''

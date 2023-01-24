@@ -551,7 +551,7 @@ def get_p4_args_for_commandlet(env):
         p4_args_for_commandlet.append('-AutoCheckout')
     return p4_args_for_commandlet
 
-def get_args_for_commandlet(env):
+def get_args_for_unreal_cli(env):
     args_for_commandlet = []
     args_for_commandlet += get_p4_args_for_commandlet(env)
     if env.has_attribute('slice_job_index') and env.has_attribute('slice_job_count'):
