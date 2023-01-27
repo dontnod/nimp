@@ -46,7 +46,7 @@ class UploadFileset(nimp.command.Command):
     ''' Uploads a fileset to the artifact repository '''
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser, 'dry_run', 'revision', 'free_parameters')
+        nimp.command.add_common_arguments(parser, 'dry_run', 'revision', 'slice_job', 'free_parameters')
         parser.add_argument('--archive', action = 'store_true', help = 'upload the files as a zip archive')
         parser.add_argument('--compress', action = 'store_true', help = 'if uploading as an archive, compress it')
         parser.add_argument('--torrent', action = 'store_true', help = 'create a torrent for the uploaded fileset')
@@ -66,7 +66,9 @@ class UploadFileset(nimp.command.Command):
         if env.torrent and not hasattr(env, 'torrent_tracker_announce'):
             env.torrent_tracker_announce = None
 
-        artifact_path = env.artifact_repository_destination + '/' + env.artifact_collection[env.fileset]
+        artifact_path = f'{env.artifact_repository_destination}/{env.artifact_collection[env.fileset]}'
+        if env.slice_job_index and env.slice_job_count:
+            artifact_path = f'{artifact_path}/slice-{env.slice_job_index}-of-{env.slice_job_count}'
 
         artifact_path = nimp.system.sanitize_path(env.format(artifact_path))
         artifact_path_tmp = env.artifact_repository_destination + '/.tmp/' + env.artifact_collection[env.fileset]
