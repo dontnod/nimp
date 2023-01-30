@@ -225,7 +225,7 @@ def _try_rename(src, dst, max_attempts=5, retry_delay=2):
         os.rename(src, dst)
     nimp.system.try_execute(_rename, OSError, attempt_maximum=max_attempts, retry_delay=retry_delay)
 
-def create_artifact(artifact_path, file_collection, archive, compress, dry_run, tmp_path=None):
+def create_artifact(artifact_path, file_collection, archive, compress, dry_run):
     ''' Create an artifact '''
 
     if os.path.isfile(artifact_path + '.zip') or os.path.isdir(artifact_path):
@@ -236,9 +236,6 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run, 
             os.remove(artifact_path + '.zip.tmp')
         if os.path.isdir(artifact_path + '.tmp'):
             shutil.rmtree(artifact_path + '.tmp')
-        if tmp_path is not None:
-            if os.path.isdir(tmp_path + '.tmp'):
-                shutil.rmtree(tmp_path + '.tmp')
 
     if dry_run:
         for source, destination in file_collection:
@@ -262,7 +259,7 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run, 
         shutil.move(archive_path + '.tmp', archive_path)
 
     else:
-        artifact_path_tmp = artifact_path + '.tmp' if tmp_path is None else tmp_path + '.tmp'
+        artifact_path_tmp = artifact_path + '.tmp'
         for source, destination in file_collection:
             if os.path.isdir(source):
                 continue
