@@ -24,6 +24,7 @@
 import os
 
 import unittest.mock
+from contextlib import contextmanager
 
 from functools import wraps
 import nimp.tests.utils
@@ -35,11 +36,19 @@ def test_decorator(f):
 
     @wraps(f)
     def wrapper(*args, **kwds):
-        print('\n****** UNIT TEST : {}'.format(f.__name__) + ' ******')
+        print(f'\n****** UNIT TEST : {f.__name__} ******')
         return f(*args, **kwds)
 
     return wrapper
 
+@contextmanager
+def cwd(path):
+    oldpwd = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(oldpwd)
 
 class _UnrealTests(unittest.TestCase):
     '''
@@ -52,6 +61,7 @@ class _UnrealTests(unittest.TestCase):
     '''
     GAME_CODE = os.getenv('TEST_GAME_CODE')
     WORKSPACE_DIR = os.getenv('TEST_WORKSPACE_DIR')
+    WORKSPACE_BRANCH = os.getenv('TEST_WORKSPACE_BRANCH', 'main')
     assert GAME_CODE is not None
     assert WORKSPACE_DIR is not None
 
@@ -61,20 +71,20 @@ class _UnrealTests(unittest.TestCase):
     P4_CLIENT = os.getenv('P4CLIENT')
 
     def _get_common_nimp_cmd(self, is_dry_run=True):
-        cmd_nimp = ['nimp', '-v', '--uproject', '%s/%s.UPROJECT' % (self.GAME_CODE, self.GAME_CODE), '--branch', 'main',
+        cmd_nimp = ['nimp', '-v', '--uproject', f'{self.GAME_CODE}/{self.GAME_CODE}.UPROJECT',
+                    '--branch', self.WORKSPACE_BRANCH,
                     'run', 'commandlet']
         if is_dry_run:
             cmd_nimp.append('--dry-run')
         return cmd_nimp
 
     def _get_common_p4(self):
-        return ['-SCCProvider=Perforce', '-P4Port=%s' % self.P4_PORT, '-P4User=%s' % self.P4_USER,
-                '-P4Client=%s' % self.P4_CLIENT]
+        return ['-SCCProvider=Perforce', f'-P4Port={self.P4_PORT}', f'-P4Port={self.P4_USER}', f'-P4Client={self.P4_CLIENT}']
 
     @test_decorator
     def test_loadpackage(self):
-        os.chdir(self.GAME_PATH)
         cmd_to_test = self._get_common_nimp_cmd(is_dry_run=False) + \
                       ['--', 'loadpackage', '-crashreports', '-skipmaps', '-nodev', '-notiled', '-fast',
                        '-projectonly', '-nopreprod', '*Layout*.uasset']
-        self.assertEqual(0, nimp.nimp_cli.main(cmd_to_test))
+        with cwd(self.GAME_PATH):
+            self.assertEqual(0, nimp.nimp_cli.main(cmd_to_test))
