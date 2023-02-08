@@ -478,8 +478,10 @@ class Package(nimp.command.Command):
         cook_command = [
             package_configuration.editor_path, package_configuration.project,
             '-Run=Cook', '-TargetPlatform=' + package_configuration.cook_platform,
-            '-BuildMachine', '-Unattended', '-StdOut', '-UTF8Output',
+            '-BuildMachine', '-Unattended', '-StdOut',
         ]
+        if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
+            cook_command += [ '-UTF8Output' ]
         if env.is_ue5:
             cook_command += [ '-unversioned' ]
         if package_configuration.iterative_cook:
@@ -552,7 +554,7 @@ class Package(nimp.command.Command):
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             stage_command = [
                 package_configuration.uat_directory + '/AutomationTool.exe',
-                'BuildCookRun', f'-UE{package_configuration.unreal_major}exe=' + package_configuration.editor_cmd_exe, '-UTF8Output',
+                'BuildCookRun', f'-UE{package_configuration.unreal_major}exe=' + package_configuration.editor_cmd_exe,
                 '-Project=' + package_configuration.project,
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,
@@ -560,6 +562,9 @@ class Package(nimp.command.Command):
                 # Deactivate NoDebugInfo and let UAT handle symbols
                 # '-NoDebugInfo',
             ]
+
+            if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
+                stage_command += ['-UTF8Output']
 
             if package_configuration.no_compile_packaging:
                 stage_command += [ '-NoCompile' ]
@@ -1027,12 +1032,15 @@ class Package(nimp.command.Command):
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
                 package_configuration.uat_directory + '/AutomationTool.exe',
-                'BuildCookRun', f'-UE{package_configuration.unreal_major}exe=' + package_configuration.editor_cmd_exe, '-UTF8Output',
+                'BuildCookRun', f'-UE{package_configuration.unreal_major}exe=' + package_configuration.editor_cmd_exe,
                 '-Project=' + package_configuration.project,
                 '-TargetPlatform=' + package_configuration.target_platform,
                 '-ClientConfig=' + package_configuration.binary_configuration,
                 '-SkipCook', '-SkipStage', '-Package',
             ]
+
+            if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
+                package_command += ['-UTF8Output']
 
             if package_configuration.no_compile_packaging:
                 package_command += [ '-NoCompile' ]
