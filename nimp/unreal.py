@@ -539,6 +539,7 @@ def get_default_args_for_cli(env):
     # Remove -forcelogflush because it slows down cooking
     # (https://udn.unrealengine.com/questions/330502/increased-cook-times-in-ue414.html)
     #yield '-forcelogflush'
+    yield '-locallogtimes'
 
 
 def get_p4_args_for_commandlet(env):
