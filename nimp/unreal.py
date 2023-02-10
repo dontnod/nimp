@@ -565,6 +565,6 @@ def get_args_for_commandlet(env):
     args_for_commandlet = []
     args_for_commandlet.extend(get_p4_args_for_commandlet(env))
     if env.has_attribute('slice_job_index') and env.has_attribute('slice_job_count'):
-        args_for_commandlet.append('-SliceJobIndex=%s' % env.slice_job_index)
-        args_for_commandlet.append('-SliceJobCount=%s' % env.slice_job_count)
+        args_for_commandlet.append(f'-SliceJobIndex={env.slice_job_index}')
+        args_for_commandlet.append(f'-SliceJobCount={env.slice_job_count}')
     return args_for_commandlet
