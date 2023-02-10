@@ -270,11 +270,12 @@ def _unreal_cli(env, *args, heartbeat=0, commandlet=None):
     cmdline = [nimp.system.sanitize_path(env.format(exe)), env.game]
 
     if commandlet:
-        cmdline += [f'-run={commandlet}']
-    cmdline += list(args)
-    cmdline += ['-buildmachine', '-nopause', '-unattended', '-noscriptcheck']
+        cmdline.append(f'-run={commandlet}')
+    cmdline.extend(args)
+    cmdline.extend(get_default_args_for_cli(env))
 
     return nimp.sys.process.call(cmdline, heartbeat=heartbeat, dry_run=env.dry_run) == 0
+
 
 def _unreal_commandlet(env, command, *args, heartbeat = 0):
     ''' Runs an Unreal commandlet '''
@@ -282,11 +283,8 @@ def _unreal_commandlet(env, command, *args, heartbeat = 0):
     exe = '{unreal_dir}/Engine/Binaries/{unreal_host_platform}/{unreal_exe_name}.exe'
     cmdline = [nimp.system.sanitize_path(env.format(exe)), env.game, f'-run={command}']
 
-    cmdline += list(args)
-    cmdline += ['-buildmachine', '-nopause', '-unattended', '-noscriptcheck']
-    # Remove -forcelogflush because it slows down cooking
-    # (https://udn.unrealengine.com/questions/330502/increased-cook-times-in-ue414.html)
-    #cmdline += ['-forcelogflush']
+    cmdline.extend(args)
+    cmdline.extend(get_default_args_for_cli(env))
 
     return nimp.sys.process.call(cmdline, heartbeat=heartbeat, dry_run=env.dry_run) == 0
 
@@ -531,6 +529,18 @@ class UnrealSummaryHandler(nimp.summary.SummaryHandler):
 
         return self._unknown_asset
 
+
+def get_default_args_for_cli(env):
+    ''' Returns reasonable default arguments for both Unreal Commandlet and Unreal Cmd '''
+    yield '-buildmachine'
+    yield '-nopause'
+    yield '-unattended'
+    yield '-noscriptcheck'
+    # Remove -forcelogflush because it slows down cooking
+    # (https://udn.unrealengine.com/questions/330502/increased-cook-times-in-ue414.html)
+    #yield '-forcelogflush'
+
+
 def get_p4_args_for_commandlet(env):
     p4_args_for_commandlet = []
     if env.has_attribute('nop4submit'):
@@ -553,7 +563,7 @@ def get_p4_args_for_commandlet(env):
 
 def get_args_for_commandlet(env):
     args_for_commandlet = []
-    args_for_commandlet += get_p4_args_for_commandlet(env)
+    args_for_commandlet.extend(get_p4_args_for_commandlet(env))
     if env.has_attribute('slice_job_index') and env.has_attribute('slice_job_count'):
         args_for_commandlet.append('-SliceJobIndex=%s' % env.slice_job_index)
         args_for_commandlet.append('-SliceJobCount=%s' % env.slice_job_count)
