@@ -54,7 +54,7 @@ class CreateLoadlist(nimp.command.Command):
 
 	@staticmethod
 	def _product_paths_and_changelists(env, paths):
-		changelists = [f'@{cl}' for cl in env.changelists]
+		changelists = [f'@{cl},{cl}' for cl in env.changelists]
 		if len(changelists) <= 0:
 			changelists = ['#have']
 		return list(itertools.product(paths, changelists))
