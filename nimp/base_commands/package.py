@@ -388,8 +388,7 @@ class Package(nimp.command.Command):
         # lookup unreal project conf
         # order matters: break as soon as a flag is found, from deepest ini to broadest (deep<-variant<-platform<-game)
         config_files_patterns = [
-            f'{env.uproject_dir}/Platforms/{env.cook_platform}/Config/Variants/{env.variant}/DefaultGame.ini',
-            f'{env.uproject_dir}/Config/Variants/{env.variant}/DefaultGame.ini',
+            f'{env.uproject_dir}/Config/Variants/Active/DefaultGame.ini',
             f'{env.uproject_dir}/Platforms/{env.cook_platform}/Config/DefaultGame.ini',
             f'{env.uproject_dir}/Config/DefaultGame.ini',
         ]
