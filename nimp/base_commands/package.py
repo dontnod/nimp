@@ -135,6 +135,7 @@ class UnrealPackageConfiguration():
         self.ignored_errors = []
         self.ignored_warnings = []
         self.is_final_submission = False
+        self.for_distribution = False
         self.no_compile_packaging = False
 
         self.msixvc = False
@@ -234,8 +235,9 @@ class Package(nimp.command.Command):
         package_configuration.is_microsoft = env.is_microsoft_platform
         package_configuration.is_sony = env.is_sony_platform
         package_configuration.is_nintendo = env.is_nintendo_platform
-        package_configuration.is_final_submission = env.final
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
+        package_configuration.is_final_submission = env.final
+        package_configuration.for_distribution = self.set_for_distribution_from_config_files(env)
 
         package_configuration.package_tool_path = platform_desc.package_tool_path
         package_configuration.layout_file_extension = env.layout_file_extension
@@ -375,6 +377,39 @@ class Package(nimp.command.Command):
                 if os.path.exists(dst_title_conf):
                     # The file exists only if it's been copied from a variant folder.
                     _try_remove(dst_title_conf, False)
+
+    @staticmethod
+    def set_for_distribution_from_config_files(env):
+        if env.unreal_version < 5:  # legacy
+            return False
+        if hasattr(env, 'for_distribution'):  # override using nimp project conf
+            return env.for_distribution
+
+        # lookup unreal project conf
+        # order matters: break as soon as a flag is found, from deepest ini to broadest (deep<-variant<-platform<-game)
+        config_files_patterns = [
+            f'{env.uproject_dir}/Platforms/{env.cook_platform}/Config/Variants/{env.variant}/DefaultGame.ini',
+            f'{env.uproject_dir}/Config/Variants/{env.variant}/DefaultGame.ini',
+            f'{env.uproject_dir}/Platforms/{env.cook_platform}/Config/DefaultGame.ini',
+            f'{env.uproject_dir}/Config/DefaultGame.ini',
+        ]
+        config_files = []
+        for config_files_pattern in config_files_patterns:
+            config_files.extend(glob.glob(config_files_pattern))
+
+        for_distribution = False
+        for config_file in config_files:
+            with open(config_file, 'r') as ini_file:
+                ini_content = ini_file.read().split('\n')
+            for line in ini_content:
+                if 'ForDistribution=True'.lower() in line.lower():
+                    for_distribution = True
+                    break
+            if for_distribution:
+                break
+
+        logging.debug(f"Packaging build for distribution: {for_distribution}")
+        return for_distribution
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
@@ -547,8 +582,10 @@ class Package(nimp.command.Command):
         uat_log_files = glob.glob(f'{package_configuration.uat_logs_directory}/*.txt')
         for uat_log_file in uat_log_files:
             _try_remove(uat_log_file, env.dry_run)
-        _try_remove(package_configuration.stage_directory, env.dry_run)
-        _try_create_directory(package_configuration.stage_directory, env.dry_run)
+        if env.unreal_version < 5:
+            # legacy, this is now handled through uat with -nocleanstage param (engine default is cleanstage)
+            _try_remove(package_configuration.stage_directory, env.dry_run)
+            _try_create_directory(package_configuration.stage_directory, env.dry_run)
 
         # AutomationTool is used here for the staging parts which are not done by nimp itself yet
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
@@ -562,6 +599,9 @@ class Package(nimp.command.Command):
                 # Deactivate NoDebugInfo and let UAT handle symbols
                 # '-NoDebugInfo',
             ]
+
+            if package_configuration.for_distribution:
+                stage_command.append('-distribution')
 
             if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
                 stage_command += ['-UTF8Output']
@@ -1038,6 +1078,9 @@ class Package(nimp.command.Command):
                 '-ClientConfig=' + package_configuration.binary_configuration,
                 '-SkipCook', '-SkipStage', '-Package',
             ]
+
+            if package_configuration.for_distribution:
+                package_command.append('-distribution')
 
             if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
                 package_command += ['-UTF8Output']
