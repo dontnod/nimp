@@ -23,6 +23,7 @@
 ''' Commands related to version packaging '''
 
 import argparse
+import configparser
 import copy
 import json
 import glob
@@ -398,12 +399,9 @@ class Package(nimp.command.Command):
 
         for_distribution = False
         for config_file in config_files:
-            with open(config_file, 'r') as ini_file:
-                ini_content = ini_file.read().split('\n')
-            for line in ini_content:
-                if 'ForDistribution=True'.lower() in line.lower():
-                    for_distribution = True
-                    break
+            config = configparser.ConfigParser(strict=False)
+            config.read(config_file)
+            for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', False)
             if for_distribution:
                 break
 
