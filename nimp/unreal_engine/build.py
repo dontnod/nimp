@@ -26,8 +26,10 @@ import os
 import platform
 import re
 import time
+import json
 from packaging import version
 from pathlib import Path
+from tempfile import mkstemp
 
 import nimp.build
 import nimp.system
@@ -634,3 +636,27 @@ def _unreal_build_DNEAssetRegistry(env, solution, vs_version):
         if not _unreal_build_tool_ubt(env, 'DNEAssetRegistryQuery', vs_version):
             logging.error("Could not build DNEAssetRegistryQuery")
             return False
+
+def _unreal_list_plugins_enabled(env, project=None, platform=None, config=None):
+    if (project is None):
+        project = env.project
+    if (platform is None):
+        platform = env.platform
+    if (config is None):
+        config = env.config
+
+    # Generate JSON file to know which modules are used in the project
+    # -ListPlugins is a custom argument we added through a patch to UBT. It add the list of the enabled plugins with the path to their directory at the end of the output file
+    fd, output_file_path = mkstemp(".json", None, None, False)
+    os.close(fd)
+    if not _unreal_run_ubt(env, project, platform, config, None, ['-Mode=JsonExport', '-ListPlugins', f'-OutputFile={output_file_path}']):
+        raise RuntimeError("Could not run UBT to provide JSON file")
+    
+    # If the file does not exist where we think it exists, then catch error
+    if not (output_file_path.is_file()):
+        raise FileNotFoundError("JSON file does not exist")
+    # Parse JSON file to get the modules
+    with open(output_file_path) as f:
+        data = json.load(f)
+
+    return set(data['Plugins'].values())
