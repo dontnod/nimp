@@ -384,6 +384,7 @@ class Package(nimp.command.Command):
         if env.unreal_version < 5:  # legacy
             return False
         if hasattr(env, 'for_distribution'):  # override using nimp project conf
+            logging.debug(f"Packaging build set for distribution by nimp env: %s" % env.for_distribution)
             return env.for_distribution
 
         # lookup unreal project conf
@@ -403,11 +404,12 @@ class Package(nimp.command.Command):
             config.read(config_file)
             for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', None)
             if for_distribution is not None:
+                logging.debug(f"Packaging build set for distribution by %s : %s" % (os.path.normpath(config_file), for_distribution))
                 break
         if for_distribution is None:
+            logging.debug(f"Packaging build ForDistribution param not found, set to : %s" % for_distribution)
             for_distribution = False
 
-        logging.debug(f"Packaging build for distribution: %s" % for_distribution)
         return for_distribution
 
     @staticmethod
