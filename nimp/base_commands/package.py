@@ -405,7 +405,7 @@ class Package(nimp.command.Command):
             if for_distribution:
                 break
 
-        logging.debug(f"Packaging build for distribution: {for_distribution}")
+        logging.debug(f"Packaging build for distribution: %s" % for_distribution)
         return for_distribution
 
     @staticmethod
