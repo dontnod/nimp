@@ -397,13 +397,15 @@ class Package(nimp.command.Command):
         for config_files_pattern in config_files_patterns:
             config_files.extend(glob.glob(config_files_pattern))
 
-        for_distribution = False
+        for_distribution = None
         for config_file in config_files:
             config = configparser.ConfigParser(strict=False)
             config.read(config_file)
-            for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', False)
-            if for_distribution:
+            for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', None)
+            if for_distribution is not None:
                 break
+        if for_distribution is None:
+            for_distribution = False
 
         logging.debug(f"Packaging build for distribution: %s" % for_distribution)
         return for_distribution
