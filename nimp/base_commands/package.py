@@ -620,7 +620,6 @@ class Package(nimp.command.Command):
             if stage_success != 0:
                 raise RuntimeError('Stage failed')
 
-        Package._stage_uat_logs(package_configuration, env.dry_run)
         if env.unreal_version < 4.24: # legacy
             Package._stage_binaries(package_configuration, env.dry_run)
             Package._stage_title_files(package_configuration, env.dry_run)
