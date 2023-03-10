@@ -94,11 +94,18 @@ class CreateLoadlist(nimp.command.Command):
 
 		modified_files = set()
 		exclude_dirs = self._normpath_dirs(env.exclude_dirs)
-		for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$",
-													 hide_output=True, encoding='utf-8'):
-			modified_file_path = os.path.normpath(filepath)
-			if not self._exclude_from_modified_files(exclude_dirs, modified_file_path):
-				modified_files.add(modified_file_path)
+
+		# Split filespecs into chunks to assure we do not hit Windows max char commandline limit
+		chunk_size = 50
+		print(len(filespecs))
+		for chunk_start in range(0, len(filespecs), chunk_size):
+			chunk = filespecs[chunk_start: chunk_start + chunk_size]
+			print(chunk)
+			for (filepath, ) in p4._parse_command_output(base_command + chunk, r"^\.\.\. clientFile(.*)$",
+														hide_output=True, encoding='utf-8'):
+				modified_file_path = os.path.normpath(filepath)
+				if not self._exclude_from_modified_files(exclude_dirs, modified_file_path):
+					modified_files.add(modified_file_path)
 
 		# Needed for sorting and ease debug
 		modified_files = list(modified_files)
