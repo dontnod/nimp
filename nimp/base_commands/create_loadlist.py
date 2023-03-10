@@ -26,6 +26,7 @@ import os
 
 import nimp.command
 import nimp.utils.p4
+import nimp.unreal_engine.build
 
 
 class CreateLoadlist(nimp.command.Command):
@@ -35,7 +36,7 @@ class CreateLoadlist(nimp.command.Command):
 		parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist', default=[])
 		parser.add_argument('-o', '--output', help = 'output file')
 		parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
-		parser.add_argument('--dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to include', default = ['//{p4client}/...'])
+		parser.add_argument('--dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to include (Will default to project and enabled-plugins directories)')
 		parser.add_argument('--exclude-dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to exclude', default = None)
 		parser.add_argument('--error-on-empty', action = 'store_true', help = 'return an error code if loadlist is empty')
 		nimp.utils.p4.add_arguments(parser)
@@ -48,7 +49,10 @@ class CreateLoadlist(nimp.command.Command):
 	@staticmethod
 	def _product_dirs_and_extensions(env, extensions):
 		if env.dirs is None:
-			env.dirs = ['']
+			content_paths = nimp.unreal_engine.build._unreal_list_plugins_enabled(env)
+			content_paths.add(os.path.join(os.path.abspath(env.uproject_dir), 'Content'))
+			env.dirs = [os.path.join(p, '...') for p in sorted(content_paths)]
+
 		dirs = [env.format(dir) for dir in env.dirs]
 		return list(itertools.product(dirs, extensions))
 
@@ -97,10 +101,8 @@ class CreateLoadlist(nimp.command.Command):
 
 		# Split filespecs into chunks to assure we do not hit Windows max char commandline limit
 		chunk_size = 50
-		print(len(filespecs))
 		for chunk_start in range(0, len(filespecs), chunk_size):
 			chunk = filespecs[chunk_start: chunk_start + chunk_size]
-			print(chunk)
 			for (filepath, ) in p4._parse_command_output(base_command + chunk, r"^\.\.\. clientFile(.*)$",
 														hide_output=True, encoding='utf-8'):
 				modified_file_path = os.path.normpath(filepath)
