@@ -209,7 +209,7 @@ class ConsoleGameCommand(nimp.command.Command):
         if env.restartable_fetch:
             cmdline.append('/Z')
         cmdline += [env.fetch, env.outdir]
-        logging.info(f'Running "{" ".join(cmdline)}"')
+        logging.info('Running %s', cmdline)
         if env.dry_run:
             return True
         result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)

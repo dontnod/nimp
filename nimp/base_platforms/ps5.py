@@ -144,7 +144,7 @@ class PS5(nimp.sys.platform.Platform):
         if ip:
             args.append('/target:' + ip)
         cmdline = [PS5.PROSPERO_CTRL] + args
-        logging.info('Running "%s"', ' '.join(cmdline))
+        logging.info('Running %s', cmdline)
         if dry_run:
             return True
         result = subprocess.call(
