@@ -222,6 +222,11 @@ def _unreal_run_ubt(env, target, build_platform, build_configuration, vs_version
     else:
         command = ['/bin/bash', './Engine/Build/BatchFiles/%s/Build.sh' % env.unreal_host_platform]
 
+    if build_platform is None:
+        build_platform = env.unreal_host_platform
+    if build_configuration is None:
+        build_configuration = _unreal_select_tool_configuration('UnrealBuildTool')
+
     command += [ target, build_platform, build_configuration ]
 
     if flags is not None:
@@ -637,11 +642,14 @@ def _unreal_build_DNEAssetRegistry(env, solution, vs_version):
 
 def _unreal_list_plugins_enabled(env, project=None, platform=None, config=None):
     if project is None:
-        project = env.project
+        # TODO(TDS): Maybe we could use this?
+        # nimp.unreal._set_unreal_exe_name
+        if hasattr(env, 'game'):
+            project = env.game + 'Editor'
     if platform is None:
-        platform = env.platform
+        platform = getattr(env, 'platform', None)
     if config is None:
-        config = env.config
+        config = getattr(env, 'config', None)
 
     with tempfile.TemporaryDirectory(prefix='UBT_Plugins_export') as tmp_dir_path:
         output_file_path = Path(tmp_dir_path) / f"{project}.json"
