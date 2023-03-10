@@ -402,12 +402,13 @@ class Package(nimp.command.Command):
         for config_file in config_files:
             config = configparser.ConfigParser(strict=False)
             config.read(config_file)
-            for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', None)
-            if for_distribution is not None:
-                logging.debug(f"Packaging build set for distribution by %s : %s" % (os.path.normpath(config_file), for_distribution))
-                break
+            if '/Script/UnrealEd.ProjectPackagingSettings' in config:
+                for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', None)
+                if for_distribution is not None:
+                    logging.debug("Packaging build set for distribution by %s : %s", os.path.normpath(config_file), for_distribution)
+                    break
         if for_distribution is None:
-            logging.debug(f"Packaging build ForDistribution param not found, set to : %s" % for_distribution)
+            logging.debug("Packaging build ForDistribution param not found, set to : %s", for_distribution)
             for_distribution = False
 
         return for_distribution
