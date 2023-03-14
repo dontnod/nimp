@@ -505,6 +505,7 @@ class Package(nimp.command.Command):
 
         logging.info('Cooking content for %s', package_configuration.target_platform)
         logging.info('')
+        Package._clean_uat_logs(package_configuration, env.dry_run)
 
         if not package_configuration.iterative_cook:
             _try_remove(package_configuration.cook_directory, env.dry_run)
@@ -571,6 +572,10 @@ class Package(nimp.command.Command):
                 os.remove(engine_configuration_file_path)
                 shutil.move(engine_configuration_file_path + '.nimp.bak', engine_configuration_file_path)
 
+        Package._backup_uat_logs(package_configuration,
+                                 f'cooked.{package_configuration.binary_configuration}.dne',
+                                 env.dry_run)
+
         nimp.environment.execute_hook('postcook', env)
 
 
@@ -580,10 +585,8 @@ class Package(nimp.command.Command):
 
         logging.info('Staging package files for %s (Destination: %s)', package_configuration.target_platform, package_configuration.stage_directory)
         logging.info('')
+        Package._clean_uat_logs(package_configuration, env.dry_run)
 
-        uat_log_files = glob.glob(f'{package_configuration.uat_logs_directory}/*.txt')
-        for uat_log_file in uat_log_files:
-            _try_remove(uat_log_file, env.dry_run)
         if env.unreal_version < 5:
             # legacy, this is now handled through uat with -nocleanstage param (engine default is cleanstage)
             _try_remove(package_configuration.stage_directory, env.dry_run)
@@ -620,6 +623,10 @@ class Package(nimp.command.Command):
             stage_success = nimp.sys.process.call(stage_command, dry_run=env.dry_run, heartbeat=60)
             if stage_success != 0:
                 raise RuntimeError('Stage failed')
+
+            Package._backup_uat_logs(package_configuration,
+                                     f'staged.{package_configuration.binary_configuration}.dne',
+                                     env.dry_run)
 
         if env.unreal_version < 4.24: # legacy
             Package._stage_binaries(package_configuration, env.dry_run)
@@ -801,15 +808,22 @@ class Package(nimp.command.Command):
                 subprocess.check_call(makepri_command)
 
     @staticmethod
-    def _stage_uat_logs(package_configuration, dry_run):
-        stage_path = package_configuration.stage_directory
+    def _backup_uat_logs(package_configuration, suffix, dry_run):
+        """ backup uat logs for later use, most notably inclusion in staged builds """
         source_path = package_configuration.uat_logs_directory
-        dest_path = 'UATLogs'
+        backup_path = f'{source_path}.{suffix.replace("+", "-").lower()}'
+        _try_remove(backup_path, dry_run)
 
+        _try_create_directory(backup_path, dry_run)
         for uat_log_path in glob.glob(f'{source_path}/*.txt'):
             filename = os.path.basename(uat_log_path)
-            Package._stage_file(stage_path, f'{source_path}/{filename}', f'{dest_path}/{filename}', dry_run)
+            _copy_file(f'{source_path}/{filename}', f'{backup_path}/{filename}', dry_run)
 
+    @staticmethod
+    def _clean_uat_logs(package_configuration, dry_run):
+        uat_log_files = glob.glob(f'{package_configuration.uat_logs_directory}/*.txt')
+        for uat_log_file in uat_log_files:
+            _try_remove(uat_log_file, dry_run)
 
     @staticmethod
     def _stage_binaries(package_configuration, dry_run):
@@ -949,8 +963,10 @@ class Package(nimp.command.Command):
         logging.info('Packaging for %s (Source: %s, Destination: %s)', package_configuration.target_platform,
                      package_configuration.stage_directory, package_configuration.package_directory)
         logging.info('')
+        Package._clean_uat_logs(package_configuration, env.dry_run)
 
         if package_configuration.target_platform in [ 'Linux', 'Mac', 'Win32', 'Win64' ]:
+            # TODO: (lca) use package_for_uat with msixvc packages for ue5+ projects
             if package_configuration.target_platform == 'Win64' and package_configuration.msixvc:
                 Package.package_for_windows_msixvc(package_configuration, env.dry_run)
             else:
@@ -963,6 +979,10 @@ class Package(nimp.command.Command):
         # console packaging using out of the box uat behavior
         elif package_configuration.is_sony or package_configuration.is_microsoft or package_configuration.is_nintendo:
             Package.package_with_uat(env, package_configuration)
+
+        Package._backup_uat_logs(package_configuration,
+                                 f'package.{package_configuration.binary_configuration}.dne',
+                                 env.dry_run)
 
 
     @staticmethod
