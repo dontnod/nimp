@@ -384,7 +384,7 @@ class Package(nimp.command.Command):
         if env.unreal_version < 5:  # legacy
             return False
         if hasattr(env, 'for_distribution'):  # override using nimp project conf
-            logging.debug(f"Packaging build set for distribution by nimp env: %s" % env.for_distribution)
+            logging.debug("Packaging build set for distribution by nimp env: %s", env.for_distribution)
             return env.for_distribution
 
         # lookup unreal project conf
@@ -392,6 +392,8 @@ class Package(nimp.command.Command):
         config_files_patterns = []
         if hasattr(env, 'variant') and env.variant:
             config_files_patterns.extend([
+                f'{env.uproject_dir}/Config/Variants/Active/{env.cook_platform}/{env.cook_platform}Game.ini',
+                f'{env.uproject_dir}/Config/Variants/{env.variant}/{env.cook_platform}/{env.cook_platform}Game.ini',
                 f'{env.uproject_dir}/Config/Variants/Active/DefaultGame.ini',
                 f'{env.uproject_dir}/Config/Variants/{env.variant}/DefaultGame.ini'
             ])
