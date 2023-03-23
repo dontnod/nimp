@@ -381,6 +381,26 @@ class Package(nimp.command.Command):
                     _try_remove(dst_title_conf, False)
 
     @staticmethod
+    def enumerate_unreal_configs(env):
+        # lookup unreal project conf
+        # order matters: from deepest ini to broadest (deep<-variant<-platform<-game)
+        config_files_patterns = []
+        if hasattr(env, 'variant') and env.variant:
+            config_files_patterns.extend([
+                '{uproject_dir}/Config/Variants/Active/{cook_platform}/{cook_platform}Game.ini',
+                '{uproject_dir}/Config/Variants/{variant}/{cook_platform}/{cook_platform}Game.ini',
+                '{uproject_dir}/Config/Variants/Active/DefaultGame.ini',
+                '{uproject_dir}/Config/Variants/{variant}/DefaultGame.ini'
+            ])
+        config_files_patterns.extend([
+            '{uproject_dir}/Platforms/{cook_platform}/Config/DefaultGame.ini',
+            '{uproject_dir}/Config/DefaultGame.ini',
+        ])
+        for config_files_pattern in config_files_patterns:
+            for file in glob.glob(env.format(config_files_pattern)):
+                yield file
+
+    @staticmethod
     def set_for_distribution_from_config_files(env):
         if env.unreal_version < 5:  # legacy
             return False
@@ -388,26 +408,8 @@ class Package(nimp.command.Command):
             logging.debug("Packaging build set for distribution by nimp env: %s", env.for_distribution)
             return env.for_distribution
 
-        # lookup unreal project conf
-        # order matters: break as soon as a flag is found, from deepest ini to broadest (deep<-variant<-platform<-game)
-        config_files_patterns = []
-        if hasattr(env, 'variant') and env.variant:
-            config_files_patterns.extend([
-                f'{env.uproject_dir}/Config/Variants/Active/{env.cook_platform}/{env.cook_platform}Game.ini',
-                f'{env.uproject_dir}/Config/Variants/{env.variant}/{env.cook_platform}/{env.cook_platform}Game.ini',
-                f'{env.uproject_dir}/Config/Variants/Active/DefaultGame.ini',
-                f'{env.uproject_dir}/Config/Variants/{env.variant}/DefaultGame.ini'
-            ])
-        config_files_patterns.extend([
-            f'{env.uproject_dir}/Platforms/{env.cook_platform}/Config/DefaultGame.ini',
-            f'{env.uproject_dir}/Config/DefaultGame.ini',
-        ])
-        config_files = []
-        for config_files_pattern in config_files_patterns:
-            config_files.extend(glob.glob(config_files_pattern))
-
         for_distribution = None
-        for config_file in config_files:
+        for config_file in Package.enumerate_unreal_configs(env):
             config = configparser.ConfigParser(strict=False)
             config.read(config_file)
             if '/Script/UnrealEd.ProjectPackagingSettings' in config:
