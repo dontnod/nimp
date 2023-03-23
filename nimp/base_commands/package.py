@@ -42,6 +42,7 @@ import nimp.environment
 import nimp.system
 import nimp.sys.process
 import nimp.unreal
+import nimp.utils.p4
 
 from contextlib import contextmanager
 
@@ -422,59 +423,53 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
-        def _insert_into_ini_settings(ini_content, settings_dict, setting_category):
-            for key, value in settings_dict.items():
-                logging.info(f'{key}: {value}')
-            tmp = ini_content.splitlines()
-            for needle in settings_dict.keys():
-                tmp = [line for line in tmp if not re.match(rf'^{needle}=(.*?)$', line)]
-            pattern = r'^\[/Script/' + setting_category.replace(".", "\\.") + '\]'
-            index = [i for i, s in enumerate(tmp) if re.match(pattern, s)]
-            if index == []:  # Insert setting on top if not exist
-                tmp.insert(0, '')
-                tmp.insert(0, f'[/Script/{setting_category}]')
-                index = [0]
-            for key, value in settings_dict.items():  # Insert project values in wanted section
-                tmp.insert(index[0] + 1, f'{key}={value}')
-            return '\n'.join(tmp)
 
         ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
         logging.info('Updating %s', ini_file_path)
-        with open(ini_file_path, 'r') as ini_file:
-            ini_content = ini_file.read()
+        ini_config = configparser.ConfigParser(strict=False)
+        ini_config.read(ini_file_path)
 
         # Setup Epic ProjectVersion
-        project_version = {
-            'ProjectVersion': '1.0.0.0',
-        }
-        version_match = re.search(r'^ProjectVersion=(?P<value>.*?)$', ini_content, re.MULTILINE)
-        if version_match:
-            project_version['ProjectVersion'] = version_match.group('value')
+        PROJECT_VERSION_SECTION = '/Script/EngineSettings.GeneralProjectSettings'
+        PROJECT_VERSION_KEY = 'ProjectVersion'
+        project_version = '1.0.0.0'
+        if PROJECT_VERSION_SECTION in ini_config:
+            project_version = ini_config[PROJECT_VERSION_SECTION].get(PROJECT_VERSION_KEY, project_version)
         else:
-            logging.warning('Failed to get project version, defaulting to 1.0.0.0')
-        ini_content = _insert_into_ini_settings(ini_content, project_version, 'EngineSettings.GeneralProjectSettings')
+            ini_config[PROJECT_VERSION_SECTION] = {}
+
+        logging.info('Set [%s]%s to %s', PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY, project_version)
+        ini_config[PROJECT_VERSION_SECTION][PROJECT_VERSION_KEY] = project_version
 
         # Setup DNE custom ProjectBinaryRevision and ProjectContentRevision
         # TODO: get this into plugins?
-        dne_project_vresion = {
-            'ProjectBinaryRevision': None,
-            'ProjectContentRevision': None
-        }
-        try:
-            workspace_status = nimp.system.load_status(env)
+
+        DNE_ENGINE_VERSION_SECTION = 'DNEEngineVersion.DNEEngineVersion'
+        PROJECT_BINARY_VERSION_KEY = 'ProjectBinaryRevision'
+        PROJECT_CONTENT_VERSION_KEY = 'ProjectContentRevision'
+
+        if DNE_ENGINE_VERSION_SECTION not in ini_config:
+            ini_config[DNE_ENGINE_VERSION_SECTION] = {}
+
+        workspace_status = nimp.system.load_status(env)
+        if isinstance(workspace_status, dict):
             worker_platform = nimp.unreal.get_host_platform()
-            dne_project_vresion['ProjectBinaryRevision'] = workspace_status['binaries'][worker_platform.lower()]
-        except KeyError:
-            logging.warning('Failed to get binary revision')
+            project_binary_version = workspace_status.get('binaries', {}).get(worker_platform.lower())
+            if project_binary_version is not None:
+                logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_BINARY_VERSION_KEY, project_binary_version)
+                ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BINARY_VERSION_KEY] = project_binary_version
+
         try:
-            dne_project_vresion['ProjectContentRevision'] = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
+            project_content_version = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
+            logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
+            ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
         except:
             logging.warning('Failed to get content revision')
-        ini_content = _insert_into_ini_settings(ini_content, dne_project_vresion, 'DNEEngineVersion.DNEEngineVersion')
+
 
         if not env.dry_run:
             with open(ini_file_path, 'w') as ini_file:
-                ini_file.write(ini_content)
+                ini_config.write(ini_file)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
