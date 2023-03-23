@@ -434,13 +434,31 @@ class Package(nimp.command.Command):
         # Setup Epic ProjectVersion
         PROJECT_VERSION_SECTION = '/Script/EngineSettings.GeneralProjectSettings'
         PROJECT_VERSION_KEY = 'ProjectVersion'
-        project_version = '1.0.0.0'
+
+        project_version = ''
         if PROJECT_VERSION_SECTION in ini_config:
-            project_version = ini_config[PROJECT_VERSION_SECTION].get(PROJECT_VERSION_KEY, project_version)
-        else:
-            ini_config[PROJECT_VERSION_SECTION] = {}
+            project_version = ini_config[PROJECT_VERSION_SECTION].get(PROJECT_VERSION_KEY)
+
+        if not project_version:
+            ini_config_filename = os.path.normcase('DefaultGame.ini')
+            for config_file in Package.enumerate_unreal_configs(env):
+                if os.path.basename(os.path.normcase(config_file)) != ini_config_filename:
+                    continue
+                config = configparser.ConfigParser(strict=False)
+                config.read(config_file)
+
+                if PROJECT_VERSION_SECTION in config:
+                    project_version = config[PROJECT_VERSION_SECTION].get(PROJECT_VERSION_KEY)
+                    if project_version:
+                        logging.info('[%s]%s=%s found in %s', PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY, project_version, config_file)
+                        break
+
+        if not project_version:
+            project_version = '1.0.0.0'
 
         logging.info('Set [%s]%s to %s', PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY, project_version)
+        if PROJECT_VERSION_SECTION not in ini_config:
+            ini_config[PROJECT_VERSION_SECTION] = {}
         ini_config[PROJECT_VERSION_SECTION][PROJECT_VERSION_KEY] = project_version
 
         # Setup DNE custom ProjectBinaryRevision and ProjectContentRevision
