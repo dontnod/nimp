@@ -42,6 +42,7 @@ import nimp.environment
 import nimp.system
 import nimp.sys.process
 import nimp.unreal
+import nimp.utils.p4
 
 from contextlib import contextmanager
 
@@ -380,6 +381,26 @@ class Package(nimp.command.Command):
                     _try_remove(dst_title_conf, False)
 
     @staticmethod
+    def enumerate_unreal_configs(env):
+        # lookup unreal project conf
+        # order matters: from deepest ini to broadest (deep<-variant<-platform<-game)
+        config_files_patterns = []
+        if hasattr(env, 'variant') and env.variant:
+            config_files_patterns.extend([
+                '{uproject_dir}/Config/Variants/Active/{cook_platform}/{cook_platform}Game.ini',
+                '{uproject_dir}/Config/Variants/{variant}/{cook_platform}/{cook_platform}Game.ini',
+                '{uproject_dir}/Config/Variants/Active/DefaultGame.ini',
+                '{uproject_dir}/Config/Variants/{variant}/DefaultGame.ini'
+            ])
+        config_files_patterns.extend([
+            '{uproject_dir}/Platforms/{cook_platform}/Config/DefaultGame.ini',
+            '{uproject_dir}/Config/DefaultGame.ini',
+        ])
+        for config_files_pattern in config_files_patterns:
+            for file in glob.glob(env.format(config_files_pattern)):
+                yield file
+
+    @staticmethod
     def set_for_distribution_from_config_files(env):
         if env.unreal_version < 5:  # legacy
             return False
@@ -387,26 +408,8 @@ class Package(nimp.command.Command):
             logging.debug("Packaging build set for distribution by nimp env: %s", env.for_distribution)
             return env.for_distribution
 
-        # lookup unreal project conf
-        # order matters: break as soon as a flag is found, from deepest ini to broadest (deep<-variant<-platform<-game)
-        config_files_patterns = []
-        if hasattr(env, 'variant') and env.variant:
-            config_files_patterns.extend([
-                f'{env.uproject_dir}/Config/Variants/Active/{env.cook_platform}/{env.cook_platform}Game.ini',
-                f'{env.uproject_dir}/Config/Variants/{env.variant}/{env.cook_platform}/{env.cook_platform}Game.ini',
-                f'{env.uproject_dir}/Config/Variants/Active/DefaultGame.ini',
-                f'{env.uproject_dir}/Config/Variants/{env.variant}/DefaultGame.ini'
-            ])
-        config_files_patterns.extend([
-            f'{env.uproject_dir}/Platforms/{env.cook_platform}/Config/DefaultGame.ini',
-            f'{env.uproject_dir}/Config/DefaultGame.ini',
-        ])
-        config_files = []
-        for config_files_pattern in config_files_patterns:
-            config_files.extend(glob.glob(config_files_pattern))
-
         for_distribution = None
-        for config_file in config_files:
+        for config_file in Package.enumerate_unreal_configs(env):
             config = configparser.ConfigParser(strict=False)
             config.read(config_file)
             if '/Script/UnrealEd.ProjectPackagingSettings' in config:
@@ -422,59 +425,71 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
-        def _insert_into_ini_settings(ini_content, settings_dict, setting_category):
-            for key, value in settings_dict.items():
-                logging.info(f'{key}: {value}')
-            tmp = ini_content.splitlines()
-            for needle in settings_dict.keys():
-                tmp = [line for line in tmp if not re.match(rf'^{needle}=(.*?)$', line)]
-            pattern = r'^\[/Script/' + setting_category.replace(".", "\\.") + '\]'
-            index = [i for i, s in enumerate(tmp) if re.match(pattern, s)]
-            if index == []:  # Insert setting on top if not exist
-                tmp.insert(0, '')
-                tmp.insert(0, f'[/Script/{setting_category}]')
-                index = [0]
-            for key, value in settings_dict.items():  # Insert project values in wanted section
-                tmp.insert(index[0] + 1, f'{key}={value}')
-            return '\n'.join(tmp)
 
         ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
         logging.info('Updating %s', ini_file_path)
-        with open(ini_file_path, 'r') as ini_file:
-            ini_content = ini_file.read()
+        ini_config = configparser.ConfigParser(strict=False)
+        ini_config.read(ini_file_path)
 
         # Setup Epic ProjectVersion
-        project_version = {
-            'ProjectVersion': '1.0.0.0',
-        }
-        version_match = re.search(r'^ProjectVersion=(?P<value>.*?)$', ini_content, re.MULTILINE)
-        if version_match:
-            project_version['ProjectVersion'] = version_match.group('value')
-        else:
-            logging.warning('Failed to get project version, defaulting to 1.0.0.0')
-        ini_content = _insert_into_ini_settings(ini_content, project_version, 'EngineSettings.GeneralProjectSettings')
+        PROJECT_VERSION_SECTION = '/Script/EngineSettings.GeneralProjectSettings'
+        PROJECT_VERSION_KEY = 'ProjectVersion'
+
+        project_version = ''
+        if PROJECT_VERSION_SECTION in ini_config:
+            project_version = ini_config[PROJECT_VERSION_SECTION].get(PROJECT_VERSION_KEY)
+
+        if not project_version:
+            ini_config_filename = os.path.normcase('DefaultGame.ini')
+            for config_file in Package.enumerate_unreal_configs(env):
+                if os.path.basename(os.path.normcase(config_file)) != ini_config_filename:
+                    continue
+                config = configparser.ConfigParser(strict=False)
+                config.read(config_file)
+
+                if PROJECT_VERSION_SECTION in config:
+                    project_version = config[PROJECT_VERSION_SECTION].get(PROJECT_VERSION_KEY)
+                    if project_version:
+                        logging.info('[%s]%s=%s found in %s', PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY, project_version, config_file)
+                        break
+
+        if not project_version:
+            project_version = '1.0.0.0'
+
+        logging.info('Set [%s]%s to %s', PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY, project_version)
+        if PROJECT_VERSION_SECTION not in ini_config:
+            ini_config[PROJECT_VERSION_SECTION] = {}
+        ini_config[PROJECT_VERSION_SECTION][PROJECT_VERSION_KEY] = project_version
 
         # Setup DNE custom ProjectBinaryRevision and ProjectContentRevision
         # TODO: get this into plugins?
-        dne_project_vresion = {
-            'ProjectBinaryRevision': None,
-            'ProjectContentRevision': None
-        }
-        try:
-            workspace_status = nimp.system.load_status(env)
+
+        DNE_ENGINE_VERSION_SECTION = 'DNEEngineVersion.DNEEngineVersion'
+        PROJECT_BINARY_VERSION_KEY = 'ProjectBinaryRevision'
+        PROJECT_CONTENT_VERSION_KEY = 'ProjectContentRevision'
+
+        if DNE_ENGINE_VERSION_SECTION not in ini_config:
+            ini_config[DNE_ENGINE_VERSION_SECTION] = {}
+
+        workspace_status = nimp.system.load_status(env)
+        if isinstance(workspace_status, dict):
             worker_platform = nimp.unreal.get_host_platform()
-            dne_project_vresion['ProjectBinaryRevision'] = workspace_status['binaries'][worker_platform.lower()]
-        except KeyError:
-            logging.warning('Failed to get binary revision')
+            project_binary_version = workspace_status.get('binaries', {}).get(worker_platform.lower())
+            if project_binary_version is not None:
+                logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_BINARY_VERSION_KEY, project_binary_version)
+                ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BINARY_VERSION_KEY] = project_binary_version
+
         try:
-            dne_project_vresion['ProjectContentRevision'] = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
+            project_content_version = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
+            logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
+            ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
         except:
             logging.warning('Failed to get content revision')
-        ini_content = _insert_into_ini_settings(ini_content, dne_project_vresion, 'DNEEngineVersion.DNEEngineVersion')
+
 
         if not env.dry_run:
             with open(ini_file_path, 'w') as ini_file:
-                ini_file.write(ini_content)
+                ini_config.write(ini_file)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
