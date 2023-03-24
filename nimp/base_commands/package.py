@@ -454,12 +454,19 @@ class Package(nimp.command.Command):
                         break
 
         if not project_version:
-            project_version = '1.0.0.0'
+            project_version = '{major}.{minor}.{binary_version}.{content_version}'
 
-        logging.info('Set [%s]%s to %s', PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY, project_version)
-        if PROJECT_VERSION_SECTION not in ini_config:
-            ini_config[PROJECT_VERSION_SECTION] = {}
-        ini_config[PROJECT_VERSION_SECTION][PROJECT_VERSION_KEY] = project_version
+        logging.info('Using ProjectVersion pattern %s', project_version)
+
+        project_version_format_args = {
+            'major': 1,
+            'minor': 0,
+            'patch': 0,
+            'revision': 0,
+        }
+        project_version_match = re.match(project_version, r'^(?P<major>[\d{}\w]+)?(?:.(?P<minor>[\d{}\w]+))?(?:.(?P<patch>[\d{}\w]+))?(?:.(?P<revision>[\d{}\w]+))?$')
+        if project_version_match is not None:
+            project_version_format_args.update(project_version_match.groupdict())
 
         # Setup DNE custom ProjectBinaryRevision and ProjectContentRevision
         # TODO: get this into plugins?
@@ -478,14 +485,29 @@ class Package(nimp.command.Command):
             if project_binary_version is not None:
                 logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_BINARY_VERSION_KEY, project_binary_version)
                 ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BINARY_VERSION_KEY] = project_binary_version
+                project_version_format_args.update(binary_version=project_binary_version)
 
         try:
             project_content_version = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
             logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
             ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
+            project_version_format_args.update(content_version=project_content_version)
         except:
             logging.warning('Failed to get content revision')
 
+
+        try:
+            formatted_project_version = project_version.format(**project_version_format_args)
+        except KeyError as e:
+            key_name = 'INVALID'
+            if e.args:
+                key_name = e.args[0]
+            raise RuntimeError('Failed to format ProjectVersion. Missing %s value.', key_name)
+
+        logging.info('Set [%s]%s to %s', PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY, formatted_project_version)
+        if PROJECT_VERSION_SECTION not in ini_config:
+            ini_config[PROJECT_VERSION_SECTION] = {}
+        ini_config[PROJECT_VERSION_SECTION][PROJECT_VERSION_KEY] = formatted_project_version
 
         if not env.dry_run:
             with open(ini_file_path, 'w') as ini_file:
