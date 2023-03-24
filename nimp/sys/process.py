@@ -216,7 +216,7 @@ if nimp.sys.platform.is_windows():
     PROCESS_SYNCHRONIZE = 0x00100000 # pylint: disable = invalid-name
 
     def _disable_win32_dialogs():
-        ''' Disable “Entry Point Not Found” and “Application Error” dialogs for
+        ''' Disable "Entry Point Not Found" and "Application Error" dialogs for
             child processes '''
 
         _KERNEL32.SetErrorMode(SEM_FAILCRITICALERRORS \

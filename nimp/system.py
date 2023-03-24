@@ -150,7 +150,7 @@ def robocopy(src, dest, ignore_older=False, preserve_metadata=True):
 
     if ignore_older and os.path.isfile(src) and os.path.isfile(dest) \
        and os.stat(src).st_mtime - os.stat(dest).st_mtime < 1:
-        logging.info('Skipping “%s”, not newer than “%s”', src, dest)
+        logging.info('Skipping "%s", not newer than "%s"', src, dest)
         return True
 
     logging.debug('Copying "%s" to "%s"', src, dest)
@@ -180,7 +180,7 @@ def robocopy(src, dest, ignore_older=False, preserve_metadata=True):
                 logging.error('Copy error: %s', ex)
                 return False
     else:
-        logging.error('Error: not such file or directory “%s”', src)
+        logging.error('Error: not such file or directory "%s"', src)
         return False
 
     return True
@@ -291,8 +291,7 @@ class FileMapper():
 
                     yield (glob_source, new_dest)
                 if not found:
-                    logging.info("No match for “%s” in “%s” (aka. “%s”)", pattern, src, glob_path)
-                    #raise Exception("No match for “%s” in “%s” (aka. “%s”)" % (pattern, src, glob_path))
+                    logging.info('No match for "%s" in "%s" (aka. "%s")', pattern, src, glob_path)
         return self.append(_glob_mapper)
 
     def xglob(self, src = '.', dest = '.', pattern = '**'):

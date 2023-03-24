@@ -43,7 +43,7 @@ if 'MSYS_NT' in platform.system():
     raise NotImplementedError('MSYS Python is not supported; please use MinGW Python instead')
 
 def _clean_environment_variables():
-    # Some Windows tools don’t like “duplicate” environment variables, i.e.
+    # Some Windows tools don’t like "duplicate" environment variables, i.e.
     # where only the case differs; we remove any lowercase version we find.
     # The loop is O(n²) but we don’t have that many entries so it’s all right.
     env_vars = [x.lower() for x in os.environ.keys()]

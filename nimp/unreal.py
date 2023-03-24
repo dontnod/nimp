@@ -357,7 +357,7 @@ def _unreal_set_env(env):
                     "shipping" : "Shipping", }
         if config not in configs:
             if env.is_unreal:
-                logging.warning('Unsupported Unreal build config “%s”', config)
+                logging.warning('Unsupported Unreal build config "%s"', config)
             return None
         return configs[config]
 
