@@ -534,6 +534,9 @@ class Package(nimp.command.Command):
         for option in package_configuration.extra_options:
             cook_command += shlex.split(option)
 
+        # Load the active variant
+        cook_command += [ '-DNEConfigVariant' ]
+
         if package_configuration.shader_debug_info:
             sdb_path = package_configuration.project_directory + '/Saved/ShaderDebugInfo/' + package_configuration.target_platform
             engine_configuration_file_path = package_configuration.configuration_directory + '/DefaultEngine.ini'
