@@ -478,7 +478,7 @@ class Package(nimp.command.Command):
         # Setup DNE custom ProjectBinaryRevision and ProjectContentRevision
         # TODO: get this into plugins?
 
-        DNE_ENGINE_VERSION_SECTION = 'DNEEngineVersion.DNEEngineVersion'
+        DNE_ENGINE_VERSION_SECTION = '/Script/DNEEngineVersion.DNEEngineVersion'
         PROJECT_BINARY_VERSION_KEY = 'ProjectBinaryRevision'
         PROJECT_CONTENT_VERSION_KEY = 'ProjectContentRevision'
 
