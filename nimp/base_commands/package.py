@@ -49,6 +49,13 @@ from contextlib import contextmanager
 from nimp.sys.platform import create_platform_desc
 
 
+def _ue_ini_parser():
+    config_parser = configparser.ConfigParser(strict=False)
+    # ConfigParser will load keys (and thus write) as case-insensitive by default
+    # setting `optionxform` to `str` will make it case-sensitive
+    config_parser.optionxform = str
+    return config_parser
+
 def _get_ini_value(file_path, key):
     ''' Retrieves a value from a ini file '''
     with open(file_path) as ini_file:
@@ -410,7 +417,7 @@ class Package(nimp.command.Command):
 
         for_distribution = None
         for config_file in Package.enumerate_unreal_configs(env):
-            config = configparser.ConfigParser(strict=False)
+            config = _ue_ini_parser()
             config.read(config_file)
             if '/Script/UnrealEd.ProjectPackagingSettings' in config:
                 for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', None)
@@ -428,7 +435,7 @@ class Package(nimp.command.Command):
 
         ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
         logging.info('Updating %s', ini_file_path)
-        ini_config = configparser.ConfigParser(strict=False)
+        ini_config = _ue_ini_parser()
         ini_config.read(ini_file_path)
 
         # Setup Epic ProjectVersion
@@ -444,7 +451,7 @@ class Package(nimp.command.Command):
             for config_file in Package.enumerate_unreal_configs(env):
                 if os.path.basename(os.path.normcase(config_file)) != ini_config_filename:
                     continue
-                config = configparser.ConfigParser(strict=False)
+                config = _ue_ini_parser()
                 config.read(config_file)
 
                 if PROJECT_VERSION_SECTION in config:
@@ -471,7 +478,7 @@ class Package(nimp.command.Command):
         # Setup DNE custom ProjectBinaryRevision and ProjectContentRevision
         # TODO: get this into plugins?
 
-        DNE_ENGINE_VERSION_SECTION = 'DNEEngineVersion.DNEEngineVersion'
+        DNE_ENGINE_VERSION_SECTION = '/Script/DNEEngineVersion.DNEEngineVersion'
         PROJECT_BINARY_VERSION_KEY = 'ProjectBinaryRevision'
         PROJECT_CONTENT_VERSION_KEY = 'ProjectContentRevision'
 
@@ -511,7 +518,7 @@ class Package(nimp.command.Command):
 
         if not env.dry_run:
             with open(ini_file_path, 'w') as ini_file:
-                ini_config.write(ini_file)
+                ini_config.write(ini_file, space_around_delimiters=False)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
