@@ -27,9 +27,11 @@ import copy
 import logging
 import os
 import shutil
+from pathlib import PurePosixPath
 
 import nimp.artifacts
 import nimp.command
+import nimp.system
 
 
 class DownloadFileset(nimp.command.Command):
@@ -43,6 +45,8 @@ class DownloadFileset(nimp.command.Command):
         parser.add_argument('--min-revision', metavar = '<revision>', help = 'find a revision newer or equal to this one')
         parser.add_argument('--destination', metavar = '<path>', help = 'set a destination relative to the workspace')
         parser.add_argument('--track', choices = [ 'binaries', 'symbols', 'package', 'staged' ], help = 'track the installed revision in the workspace status')
+        parser.add_argument('--prefer-http', action = 'store_true', help = 'perform a dry run')
+
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to download')
         return True
 
@@ -53,8 +57,25 @@ class DownloadFileset(nimp.command.Command):
 
     def run(self, env):
         api_context = nimp.utils.git.initialize_gitea_api_context(env)
-        artifact_uri_pattern = env.artifact_repository_source + '/' + env.artifact_collection[env.fileset]
-        install_directory = env.root_dir + ('/' + env.format(env.destination) if env.destination else '')
+
+        artifacts_source = env.artifact_repository_source
+        if env.prefer_http:
+            artifacts_http_source = getattr(env, 'artifact_http_repository_source', None)
+            if artifacts_http_source:
+                artifacts_source = artifacts_http_source
+            else:
+                logging.warning('prefer-http provided but no artifact_http_repository_source in configuration')
+
+        # PurePosixPath works for all cases:
+        #   - "/b/forward/slash" / "file" -> "/b/forward/slash/file"
+        #   - "B:\backward\slash" / "file" -> "B:\forward\slash/file"
+        #   - "https://service.domain.com/url/subpath" / "file" -> "https://service.domain.com/url/subpath/file"
+        artifact_uri_pattern = str(PurePosixPath(artifacts_source) / env.artifact_collection[env.fileset])
+
+        install_directory = env.root_dir
+        if env.destination:
+            install_directory = str(PurePosixPath(install_directory) / env.format(env.destination))
+
         format_arguments = copy.deepcopy(vars(env))
         format_arguments['revision'] = '*'
         logging.info('Searching %s', artifact_uri_pattern.format(**format_arguments))
