@@ -25,14 +25,15 @@ class XSX(nimp.sys.platform.Platform):
         self.unreal_package_directory = '{uproject_dir}/Binaries/XSX'
 
     def install_package(self, package_directory, env):
-        xvcs = glob.glob(package_directory + '/*.xvc')
+        package_glob_pattern = package_directory + '/' + env.unreal_config + '/*.xvc'
+        xvcs = glob.glob(package_glob_pattern)
         if not xvcs:
-            raise RuntimeError('No xvc file in ' + package_directory)
+            raise RuntimeError('No xvc file matchin pattern ' + package_glob_pattern)
         if len(xvcs) != 1:
             logging.info('Found xvcs:')
             for xvc in xvcs:
                 logging.info('\t\t' + xvc)
-            raise RuntimeError('Multiple xvc files in ' + package_directory)
+            raise RuntimeError('Multiple xvc files matching pattern ' + package_glob_pattern)
 
         args = [ 'install', xvcs[0] ]
         if env.device:
