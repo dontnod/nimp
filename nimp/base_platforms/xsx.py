@@ -35,7 +35,7 @@ class XSX(nimp.sys.platform.Platform):
                 logging.info('\t\t' + xvc)
             raise RuntimeError('Multiple xvc files matching pattern ' + package_glob_pattern)
 
-        args = [ 'install', xvcs[0] ]
+        args = [ 'install', super()._convert_package_path_to_http_if_possible(env, xvcs[0]) ]
         if env.device:
             args.append('/X:' + env.device)
         return XSX.xbapp(args, env.dry_run)

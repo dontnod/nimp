@@ -5,6 +5,7 @@ import abc
 import logging
 import platform
 import pkg_resources
+from pathlib import Path
 
 import nimp.base_platforms
 
@@ -41,6 +42,31 @@ class Platform(metaclass=abc.ABCMeta):
 
     def launch_package(self, package_name, env):
         return False
+
+    @staticmethod
+    def _convert_package_path_to_http_if_possible(env, package_path):
+        # can't import top-level, would cause cyclical import
+        # TODO(TDS) find a better place for this
+        import nimp.system
+        if not getattr(env, 'artifact_repository_source_http'):
+            return package_path
+
+        logging.debug('Convert deploy path (%s) to http if possible', package_path)
+        try:
+            package_path = Path(package_path).resolve()
+            artifact_source = Path(nimp.system.sanitize_path(env.format(env.artifact_repository_source))).resolve()
+            package_relpath = package_path.relative_to(artifact_source)
+            logging.debug('%s, %s -> %s', package_path, artifact_source, package_relpath)
+
+            package_url = f"{env.format(env.artifact_repository_source_http)}/{package_relpath.as_posix()}"
+            logging.info('Converted package path to http URL %s', package_url)
+
+            return package_url
+        except ValueError:
+            # env.deploy not on same drive as env.artifact_repository, ignore issue
+            pass
+
+        return str(package_path)
 
 
 class NullPlatform(Platform):

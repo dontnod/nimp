@@ -38,7 +38,7 @@ class PS5(nimp.sys.platform.Platform):
                 logging.info('\t\t' + pkg)
             raise RuntimeError('Multiple pkg files in ' + package_directory + ' for configuration ' + env.unreal_config)
 
-        return PS5.prospero_ctrl([ 'package', 'install', pkgs[0] ], env.device, dry_run=env.dry_run)
+        return PS5.prospero_ctrl([ 'package', 'install', super()._convert_package_path_to_http_if_possible(env, pkgs[0]) ], env.device, dry_run=env.dry_run)
 
     def launch_package(self, package_name, env):
         if not package_name:
