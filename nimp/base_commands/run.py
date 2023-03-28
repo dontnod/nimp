@@ -23,7 +23,6 @@
 ''' Command to run executables or special commands '''
 
 import abc
-import argparse
 import logging
 import re
 import os
@@ -32,6 +31,7 @@ import subprocess
 
 import nimp.command
 import nimp.unreal
+import nimp.system
 import nimp.sys.process
 from nimp.sys.platform import create_platform_desc
 
@@ -143,7 +143,7 @@ class ConsoleGameCommand(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         super(ConsoleGameCommand, self).configure_arguments(env, parser)
-        nimp.command.add_common_arguments(parser, 'platform', 'configuration')
+        nimp.command.add_common_arguments(parser, 'platform', 'configuration', 'dry_run')
 
         parser.add_argument('--fetch',
                             metavar='<path | CL# | "latest">',
@@ -182,7 +182,7 @@ class ConsoleGameCommand(nimp.command.Command):
         return True, ''
 
     def run(self, env):
-        self.platform_directory = nimp.sys.platform.create_platform_desc(env.platform).unreal_cook_name
+        self.platform_directory = create_platform_desc(env.platform).unreal_cook_name
 
         if env.fetch:
             return self.fetch(env)
