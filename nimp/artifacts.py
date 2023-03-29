@@ -31,7 +31,6 @@ import platform
 import re
 import shutil
 import stat
-import time
 import zipfile
 
 import requests
@@ -54,14 +53,21 @@ except ImportError as exception:
     BitTornado = None
 
 
-def list_artifacts(artifact_pattern, format_arguments, api_context):
+def _is_http_url(string):
+    return re.match(r'^http[s]?:\/\/.*$', string)
+
+def list_artifacts(artifact_pattern: str, format_arguments, api_context):
     ''' List all artifacts and their revision using the provided pattern after formatting '''
 
     format_arguments = copy.deepcopy(format_arguments)
     format_arguments['revision'] = '{revision}'
-
     artifact_pattern = artifact_pattern.format(**format_arguments)
-    artifact_source = nimp.system.sanitize_path(os.path.dirname(artifact_pattern))
+
+    if not _is_http_url(artifact_pattern):
+        artifact_source = nimp.system.sanitize_path(os.path.dirname(artifact_pattern))
+    else:
+        artifact_source = artifact_pattern.rsplit('/', 1) + '/'
+
     artifact_escaped_name = re.escape(os.path.basename(artifact_pattern)).replace(r'\{revision\}', '{revision}')
     artifact_regex = re.compile(r'^' + artifact_escaped_name.format(revision = r'(?P<revision>[a-zA-Z0-9]+)') + r'(.zip)?$')
 
@@ -85,11 +91,13 @@ def list_artifacts(artifact_pattern, format_arguments, api_context):
     return all_artifacts
 
 
-def _list_files(source, recursive):
+def _list_files(source: str, recursive):
     all_files = []
-    source = source.rstrip('/')
 
-    if source.startswith('http://') or source.startswith('https://'):
+    if _is_http_url(source):
+        if not source.endswith('/'):
+            source += '/'
+
         source_request = requests.get(source)
         source_request.raise_for_status()
         file_regex = re.compile(r'<a href="(?P<file_name>[^"/\\\?]+/?)">')
@@ -97,12 +105,13 @@ def _list_files(source, recursive):
         for source_line in source_request.text.splitlines():
             file_match = file_regex.search(source_line)
             if file_match:
-                file_path = source + '/' + file_match.group('file_name')
+                file_path = source + file_match.group('file_name')
                 all_files.append(file_path)
                 if recursive and file_path.endswith('/'):
                     all_files.extend(_list_files(file_path, True))
 
     else:
+        source = source.rstrip('/')
         # scandir is way faster than listdir, especially via vpn
         # and is available in std os lib since python v3.5+
         for file_name in os.scandir(source):
