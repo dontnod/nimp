@@ -158,6 +158,7 @@ class Package(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run', 'configuration', 'platform', 'free_parameters')
+        nimp.utils.p4.add_arguments(parser)
 
         all_steps = [ 'cook', 'stage', 'package', 'verify' ]
         default_steps = [ 'cook', 'stage', 'package' ]
@@ -569,6 +570,8 @@ class Package(nimp.command.Command):
             '-Run=Cook', '-TargetPlatform=' + package_configuration.cook_platform,
             '-BuildMachine', '-Unattended', '-StdOut',
         ]
+        cook_command.extend(nimp.unreal.get_p4_args_for_commandlet(env))
+
         if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
             cook_command += [ '-UTF8Output' ]
         if env.is_ue5:
@@ -658,6 +661,7 @@ class Package(nimp.command.Command):
                 # Deactivate NoDebugInfo and let UAT handle symbols
                 # '-NoDebugInfo',
             ]
+            stage_command.extend(nimp.unreal.get_p4_args_for_commandlet(env))
 
             if package_configuration.for_distribution:
                 stage_command.append('-distribution')
@@ -1143,7 +1147,7 @@ class Package(nimp.command.Command):
 
         if package_configuration.target_platform == 'XSX' and env.dlc:
             Package.configure_packaging_for_xsx_dlc(env, package_configuration)
-            
+
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
                 package_configuration.uat_directory + '/AutomationTool.exe',
@@ -1153,6 +1157,7 @@ class Package(nimp.command.Command):
                 '-ClientConfig=' + package_configuration.binary_configuration,
                 '-SkipCook', '-SkipStage', '-Package',
             ]
+            package_command.extend(nimp.unreal.get_p4_args_for_commandlet(env))
 
             if package_configuration.for_distribution:
                 package_command.append('-distribution')
