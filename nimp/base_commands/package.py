@@ -365,8 +365,7 @@ class Package(nimp.command.Command):
                 # necessary for shader debug info in case no defaultEngine is present
                 _setup_default_config_file(f'{active_configuration_directory}/DefaultEngine.ini')
                 _setup_default_config_file(f'{active_configuration_directory}/DefaultGame.ini')
-                if env.write_project_revisions:
-                    Package.write_project_revisions(env, active_configuration_directory)
+                Package.write_project_revisions(env, active_configuration_directory)
             if env.unreal_platform == 'PS5':
                 # UE only supports a single TitleConfiguration.json describing builds of the same package.
                 # To have DLCs in their own packages, we need to select the variant's one by copying it
@@ -482,23 +481,30 @@ class Package(nimp.command.Command):
         PROJECT_BINARY_VERSION_KEY = 'ProjectBinaryRevision'
         PROJECT_CONTENT_VERSION_KEY = 'ProjectContentRevision'
 
-        if DNE_ENGINE_VERSION_SECTION not in ini_config:
-            ini_config[DNE_ENGINE_VERSION_SECTION] = {}
+        write_dne_revisions = env.write_project_revisions
+
+        if write_dne_revisions:
+            if DNE_ENGINE_VERSION_SECTION not in ini_config:
+                ini_config[DNE_ENGINE_VERSION_SECTION] = {}
 
         workspace_status = nimp.system.load_status(env)
         if isinstance(workspace_status, dict):
             worker_platform = nimp.unreal.get_host_platform()
             project_binary_version = workspace_status.get('binaries', {}).get(worker_platform.lower())
             if project_binary_version is not None:
-                logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_BINARY_VERSION_KEY, project_binary_version)
-                ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BINARY_VERSION_KEY] = project_binary_version
                 project_version_format_args.update(binary_version=project_binary_version)
+
+                if write_dne_revisions:
+                    logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_BINARY_VERSION_KEY, project_binary_version)
+                    ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BINARY_VERSION_KEY] = project_binary_version
 
         try:
             project_content_version = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
-            logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
-            ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
             project_version_format_args.update(content_version=project_content_version)
+
+            if write_dne_revisions:
+                logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
+                ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
         except:
             logging.warning('Failed to get content revision')
 
