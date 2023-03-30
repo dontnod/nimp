@@ -523,9 +523,40 @@ class Package(nimp.command.Command):
             ini_config[PROJECT_VERSION_SECTION] = {}
         ini_config[PROJECT_VERSION_SECTION][PROJECT_VERSION_KEY] = formatted_project_version
 
+        project_version_format_args['project_version'] = formatted_project_version
+
         if not env.dry_run:
             with open(ini_file_path, 'w') as ini_file:
                 ini_config.write(ini_file, space_around_delimiters=False)
+
+        switch_ini_file_path = f'{active_configuration_directory}/Switch/SwitchEngine.ini'
+        if os.path.exists(switch_ini_file_path):
+            switch_ini_config = _ue_ini_parser()
+            switch_ini_config.read(switch_ini_file_path)
+
+            SWITCH_VERSION_SECTION = '/Script/SwitchRuntimeSettings.SwitchRuntimeSettings'
+            SWITCH_APP_VERSION_STRING_KEY = 'ApplicationVersionString'
+
+            if SWITCH_VERSION_SECTION not in switch_ini_config:
+                switch_ini_config[SWITCH_VERSION_SECTION] = {}
+
+            switch_version = switch_ini_config[SWITCH_VERSION_SECTION].get(SWITCH_APP_VERSION_STRING_KEY)
+            if switch_version:
+                logging.info('Updating Switch version in %s', switch_ini_file_path)
+                try:
+                    switch_version = switch_version.format(**project_version_format_args)
+                except KeyError as e:
+                    key_name = 'INVALID'
+                    if e.args:
+                        key_name = e.args[0]
+                    raise RuntimeError('Failed to format ProjectVersion. Missing %s value.', key_name)
+
+                logging.info('Set [%s]%s to %s', SWITCH_VERSION_SECTION, SWITCH_APP_VERSION_STRING_KEY, switch_version)
+                switch_ini_config[SWITCH_VERSION_SECTION][SWITCH_APP_VERSION_STRING_KEY] = switch_version
+
+                if not env.dry_run:
+                    with open(switch_ini_file_path, 'w') as ini_file:
+                        switch_ini_config.write(ini_file, space_around_delimiters=False)
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
