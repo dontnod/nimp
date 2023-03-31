@@ -54,7 +54,7 @@ except ImportError as exception:
 
 
 def _is_http_url(string):
-    return re.match(r'^http[s]?:\/\/.*$', string)
+    return re.match(r'^http[s]?:\/\/.*$', string) is not None
 
 def list_artifacts(artifact_pattern: str, format_arguments, api_context):
     ''' List all artifacts and their revision using the provided pattern after formatting '''
@@ -66,7 +66,7 @@ def list_artifacts(artifact_pattern: str, format_arguments, api_context):
     if not _is_http_url(artifact_pattern):
         artifact_source = nimp.system.sanitize_path(os.path.dirname(artifact_pattern))
     else:
-        artifact_source = artifact_pattern.rsplit('/', 1) + '/'
+        artifact_source = artifact_pattern.rsplit('/', 1)[0] + '/'
 
     artifact_escaped_name = re.escape(os.path.basename(artifact_pattern)).replace(r'\{revision\}', '{revision}')
     artifact_regex = re.compile(r'^' + artifact_escaped_name.format(revision = r'(?P<revision>[a-zA-Z0-9]+)') + r'(.zip)?$')
