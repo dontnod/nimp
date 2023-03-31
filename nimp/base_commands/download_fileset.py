@@ -66,11 +66,7 @@ class DownloadFileset(nimp.command.Command):
             else:
                 logging.warning('prefer-http provided but no artifact_http_repository_source in configuration')
 
-        # PurePosixPath works for all cases:
-        #   - "/b/forward/slash" / "file" -> "/b/forward/slash/file"
-        #   - "B:\backward\slash" / "file" -> "B:\forward\slash/file"
-        #   - "https://service.domain.com/url/subpath" / "file" -> "https://service.domain.com/url/subpath/file"
-        artifact_uri_pattern = str(PurePosixPath(artifacts_source) / env.artifact_collection[env.fileset])
+        artifact_uri_pattern = artifacts_source.rstrip('/') + '/' + env.artifact_collection[env.fileset]
 
         install_directory = env.root_dir
         if env.destination:
