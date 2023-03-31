@@ -45,7 +45,7 @@ class DownloadFileset(nimp.command.Command):
         parser.add_argument('--min-revision', metavar = '<revision>', help = 'find a revision newer or equal to this one')
         parser.add_argument('--destination', metavar = '<path>', help = 'set a destination relative to the workspace')
         parser.add_argument('--track', choices = [ 'binaries', 'symbols', 'package', 'staged' ], help = 'track the installed revision in the workspace status')
-        parser.add_argument('--prefer-http', action = 'store_true', help = 'perform a dry run')
+        parser.add_argument('--prefer-http', action = 'store_true', help = 'If "artifact_http_repository_source" is provided in env, the download will be done through HTTP request intead of file copy')
 
         parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to download')
         return True
