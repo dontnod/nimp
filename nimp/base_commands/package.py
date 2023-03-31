@@ -158,6 +158,7 @@ class Package(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run', 'configuration', 'platform', 'free_parameters')
+        nimp.utils.p4.add_arguments(parser)
 
         all_steps = [ 'cook', 'stage', 'package', 'verify' ]
         default_steps = [ 'cook', 'stage', 'package' ]
@@ -365,8 +366,7 @@ class Package(nimp.command.Command):
                 # necessary for shader debug info in case no defaultEngine is present
                 _setup_default_config_file(f'{active_configuration_directory}/DefaultEngine.ini')
                 _setup_default_config_file(f'{active_configuration_directory}/DefaultGame.ini')
-                if env.write_project_revisions:
-                    Package.write_project_revisions(env, active_configuration_directory)
+                Package.write_project_revisions(env, active_configuration_directory)
             if env.unreal_platform == 'PS5':
                 # UE only supports a single TitleConfiguration.json describing builds of the same package.
                 # To have DLCs in their own packages, we need to select the variant's one by copying it
@@ -482,23 +482,30 @@ class Package(nimp.command.Command):
         PROJECT_BINARY_VERSION_KEY = 'ProjectBinaryRevision'
         PROJECT_CONTENT_VERSION_KEY = 'ProjectContentRevision'
 
-        if DNE_ENGINE_VERSION_SECTION not in ini_config:
-            ini_config[DNE_ENGINE_VERSION_SECTION] = {}
+        write_dne_revisions = env.write_project_revisions
+
+        if write_dne_revisions:
+            if DNE_ENGINE_VERSION_SECTION not in ini_config:
+                ini_config[DNE_ENGINE_VERSION_SECTION] = {}
 
         workspace_status = nimp.system.load_status(env)
         if isinstance(workspace_status, dict):
             worker_platform = nimp.unreal.get_host_platform()
             project_binary_version = workspace_status.get('binaries', {}).get(worker_platform.lower())
             if project_binary_version is not None:
-                logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_BINARY_VERSION_KEY, project_binary_version)
-                ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BINARY_VERSION_KEY] = project_binary_version
                 project_version_format_args.update(binary_version=project_binary_version)
+
+                if write_dne_revisions:
+                    logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_BINARY_VERSION_KEY, project_binary_version)
+                    ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BINARY_VERSION_KEY] = project_binary_version
 
         try:
             project_content_version = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
-            logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
-            ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
             project_version_format_args.update(content_version=project_content_version)
+
+            if write_dne_revisions:
+                logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
+                ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
         except:
             logging.warning('Failed to get content revision')
 
@@ -569,6 +576,8 @@ class Package(nimp.command.Command):
             '-Run=Cook', '-TargetPlatform=' + package_configuration.cook_platform,
             '-BuildMachine', '-Unattended', '-StdOut',
         ]
+        cook_command.extend(nimp.unreal.get_p4_args_for_commandlet(env))
+
         if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
             cook_command += [ '-UTF8Output' ]
         if env.is_ue5:
@@ -658,6 +667,7 @@ class Package(nimp.command.Command):
                 # Deactivate NoDebugInfo and let UAT handle symbols
                 # '-NoDebugInfo',
             ]
+            stage_command.extend(nimp.unreal.get_p4_args_for_commandlet(env))
 
             if package_configuration.for_distribution:
                 stage_command.append('-distribution')
@@ -1143,7 +1153,7 @@ class Package(nimp.command.Command):
 
         if package_configuration.target_platform == 'XSX' and env.dlc:
             Package.configure_packaging_for_xsx_dlc(env, package_configuration)
-            
+
         if package_configuration.package_type in [ 'application', 'application_patch' ]:
             package_command = [
                 package_configuration.uat_directory + '/AutomationTool.exe',
@@ -1153,6 +1163,7 @@ class Package(nimp.command.Command):
                 '-ClientConfig=' + package_configuration.binary_configuration,
                 '-SkipCook', '-SkipStage', '-Package',
             ]
+            package_command.extend(nimp.unreal.get_p4_args_for_commandlet(env))
 
             if package_configuration.for_distribution:
                 package_command.append('-distribution')
