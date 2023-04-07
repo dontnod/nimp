@@ -117,6 +117,9 @@ class DownloadFileset(nimp.command.Command):
             if has_revision_input and revision_not_found:
                 raise ValueError('Searched commit not found on gitea repo')
 
+        if not api_context and not has_revision_input.isdigit():
+            raise ValueError('Revision seems to be a git commit hash but missing gitea api information. Please check project_branches in project configuration.')
+
         try:
             if exact_revision is not None:
                 return next(a for a in all_artifacts if a['sortable_revision'] == exact_revision)
