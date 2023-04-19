@@ -117,7 +117,7 @@ class DownloadFileset(nimp.command.Command):
             if has_revision_input and revision_not_found:
                 raise ValueError('Searched commit not found on gitea repo')
 
-        if not api_context and not has_revision_input.isdigit():
+        if not api_context and (has_revision_input is not None and not has_revision_input.isdigit()):
             raise ValueError('Revision seems to be a git commit hash but missing gitea api information. Please check project_branches in project configuration.')
 
         try:
