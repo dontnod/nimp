@@ -23,11 +23,14 @@
 ''' SymStore abstraction '''
 
 import contextlib
+import gzip
 import logging
 import os
 from pathlib import Path
+import shutil
 import tempfile
 from typing import Optional
+import concurrent.futures
 
 import nimp.sys.platform
 import nimp.system
@@ -102,73 +105,120 @@ class MSFTSymStore(SymStore):
 
         return None
 
-    # Approx. 2GB
-    CAB_SRC_SIZE_LIMIT = 1.5 * 1000 * 1000 * 1000
+    @staticmethod
+    def get_common_parent_path(paths: list[Path]) -> Path:
+        common_parent = paths[0].parent
+        for path in paths[1:]:
+            common_parts = common_parent.parts
+            path_parts = path.parts
+            for idx in range(min(len(common_parts), len(path_parts))):
+                if common_parts[idx] != path_parts[idx]:
+                    common_parent = Path(*common_parts[:idx])
+                    break
+
+        return common_parent
 
     @staticmethod
-    def upload_symbols(symbols: list[os.PathLike], store_path: os.PathLike, product_name: str = None, comment: str = None, version: str = None, compress: bool = False, use_index2: bool = True, dry_run: bool = False, **kwargs) -> bool:
+    def gzip_compress_symbols(symbols: list[Path], dest_dir: Path, symbols_common_path: Optional[Path] = None) -> list[Path]:
+        if symbols_common_path is None:
+            symbols_common_path = MSFTSymStore.get_common_parent_path(symbols)
+
+        max_workers = os.cpu_count()
+        if max_workers is not None:
+            # Leave one thread idle to not saturate the CPU
+            max_workers -= 1
+
+        def _gzip_compress_fn(symbol: Path):
+            tmp_sym: Path = dest_dir / symbol.relative_to(symbols_common_path)
+            tmp_sym.parent.mkdir(parents=True, exist_ok=True)
+            # convert last char of path to _ as symstore convention for compressed
+            # sym.pdb -> sym.pd_
+            tmp_sym = tmp_sym.with_suffix(tmp_sym.suffix[:-1] + '_')
+
+            logging.info('GZIP compress %s to %s', symbol, tmp_sym)
+            with gzip.open(tmp_sym, 'wb', compresslevel=9) as c_fp, symbol.open('rb') as o_fp:
+                shutil.copyfileobj(o_fp, c_fp)
+
+            return tmp_sym
+
+        with concurrent.futures.ThreadPoolExecutor(thread_name_prefix='nimp_symbols_gzip_compress_', max_workers=max_workers) as pool:
+            return list(pool.map(_gzip_compress_fn, symbols))
+
+    # Approx. 2GB
+    CAB_SRC_SIZE_LIMIT = 2 * 1000 * 1000 * 1000
+
+    @staticmethod
+    def upload_symbols(symbols: list[os.PathLike], store_path: os.PathLike, product_name: str = None, comment: str = None, version: str = None, compress: bool = False, use_index2: bool = True, gzip_compress: bool = False, dry_run: bool = False, **kwargs) -> bool:
+        if gzip_compress:
+            compress = True
+
         # in case we are given a generator
         symbols = list(symbols)
         if len(symbols) <= 0:
             logging.info('No symbols were provided')
             return True
+        symbols: list[Path] = [Path(s).resolve().absolute() for s in symbols]
 
         symstore_exe = MSFTSymStore.get_symstore_tool_path()
         if symstore_exe is None:
             raise FileNotFoundError('Failed to find a valid symstore executable')
 
-        symstore_common_args: list[str] = [
+        # Microsoft symstore.exe uses CAB compression  which has a hard limit on source file size of 2GB.
+        if compress and not gzip_compress:
+            if any(os.path.exists(sym) and os.path.getsize(sym) >= MSFTSymStore.CAB_SRC_SIZE_LIMIT for sym in symbols):
+                raise RuntimeError('Some symbols are larger than CAB limit. Abort to prevent uploading corrupted symbols.')
+
+        symstore_common_args = [
             str(symstore_exe),
             'add',
-            "/r",  # Recursive
-            "/s", store_path,  # target symbol store
-            "/o",  # Verbose output
-            "-:NOFORCECOPY",  # no documentation on this but seems to not override files already in store
+            '/o',
         ]
         if use_index2:
             symstore_common_args.append("/3")
-        if product_name is not None:
-            symstore_common_args.extend(['/t', product_name])
-        if comment is not None:
-            symstore_common_args.extend(['/c', comment])
-        if version is not None:
-            symstore_common_args.extend(['/v', version])
 
-        symbols_with_args: list[tuple[list[str], list[os.PathLike]]] = []
-        if compress:
-            # Microsoft symstore.exe uses CAB compression  which has a hard limit on source file size of 2GB.
-            # Switch to ZIP compression if a file exceed this limit to prevent corrupted archives
-            # (benefits are faster compression time and handle file size > 2GB but compress less)
-            default_compression_symbols = []
-            zip_compression_symbols = []
-            for sym in symbols:
-                if os.path.exists(sym):
-                    if os.path.getsize(sym) >= MSFTSymStore.CAB_SRC_SIZE_LIMIT:
-                        zip_compression_symbols.append(sym)
-                    else:
-                        default_compression_symbols.append(sym)
+        common_parent = MSFTSymStore.get_common_parent_path(symbols)
 
-            if len(default_compression_symbols) > 0:
-                symbols_with_args.append((['/compress'], default_compression_symbols))
-            if len(zip_compression_symbols) > 0:
-                symbols_with_args.append((['/compress', 'ZIP'], zip_compression_symbols))
-        else:
-            # No compression, pretty straightforward
-            symbols_with_args.append(([], symbols))
+        with tempfile.TemporaryDirectory(dir=common_parent) as tmp_dir:
+            tmp_dir: Path = Path(tmp_dir)
 
-        success = True
-        for additional_args, symbols in symbols_with_args:
+            # Create index file for later add
+            index_filepath = str(tmp_dir / 'index.txt')
             with SymStore.rsp_file(symbols) as rsp_filepath:
                 commandline = list(symstore_common_args) + [
-                    '/f', f'@{rsp_filepath}',
-                ] + additional_args
+                    '/r', '/f', f'@{rsp_filepath}',
+                    '/x', index_filepath,
+                    '/g', str(common_parent),
+                    '/o',
+                ]
 
                 return_code = nimp.sys.process.call(commandline, dry_run=dry_run)
                 if return_code != 0:
                     logging.error('Failed to generate IndexFile (error code: %d)', return_code)
-                    success = False
+                    return False
 
-        return success
+            if gzip_compress and not dry_run:
+                tmp_common_parent = Path(tmp_dir) / 'compressed_symbols'
+                tmp_common_parent.mkdir(parents=True, exist_ok=True)
+
+                symbols = MSFTSymStore.gzip_compress_symbols(symbols, tmp_common_parent, common_parent)
+                common_parent = tmp_common_parent
+
+            commandline = list(symstore_common_args) + [
+                '-:NOFORCECOPY',  # no documentation on this but seems to not override files already in store
+                '/y', index_filepath,
+                '/g', str(common_parent),
+                '/s', store_path,
+            ]
+            if compress and not gzip_compress:
+                commandline.append('/compress')
+            if comment is not None:
+                commandline.extend(['/c', comment])
+            if product_name is not None:
+                commandline.extend(['/t', product_name])
+            if version is not None:
+                commandline.extend(['/v', version])
+
+            return (nimp.sys.process.call(commandline, dry_run=dry_run) == 0)
 
 
 class PS5SymStore(SymStore):

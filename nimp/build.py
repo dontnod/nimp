@@ -304,6 +304,7 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
         'comment': transaction_comment,
         'version': env.revision,
         'use_index2': two_tier_mode,
+        'gzip_compress': True,
         # PS5
         'tag': transaction_comment,
     }
