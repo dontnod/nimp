@@ -343,18 +343,18 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
     # Switch to ZIP compression if a file exceed this limit to prevent corrupted archives
     # (benefits are faster compression time and handle file size > 2GB but compress less)
     zip_compression_symbols = []
-    for src, _ in symbols:
+    for sym in symbols:
         file_size = None
         try:
-            file_size = os.path.getsize(src)
+            file_size = os.path.getsize(sym)
         except OSError as ex:
-            logging.debug("Failed to get %s size", src, exc_info=ex)
+            logging.debug("Failed to get %s size", sym, exc_info=ex)
 
         # if we couldn't get the filesize, default to ZIP for msft platforms for safety
         if env.is_microsoft_platform and (file_size is None or file_size >= cab_src_size_limit):
-            zip_compression_symbols.append(src)
+            zip_compression_symbols.append(sym)
         else:
-            default_compression_symbols.append(src)
+            default_compression_symbols.append(sym)
 
     def run_symstore(base_cmd, symbols_list, index_file, compression_type=None):
         with open(index_file, "w") as symbols_index:

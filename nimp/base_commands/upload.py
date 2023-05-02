@@ -25,6 +25,8 @@
 import os
 
 import nimp.command
+import nimp.system
+import nimp.build
 
 class Upload(nimp.command.CommandGroup):
     ''' Uploading commands '''
@@ -90,15 +92,15 @@ class _Symbols(nimp.command.Command):
     def _chain_symbols_and_binaries(symbols, binaries, has_symbols_inside_binary_file=False):
         # sort of itertools.chain, but binaries are pushed only if corresp. symbol is present
         symbol_roots = []
-        for symbol in symbols:
-            symbol_root, _ = os.path.splitext(symbol[0])
+        for (symbol_src, __symbol_dest) in symbols:
+            symbol_root, _ = os.path.splitext(symbol_src)
             symbol_roots.append(symbol_root)
-            yield symbol
-        for binary in binaries:
+            yield symbol_src
+        for (binary_src, __binary_dest) in binaries:
             # (it's always Microsoft platform so OK to just splitext)
-            binary_root, _ = os.path.splitext(binary[0])
+            binary_root, _ = os.path.splitext(binary_src)
             # symbols inside binaries, no symbols, just yield binaries and no corresponding symbols
-            if has_symbols_inside_binary_file and os.path.isfile(binary[0]):
-                yield  binary
+            if has_symbols_inside_binary_file and os.path.isfile(binary_src):
+                yield binary_src
             elif binary_root in symbol_roots:
-                yield binary
+                yield binary_src
