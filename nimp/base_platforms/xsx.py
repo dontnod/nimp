@@ -5,19 +5,15 @@ import os
 import re
 import subprocess
 
-import nimp.sys.platform
+from nimp.base_platforms.basegdk import BaseGDK
+import nimp.sys.process
 
-class XSX(nimp.sys.platform.Platform):
+class XSX(BaseGDK):
     ''' XSX platform description '''
 
     def __init__(self, env):
         super().__init__(env)
         self.name = 'xsx'
-        self.is_microsoft = True
-
-        self.layout_file_extension = 'xml'
-        if not os.getenv('UE_SDKS_ROOT'):
-            self.package_tool_path = os.path.join(os.getenv('GameDK', default='.'), 'bin', 'MakePkg.exe')
 
         self.unreal_name = 'XSX'
         self.unreal_config_name = 'XSX'
@@ -98,26 +94,18 @@ class XSX(nimp.sys.platform.Platform):
             ini_content = ini_file.read()
         return re.search(r'ProjectName=(.*)', ini_content, re.MULTILINE).group(1)
 
-    def find_gdk():
-        # if os.getenv('UE_SDKS_ROOT'):
-        #     raise RuntimeError('You seem to be using AutoSDK, which is not supported yet')
-        gdk = os.getenv('GameDK')
-        if gdk:
-            return gdk
-        return 'C:\\Program Files (x86)\\Microsoft GDK'
-
-    GDK = find_gdk()
+    
     KIT_PROFILE_PATH = 'Externals\\XboxOne\\Profiles'
     KIT_PROFILE_README = KIT_PROFILE_PATH + '\\readme.md'
     KIT_XBCONFIG_RE = re.compile(r'\w+:\s*([a-zA-Z0-9_-]+)', flags=re.IGNORECASE)
 
-    XBAPP = GDK + '\\bin\\xbapp.exe'
-    XBCONFIG = GDK + '\\bin\\xbconfig.exe'
-    XBCONNECT = GDK + '\\bin\\xbconnect.exe'
-    XBREBOOT = GDK + '\\bin\\xbreboot.exe'
-    XBRUN = GDK + '\\bin\\xbrun.exe'
-    MAKEPKG = GDK + '\\bin\\MakePkg.exe'
-    SIDELOAD = GDK + '\\180702\\sideload'
+    XBAPP = BaseGDK.GDK + '\\bin\\xbapp.exe'
+    XBCONFIG = BaseGDK.GDK + '\\bin\\xbconfig.exe'
+    XBCONNECT = BaseGDK.GDK + '\\bin\\xbconnect.exe'
+    XBREBOOT = BaseGDK.GDK + '\\bin\\xbreboot.exe'
+    XBRUN = BaseGDK.GDK + '\\bin\\xbrun.exe'
+    MAKEPKG = BaseGDK.GDK + '\\bin\\MakePkg.exe'
+    SIDELOAD = BaseGDK.GDK + '\\180702\\sideload'
 
     @staticmethod
     def xbapp(args, dry_run=False):
