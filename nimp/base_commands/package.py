@@ -55,7 +55,9 @@ class UnrealEngineConfigParserDict(OrderedDict):
         with multiple options as lists
         i.e.
         +UnrealOption=ValueA
-        +UnrealOption=ValueB """
+        +UnrealOption=ValueB
+        Initial idea build upon from this thread
+        https://www.reddit.com/r/learnpython/comments/37ihgh/how_to_handle_multiple_items_with_same_name_in/ """
     def __setitem__(self, key, value):
 
         # options that begin with a + sign in UE config mean we can have multiple options with the same name
