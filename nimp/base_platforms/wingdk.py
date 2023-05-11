@@ -12,12 +12,6 @@ class WinGDK(BaseGDK):
     def __init__(self, env):
         super().__init__(env)
         self.name = 'wingdk'
-        self.is_microsoft = True
-
-        self.layout_file_extension = 'xml'
-        if not os.getenv('UE_SDKS_ROOT'):
-            self.package_tool_path = os.path.join(os.getenv('GameDK', default='.'), 'bin', 'MakePkg.exe')
-
         self.unreal_name = 'WinGDK'
         self.unreal_config_name = 'WinGDK'
         self.unreal_cook_name = 'WinGDK'
