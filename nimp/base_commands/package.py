@@ -45,12 +45,67 @@ import nimp.unreal
 import nimp.utils.p4
 
 from contextlib import contextmanager
+from collections import OrderedDict
 
 from nimp.sys.platform import create_platform_desc
 
 
+class UnrealEngineConfigParserDict(OrderedDict):
+    """ Custom Dict for Unreal config parser,
+        with multiple options as lists
+        i.e.
+        +UnrealOption=ValueA
+        +UnrealOption=ValueB """
+    def __setitem__(self, key, value):
+
+        # options that begin with a + sign in UE config mean we can have multiple options with the same name
+        if isinstance(value, list) and key in self and key.startswith('+'):
+            self[key].extend(value)
+        else:
+            super().__setitem__(key, value)
+
+
+class UEConfigParser(configparser.RawConfigParser):
+    """ Unreal Config parser that handles multiple options that starts with a + sign
+        i.e.
+        +UnrealOption=ValueA
+        +UnrealOption=ValueB """
+    _UNSET = object()
+    DEFAULTSECT = "DEFAULT"
+
+    def __init__(self, defaults=None,
+                 allow_no_value=True, *, delimiters=('=', ':'),
+                 comment_prefixes=('#', ';'), inline_comment_prefixes=None,
+                 empty_lines_in_values=True,
+                 default_section=DEFAULTSECT,
+                 interpolation=_UNSET, converters=_UNSET):
+        """Call ConfigParser with custom dict that handles ue config + signs """
+        super().__init__(strict=False, dict_type=UnrealEngineConfigParserDict)
+
+    def _write_section(self, fp, section_name, section_items, delimiter):
+        """ Write a single section to the specified fp """
+        fp.write("[{}]\n".format(section_name))
+        for key, value in section_items:
+            # START HACK
+            # options that begin with a + sign in UE config mean we can have multiple options with the same option name
+            if key.startswith('+'):
+                option_values = value.split('\n')
+            else:
+                option_values = [value]
+            for option_value in option_values:
+                # END HACK
+                option_value = self._interpolation.before_write(self, section_name, key, option_value)
+                if option_value is not None or not self._allow_no_value:
+                    option_value = delimiter + str(option_value).replace('\n', '\n\t')
+                else:
+                    option_value = ""
+                fp.write("{}{}\n".format(key, option_value))
+        fp.write("\n")
+
+
 def _ue_ini_parser():
-    config_parser = configparser.ConfigParser(strict=False)
+
+    config_parser = UEConfigParser()
     # ConfigParser will load keys (and thus write) as case-insensitive by default
     # setting `optionxform` to `str` will make it case-sensitive
     config_parser.optionxform = str
