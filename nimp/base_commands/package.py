@@ -432,6 +432,29 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
+        def _update_ini_file(ini_content: str, ini_parser: configparser.ConfigParser,
+                             section: str, *keys: tuple[str, ...]):
+            ''' this helper function updates an active ini file with given section/keys '''
+            if not keys:
+                return
+
+            # wipe existing keys from ini content
+            # this wipes keys regardless of section;
+            # it 'ok for ProjectBinaryRevision, ProjectContentRevision and ProjectVersion
+            # it might not be ok for more regular ue config keys
+            sanitized_ini = ini_content.splitlines()
+            for key in keys:
+                sanitized_ini = [line for line in sanitized_ini if not re.match(rf'^{key}=(.*?)$', line)]
+            # look for section index
+            index = [i for i, s in enumerate(sanitized_ini) if re.match(rf'^\[{section}]', s)]
+            if not index:  # Insert section on top if it doesn't exist
+                sanitized_ini.insert(0, '')
+                sanitized_ini.insert(0, f'[{section}]')
+                index = [0]
+            for key in keys:  # Insert keys at the top of the section
+                sanitized_ini.insert(index[0] + 1, f'{key}={ini_parser[section][key]}')
+
+            return '\n'.join(sanitized_ini)
 
         ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
         logging.info('Updating %s', ini_file_path)
@@ -526,8 +549,22 @@ class Package(nimp.command.Command):
         project_version_format_args['project_version'] = formatted_project_version
 
         if not env.dry_run:
-            with open(ini_file_path, 'w') as ini_file:
-                ini_config.write(ini_file, space_around_delimiters=False)
+            with open(ini_file_path, 'r') as ini_file:
+                ini_content = ini_file.read()
+
+            ini_content = _update_ini_file(
+                ini_content, ini_config,
+                DNE_ENGINE_VERSION_SECTION,
+                PROJECT_BINARY_VERSION_KEY, PROJECT_CONTENT_VERSION_KEY
+            )
+            ini_content = _update_ini_file(
+                ini_content, ini_config,
+                PROJECT_VERSION_SECTION,
+                PROJECT_VERSION_KEY
+            )
+
+        with open(ini_file_path, 'w') as ini_file:
+            ini_file.write(ini_content)
 
         switch_ini_file_path = f'{active_configuration_directory}/Switch/SwitchEngine.ini'
         if os.path.exists(switch_ini_file_path):
@@ -555,8 +592,18 @@ class Package(nimp.command.Command):
                 switch_ini_config[SWITCH_VERSION_SECTION][SWITCH_APP_VERSION_STRING_KEY] = switch_version
 
                 if not env.dry_run:
+                    with open(switch_ini_file_path, 'r') as ini_file:
+                        switch_ini_content = ini_file.read()
+
+                    switch_ini_content = _update_ini_file(
+                        switch_ini_content, switch_ini_config,
+                        SWITCH_VERSION_SECTION,
+                        SWITCH_APP_VERSION_STRING_KEY
+                    )
+
                     with open(switch_ini_file_path, 'w') as ini_file:
-                        switch_ini_config.write(ini_file, space_around_delimiters=False)
+                        ini_file.write(switch_ini_content)
+
 
     @staticmethod
     def _load_configuration(package_configuration, ps4_title_directory_collection):
