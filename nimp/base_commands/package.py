@@ -432,27 +432,42 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
+        def _find_section_indexes(ini_content: list, needle: str):
+            return [index for index, line in enumerate(ini_content) if re.match(rf'^\[{needle}]', line)]
+
         def _update_ini_file(ini_content: str, ini_parser: configparser.ConfigParser,
                              section: str, *keys: tuple[str, ...]):
             ''' this helper function updates an active ini file with given section/keys '''
             if not keys:
                 return
 
-            # wipe existing keys from ini content
-            # this wipes keys regardless of section;
-            # it 'ok for ProjectBinaryRevision, ProjectContentRevision and ProjectVersion
-            # it might not be ok for more regular ue config keys
-            sanitized_ini = ini_content.splitlines()
-            for key in keys:
-                sanitized_ini = [line for line in sanitized_ini if not re.match(rf'^{key}=(.*?)$', line)]
+            # wipe existing keys from ini content withing section bounds
             # look for section index
-            index = [i for i, s in enumerate(sanitized_ini) if re.match(rf'^\[{section}]', s)]
-            if not index:  # Insert section on top if it doesn't exist
+            sanitized_ini = ini_content.splitlines()
+            section_indexes = _find_section_indexes(sanitized_ini, section)
+
+            if section_indexes:
+                section_index = section_indexes[0]
+                next_section_indexes = _find_section_indexes(sanitized_ini[section_index+1:], '.*')
+                if next_section_indexes:
+                    next_section_index = next_section_indexes[0]
+                    section_range = range(section_index, section_index + next_section_index + 1)
+                    for key in keys:
+                        sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
+                                         index not in section_range or
+                                         index in section_range and not re.match(rf'^{key}=(.*?)$', line)]
+                else:
+                    for key in keys:
+                        sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
+                                         index <= section_index or
+                                         index > section_index and re.match(rf'^{key}=(.*?)$', line)]
+
+            if not section_indexes:  # Insert section on top if it doesn't exist
                 sanitized_ini.insert(0, '')
                 sanitized_ini.insert(0, f'[{section}]')
-                index = [0]
+                section_index = 0
             for key in keys:  # Insert keys at the top of the section
-                sanitized_ini.insert(index[0] + 1, f'{key}={ini_parser[section][key]}')
+                sanitized_ini.insert(section_index + 1, f'{key}={ini_parser[section][key]}')
 
             return '\n'.join(sanitized_ini)
 
