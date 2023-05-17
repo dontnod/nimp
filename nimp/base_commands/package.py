@@ -455,12 +455,12 @@ class Package(nimp.command.Command):
                     for key in keys:
                         sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
                                          index not in section_range or
-                                         index in section_range and not re.match(rf'^{key}=(.*?)$', line)]
+                                         (index in section_range and not re.match(rf'^{key}=(.*?)$', line))]
                 else:
                     for key in keys:
                         sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
                                          index <= section_index or
-                                         index > section_index and re.match(rf'^{key}=(.*?)$', line)]
+                                         (index > section_index and not re.match(rf'^{key}=(.*?)$', line))]
 
             if not section_indexes:  # Insert section on top if it doesn't exist
                 sanitized_ini.insert(0, '')
