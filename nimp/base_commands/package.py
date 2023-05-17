@@ -433,7 +433,7 @@ class Package(nimp.command.Command):
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
         def _find_section_indexes(ini_content: list, needle: str):
-            return [index for index, line in enumerate(ini_content) if re.match(rf'^\[{needle}]', line)]
+            return next((index for index, line in enumerate(ini_content) if re.match(rf'^\[{needle}]', line)), None)
 
         def _update_ini_file(ini_content: str, ini_parser: configparser.ConfigParser,
                              section: str, *keys: tuple[str, ...]):
@@ -444,14 +444,12 @@ class Package(nimp.command.Command):
             # wipe existing keys from ini content withing section bounds
             # look for section index
             sanitized_ini = ini_content.splitlines()
-            section_indexes = _find_section_indexes(sanitized_ini, section)
+            section_index = _find_section_indexes(sanitized_ini, section)
 
-            if section_indexes:
-                section_index = section_indexes[0]
-                next_section_indexes = _find_section_indexes(sanitized_ini[section_index+1:], '.*')
-                if next_section_indexes:
-                    next_section_index = next_section_indexes[0]
-                    section_range = range(section_index, section_index + next_section_index + 1)
+            if section_index is not None:
+                next_section_index = _find_section_indexes(sanitized_ini[section_index+1:], '.*')
+                if next_section_index is not None:
+                    section_range = list(range(section_index, section_index + next_section_index + 1))
                     for key in keys:
                         sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
                                          index not in section_range or
@@ -462,7 +460,7 @@ class Package(nimp.command.Command):
                                          index <= section_index or
                                          (index > section_index and not re.match(rf'^{key}=(.*?)$', line))]
 
-            if not section_indexes:  # Insert section on top if it doesn't exist
+            if section_index is None:  # Insert section on top if it doesn't exist
                 sanitized_ini.insert(0, '')
                 sanitized_ini.insert(0, f'[{section}]')
                 section_index = 0
