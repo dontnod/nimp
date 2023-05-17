@@ -444,11 +444,11 @@ class Package(nimp.command.Command):
             sanitized_ini = ini_content.splitlines()
             section_index = _find_section_indexes(sanitized_ini, section)
 
-            # section exists, wipe existing keys from ini content withing section bounds
+            # section exists, wipe existing keys from ini content within section bounds
             if section_index is not None:
                 next_section_index = _find_section_indexes(sanitized_ini[section_index+1:], '.*')
-                section_end = section_index + next_section_index if next_section_index is not None else len(sanitized_ini)
-                section_range = list(range(section_index, section_end+1))
+                section_end = (section_index + next_section_index + 1) if next_section_index is not None else len(sanitized_ini)
+                section_range = list(range(section_index, section_end))
                 for key in keys:
                     sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
                                      index not in section_range or
