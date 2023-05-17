@@ -442,8 +442,9 @@ class Package(nimp.command.Command):
                 return
 
             sanitized_ini = ini_content.splitlines()
-            # wipe existing keys from ini content withing section bounds
             section_index = _find_section_indexes(sanitized_ini, section)
+
+            # section exists, wipe existing keys from ini content withing section bounds
             if section_index is not None:
                 next_section_index = _find_section_indexes(sanitized_ini[section_index+1:], '.*')
                 section_end = section_index + next_section_index if next_section_index is not None else len(sanitized_ini)
@@ -452,12 +453,14 @@ class Package(nimp.command.Command):
                     sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
                                      index not in section_range or
                                      (index in section_range and not re.match(rf'^{key}=(.*?)$', line))]
-
-            if section_index is None:  # Insert section on top if it doesn't exist
+            # Section doesn't exist, insert section on top of ini file
+            else:
                 sanitized_ini.insert(0, '')
                 sanitized_ini.insert(0, f'[{section}]')
                 section_index = 0
-            for key in keys:  # Insert keys at the top of the section
+
+            # add keys to section
+            for key in keys:
                 sanitized_ini.insert(section_index + 1, f'{key}={ini_parser[section][key]}')
 
             return '\n'.join(sanitized_ini)
