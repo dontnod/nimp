@@ -23,7 +23,6 @@
 ''' Commands related to version packaging '''
 
 import argparse
-import configparser
 import copy
 import json
 import glob
@@ -43,27 +42,11 @@ import nimp.system
 import nimp.sys.process
 import nimp.unreal
 import nimp.utils.p4
+import nimp.utils.ue_ini
 
 from contextlib import contextmanager
 
 from nimp.sys.platform import create_platform_desc
-
-
-def _ue_ini_parser():
-    config_parser = configparser.ConfigParser(strict=False)
-    # ConfigParser will load keys (and thus write) as case-insensitive by default
-    # setting `optionxform` to `str` will make it case-sensitive
-    config_parser.optionxform = str
-    return config_parser
-
-def _get_ini_value(file_path, key):
-    ''' Retrieves a value from a ini file '''
-    with open(file_path) as ini_file:
-        ini_content = ini_file.read()
-    match = re.search('^' + key + r'=(?P<value>.*?)$', ini_content, re.MULTILINE)
-    if not match:
-        raise KeyError('Key {key} was not found in {file_path}'.format(**locals()))
-    return match.group('value')
 
 
 def _try_remove(file_path, dry_run):
@@ -388,26 +371,6 @@ class Package(nimp.command.Command):
                     _try_remove(dst_title_conf, False)
 
     @staticmethod
-    def enumerate_unreal_configs(env):
-        # lookup unreal project conf
-        # order matters: from deepest ini to broadest (deep<-variant<-platform<-game)
-        config_files_patterns = []
-        if hasattr(env, 'variant') and env.variant:
-            config_files_patterns.extend([
-                '{uproject_dir}/Config/Variants/Active/{cook_platform}/{cook_platform}Game.ini',
-                '{uproject_dir}/Config/Variants/{variant}/{cook_platform}/{cook_platform}Game.ini',
-                '{uproject_dir}/Config/Variants/Active/DefaultGame.ini',
-                '{uproject_dir}/Config/Variants/{variant}/DefaultGame.ini'
-            ])
-        config_files_patterns.extend([
-            '{uproject_dir}/Platforms/{cook_platform}/Config/DefaultGame.ini',
-            '{uproject_dir}/Config/DefaultGame.ini',
-        ])
-        for config_files_pattern in config_files_patterns:
-            for file in glob.glob(env.format(config_files_pattern)):
-                yield file
-
-    @staticmethod
     def set_for_distribution_from_config_files(env):
         if env.unreal_version < 5:  # legacy
             return False
@@ -416,8 +379,8 @@ class Package(nimp.command.Command):
             return env.for_distribution
 
         for_distribution = None
-        for config_file in Package.enumerate_unreal_configs(env):
-            config = _ue_ini_parser()
+        for config_file in nimp.utils.ue_ini.enumerate_unreal_configs(env):
+            config = nimp.utils.ue_ini.ue_ini_parser()
             config.read(config_file)
             if '/Script/UnrealEd.ProjectPackagingSettings' in config:
                 for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', None)
@@ -432,42 +395,9 @@ class Package(nimp.command.Command):
 
     @staticmethod
     def write_project_revisions(env, active_configuration_directory):
-        def _find_section_indexes(ini_content: list, needle: str):
-            return next((index for index, line in enumerate(ini_content) if re.match(rf'^\[{needle}]', line)), None)
-
-        def _update_ini_file(ini_content: str, ini_parser: configparser.ConfigParser,
-                             section: str, *keys: tuple[str, ...]):
-            ''' this helper function updates an active ini file with given section/keys '''
-            if not keys:
-                return
-
-            sanitized_ini = ini_content.splitlines()
-            section_index = _find_section_indexes(sanitized_ini, section)
-
-            # section exists, wipe existing keys from ini content within section bounds
-            if section_index is not None:
-                next_section_index = _find_section_indexes(sanitized_ini[section_index+1:], '.*')
-                section_end = (section_index + next_section_index + 1) if next_section_index is not None else len(sanitized_ini)
-                section_range = list(range(section_index, section_end))
-                for key in keys:
-                    sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
-                                     index not in section_range or
-                                     (index in section_range and not re.match(rf'^{key}=(.*?)$', line))]
-            # Section doesn't exist, insert section on top of ini file
-            else:
-                sanitized_ini.insert(0, '')
-                sanitized_ini.insert(0, f'[{section}]')
-                section_index = 0
-
-            # add keys to section
-            for key in keys:
-                sanitized_ini.insert(section_index + 1, f'{key}={ini_parser[section][key]}')
-
-            return '\n'.join(sanitized_ini)
-
         ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
         logging.info('Updating %s', ini_file_path)
-        ini_config = _ue_ini_parser()
+        ini_config = nimp.utils.ue_ini.ue_ini_parser()
         ini_config.read(ini_file_path)
 
         # Setup Epic ProjectVersion
@@ -480,10 +410,10 @@ class Package(nimp.command.Command):
 
         if not project_version:
             ini_config_filename = os.path.normcase('DefaultGame.ini')
-            for config_file in Package.enumerate_unreal_configs(env):
+            for config_file in nimp.utils.ue_ini.enumerate_unreal_configs(env):
                 if os.path.basename(os.path.normcase(config_file)) != ini_config_filename:
                     continue
-                config = _ue_ini_parser()
+                config = nimp.utils.ue_ini.ue_ini_parser()
                 config.read(config_file)
 
                 if PROJECT_VERSION_SECTION in config:
@@ -562,12 +492,12 @@ class Package(nimp.command.Command):
                 ini_content = ini_file.read()
 
             if write_dne_revisions:
-                ini_content = _update_ini_file(
+                ini_content = nimp.utils.ue_ini.update_ini_file(
                     ini_content, ini_config,
                     DNE_ENGINE_VERSION_SECTION,
                     PROJECT_BINARY_VERSION_KEY, PROJECT_CONTENT_VERSION_KEY
                 )
-            ini_content = _update_ini_file(
+            ini_content = nimp.utils.ue_ini.update_ini_file(
                 ini_content, ini_config,
                 PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY
             )
@@ -577,7 +507,7 @@ class Package(nimp.command.Command):
 
         switch_ini_file_path = f'{active_configuration_directory}/Switch/SwitchEngine.ini'
         if os.path.exists(switch_ini_file_path):
-            switch_ini_config = _ue_ini_parser()
+            switch_ini_config = nimp.utils.ue_ini.ue_ini_parser()
             switch_ini_config.read(switch_ini_file_path)
 
             SWITCH_VERSION_SECTION = '/Script/SwitchRuntimeSettings.SwitchRuntimeSettings'
@@ -604,7 +534,7 @@ class Package(nimp.command.Command):
                     with open(switch_ini_file_path, 'r') as ini_file:
                         switch_ini_content = ini_file.read()
 
-                    switch_ini_content = _update_ini_file(
+                    switch_ini_content = nimp.utils.ue_ini.update_ini_file(
                         switch_ini_content, switch_ini_config,
                         SWITCH_VERSION_SECTION,
                         SWITCH_APP_VERSION_STRING_KEY
@@ -622,7 +552,7 @@ class Package(nimp.command.Command):
             platform = package_configuration.target_platform
             if not ps4_title_directory_collection:
                 ini_file_path = f'{package_configuration.configuration_directory}/{platform}/{platform}Engine.ini'
-                ps4_title_directory_collection = [ _get_ini_value(ini_file_path, 'TitleID') ]
+                ps4_title_directory_collection = [ nimp.utils.ue_ini.get_ini_value(ini_file_path, 'TitleID') ]
 
             ps4_title_collection = []
             for title_directory in ps4_title_directory_collection:
@@ -637,8 +567,8 @@ class Package(nimp.command.Command):
 
         if package_configuration.target_platform == 'XboxOne':
             ini_file_path = package_configuration.configuration_directory + '/XboxOne/XboxOneEngine.ini'
-            package_configuration.xbox_product_id = _get_ini_value(ini_file_path, 'ProductId')
-            package_configuration.xbox_content_id = _get_ini_value(ini_file_path, 'ContentId')
+            package_configuration.xbox_product_id = nimp.utils.ue_ini.get_ini_value(ini_file_path, 'ProductId')
+            package_configuration.xbox_content_id = nimp.utils.ue_ini.get_ini_value(ini_file_path, 'ContentId')
 
 
     @staticmethod
