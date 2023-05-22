@@ -561,19 +561,19 @@ class Package(nimp.command.Command):
             with open(ini_file_path, 'r') as ini_file:
                 ini_content = ini_file.read()
 
+            if write_dne_revisions:
+                ini_content = _update_ini_file(
+                    ini_content, ini_config,
+                    DNE_ENGINE_VERSION_SECTION,
+                    PROJECT_BINARY_VERSION_KEY, PROJECT_CONTENT_VERSION_KEY
+                )
             ini_content = _update_ini_file(
                 ini_content, ini_config,
-                DNE_ENGINE_VERSION_SECTION,
-                PROJECT_BINARY_VERSION_KEY, PROJECT_CONTENT_VERSION_KEY
-            )
-            ini_content = _update_ini_file(
-                ini_content, ini_config,
-                PROJECT_VERSION_SECTION,
-                PROJECT_VERSION_KEY
+                PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY
             )
 
-        with open(ini_file_path, 'w') as ini_file:
-            ini_file.write(ini_content)
+            with open(ini_file_path, 'w') as ini_file:
+                ini_file.write(ini_content)
 
         switch_ini_file_path = f'{active_configuration_directory}/Switch/SwitchEngine.ini'
         if os.path.exists(switch_ini_file_path):
