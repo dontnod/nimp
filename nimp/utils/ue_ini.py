@@ -25,6 +25,7 @@
 import configparser
 import glob
 import re
+import typing
 
 def ue_ini_parser():
     config_parser = configparser.ConfigParser(strict=False)
@@ -66,38 +67,37 @@ def enumerate_unreal_configs(env):
 def _find_section_indexes(ini_content: list, needle: str):
     return next((index for index, line in enumerate(ini_content) if re.match(rf'^\[{needle}]', line)), None)
 
-def update_ini_file(ini_content: str, ini_parser: configparser.ConfigParser,
-                        section: str, *keys: tuple[str, ...]):
+def update_ini_file(ini_content: list[str], section: str,
+                    *keys: tuple[str, typing.Any]):
     '''
     this helper function updates an active ini file with given section/keys
+
     This is needed as UE ini files are non-standard which cause some data-loss if using configparser.ConfigParser
     eg. UE ini allow to extend a key's value with +key=xxx and there can be multiple line like this.
     configparser.ConfigParser does not allow multiple values like this and will only keep the last one
     '''
 
     if not keys:
-        return
+        return ini_content
 
-    sanitized_ini = ini_content.splitlines()
-    section_index = _find_section_indexes(sanitized_ini, section)
+    section_idx = _find_section_indexes(ini_content, section)
+    if section_idx is None:
+        section_idx = len(ini_content)
 
-    # section exists, wipe existing keys from ini content within section bounds
-    if section_index is not None:
-        next_section_index = _find_section_indexes(sanitized_ini[section_index+1:], '.*')
-        section_end = (section_index + next_section_index + 1) if next_section_index is not None else len(sanitized_ini)
-        section_range = list(range(section_index, section_end))
-        for key in keys:
-            sanitized_ini = [line for index, line in enumerate(sanitized_ini) if
-                                index not in section_range or
-                                (index in section_range and not re.match(rf'^{key}=(.*?)$', line))]
-    # Section doesn't exist, insert section on top of ini file
+    section_end_idx = None
+    next_section_rel_idx = _find_section_indexes(ini_content[section_idx+1:], '.*')
+    if next_section_rel_idx is not None:
+        section_end_idx = section_idx + 1 + next_section_rel_idx
     else:
-        sanitized_ini.insert(0, '')
-        sanitized_ini.insert(0, f'[{section}]')
-        section_index = 0
+        section_end_idx = len(ini_content)
 
-    # add keys to section
-    for key in keys:
-        sanitized_ini.insert(section_index + 1, f'{key}={ini_parser[section][key]}')
+    new_section_content = []
+    # Re create the section replacing key if necessary
+    for line in ini_content[section_idx:section_end_idx]:
+        key, value = next(((k, v) for (k, v) in keys if re.match(rf'^{k}=.*$', line) is not None), (None, None))
+        if key is not None:
+            new_section_content.append(f"{key}={value if value is not None else ''}\n")
+        else:
+            new_section_content.append(line)
 
-    return '\n'.join(sanitized_ini)
+    return ini_content[:section_idx] + new_section_content + ini_content[section_end_idx:]

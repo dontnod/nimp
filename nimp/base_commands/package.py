@@ -34,6 +34,7 @@ import stat
 import shlex
 import shutil
 import subprocess
+import typing
 import xml.etree.ElementTree
 
 import nimp.command
@@ -446,9 +447,7 @@ class Package(nimp.command.Command):
 
         write_dne_revisions = env.write_project_revisions
 
-        if write_dne_revisions:
-            if DNE_ENGINE_VERSION_SECTION not in ini_config:
-                ini_config[DNE_ENGINE_VERSION_SECTION] = {}
+        ini_update_values: dict[str, dict[str, typing.Any]] = {}
 
         workspace_status = nimp.system.load_status(env)
         if isinstance(workspace_status, dict):
@@ -459,7 +458,7 @@ class Package(nimp.command.Command):
 
                 if write_dne_revisions:
                     logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_BINARY_VERSION_KEY, project_binary_version)
-                    ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BINARY_VERSION_KEY] = project_binary_version
+                    ini_update_values.setdefault(DNE_ENGINE_VERSION_SECTION, {})[PROJECT_BINARY_VERSION_KEY] = project_binary_version
 
         try:
             project_content_version = nimp.utils.p4.get_client(env).get_current_changelist(env.root_dir)
@@ -467,7 +466,7 @@ class Package(nimp.command.Command):
 
             if write_dne_revisions:
                 logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
-                ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
+                ini_update_values.setdefault(DNE_ENGINE_VERSION_SECTION, {})[PROJECT_CONTENT_VERSION_KEY] = project_content_version
         except:
             logging.warning('Failed to get content revision')
 
@@ -481,29 +480,22 @@ class Package(nimp.command.Command):
             raise RuntimeError('Failed to format ProjectVersion. Missing %s value.', key_name)
 
         logging.info('Set [%s]%s to %s', PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY, formatted_project_version)
-        if PROJECT_VERSION_SECTION not in ini_config:
-            ini_config[PROJECT_VERSION_SECTION] = {}
-        ini_config[PROJECT_VERSION_SECTION][PROJECT_VERSION_KEY] = formatted_project_version
+        ini_update_values.setdefault(PROJECT_VERSION_SECTION, {})[PROJECT_VERSION_KEY] = formatted_project_version
 
         project_version_format_args['project_version'] = formatted_project_version
 
         if not env.dry_run:
             with open(ini_file_path, 'r') as ini_file:
-                ini_content = ini_file.read()
+                ini_content = ini_file.readlines()
 
-            if write_dne_revisions:
+            for section, key_values in ini_update_values.items():
                 ini_content = nimp.utils.ue_ini.update_ini_file(
-                    ini_content, ini_config,
-                    DNE_ENGINE_VERSION_SECTION,
-                    PROJECT_BINARY_VERSION_KEY, PROJECT_CONTENT_VERSION_KEY
+                    ini_content, section,
+                    *list(key_values.items())
                 )
-            ini_content = nimp.utils.ue_ini.update_ini_file(
-                ini_content, ini_config,
-                PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY
-            )
 
             with open(ini_file_path, 'w') as ini_file:
-                ini_file.write(ini_content)
+                ini_file.writelines(ini_content)
 
         switch_ini_file_path = f'{active_configuration_directory}/Switch/SwitchEngine.ini'
         if os.path.exists(switch_ini_file_path):
@@ -528,16 +520,14 @@ class Package(nimp.command.Command):
                     raise RuntimeError('Failed to format ProjectVersion. Missing %s value.', key_name)
 
                 logging.info('Set [%s]%s to %s', SWITCH_VERSION_SECTION, SWITCH_APP_VERSION_STRING_KEY, switch_version)
-                switch_ini_config[SWITCH_VERSION_SECTION][SWITCH_APP_VERSION_STRING_KEY] = switch_version
 
                 if not env.dry_run:
                     with open(switch_ini_file_path, 'r') as ini_file:
                         switch_ini_content = ini_file.read()
 
                     switch_ini_content = nimp.utils.ue_ini.update_ini_file(
-                        switch_ini_content, switch_ini_config,
-                        SWITCH_VERSION_SECTION,
-                        SWITCH_APP_VERSION_STRING_KEY
+                        switch_ini_content, SWITCH_VERSION_SECTION,
+                        (SWITCH_APP_VERSION_STRING_KEY, switch_version)
                     )
 
                     with open(switch_ini_file_path, 'w') as ini_file:
