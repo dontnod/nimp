@@ -24,15 +24,14 @@
 
 import logging
 import os
-import glob
-import socket
 import subprocess
 import re
 import time
 
-import nimp.system
+import nimp.symstore
 import nimp.sys.platform
 import nimp.sys.process
+import nimp.system
 
 
 def _try_excecute(command, cwd='.', capture_output=True, max_attemtps=5, delay=5, time_out=120):
@@ -276,43 +275,13 @@ def install_distcc_and_ccache():
             logging.debug('Setting UBT_PARALLEL=%s', workers)
             os.environ['UBT_PARALLEL'] = workers
 
+
 def upload_symbols(env, symbols, config, two_tier_mode=True):
     ''' Uploads build symbols to a symbol server '''
-    if not (env.is_win64 or env.is_xsx or env.is_ps5):
-        logging.error("Plafrom must be win64, xsx or ps5")
+
+    sym_store = nimp.symstore.SymStore.get_symstore(env)
+    if sym_store is None:
         return False
-
-    def _discover_latest_autosdk(platform):
-        '''look for autoSDK on buildmachine '''
-        # TODO: get this out of here and in a more generic place like system for example
-        host_name = socket.gethostname()
-        is_build_worker = host_name.startswith('farmagent') or host_name.startswith('linuxagent')
-        platform = 'GDK' if platform in ['win64', 'xsx'] else platform
-        auto_sdk_root = 'D:/autoSDK/HostWin64/' + platform.upper()
-        if not is_build_worker or not os.path.exists((auto_sdk_root)):
-            return None
-
-        possible_paths = os.listdir(auto_sdk_root)
-        if platform == 'ps5':
-            # possible falvours : PS5/2.00.00.09/NotForLicensees/2.000/
-            # possible falvours : PS5/2.000.009/NotForLicensees/2.000/
-            pattern = r'^\d?(\d).\d+.\d+?(.\d+)$'
-
-        else:
-            # possible flavours like GDK/200806/
-            pattern = r'^\d{6}$'
-        possible_paths = sorted([ p for p in possible_paths if re.match(pattern, p)], reverse=True )
-        if platform == 'ps5': # sort possible flavours like 2.00.00.89 and 2.000.089, sigh...
-            dotless_paths = sorted([ (path.replace('.', ''), path) for path in possible_paths ], reverse=True)
-            possible_paths = [ dot for dotless, dot in dotless_paths ]
-            if possible_paths != []: # second round of version guessing for ps5, sigh...
-                auto_sdk_root += '/' + possible_paths[0] + '/NotForLicensees/'
-                possible_paths = os.listdir(auto_sdk_root)
-                possible_paths = sorted([p for p in possible_paths if re.match(r'\d?(\d).\d+', p)], reverse=True)
-        if possible_paths == []:
-            return None
-        auto_sdk_root += '/' + possible_paths[0]
-        return auto_sdk_root
 
     # create store if not available yet
     store_root = nimp.system.sanitize_path(os.path.join(env.format(env.publish_symbols), env.platform.lower()))
@@ -320,109 +289,28 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
         nimp.system.safe_makedirs(store_root)
 
     # find the tool to upload our symbols
-    sym_tool_path = "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/symstore.exe"
-    if env.is_ps5: # ps5 sym tool
-        auto_sdk_root = _discover_latest_autosdk(env.platform)
-        prospero_local_root = os.getenv('SCE_PROSPERO_SDK_DIR', default=None)
-        assert prospero_local_root or auto_sdk_root
-        ps5_sdk_root = auto_sdk_root if auto_sdk_root else prospero_local_root
-        sym_tool_path = os.path.join(ps5_sdk_root, 'host_tools', 'bin', 'prospero-symupload.exe')
-    else: # autoSDK win10 sdk
-        win10_sdk_path = 'D:/autoSDK/HostWin64/Win64/Windows Kits/10/Debuggers/x64/symstore.exe'
-        if os.path.isfile(win10_sdk_path):
-            sym_tool_path = win10_sdk_path
-    sym_tool_path = nimp.system.sanitize_path(sym_tool_path)
-    logging.debug('Using sym-too-path -> %s' % sym_tool_path)
+    sym_tool_path = sym_store.get_symstore_tool_path()
+    logging.debug('Using sym-tool-path -> %s' % sym_tool_path)
 
-    compress_symbols = hasattr(env, 'compress') and env.compress
-    # Approx. 2GB
-    cab_src_size_limit = 1.5 * 1000 * 1000 * 1000
-
-    default_compression_symbols = []
-    # Microsoft symstore.exe uses CAB compression  which has a hard limit on source file size of 2GB.
-    # Switch to ZIP compression if a file exceed this limit to prevent corrupted archives
-    # (benefits are faster compression time and handle file size > 2GB but compress less)
-    zip_compression_symbols = []
-    for src, _ in symbols:
-        file_size = None
-        try:
-            file_size = os.path.getsize(src)
-        except OSError as ex:
-            logging.debug("Failed to get %s size", src, exc_info=ex)
-
-        # if we couldn't get the filesize, default to ZIP for msft platforms for safety
-        if env.is_microsoft_platform and (file_size is None or file_size >= cab_src_size_limit):
-            zip_compression_symbols.append(src)
-        else:
-            default_compression_symbols.append(src)
-
-    def run_symstore(base_cmd, symbols_list, index_file, compression_type=None):
-        with open(index_file, "w") as symbols_index:
-            for src in symbols_list:
-                logging.debug("adding %s to response file %s" % (src, index_file))
-                symbols_index.write(src + "\n")
-
-        cmd = base_cmd + ["/f", "@" + index_file]  # add files from response file
-        if compress_symbols:
-            cmd.append('/compress')
-            if compression_type is not None:
-                cmd.append(compression_type)
-
-        success = nimp.sys.process.call(cmd, dry_run=env.dry_run) == 0
-        if success:
-            # Do not remove symbol index; keep it for later debugging
-            os.remove(index_file)
-
-        return success
-
+    compress_symbols = getattr(env, 'compress', False)
 
     # transaction tag
     transaction_comment = "{0}_{1}_{2}_{3}".format(env.project, env.platform, config, env.revision)
 
-    # common cmd params
-    base_cmd = [
-        sym_tool_path,
-        "add",
-        "/r",  # Recursive
-        "/s", store_root,  # target symbol store
-        "/o",  # Verbose output
-    ]
-    # platform specific cmd params
-    if env.is_ps5:
-        base_cmd += [
-            "/tag", transaction_comment,  # tag symbols
-        ]
-    if env.is_microsoft_platform:
-        if two_tier_mode:
-            base_cmd.append("/3")  # Index2 format
+    # symstores have might have slightly different args
+    kwargs = {
+        # MSFT
+        'product_name': env.project,
+        'comment': transaction_comment,
+        'version': env.revision,
+        'use_index2': two_tier_mode,
+        'gzip_compress': True,
+        # PS5
+        'tag': transaction_comment,
+    }
 
-        base_cmd += [
-            # no documentation on this but seems to not override files already in store
-            "-:NOFORCECOPY",
-            "/t", env.project,  # Product name
-            "/c", transaction_comment,
-            "/v", env.revision,
-        ]
+    return sym_store.upload_symbols(symbols, store_root, compress=compress_symbols, **kwargs)
 
-    is_success = True
-
-    compressed_symbols_list = [
-        (None, default_compression_symbols),
-        ('ZIP', zip_compression_symbols),
-    ]
-
-    for (compression_type, symbols_list) in compressed_symbols_list:
-        if not symbols_list:
-            continue
-
-        if not run_symstore(base_cmd,
-                    symbols_list,
-                    "{}_symbols_index.txt".format(compression_type if compression_type is not None else 'default'),
-                    compression_type
-                ):
-            is_success = False
-
-    return is_success
 
 def get_symbol_transactions(symsrv):
     ''' Retrieves all symbol transactions from a symbol server '''

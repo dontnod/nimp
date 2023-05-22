@@ -22,9 +22,12 @@
 
 ''' Uploading related commands '''
 
+import itertools
 import os
 
 import nimp.command
+import nimp.system
+import nimp.build
 
 class Upload(nimp.command.CommandGroup):
     ''' Uploading commands '''
@@ -65,9 +68,10 @@ class _Symbols(nimp.command.Command):
         return True, ''
 
     def run(self, env):
-        success = True
         # ps5 shipping has no corresponding symbols, they're in the elf/self unstripped binary file
         has_symbols_inside_binary_file = env.platform in ['ps5']
+
+        iterators = []
         for config_or_target in env.configurations:
             config = config_or_target if config_or_target not in ['editor', 'tools'] else 'devel'
             target = config_or_target if config_or_target in ['editor', 'tools'] else 'game'
@@ -80,25 +84,24 @@ class _Symbols(nimp.command.Command):
             binaries_to_publish.root_based = False
             tmp_binaries_to_publish = binaries_to_publish.override(configuration=config, target=target)
             tmp_binaries_to_publish.load_set("binaries")
-            if not nimp.build.upload_symbols(env, _Symbols._chain_symbols_and_binaries(
-                    symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file), config, two_tier_mode=not env.single_tier):
-                success = False
 
-        return success
+            iterators.append(_Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file))
+
+        return nimp.build.upload_symbols(env, itertools.chain(*iterators), '_'.join(env.configurations), two_tier_mode=not env.single_tier)
 
     @staticmethod
     def _chain_symbols_and_binaries(symbols, binaries, has_symbols_inside_binary_file=False):
         # sort of itertools.chain, but binaries are pushed only if corresp. symbol is present
         symbol_roots = []
-        for symbol in symbols:
-            symbol_root, _ = os.path.splitext(symbol[0])
+        for (symbol_src, __symbol_dest) in symbols:
+            symbol_root, _ = os.path.splitext(symbol_src)
             symbol_roots.append(symbol_root)
-            yield symbol
-        for binary in binaries:
+            yield symbol_src
+        for (binary_src, __binary_dest) in binaries:
             # (it's always Microsoft platform so OK to just splitext)
-            binary_root, _ = os.path.splitext(binary[0])
+            binary_root, _ = os.path.splitext(binary_src)
             # symbols inside binaries, no symbols, just yield binaries and no corresponding symbols
-            if has_symbols_inside_binary_file and os.path.isfile(binary[0]):
-                yield  binary
+            if has_symbols_inside_binary_file and os.path.isfile(binary_src):
+                yield binary_src
             elif binary_root in symbol_roots:
-                yield binary
+                yield binary_src
