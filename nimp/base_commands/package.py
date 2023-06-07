@@ -538,8 +538,8 @@ class Package(nimp.command.Command):
             if write_dne_revisions:
                 logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
                 ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
-        except:
-            logging.warning('Failed to get content revision')
+        except Exception as e:
+            logging.warning('Failed to get content revision', exc_info=e)
 
 
         try:

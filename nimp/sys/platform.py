@@ -80,8 +80,8 @@ def discover(env):
         try:
             module = e.load()
             get_class_instances(module, Platform, tmp, instance_args=[env])
-        except:
-            pass
+        except Exception as exception:
+            logging.debug("Failed to get platforms from plugin %s", e.module_name, exc_info=exception)
 
     for platform in tmp.values():
 
