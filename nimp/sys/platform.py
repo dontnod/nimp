@@ -83,17 +83,17 @@ def discover(env):
         except Exception as exception:
             logging.debug("Failed to get platforms from plugin %s", e.module_name, exc_info=exception)
 
-    for platform in tmp.values():
+    for found_platform in tmp.values():
 
         # Set env.is_win32, env.is_linux, etc. to False by default
-        setattr(env, f'is_{platform.name}', False)
+        setattr(env, f'is_{found_platform.name}', False)
 
         # Register platform classes under their names and aliases
-        _all_platforms[platform.name] = platform
-        _all_unreal_platforms[platform.unreal_name] = platform
+        _all_platforms[found_platform.name] = found_platform
+        _all_unreal_platforms[found_platform.unreal_name] = found_platform
 
-        for n in [platform.name, *platform.aliases]:
-            _all_aliases[n] = platform.name
+        for n in [found_platform.name, *found_platform.aliases]:
+            _all_aliases[n] = found_platform.name
 
 
 def is_windows():
