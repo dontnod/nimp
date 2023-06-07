@@ -43,7 +43,7 @@ def try_import(module_name):
     ''' Tries to import a module, return none if unavailable '''
     try:
         return importlib.import_module(module_name)
-    except ModuleNotFoundError as ex:
+    except ModuleNotFoundError:
         pass # Ignore this error
     except ImportError as ex:
         if ex.name == module_name:

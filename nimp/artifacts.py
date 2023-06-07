@@ -49,7 +49,7 @@ try:
     import BitTornado.Meta.Info
     import BitTornado.Meta.BTTree
     import BitTornado.Meta.bencode
-except ImportError as exception:
+except ImportError:
     BitTornado = None
 
 
