@@ -114,7 +114,7 @@ class PS5(nimp.sys.platform.Platform):
             return None
         with open(json_file_path) as json_file:
             json_content = json.load(json_file)
-        if not 'DefaultContentID' in json_content:
+        if 'DefaultContentID' not in json_content:
             logging.warning('No "DefaultContentID" attribute found in ' + json_file_path + '. Looking for package name instead.')
             return None
 
