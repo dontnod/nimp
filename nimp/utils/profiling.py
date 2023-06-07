@@ -22,7 +22,6 @@
 
 ''' Nimp profiling utilities '''
 
-import logging
 from contextlib import contextmanager
 
 try:

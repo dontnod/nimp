@@ -23,7 +23,6 @@
 ''' Command to run executables or special commands '''
 
 import abc
-import argparse
 import logging
 import re
 import os

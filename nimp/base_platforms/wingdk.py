@@ -1,7 +1,6 @@
 
 import glob
 import logging
-import os
 
 from nimp.base_platforms.basegdk import BaseGDK
 import nimp.sys.process

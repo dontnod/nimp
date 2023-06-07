@@ -25,14 +25,11 @@ values and command line parameters set for this nimp execution '''
 
 import argparse
 import re
-import inspect
 import logging
 import os
 import pkg_resources
 import sys
 import time
-import glob
-import glob2
 
 import nimp.command
 from nimp.exceptions import NimpCommandFailed
