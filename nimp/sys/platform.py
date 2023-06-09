@@ -73,27 +73,27 @@ def create_platform_desc_unreal(unreal_name):
 def discover(env):
     ''' Import platforms from base nimp and from plugins '''
 
-    tmp = {}
-    get_class_instances(nimp.base_platforms, Platform, tmp, instance_args=[env])
+    discovered_platforms = {}
+    get_class_instances(nimp.base_platforms, Platform, discovered_platforms, instance_args=[env])
 
-    for e in pkg_resources.iter_entry_points('nimp.plugins'):
+    for module_entrypoint in pkg_resources.iter_entry_points('nimp.plugins'):
         try:
-            module = e.load()
-            get_class_instances(module, Platform, tmp, instance_args=[env])
-        except:
-            pass
+            module = module_entrypoint.load()
+            get_class_instances(module, Platform, discovered_platforms, instance_args=[env])
+        except Exception as exception:
+            logging.debug("Failed to get platforms from plugin %s", module_entrypoint.module_name, exc_info=exception)
 
-    for platform in tmp.values():
+    for platform_instance in discovered_platforms.values():
 
         # Set env.is_win32, env.is_linux, etc. to False by default
-        setattr(env, f'is_{platform.name}', False)
+        setattr(env, f'is_{platform_instance.name}', False)
 
         # Register platform classes under their names and aliases
-        _all_platforms[platform.name] = platform
-        _all_unreal_platforms[platform.unreal_name] = platform
+        _all_platforms[platform_instance.name] = platform_instance
+        _all_unreal_platforms[platform_instance.unreal_name] = platform_instance
 
-        for n in [platform.name, *platform.aliases]:
-            _all_aliases[n] = platform.name
+        for alias in [platform_instance.name, *platform_instance.aliases]:
+            _all_aliases[alias] = platform_instance.name
 
 
 def is_windows():

@@ -50,13 +50,13 @@ def _try_excecute(command, cwd='.', capture_output=True, max_attemtps=5, delay=5
                 return False
 
             if "ERROR: Unhandled exception: System." in output and ":\\autoSDK\\HostWin64\\" in output:
-                logging.warn(f'AutoSDK error.')
+                logging.warn('AutoSDK error.')
                 retry = True
             if "Package 'RoslynPackage' failed to load" in output:
-                logging.warn(f'Devenv cache error')
+                logging.warn('Devenv cache error')
                 retry = True
             if "Package 'Visual Studio Build Manager Package' failed to load" in output:
-                logging.warn(f'Devenv cache error')
+                logging.warn('Devenv cache error')
                 retry = True
 
             if retry:
@@ -64,7 +64,7 @@ def _try_excecute(command, cwd='.', capture_output=True, max_attemtps=5, delay=5
                     logging.error('Max attempts reached, bailing...')
                     return result
                 if time_passed > time_out:
-                    logging.warn(f'Not retrying error that happened late in the process')
+                    logging.warn('Not retrying error that happened late in the process')
                     return result
                 attempt += 1
                 logging.warn(f'Retrying : attempt {attempt} out of {max_attemtps}...')

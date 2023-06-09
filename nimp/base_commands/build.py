@@ -169,14 +169,15 @@ class Build(nimp.command.Command):
         entry = re.compile('\s*([^|]*)\|([^=]*) = ([^|]*)\|([^|]*)')
 
         good_section = False
-        for l in open(sln, 'r').readlines():
-            if 'GlobalSection(SolutionConfigurationPlatforms)' in l:
-                good_section = True
-            elif 'EndGlobalSection' in l:
-                good_section = False
-            elif good_section:
-                m = entry.match(l.strip())
-                if m:
-                    configs.add(m.groups(0)[0])
-                    platforms.add(m.groups(0)[1])
-        return configs, platforms
+        with open(sln, 'r') as fp:
+            for line in fp.readlines():
+                if 'GlobalSection(SolutionConfigurationPlatforms)' in line:
+                    good_section = True
+                elif 'EndGlobalSection' in line:
+                    good_section = False
+                elif good_section:
+                    m = entry.match(line.strip())
+                    if m:
+                        configs.add(m.groups(0)[0])
+                        platforms.add(m.groups(0)[1])
+            return configs, platforms

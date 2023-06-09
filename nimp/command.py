@@ -141,8 +141,8 @@ def discover(env):
         try:
             module = entry_point.load()
             get_class_instances(module, nimp.command.Command, all_commands)
-        except:
-            pass
+        except Exception as exception:
+            logging.debug("Failed to get platforms from plugin %s", entry_point.module_name, exc_info=exception)
 
     env.command_list = sorted([it for it in all_commands.values() if not it.__class__.__name__.startswith('_')],
                               key = lambda command: command.__class__.__name__)

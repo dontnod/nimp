@@ -538,8 +538,8 @@ class Package(nimp.command.Command):
             if write_dne_revisions:
                 logging.info('Set [%s]%s to %s', DNE_ENGINE_VERSION_SECTION, PROJECT_CONTENT_VERSION_KEY, project_content_version)
                 ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_CONTENT_VERSION_KEY] = project_content_version
-        except:
-            logging.warning('Failed to get content revision')
+        except Exception as e:
+            logging.warning('Failed to get content revision', exc_info=e)
 
 
         try:
@@ -1228,7 +1228,7 @@ class Package(nimp.command.Command):
         if not os.path.exists(src_microsoft_game_config):
             raise FileNotFoundError(f'Missing file: {src_microsoft_game_config}, handcrafted MicrosoftGame.config for the DLC is required to exist.')
         dst_microsoft_game_config = env.format('{uproject_dir}/Saved/StagedBuilds/XSX/Manifest/{unreal_config}/MicrosoftGame.config')
-        logging.info(f'Copying %s to %s', src_microsoft_game_config, dst_microsoft_game_config)
+        logging.info('Copying %s to %s', src_microsoft_game_config, dst_microsoft_game_config)
         shutil.copyfile(src_microsoft_game_config, dst_microsoft_game_config)
         # `-NoGameOs` is not a vanilla UAT argument. We use it in an internal patch that remvoves the addition of `/gameos [...]` when packaging for xbox.
         package_configuration.extra_options.append('-NoGameOs')

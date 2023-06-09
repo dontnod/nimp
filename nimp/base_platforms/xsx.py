@@ -68,9 +68,9 @@ class XSX(BaseGDK):
     def pick_package(self, installed_packages, package_name, configuration):
         matching_packages = []
         for candidate in installed_packages:
-            if not package_name in candidate:
+            if package_name not in candidate:
                 continue
-            if not configuration in candidate:
+            if configuration not in candidate:
                 continue
             matching_packages.append(candidate)
 

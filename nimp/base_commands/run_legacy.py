@@ -229,8 +229,12 @@ class ConsoleGameCommand(RunLegacyCommand):
 
         output = p4._run('-Mj', 'print', f"{depotRoot}DNE/Build/Build.version@{package_revision}", hide_output=True)
         # Ignore first line which is file infos
-        lines = [json.loads(line) for line in output.splitlines(False)[1:]]
-        lines = [l['data'] for l in lines if len(l.keys()) == 1 and l.get('data', None)]
+        lines = []
+        for raw_line in output.splitlines(keepends=False)[1:]:
+            line: dict = json.loads(raw_line)
+            data = line.pop('data', None)
+            if data is not None and len(line) <= 0:
+                lines.append(data)
         revision_info.update(json.loads(''.join(lines)))
 
         revision_filepath = os.path.join(env.outdir, 'Build.version')
