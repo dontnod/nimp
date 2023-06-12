@@ -79,6 +79,7 @@ class _Status(CheckCommand):
         _Status._show_system_information()
         _Status._show_user_environment()
         _Status._show_nimp_environment(env)
+        nimp.environment.execute_hook('status', env)
         return True
 
     @staticmethod
