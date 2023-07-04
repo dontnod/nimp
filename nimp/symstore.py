@@ -227,27 +227,18 @@ class MSFTSymStore(SymStore):
             ) -> int:
                 """ retry in case of error 32 or 80, to try and work around possible network issues
                     This is a crappy solution that cannot replace making symbol servers reliable """
-                attempt: int = 0
-
-                while attempt <= max_attempts:
-                    result: int = nimp.sys.process.call(command, dry_run=dry_run)
-
-                    retry: bool = False
+                result: int = 0
+                for attempt in range(max_attempts):
+                    result = nimp.sys.process.call(command, dry_run=dry_run)
                     if result in [32, 80]:
                         logging.warn('There is a network error.')
-                        retry = True
-
-                        if retry:
-                            if attempt >= max_attempts:
-                                logging.error('Max attempts reached.')
-                                return result
-                            attempt += 1
-                            logging.warn(f'Retrying : attempt {attempt} out of {max_attempts}...')
-                            time.sleep(delay)
-                        else:
-                            return result
+                        logging.warn('Retrying : attempt %s out of %s...' % (attempt+1, max_attempts))
+                        time.sleep(delay)
                     else:
-                        return result
+                        break
+
+                return result
+
 
             return _try_excecute_symstore(commandline, dry_run=dry_run) == 0
 
