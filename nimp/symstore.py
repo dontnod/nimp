@@ -29,6 +29,7 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+import time
 from typing import Optional
 import concurrent.futures
 
@@ -218,7 +219,37 @@ class MSFTSymStore(SymStore):
             if version is not None:
                 commandline.extend(['/v', version])
 
-            return (nimp.sys.process.call(commandline, dry_run=dry_run) == 0)
+            def _try_excecute_symstore(
+                command: str,
+                max_attempts: int = 3,
+                delay: int = 5,
+                dry_run: bool = False
+            ) -> int:
+                """ retry in case of error 32 or 80, to try and work around possible network issues
+                    This is a crappy solution that cannot replace making symbol servers reliable """
+                attempt: int = 0
+
+                while attempt <= max_attempts:
+                    result: int = nimp.sys.process.call(command, dry_run=dry_run)
+
+                    retry: bool = False
+                    if result in [32, 80]:
+                        logging.warn('There is a network error.')
+                        retry = True
+
+                        if retry:
+                            if attempt >= max_attempts:
+                                logging.error('Max attempts reached.')
+                                return result
+                            attempt += 1
+                            logging.warn(f'Retrying : attempt {attempt} out of {max_attempts}...')
+                            time.sleep(delay)
+                        else:
+                            return result
+                    else:
+                        return result
+
+            return _try_excecute_symstore(commandline, dry_run=dry_run) == 0
 
 
 class PS5SymStore(SymStore):
