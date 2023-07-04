@@ -219,8 +219,8 @@ class MSFTSymStore(SymStore):
             if version is not None:
                 commandline.extend(['/v', version])
 
-            def _try_excecute_symstore(
-                command: str,
+            def _try_execute_symstore(
+                command: list[str, ...],
                 max_attempts: int = 3,
                 delay: int = 5,
                 dry_run: bool = False
@@ -239,8 +239,7 @@ class MSFTSymStore(SymStore):
 
                 return result
 
-
-            return _try_excecute_symstore(commandline, dry_run=dry_run) == 0
+            return _try_execute_symstore(commandline, dry_run=dry_run) == 0
 
 
 class PS5SymStore(SymStore):
