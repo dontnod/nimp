@@ -514,7 +514,7 @@ class Package(nimp.command.Command):
         PROJECT_BINARY_VERSION_KEY = 'ProjectBinaryRevision'
         PROJECT_CONTENT_VERSION_KEY = 'ProjectContentRevision'
 
-        write_dne_revisions = env.write_project_revisions
+        write_dne_revisions = getattr(env, 'write_project_revisions', False)
 
         if write_dne_revisions:
             if DNE_ENGINE_VERSION_SECTION not in ini_config:

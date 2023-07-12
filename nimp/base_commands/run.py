@@ -33,6 +33,7 @@ import nimp.command
 import nimp.unreal
 import nimp.sys.process
 from nimp.sys.platform import create_platform_desc
+from nimp.base_commands.package import Package
 
 
 class Run(nimp.command.CommandGroup):
@@ -308,17 +309,18 @@ class _Staged(ConsoleGameCommand):
 
         absolute_path = os.path.abspath(env.deploy + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
-        cmdline = [
-            os.path.join(env.root_dir, 'Game', 'RunUAT.bat'),
-            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
-            '-stagingdirectory=' + absolute_path, 
-            '-skipcook', '-skipstage', '-deploy'
-        ]
-        if env.device:
-            cmdline.append('-device=' + env.device)
+        with Package.configure_variant(env, nimp.system.standardize_path(env.format('{uproject_dir}'))):
+            cmdline = [
+                os.path.join(env.root_dir, 'Game', 'RunUAT.bat'),
+                'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
+                '-stagingdirectory=' + absolute_path,
+                '-skipcook', '-skipstage', '-deploy'
+            ]
+            if env.device:
+                cmdline.append('-device=' + env.device)
 
-        result = nimp.sys.process.call(cmdline, dry_run=env.dry_run)
-        return result == 0
+            result = nimp.sys.process.call(cmdline, dry_run=env.dry_run)
+            return result == 0
 
     def _launch(self, env):
         # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy -run [-device=IP]
