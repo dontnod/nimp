@@ -1174,7 +1174,7 @@ class Package(nimp.command.Command):
                 gp5
             ]
 
-            package_success = nimp.sys.process.call(patch_gp5_command)
+            package_success = nimp.sys.process.call(patch_gp5_command, dry_run=env.dry_run, heartbeat=60)
             if package_success != 0:
                 raise RuntimeError('Package generation failed')
 
