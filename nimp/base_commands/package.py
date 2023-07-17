@@ -147,6 +147,7 @@ class UnrealPackageConfiguration():
         self.ignored_warnings = []
         self.is_final_submission = False
         self.for_distribution = False
+        self.xsx_encryption_file = None
         self.no_compile_packaging = False
 
         self.msixvc = False
@@ -250,6 +251,7 @@ class Package(nimp.command.Command):
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
         package_configuration.is_final_submission = env.final
         package_configuration.for_distribution = self.set_for_distribution_from_config_files(env)
+        package_configuration.xsx_eption_file = env.xsx_encryption_file
 
         package_configuration.package_tool_path = platform_desc.package_tool_path
         package_configuration.layout_file_extension = env.layout_file_extension
@@ -1256,14 +1258,22 @@ class Package(nimp.command.Command):
             ]
             package_command.extend(nimp.unreal.get_p4_args_for_commandlet(env))
 
+            package_configuration.for_distribution = True
             if package_configuration.for_distribution:
                 package_command.append('-distribution')
+                if env.xsx_encryption_file is not None:
+                    encryption_file = nimp.system.sanitize_path(env.format(env.xsx_encryption_file))
+                    encryption_file = os.path.abspath(encryption_file)
+                    if os.path.exists(encryption_file):
+                        package_command.append(f'-packageencryptionkeyfile="{encryption_file}"')
+                    else:
+                        logging.warning("Encryption file not found, will use default encryption scheme")
 
             if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
                 package_command += ['-UTF8Output']
 
-            if package_configuration.no_compile_packaging:
-                package_command += [ '-NoCompile' ]
+            # if package_configuration.no_compile_packaging:
+            #     package_command += [ '-NoCompile' ]
 
             for option in package_configuration.extra_options:
                 package_command += shlex.split(option)
