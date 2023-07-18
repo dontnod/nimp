@@ -49,6 +49,8 @@ from contextlib import contextmanager
 from nimp.sys.platform import create_platform_desc
 
 
+UE_INI_ENCODING = "utf-8"
+
 def _ue_ini_parser():
     config_parser = configparser.ConfigParser(strict=False)
     # ConfigParser will load keys (and thus write) as case-insensitive by default
@@ -58,7 +60,7 @@ def _ue_ini_parser():
 
 def _get_ini_value(file_path, key):
     ''' Retrieves a value from a ini file '''
-    with open(file_path) as ini_file:
+    with open(file_path, encoding=UE_INI_ENCODING) as ini_file:
         ini_content = ini_file.read()
     match = re.search('^' + key + r'=(?P<value>.*?)$', ini_content, re.MULTILINE)
     if not match:
@@ -341,11 +343,12 @@ class Package(nimp.command.Command):
         return True
 
 
+    @staticmethod
     @contextmanager
     def configure_variant(env, project_directory):
         def _setup_default_config_file(config_file):
             if not os.path.exists(config_file):
-                with open(config_file, 'a'):
+                with open(config_file, 'a', encoding=UE_INI_ENCODING):
                     pass
 
         is_monorepo_behavior = env.unreal_version > 4.24
@@ -418,7 +421,7 @@ class Package(nimp.command.Command):
         for_distribution = None
         for config_file in Package.enumerate_unreal_configs(env):
             config = _ue_ini_parser()
-            config.read(config_file)
+            config.read(config_file, encoding=UE_INI_ENCODING)
             if '/Script/UnrealEd.ProjectPackagingSettings' in config:
                 for_distribution = config['/Script/UnrealEd.ProjectPackagingSettings'].getboolean('ForDistribution', None)
                 if for_distribution is not None:
@@ -468,7 +471,7 @@ class Package(nimp.command.Command):
         ini_file_path = f'{active_configuration_directory}/DefaultGame.ini'
         logging.info('Updating %s', ini_file_path)
         ini_config = _ue_ini_parser()
-        ini_config.read(ini_file_path)
+        ini_config.read(ini_file_path, encoding=UE_INI_ENCODING)
 
         # Setup Epic ProjectVersion
         PROJECT_VERSION_SECTION = '/Script/EngineSettings.GeneralProjectSettings'
@@ -484,7 +487,7 @@ class Package(nimp.command.Command):
                 if os.path.basename(os.path.normcase(config_file)) != ini_config_filename:
                     continue
                 config = _ue_ini_parser()
-                config.read(config_file)
+                config.read(config_file, encoding=UE_INI_ENCODING)
 
                 if PROJECT_VERSION_SECTION in config:
                     project_version = config[PROJECT_VERSION_SECTION].get(PROJECT_VERSION_KEY)
@@ -558,7 +561,7 @@ class Package(nimp.command.Command):
         project_version_format_args['project_version'] = formatted_project_version
 
         if not env.dry_run:
-            with open(ini_file_path, 'r') as ini_file:
+            with open(ini_file_path, 'r', encoding=UE_INI_ENCODING) as ini_file:
                 ini_content = ini_file.read()
 
             if write_dne_revisions:
@@ -572,13 +575,13 @@ class Package(nimp.command.Command):
                 PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY
             )
 
-            with open(ini_file_path, 'w') as ini_file:
+            with open(ini_file_path, 'w', encoding=UE_INI_ENCODING) as ini_file:
                 ini_file.write(ini_content)
 
         switch_ini_file_path = f'{active_configuration_directory}/Switch/SwitchEngine.ini'
         if os.path.exists(switch_ini_file_path):
             switch_ini_config = _ue_ini_parser()
-            switch_ini_config.read(switch_ini_file_path)
+            switch_ini_config.read(switch_ini_file_path, encoding=UE_INI_ENCODING)
 
             SWITCH_VERSION_SECTION = '/Script/SwitchRuntimeSettings.SwitchRuntimeSettings'
             SWITCH_APP_VERSION_STRING_KEY = 'ApplicationVersionString'
@@ -601,7 +604,7 @@ class Package(nimp.command.Command):
                 switch_ini_config[SWITCH_VERSION_SECTION][SWITCH_APP_VERSION_STRING_KEY] = switch_version
 
                 if not env.dry_run:
-                    with open(switch_ini_file_path, 'r') as ini_file:
+                    with open(switch_ini_file_path, 'r', encoding=UE_INI_ENCODING) as ini_file:
                         switch_ini_content = ini_file.read()
 
                     switch_ini_content = _update_ini_file(
@@ -610,7 +613,7 @@ class Package(nimp.command.Command):
                         SWITCH_APP_VERSION_STRING_KEY
                     )
 
-                    with open(switch_ini_file_path, 'w') as ini_file:
+                    with open(switch_ini_file_path, 'w', encoding=UE_INI_ENCODING) as ini_file:
                         ini_file.write(switch_ini_content)
 
 
@@ -692,7 +695,7 @@ class Package(nimp.command.Command):
 
         try:
             if package_configuration.shader_debug_info and not env.dry_run:
-                with open(engine_configuration_file_path, 'a') as configuration_file:
+                with open(engine_configuration_file_path, 'a', encoding=UE_INI_ENCODING) as configuration_file:
                     configuration_file.write('\n')
                     configuration_file.write('[ConsoleVariables]\n')
                     if env.unreal_version >= 5:
