@@ -1258,7 +1258,6 @@ class Package(nimp.command.Command):
             ]
             package_command.extend(nimp.unreal.get_p4_args_for_commandlet(env))
 
-            package_configuration.for_distribution = True
             if package_configuration.for_distribution:
                 package_command.append('-distribution')
                 if env.xsx_encryption_file is not None:
@@ -1272,8 +1271,8 @@ class Package(nimp.command.Command):
             if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
                 package_command += ['-UTF8Output']
 
-            # if package_configuration.no_compile_packaging:
-            #     package_command += [ '-NoCompile' ]
+            if package_configuration.no_compile_packaging:
+                package_command += [ '-NoCompile' ]
 
             for option in package_configuration.extra_options:
                 package_command += shlex.split(option)
