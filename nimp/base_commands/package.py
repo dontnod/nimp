@@ -1260,13 +1260,25 @@ class Package(nimp.command.Command):
 
             if package_configuration.for_distribution:
                 package_command.append('-distribution')
+                is_default_encryption_scheme = True
                 if env.xsx_encryption_file is not None:
                     encryption_file = nimp.system.sanitize_path(env.format(env.xsx_encryption_file))
                     encryption_file = os.path.abspath(encryption_file)
                     if os.path.exists(encryption_file):
+                        is_default_encryption_scheme = False
                         package_command.append(f'-packageencryptionkeyfile="{encryption_file}"')
+                        logging.debug("Encryption file %s will be used" % encryption_file)
                     else:
                         logging.warning("Encryption file not found, will use default encryption scheme")
+                if is_default_encryption_scheme:
+                    default_encryption_message_warning = "\n".join([
+                        "This package will be released with default encryption scheme, this is not secure.",
+                        "It is recommend that you use a LEKB key, secure and testable at the same time",
+                        "You can pass the following nimp arg --encryption-file <path_to_key_file>",
+                        "More info on how to generate a valid key:",
+                        "https://learn.microsoft.com/en-us/gaming/gdk/_content/gc/packaging/title-packaging-streaming-install-testing#encryption"
+                    ])
+                    logging.warning(default_encryption_message_warning)
 
             if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
                 package_command += ['-UTF8Output']
