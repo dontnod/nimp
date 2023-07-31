@@ -251,7 +251,7 @@ class Package(nimp.command.Command):
         package_configuration.msixvc = env.msixvc or env.platform == 'xboxone'
         package_configuration.is_final_submission = env.final
         package_configuration.for_distribution = self.set_for_distribution_from_config_files(env)
-        package_configuration.xsx_eption_file = env.xsx_encryption_file
+        package_configuration.xsx_encryption_file = env.xsx_encryption_file
 
         package_configuration.package_tool_path = platform_desc.package_tool_path
         package_configuration.layout_file_extension = env.layout_file_extension
