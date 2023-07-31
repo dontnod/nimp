@@ -1266,7 +1266,7 @@ class Package(nimp.command.Command):
                     encryption_file = os.path.abspath(encryption_file)
                     if os.path.exists(encryption_file):
                         is_default_encryption_scheme = False
-                        package_command.append(f'-packageencryptionkeyfile="{encryption_file}"')
+                        package_command.append(f'-packageencryptionkeyfile={encryption_file}')
                         logging.debug("Encryption file %s will be used" % encryption_file)
                     else:
                         logging.warning("Encryption file not found, will use default encryption scheme")
