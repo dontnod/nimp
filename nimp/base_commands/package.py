@@ -324,6 +324,7 @@ class Package(nimp.command.Command):
 
         logging.info('')
         with Package.configure_variant(env, package_configuration.project_directory):
+            setattr(env, 'package_configuration', package_configuration)
             if 'cook' in env.steps:
                 logging.info('=== Cook ===')
                 Package.cook(env, package_configuration)
