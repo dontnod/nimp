@@ -115,10 +115,7 @@ class Build(nimp.command.Command):
             command = [ 'nuget.exe', 'update', '-self' ]
             if nimp.sys.process.call(command) != 0:
                 logging.warning('NuGet could not update itself.')
-            command = [
-                'nuget.exe', 'restore', sln,
-                '-Recursive', '-Force', '-NonInteractive',
-            ]
+            command = [ 'nuget.exe', 'restore', sln ]
             if nimp.sys.process.call(command) != 0:
                 logging.warning('NuGet could not restore packages.')
 
