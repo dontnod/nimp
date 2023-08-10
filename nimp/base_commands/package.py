@@ -30,7 +30,6 @@ import glob
 import hashlib
 import logging
 import os
-from pathlib import Path
 import re
 import stat
 import shlex
@@ -347,7 +346,7 @@ class Package(nimp.command.Command):
 
     @staticmethod
     @contextmanager
-    def configure_variant(env: nimp.environment.Environment, project_directory):
+    def configure_variant(env, project_directory):
         def _setup_default_config_file(config_file):
             if not os.path.exists(config_file):
                 with open(config_file, 'a', encoding=UE_INI_ENCODING):
@@ -383,20 +382,6 @@ class Package(nimp.command.Command):
                         shutil.copyfile(src_title_conf, dst_title_conf)
                     else:
                         logging.info('No TitleConfiguration.json found, UAT will generate its own configuration for a local package.')
-
-            # Shouldn't be in configure_variant...
-            data_router_url = getattr(env, 'data_router_url', '')
-            if data_router_url:
-                crash_reporter_config_path = Path(env.format('{unreal_dir}/Engine/Programs/CrashReportClient/Config/DefaultEngine.ini'))
-                if crash_reporter_config_path.is_file():
-                    crash_reporter_config_content = crash_reporter_config_path.read_text(encoding='utf-8').splitlines(False)
-                    data_router_regex = re.compile(r"^DataRouterUrl=.*$", re.IGNORECASE)
-                    crash_reporter_config_content = [data_router_regex.sub(f'DataRouterUrl="{data_router_url}"', line) for line in crash_reporter_config_content]
-                    crash_reporter_config_path.write_text(
-                        '\n'.join(crash_reporter_config_content),
-                        encoding='utf-8'
-                    )
-
             yield
         finally:
             if is_monorepo_behavior:
