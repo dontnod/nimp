@@ -1261,7 +1261,7 @@ class Package(nimp.command.Command):
             if package_configuration.for_distribution:
                 package_command.append('-distribution')
                 is_default_encryption_scheme = True
-                if hasattr(env, 'xsx_encryption_file') and env.xsx_encryption_file is not None:
+                if getattr(env, 'xsx_encryption_file') is not None:
                     encryption_file = nimp.system.sanitize_path(env.format(env.xsx_encryption_file))
                     encryption_file = os.path.abspath(encryption_file)
                     if os.path.exists(encryption_file):
