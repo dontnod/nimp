@@ -1260,17 +1260,17 @@ class Package(nimp.command.Command):
 
             if package_configuration.for_distribution:
                 package_command.append('-distribution')
-                is_default_encryption_scheme = True
+                is_default_xsx_encryption = True
                 if getattr(env, 'xsx_encryption_file') is not None:
                     encryption_file = nimp.system.sanitize_path(env.format(env.xsx_encryption_file))
                     encryption_file = os.path.abspath(encryption_file)
                     if os.path.exists(encryption_file):
-                        is_default_encryption_scheme = False
                         package_command.append(f'-packageencryptionkeyfile={encryption_file}')
                         logging.debug("Encryption file %s will be used" % encryption_file)
+                        is_default_xsx_encryption = False
                     else:
-                        logging.warning("Encryption file not found, will use default encryption scheme")
-                if is_default_encryption_scheme:
+                        logging.error("Encryption file %s not found." % encryption_file)
+                if is_default_xsx_encryption:
                     default_encryption_message_warning = "\n".join([
                         "This package will be released with default encryption scheme, this is not secure.",
                         "It is recommend that you use a LEKB key, secure and testable at the same time.",
