@@ -1238,6 +1238,30 @@ class Package(nimp.command.Command):
         package_configuration.extra_options.append('-NoGameOs')
 
     @staticmethod
+    def setup_xsx_lekb_encryption_file(env):
+        encryption_file = None
+        is_default_xsx_encryption = True
+        if getattr(env, 'xsx_encryption_file') is not None:
+            conf_encryption_file = nimp.system.sanitize_path(env.format(env.xsx_encryption_file))
+            conf_encryption_file = os.path.abspath(conf_encryption_file)
+            if os.path.exists(conf_encryption_file):
+                logging.debug("Encryption file %s found" % conf_encryption_file)
+                encryption_file = conf_encryption_file
+                is_default_xsx_encryption = False
+            else:
+                logging.error("Encryption file %s not found" % conf_encryption_file)
+        if is_default_xsx_encryption:
+            default_encryption_message_warning = "\n".join([
+                "This package will be released with default encryption scheme, this is not secure.",
+                "It is recommend that you use a LEKB key, secure and testable at the same time.",
+                "You can add xsx_encryption_file to nimp project conf.",
+                "More info on how to generate a valid key:",
+                "https://learn.microsoft.com/en-us/gaming/gdk/_content/gc/packaging/title-packaging-streaming-install-testing#encryption"
+            ])
+            logging.warning(default_encryption_message_warning)
+        return encryption_file
+
+    @staticmethod
     def package_with_uat(env, package_configuration):
         if package_configuration.target_platform == 'PS5' and env.dlc:
             Package.configure_packaging_for_ps5_dlc(env, package_configuration)
@@ -1258,6 +1282,10 @@ class Package(nimp.command.Command):
 
             if package_configuration.for_distribution:
                 package_command.append('-distribution')
+                if env.is_xsx:
+                    xsx_encryption_file = Package.setup_xsx_lekb_encryption_file(env)
+                    if xsx_encryption_file is not None:
+                        package_command.append(f'-packageencryptionkeyfile={xsx_encryption_file}')
 
             if not hasattr(env, 'skip_pkg_utf8_output') or not env.skip_pkg_utf8_output:
                 package_command += ['-UTF8Output']
