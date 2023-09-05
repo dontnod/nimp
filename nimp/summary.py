@@ -161,7 +161,7 @@ class SummaryHandler(logging.Handler):
             if summary.lower() == 'stdout':
                 self._write_summary(sys.stdout)
             else:
-                with open(summary, 'w') as out:
+                with open(summary, 'w', encoding='utf-8') as out:
                     self._write_summary(out)
 
     def has_errors(self):
