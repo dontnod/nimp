@@ -42,7 +42,7 @@ class SymStore:
 
     @staticmethod
     def get_symstore(env) -> Optional['SymStore']:
-        if env.is_win64 or env.is_xsx:
+        if env.is_win64 or env.is_xsx or env.is_wingdk:
             return MSFTSymStore()
         elif env.is_ps5:
             return PS5SymStore()
