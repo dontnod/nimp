@@ -87,14 +87,14 @@ class XSX(BaseGDK):
 
     def get_package_name_from_ini(self, project_directory, variant):
         if variant:
-            ini_file_path = '{project_directory}/Config/Variants/{variant}/DefaultGame.ini'.format(**locals())
+            ini_file_path = f'{project_directory}/Config/Variants/{variant}/DefaultGame.ini'
         else:
-            ini_file_path = '{project_directory}/Config/DefaultGame.ini'.format(**locals())
-        with open(ini_file_path) as ini_file:
+            ini_file_path = f'{project_directory}/Config/DefaultGame.ini'
+        logging.info('Search for ProjectName in "%s"', ini_file_path)
+        with open(ini_file_path, encoding='utf-8') as ini_file:
             ini_content = ini_file.read()
         return re.search(r'ProjectName=(.*)', ini_content, re.MULTILINE).group(1)
 
-    
     KIT_PROFILE_PATH = 'Externals\\XboxOne\\Profiles'
     KIT_PROFILE_README = KIT_PROFILE_PATH + '\\readme.md'
     KIT_XBCONFIG_RE = re.compile(r'\w+:\s*([a-zA-Z0-9_-]+)', flags=re.IGNORECASE)
