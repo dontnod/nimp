@@ -330,7 +330,11 @@ class Package(nimp.command.Command):
                 logging.info('')
             if 'stage' in env.steps:
                 logging.info('=== Stage ===')
-                Package.stage(env, package_configuration)
+                try:
+                    nimp.environment.execute_hook('prestage', env)
+                    Package.stage(env, package_configuration)
+                finally:
+                    nimp.environment.execute_hook('poststage', env)
                 logging.info('')
             if 'package' in env.steps:
                 logging.info('=== Package ===')
