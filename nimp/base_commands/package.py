@@ -1300,6 +1300,8 @@ class Package(nimp.command.Command):
             for option in package_configuration.extra_options:
                 package_command += shlex.split(option)
 
+            Package.check_ps5_patch_package_format(env, package_configuration, package_command)
+
             package_success = nimp.sys.process.call(package_command, dry_run = env.dry_run)
             if package_success != 0:
                 raise RuntimeError('Package failed')
@@ -1515,3 +1517,24 @@ class Package(nimp.command.Command):
 
         if not validation_success:
             logging.warning('Package validation failed')
+
+    @staticmethod
+    def check_ps5_patch_package_format(env, package_configuration, nimp_package_command):
+        """ PS5 patch package MUST be nwonly format """
+        if env.unreal_platform not in ['PS5']:
+            return
+        if '-GeneratePatch'.lower() not in [el.lower() for el in nimp_package_command]:
+            return
+        title_configuration_file = env.format('{uproject_dir}/Platforms/PS5/Build/TitleConfiguration.json')
+        valid_format = 'nwonly'
+        with open(title_configuration_file) as fh:
+            data = json.load(fh)
+        ps5_package_format = data.get('format', valid_format)  # UE defaults to nwonly when there is no param
+        logging.debug(f'Package format is {ps5_package_format}')
+        if ps5_package_format != valid_format:
+            message = f"PS5 patch packages format must be set to {valid_format} in {title_configuration_file}"
+            if package_configuration.for_distribution:
+                # since it's bound to be a certification fail, alert everyone by failing the process
+                raise ValueError(message)
+            else:
+                logging.error(message)
