@@ -1527,7 +1527,7 @@ class Package(nimp.command.Command):
             return
         title_configuration_file = env.format('{uproject_dir}/Platforms/PS5/Build/TitleConfiguration.json')
         valid_format = 'nwonly'
-        with open(title_configuration_file) as fh:
+        with open(title_configuration_file, encoding='utf-8') as fh:
             data = json.load(fh)
         ps5_package_format = data.get('format', valid_format)  # UE defaults to nwonly when there is no param
         logging.debug(f'Package format is {ps5_package_format}')
