@@ -36,21 +36,28 @@ import time
 import nimp.sys.platform
 
 
+class SensitiveDataFilter(logging.Filter):
+    def __init__(self, *args):
+        super().__init__()
+        self.pattern = re.compile(rf"({'|'.join(args)})")
+
+    def filter(self, record):
+        record.msg = self.pattern.sub("*****", record.msg)
+        return super().filter(record)
+
+
 def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
          capture_output=False, capture_debug=False, hide_output=False, hide_output_specific=None,
          dry_run=False, timeout=None):
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
 
-    hidden_str = '*****'
-    to_hide_regex = re.compile('')
-    if hide_output_specific is not None:
-        assert isinstance(hide_output_specific, list)
-        to_hide_regex = re.compile(f'({"|".join(re.escape(el) for el in hide_output_specific)})')
-
     if not hide_output:
-        logged_command = [to_hide_regex.sub(hidden_str, c) for c in command]
-        logging.info('%s "%s" in "%s"', '[DRY-RUN]' if dry_run else 'Running', logged_command, os.path.abspath(cwd))
+        logger_command = logging.getLogger("logger_command")
+        if hide_output_specific is not None:
+            logger_command.addFilter(SensitiveDataFilter(*hide_output_specific))
+        log_msg = '%s "%s" in "%s"' % ('[DRY-RUN]' if dry_run else 'Running', command, os.path.abspath(cwd))
+        logger_command.info(log_msg)
 
     if dry_run:
         return 0
@@ -109,7 +116,9 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
             return
         force_ascii = locale.getpreferredencoding().lower() != 'utf-8'
         while process is not None:
-            logger = logging.getLogger('child_processes')
+            logger_child_processes = logging.getLogger('child_processes')
+            if hide_output_specific is not None:
+                logger_child_processes.addFilter(SensitiveDataFilter(*hide_output_specific))
             # Try to decode as UTF-8 with BOM first; if it fails, try CP850 on
             # Windows, or UTF-8 with BOM and error substitution elsewhere. If
             # it fails again, try CP850 with error substitution.
@@ -123,7 +132,6 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
                 for encoding, errors in encodings:
                     try:
                         line = data.decode(encoding, errors=errors)
-                        line = to_hide_regex.sub(hidden_str, line)
                         break
                     except UnicodeError:
                         pass
@@ -140,7 +148,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
                     return
 
                 if not hide_output:
-                    logger.info(line.strip('\n').strip('\r'))
+                    logger_child_processes.info(line.strip('\n').strip('\r'))
 
             # Sleep for 10 milliseconds if there was no data,
             # or we’ll hog the CPU.
