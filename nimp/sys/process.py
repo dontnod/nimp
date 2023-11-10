@@ -41,14 +41,13 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
     hidden_str = '*****'
-    if hide_output_specific is not None:
-        assert isinstance(hide_output_specific, list)
 
-    logged_command = command
-    if hide_output_specific is not None:
-        for str_to_hide in hide_output_specific:
-            logged_command = [c.replace(str_to_hide, hidden_str) for c in logged_command]
     if not hide_output:
+        logged_command = command
+        if hide_output_specific is not None:
+            assert isinstance(hide_output_specific, list)
+            for str_to_hide in hide_output_specific:
+                logged_command = [c.replace(str_to_hide, hidden_str) for c in logged_command]
         logging.info('%s "%s" in "%s"', '[DRY-RUN]' if dry_run else 'Running', logged_command, os.path.abspath(cwd))
 
     if dry_run:
