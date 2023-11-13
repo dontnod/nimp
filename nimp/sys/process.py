@@ -52,12 +52,12 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
 
+    logger = logging.getLogger("call_logger")
     if not hide_output:
-        logger_command = logging.getLogger("logger_command")
         if hide_output_specific is not None:
-            logger_command.addFilter(SensitiveDataFilter(*hide_output_specific))
+            logger.addFilter(SensitiveDataFilter(*hide_output_specific))
         log_msg = '%s "%s" in "%s"' % ('[DRY-RUN]' if dry_run else 'Running', command, os.path.abspath(cwd))
-        logger_command.info(log_msg)
+        logger.info(log_msg)
 
     if dry_run:
         return 0
@@ -79,7 +79,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
                                    stdin   = subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
                                    bufsize = -1)
     except FileNotFoundError as ex:
-        logging.error(ex)
+        logger.error(ex)
         return 1
 
     if debug_pipe:
@@ -101,7 +101,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
         last_time = time.monotonic()
         while process is not None:
             if heartbeat > 0 and time.monotonic() > last_time + heartbeat:
-                logging.info("Keepalive for %s", command[0])
+                logger.info("Keepalive for %s", command[0])
                 last_time += heartbeat
             time.sleep(0.050)
 
@@ -116,9 +116,6 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
             return
         force_ascii = locale.getpreferredencoding().lower() != 'utf-8'
         while process is not None:
-            logger_child_processes = logging.getLogger('child_processes')
-            if hide_output_specific is not None:
-                logger_child_processes.addFilter(SensitiveDataFilter(*hide_output_specific))
             # Try to decode as UTF-8 with BOM first; if it fails, try CP850 on
             # Windows, or UTF-8 with BOM and error substitution elsewhere. If
             # it fails again, try CP850 with error substitution.
@@ -143,12 +140,12 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
                 if index == 2:
                     debug_info[0] = True
                 elif index == 0 and debug_info[0]:
-                    logging.info('Stopping stdout monitoring (OutputDebugString is active)')
+                    logger.info('Stopping stdout monitoring (OutputDebugString is active)')
                     all_pipes[0].close()
                     return
 
                 if not hide_output:
-                    logger_child_processes.info(line.strip('\n').strip('\r'))
+                    logger.info(line.strip('\n').strip('\r'))
 
             # Sleep for 10 milliseconds if there was no data,
             # or we’ll hog the CPU.
@@ -182,7 +179,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
             thread.join()
 
     if not hide_output:
-        logging.info('Finished with exit code %d (0x%08x)', exit_code, exit_code)
+        logger.info('Finished with exit code %d (0x%08x)', exit_code, exit_code)
 
     if capture_output:
         return exit_code, ''.join(all_captures[0]), ''.join(all_captures[1])
