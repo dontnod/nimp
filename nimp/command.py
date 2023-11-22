@@ -171,8 +171,17 @@ def add_commands_subparser(commands, parser, env, required = False):
 
     for command_it in commands:
         command_class = type(command_it)
-        name_array = re.findall('[A-Z][^A-Z]*', command_class.__name__)
-        command_name = '-'.join([it.lower() for it in name_array])
+
+        # custom command name, this comes in handy when command-names duplicate across sub command-groups
+        # i.e. nimp command-group sub-command-group-a generic-command-name
+        #      nimp command-group sub-command-group-b generic-command-name
+        command_name = getattr(command_it, "__command_name__", None)
+        # or else, guess from class name
+        if command_name is None:
+            name_array = re.findall('[A-Z][^A-Z]*', command_class.__name__)
+            command_name = '-'.join([it for it in name_array])
+        # mandatory
+        command_name = command_name.lower()
 
         try:
             enabled, reason = command_it.is_available(env)
