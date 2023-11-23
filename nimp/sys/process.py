@@ -42,7 +42,9 @@ class SensitiveDataFilter(logging.Filter):
         self.pattern = re.compile(rf"({'|'.join(args)})")
 
     def filter(self, record):
-        record.msg = self.pattern.sub("*****", record.msg)
+        hide_string = '*****'
+        record.msg = self.pattern.sub(hide_string, record.msg)
+        record.args = tuple(self.pattern.sub(hide_string, arg) for arg in record.args)
         return super().filter(record)
 
 
