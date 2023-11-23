@@ -58,8 +58,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
     if not hide_output:
         if hide_output_specific is not None:
             logger.addFilter(SensitiveDataFilter(*hide_output_specific))
-        log_msg = '%s "%s" in "%s"' % ('[DRY-RUN]' if dry_run else 'Running', command, os.path.abspath(cwd))
-        logger.info(log_msg)
+        logging.info('%s "%s" in "%s"', '[DRY-RUN]' if dry_run else 'Running', command, os.path.abspath(cwd))
 
     if dry_run:
         return 0
