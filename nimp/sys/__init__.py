@@ -23,6 +23,7 @@
 ''' System functions '''
 
 __all__ = [
+    'logging',
     'platform',
-    'process',
+    'process'
 ]
