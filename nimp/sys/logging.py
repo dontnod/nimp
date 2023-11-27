@@ -25,7 +25,7 @@ class SensitiveDataFilter(logging.Filter):
     """ Custom filter to hide specific information from logging stream """
     def __init__(self, *args):
         super().__init__()
-        self.pattern = re.compile(rf"({'|'.join(args)})")
+        self.pattern = re.compile(rf"({'|'.join(re.escape(a) for a in args)})")
 
     def hide_record_args(self, args, hide_string):
         """ record args can be of various types, str, list, int """
@@ -33,7 +33,7 @@ class SensitiveDataFilter(logging.Filter):
         for arg in args:
             if isinstance(arg, list):
                 record_args.append([self.pattern.sub(hide_string, str(a)) for a in arg])
-            elif isinstance(arg, str):
+            else:
                 record_args.append(self.pattern.sub(hide_string, str(arg)))
         return tuple(record_args)
 
