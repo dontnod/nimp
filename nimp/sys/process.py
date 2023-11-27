@@ -36,13 +36,12 @@ import nimp.sys.platform
 
 
 def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
-         capture_output=False, capture_debug=False, hide_output=False,
-         dry_run=False, timeout=None):
+         capture_output=False, capture_debug=False, hide_output=False, dry_run=False, timeout=None):
     ''' Calls a process redirecting its output to nimp's output '''
     command = _sanitize_command(command)
+
     if not hide_output:
         logging.info('%s "%s" in "%s"', '[DRY-RUN]' if dry_run else 'Running', command, os.path.abspath(cwd))
-
     if dry_run:
         return 0
 
@@ -100,7 +99,6 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
             return
         force_ascii = locale.getpreferredencoding().lower() != 'utf-8'
         while process is not None:
-            logger = logging.getLogger('child_processes')
             # Try to decode as UTF-8 with BOM first; if it fails, try CP850 on
             # Windows, or UTF-8 with BOM and error substitution elsewhere. If
             # it fails again, try CP850 with error substitution.
@@ -130,7 +128,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
                     return
 
                 if not hide_output:
-                    logger.info(line.strip('\n').strip('\r'))
+                    logging.info(line.strip('\n').strip('\r'))
 
             # Sleep for 10 milliseconds if there was no data,
             # or we’ll hog the CPU.
