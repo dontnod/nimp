@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Dontnod Entertainment
 
+import itertools
 import logging
 import re
 
@@ -8,17 +9,23 @@ import re
 class FilteredLogging(object):
     """ Context manager to filter logging with given python filter objects as params """
     def __init__(self, *filters):
-        self.logger = logging.getLogger()
+        self.context_logger = logging.getLogger()
         self.filters = filters
+        self.all_nimp_loggers = (logger_name for logger_name in logging.root.manager.loggerDict)
+        self.loggers_and_filters = itertools.product(self.all_nimp_loggers, self.filters)
 
     def __enter__(self):
+        for logger_name, filter in self.loggers_and_filters:
+            logging.getLogger(logger_name).addFilter(filter)
         for filter in self.filters:
-            self.logger.addFilter(filter)
-        return self.logger
+            self.context_logger.addFilter(filter)
+        return self.context_logger
 
     def __exit__(self, type, value, traceback):
+        for logger_name, filter in self.loggers_and_filters:
+            logging.getLogger(logger_name).removeFilter(filter)
         for filter in self.filters:
-            self.logger.removeFilter(filter)
+            self.context_logger.removeFilter(filter)
 
 
 class SensitiveDataFilter(logging.Filter):
@@ -33,8 +40,8 @@ class SensitiveDataFilter(logging.Filter):
         for arg in args:
             if isinstance(arg, list):
                 record_args.append([self.pattern.sub(hide_string, str(a)) for a in arg])
-            else:
-                record_args.append(self.pattern.sub(hide_string, str(arg)))
+            elif isinstance(arg, str):
+                record_args.append(self.pattern.sub(hide_string, arg))
         return tuple(record_args)
 
     def filter(self, record):
