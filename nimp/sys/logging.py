@@ -36,12 +36,17 @@ class SensitiveDataFilter(logging.Filter):
 
     def hide_record_args(self, args, hide_string):
         """ record args can be of various types, str, list, int """
+        def _hide_if_is_str(string_to_hide):
+            if not isinstance(string_to_hide, str):
+                return string_to_hide
+            return self.pattern.sub(hide_string, string_to_hide)
+
         record_args = []
         for arg in args:
             if isinstance(arg, list):
-                record_args.append([self.pattern.sub(hide_string, str(a)) for a in arg])
-            elif isinstance(arg, str):
-                record_args.append(self.pattern.sub(hide_string, arg))
+                record_args.append([_hide_if_is_str(a) for a in arg])
+            else:
+                record_args.append(_hide_if_is_str(arg))
         return tuple(record_args)
 
     def filter(self, record):
