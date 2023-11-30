@@ -11,21 +11,18 @@ class FilteredLogging(object):
     def __init__(self, *filters):
         self.context_logger = logging.getLogger()
         self.filters = filters
-        self.all_nimp_loggers = (logger_name for logger_name in logging.root.manager.loggerDict)
+        self.all_nimp_loggers = [logger_name for logger_name in logging.root.manager.loggerDict]
+        self.all_nimp_loggers.append(self.context_logger.name)
         self.loggers_and_filters = itertools.product(self.all_nimp_loggers, self.filters)
 
     def __enter__(self):
         for logger_name, filter in self.loggers_and_filters:
             logging.getLogger(logger_name).addFilter(filter)
-        for filter in self.filters:
-            self.context_logger.addFilter(filter)
         return self.context_logger
 
     def __exit__(self, type, value, traceback):
         for logger_name, filter in self.loggers_and_filters:
             logging.getLogger(logger_name).removeFilter(filter)
-        for filter in self.filters:
-            self.context_logger.removeFilter(filter)
 
 
 class SensitiveDataFilter(logging.Filter):
