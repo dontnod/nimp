@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Dontnod Entertainment
 
+import itertools
 import logging
 import re
 
@@ -8,17 +9,20 @@ import re
 class FilteredLogging(object):
     """ Context manager to filter logging with given python filter objects as params """
     def __init__(self, *filters):
-        self.logger = logging.getLogger()
+        self.context_logger = logging.getLogger()
         self.filters = filters
+        self.all_nimp_loggers = [logger_name for logger_name in logging.root.manager.loggerDict]
+        self.all_nimp_loggers.append(self.context_logger.name)
+        self.loggers_and_filters = itertools.product(self.all_nimp_loggers, self.filters)
 
     def __enter__(self):
-        for filter in self.filters:
-            self.logger.addFilter(filter)
-        return self.logger
+        for logger_name, filter in self.loggers_and_filters:
+            logging.getLogger(logger_name).addFilter(filter)
+        return self.context_logger
 
     def __exit__(self, type, value, traceback):
-        for filter in self.filters:
-            self.logger.removeFilter(filter)
+        for logger_name, filter in self.loggers_and_filters:
+            logging.getLogger(logger_name).removeFilter(filter)
 
 
 class SensitiveDataFilter(logging.Filter):
@@ -29,12 +33,17 @@ class SensitiveDataFilter(logging.Filter):
 
     def hide_record_args(self, args, hide_string):
         """ record args can be of various types, str, list, int """
+        def _hide_if_is_str(string_to_hide):
+            if not isinstance(string_to_hide, str):
+                return string_to_hide
+            return self.pattern.sub(hide_string, string_to_hide)
+
         record_args = []
         for arg in args:
             if isinstance(arg, list):
-                record_args.append([self.pattern.sub(hide_string, str(a)) for a in arg])
+                record_args.append([_hide_if_is_str(a) for a in arg])
             else:
-                record_args.append(self.pattern.sub(hide_string, str(arg)))
+                record_args.append(_hide_if_is_str(arg))
         return tuple(record_args)
 
     def filter(self, record):
