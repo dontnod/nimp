@@ -155,7 +155,7 @@ def _find_msbuild_path(vs_version):
         vs_version = '14.0'
     if vs_version == '2017':
         vs_version = '15.0'
-    if vs_version == '2019':
+    if vs_version in ['2019', '2022']:
         # Changed path : MSBuild is installed in the \Current folder
         # https://docs.microsoft.com/en-us/visualstudio/msbuild/whats-new-msbuild-16-0?view=vs-2019
         vs_version = 'Current'
