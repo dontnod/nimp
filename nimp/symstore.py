@@ -132,9 +132,6 @@ class MSFTSymStore(SymStore):
         def _gzip_compress_fn(symbol: Path):
             tmp_sym: Path = dest_dir / symbol.relative_to(symbols_common_path)
             tmp_sym.parent.mkdir(parents=True, exist_ok=True)
-            # convert last char of path to _ as symstore convention for compressed
-            # sym.pdb -> sym.pd_
-            tmp_sym = tmp_sym.with_suffix(tmp_sym.suffix[:-1] + '_')
 
             logging.info('GZIP compress %s to %s', symbol, tmp_sym)
             with gzip.open(tmp_sym, 'wb', compresslevel=9) as c_fp, symbol.open('rb') as o_fp:
