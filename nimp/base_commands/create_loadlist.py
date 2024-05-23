@@ -22,6 +22,7 @@
 import argparse
 import fnmatch
 import itertools
+import logging
 import os
 
 import nimp.command
@@ -86,6 +87,16 @@ class CreateLoadlist(nimp.command.Command):
         for path, cl in self._product_paths_and_changelists(env, paths):
             filespecs.append(f"{path}{cl}")
 
+        self.has_deleted_files = False
+        p4_deleted_files_command = ["fstat", "-F", "headAction=delete"]
+        for (filepath, ) in p4._parse_command_output(p4_deleted_files_command + filespecs,
+                                                     r"^\.\.\. depotFile(.*)$",
+                                                     hide_output=True, encoding='utf-8'):
+            if not self.has_deleted_files:
+                self.has_deleted_files = True
+                logging.debug('file deletions not considered for loadlist')
+            logging.debug(filepath)
+
         base_command = [
             "fstat",
             # Only list modified files currently accessible
@@ -131,6 +142,10 @@ class CreateLoadlist(nimp.command.Command):
                     fp.write(f'{file}\n')
 
         if env.error_on_empty:
+            logging.info("Empty loadlist: no work needed.")
+            if self.has_deleted_files:
+                logging.debug("Loadlist is empty because submits contain only deleted files.")
+            logging.debug("Command will fail because --error-on-empty enabled.")
             return len(loadlist_files) > 0
 
         return True
