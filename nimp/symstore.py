@@ -22,20 +22,22 @@
 
 ''' SymStore abstraction '''
 
+import concurrent.futures
 import contextlib
+import datetime
 import gzip
 import logging
 import os
-from pathlib import Path
 import shutil
 import tempfile
 import time
+from pathlib import Path
 from typing import Optional
-import concurrent.futures
 
+import nimp.build
 import nimp.sys.platform
-import nimp.system
 import nimp.sys.process
+import nimp.system
 
 
 class SymStore:
@@ -71,6 +73,10 @@ class SymStore:
     @staticmethod
     def upload_symbols(symbols: list[os.PathLike], store_path: os.PathLike, compress: bool = False, dry_run: bool = False, **kwargs):
         raise NotImplementedError('upload_symbols')
+
+    @staticmethod
+    def cleanup_symbols(store_path: os.PathLike, keep_newer_than: datetime.date, dry_run: bool = False) -> bool:
+        raise NotImplementedError('cleanup_symbols')
 
 
 def get_autosdk_for_platform(platform) -> Optional[Path]:
@@ -146,7 +152,12 @@ class MSFTSymStore(SymStore):
     CAB_SRC_SIZE_LIMIT = 2 * 1000 * 1000 * 1000
 
     @staticmethod
-    def upload_symbols(symbols: list[os.PathLike], store_path: os.PathLike, product_name: str = None, comment: str = None, version: str = None, compress: bool = False, use_index2: bool = True, gzip_compress: bool = False, dry_run: bool = False, **kwargs) -> bool:
+    def upload_symbols(  # ignore: type[override]
+        symbols: list[os.PathLike], store_path: os.PathLike,
+        product_name: str = None, comment: str = None, version: str = None,
+        compress: bool = False, use_index2: bool = True, gzip_compress: bool = False,
+        dry_run: bool = False, **kwargs,
+    ) -> bool:
         if gzip_compress:
             compress = True
 
@@ -239,6 +250,36 @@ class MSFTSymStore(SymStore):
             return _try_execute_symstore(commandline, dry_run=dry_run) == 0
 
 
+    @staticmethod
+    def cleanup_symbols(store_path: os.PathLike, keep_newer_than: datetime.date, dry_run: bool = False) -> bool:
+        logging.info("Clean symstore %s (%s)", store_path, keep_newer_than)
+        transactions = nimp.build.get_symbol_transactions(store_path)
+        if transactions is None:
+            logging.error("Failed to retrieve symbol transactions for %s", store_path)
+            return False
+
+        symstore_exe = MSFTSymStore.get_symstore_tool_path()
+        if symstore_exe is None:
+            raise FileNotFoundError('Failed to find a valid symstore executable')
+
+        success = True
+        for transaction in transactions:
+            transaction_date = datetime.datetime.strptime(transaction['creation_date'], '%m/%d/%Y').date()
+            if transaction_date >= keep_newer_than:
+                continue
+
+            command = [
+                str(symstore_exe), "del",
+                "/s", str(store_path),
+                "/i", transaction['id']
+            ]
+            logging.info("Delete transaction %s from %s (date: %s)", transaction['id'], store_path, transaction_date)
+            if nimp.sys.process.call(command, dry_run=dry_run) != 0:
+                success = False
+
+        return success
+
+
 class PS5SymStore(SymStore):
 
     @staticmethod
@@ -292,3 +333,23 @@ class PS5SymStore(SymStore):
 
             success = (nimp.sys.process.call(commandline, dry_run=dry_run) == 0)
             return success
+
+
+    @staticmethod
+    def cleanup_symbols(store_path: os.PathLike, keep_newer_than: datetime.date, dry_run: bool = False) -> bool:
+        symstore_exe = PS5SymStore.get_symstore_tool_path()
+        if symstore_exe is None:
+            raise FileNotFoundError('Failed to find a valid symstore executable')
+
+        logging.info("Clean symstore %s (%s)", store_path, keep_newer_than)
+
+        command = [
+            str(symstore_exe), "cleanup",
+            '/s', str(store_path),
+            '/force',
+            '/before', f"{keep_newer_than} 00:00:00",
+        ]
+        if dry_run:
+            command.append('/preview')
+
+        return nimp.sys.process.call(command) == 0
