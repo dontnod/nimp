@@ -139,17 +139,14 @@ class _Processes(CheckCommand):
 
     def _run_check(self, env):
         logging.info('Checking running processes…')
+        logging.info(f'Active filters: {", ".join(env.filters)}…')
 
         # Irrelevant on sane Unix platforms
         if not nimp.sys.platform.is_windows():
             return True
 
-        # Irrelevant if we’re not an Unreal project
-        if not hasattr(env, 'is_unreal') or not env.is_unreal:
-            return True
-
-        # Find all running binaries launched from the project directory
-        # and optionally kill them, unless they’re in the exception list.
+        # Find all running binaries launched from the root dir
+        # and optionally kill them
         # We get to try 5 times just in case
         for _ in range(5):
             found_problem = False
@@ -159,10 +156,13 @@ class _Processes(CheckCommand):
                 if not any(fnmatch.fnmatch(info[0], filter) for filter in env.filters):
                     continue
                 process_basename = os.path.basename(info[0])
-                processes_ignore_patterns = _Processes.get_processes_ignore_patterns()
-                if any([re.match(p, process_basename, re.IGNORECASE) for p in processes_ignore_patterns]):
-                    logging.info(f'process {pid} {info[0]} will be kept alive')
-                    continue
+
+                if hasattr(env, 'is_unreal') and env.is_unreal:
+                    processes_ignore_patterns = _Processes.get_unreal_processes_ignore_patterns()
+                    if any([re.match(p, process_basename, re.IGNORECASE) for p in processes_ignore_patterns]):
+                        logging.info(f'process {pid} {info[0]} will be kept alive')
+                        continue
+
                 logging.warning('Found problematic process %s (%s)', pid, info[0])
                 found_problem = True
                 if info[1] in processes:
@@ -171,6 +171,8 @@ class _Processes(CheckCommand):
                     logging.info('Killing process…')
                     nimp.sys.process.call(['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
             logging.info('%s processes checked.', len(processes))
+            logging.info(f'Active filters: {", ".join(env.filters)}…')
+
             if not env.kill:
                 return not found_problem
             if not found_problem:
@@ -180,7 +182,7 @@ class _Processes(CheckCommand):
         return False
 
     @staticmethod
-    def get_processes_ignore_patterns():
+    def get_unreal_processes_ignore_patterns():
         return [
             r'^CrashReportClient\.exe$',
             r'^dotnet\.exe$',
