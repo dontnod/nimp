@@ -66,6 +66,10 @@ class UploadFileset(nimp.command.Command):
         if env.torrent and not hasattr(env, 'torrent_tracker_announce'):
             env.torrent_tracker_announce = None
 
+        # load fileset 1st, as it can affect the nimp environment
+        file_mapper = nimp.system.FileMapper(None, vars(env))
+        file_mapper.load_set(env.fileset)
+
         artifact_path = f'{env.artifact_repository_destination}/{env.artifact_collection[env.fileset]}'
         if env.slice_job_index and env.slice_job_count:
             artifact_path = f'{artifact_path}/slice-{env.slice_job_index}-of-{env.slice_job_count}'
@@ -80,8 +84,6 @@ class UploadFileset(nimp.command.Command):
                 _try_remove(artifact_path, env.dry_run)
 
         logging.info('Listing files for %s', artifact_path)
-        file_mapper = nimp.system.FileMapper(None, vars(env))
-        file_mapper.load_set(env.fileset)
         all_files = file_mapper.to_list(env.root_dir if file_mapper.root_based else '.', '.')
 
         if not all_files:
