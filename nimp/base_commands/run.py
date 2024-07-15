@@ -77,7 +77,8 @@ class _Hook(RunCommand):
         if len(env.parameters) != 0:
             logging.error('Too many arguments')
             return False
-        return nimp.environment.execute_hook(env.hook, env)
+        hook = env.command_name
+        return nimp.environment.execute_hook(hook, env)
 
 class BaseUnrealCli(RunCommand):
     ''' Base for unreal cli type commands '''
