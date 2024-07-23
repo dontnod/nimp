@@ -182,7 +182,7 @@ class _Processes(CheckCommand):
     @staticmethod
     def get_processes_ignore_patterns():
         return [
-            r'^CrashReportClient\.exe$',
+            # r'^CrashReportClient\.exe$',
             r'^dotnet\.exe$',
         ]
 
