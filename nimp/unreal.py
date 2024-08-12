@@ -541,6 +541,9 @@ def get_default_args_for_cli(env):
     #yield '-forcelogflush'
     yield '-locallogtimes'
 
+    if (ddc_env_override := os.getenv("UE-DDC")) is not None:
+        yield f"-DDC={ddc_env_override}"
+
 
 def get_p4_args_for_commandlet(env):
     p4_args_for_commandlet = []
