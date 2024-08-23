@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' SymStore abstraction '''
+'''SymStore abstraction'''
 
 import concurrent.futures
 import contextlib
@@ -41,7 +41,6 @@ import nimp.system
 
 
 class SymStore:
-
     @staticmethod
     def get_symstore(env) -> Optional['SymStore']:
         if env.is_win64 or env.is_xsx or env.is_wingdk:
@@ -71,7 +70,9 @@ class SymStore:
         raise NotImplementedError('get_symstore_tool_path')
 
     @staticmethod
-    def upload_symbols(symbols: list[os.PathLike], store_path: os.PathLike, compress: bool = False, dry_run: bool = False, **kwargs):
+    def upload_symbols(
+        symbols: list[os.PathLike], store_path: os.PathLike, compress: bool = False, dry_run: bool = False, **kwargs
+    ):
         raise NotImplementedError('upload_symbols')
 
     @staticmethod
@@ -126,7 +127,9 @@ class MSFTSymStore(SymStore):
         return common_parent
 
     @staticmethod
-    def gzip_compress_symbols(symbols: list[Path], dest_dir: Path, symbols_common_path: Optional[Path] = None) -> list[Path]:
+    def gzip_compress_symbols(
+        symbols: list[Path], dest_dir: Path, symbols_common_path: Optional[Path] = None
+    ) -> list[Path]:
         if symbols_common_path is None:
             symbols_common_path = MSFTSymStore.get_common_parent_path(symbols)
 
@@ -145,7 +148,9 @@ class MSFTSymStore(SymStore):
 
             return tmp_sym
 
-        with concurrent.futures.ThreadPoolExecutor(thread_name_prefix='nimp_symbols_gzip_compress_', max_workers=max_workers) as pool:
+        with concurrent.futures.ThreadPoolExecutor(
+            thread_name_prefix='nimp_symbols_gzip_compress_', max_workers=max_workers
+        ) as pool:
             return list(pool.map(_gzip_compress_fn, symbols))
 
     # Approx. 2GB
@@ -153,10 +158,16 @@ class MSFTSymStore(SymStore):
 
     @staticmethod
     def upload_symbols(  # ignore: type[override]
-        symbols: list[os.PathLike], store_path: os.PathLike,
-        product_name: str = None, comment: str = None, version: str = None,
-        compress: bool = False, use_index2: bool = True, gzip_compress: bool = False,
-        dry_run: bool = False, **kwargs,
+        symbols: list[os.PathLike],
+        store_path: os.PathLike,
+        product_name: str = None,
+        comment: str = None,
+        version: str = None,
+        compress: bool = False,
+        use_index2: bool = True,
+        gzip_compress: bool = False,
+        dry_run: bool = False,
+        **kwargs,
     ) -> bool:
         if gzip_compress:
             compress = True
@@ -175,7 +186,9 @@ class MSFTSymStore(SymStore):
         # Microsoft symstore.exe uses CAB compression  which has a hard limit on source file size of 2GB.
         if compress and not gzip_compress:
             if any(os.path.exists(sym) and os.path.getsize(sym) >= MSFTSymStore.CAB_SRC_SIZE_LIMIT for sym in symbols):
-                raise RuntimeError('Some symbols are larger than CAB limit. Abort to prevent uploading corrupted symbols.')
+                raise RuntimeError(
+                    'Some symbols are larger than CAB limit. Abort to prevent uploading corrupted symbols.'
+                )
 
         symstore_common_args = [
             str(symstore_exe),
@@ -194,9 +207,13 @@ class MSFTSymStore(SymStore):
             index_filepath = str(tmp_dir / 'index.txt')
             with SymStore.rsp_file(symbols) as rsp_filepath:
                 commandline = list(symstore_common_args) + [
-                    '/r', '/f', f'@{rsp_filepath}',
-                    '/x', index_filepath,
-                    '/g', str(common_parent),
+                    '/r',
+                    '/f',
+                    f'@{rsp_filepath}',
+                    '/x',
+                    index_filepath,
+                    '/g',
+                    str(common_parent),
                     '/o',
                 ]
 
@@ -214,9 +231,12 @@ class MSFTSymStore(SymStore):
 
             commandline = list(symstore_common_args) + [
                 '-:NOFORCECOPY',  # no documentation on this but seems to not override files already in store
-                '/y', index_filepath,
-                '/g', str(common_parent),
-                '/s', store_path,
+                '/y',
+                index_filepath,
+                '/g',
+                str(common_parent),
+                '/s',
+                store_path,
             ]
             if compress and not gzip_compress:
                 commandline.append('/compress')
@@ -228,19 +248,16 @@ class MSFTSymStore(SymStore):
                 commandline.extend(['/v', version])
 
             def _try_execute_symstore(
-                command: list[str, ...],
-                max_attempts: int = 3,
-                delay: int = 5,
-                dry_run: bool = False
+                command: list[str, ...], max_attempts: int = 3, delay: int = 5, dry_run: bool = False
             ) -> int:
-                """ retry in case of error 32 or 80, to try and work around possible network issues
-                    This is a crappy solution that cannot replace making symbol servers reliable """
+                """retry in case of error 32 or 80, to try and work around possible network issues
+                This is a crappy solution that cannot replace making symbol servers reliable"""
                 result: int = 0
                 for attempt in range(max_attempts):
                     result = nimp.sys.process.call(command, dry_run=dry_run)
                     if result in [32, 80]:
                         logging.warn('There is a network error.')
-                        logging.warn('Retrying : attempt %s out of %s...' % (attempt+1, max_attempts))
+                        logging.warn('Retrying : attempt %s out of %s...' % (attempt + 1, max_attempts))
                         time.sleep(delay)
                     else:
                         break
@@ -248,7 +265,6 @@ class MSFTSymStore(SymStore):
                 return result
 
             return _try_execute_symstore(commandline, dry_run=dry_run) == 0
-
 
     @staticmethod
     def cleanup_symbols(store_path: os.PathLike, keep_newer_than: datetime.date, dry_run: bool = False) -> bool:
@@ -268,11 +284,7 @@ class MSFTSymStore(SymStore):
             if transaction_date >= keep_newer_than:
                 continue
 
-            command = [
-                str(symstore_exe), "del",
-                "/s", str(store_path),
-                "/i", transaction['id']
-            ]
+            command = [str(symstore_exe), "del", "/s", str(store_path), "/i", transaction['id']]
             logging.info("Delete transaction %s from %s (date: %s)", transaction['id'], store_path, transaction_date)
             if nimp.sys.process.call(command, dry_run=dry_run) != 0:
                 success = False
@@ -281,7 +293,6 @@ class MSFTSymStore(SymStore):
 
 
 class PS5SymStore(SymStore):
-
     @staticmethod
     def get_symstore_tool_path() -> Optional[Path]:
         symupload_candidates: list[Path] = []
@@ -313,7 +324,14 @@ class PS5SymStore(SymStore):
         return symupload_candidates[0]
 
     @staticmethod
-    def upload_symbols(symbols: list[os.PathLike], store_path: os.PathLike, tag: str = None, compress: bool = False, dry_run: bool = False, **kwargs) -> bool:
+    def upload_symbols(
+        symbols: list[os.PathLike],
+        store_path: os.PathLike,
+        tag: str = None,
+        compress: bool = False,
+        dry_run: bool = False,
+        **kwargs,
+    ) -> bool:
         symstore_exe = PS5SymStore.get_symstore_tool_path()
         if symstore_exe is None:
             raise FileNotFoundError('Failed to find a valid symstore executable')
@@ -322,8 +340,11 @@ class PS5SymStore(SymStore):
             commandline = [
                 str(symstore_exe),
                 'add',
-                '/r', '/f', f'@{rsp_filepath}',
-                '/s', str(store_path),
+                '/r',
+                '/f',
+                f'@{rsp_filepath}',
+                '/s',
+                str(store_path),
                 '/o',
             ]
             if tag is not None:
@@ -331,9 +352,8 @@ class PS5SymStore(SymStore):
             if compress:
                 commandline.append('/compress')
 
-            success = (nimp.sys.process.call(commandline, dry_run=dry_run) == 0)
+            success = nimp.sys.process.call(commandline, dry_run=dry_run) == 0
             return success
-
 
     @staticmethod
     def cleanup_symbols(store_path: os.PathLike, keep_newer_than: datetime.date, dry_run: bool = False) -> bool:
@@ -344,10 +364,13 @@ class PS5SymStore(SymStore):
         logging.info("Clean symstore %s (%s)", store_path, keep_newer_than)
 
         command = [
-            str(symstore_exe), "cleanup",
-            '/s', str(store_path),
+            str(symstore_exe),
+            "cleanup",
+            '/s',
+            str(store_path),
             '/force',
-            '/before', f"{keep_newer_than} 00:00:00",
+            '/before',
+            f"{keep_newer_than} 00:00:00",
         ]
         if dry_run:
             command.append('/preview')

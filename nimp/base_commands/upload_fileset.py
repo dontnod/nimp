@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Command to uUpload a fileset to the artifact repository '''
+'''Command to uUpload a fileset to the artifact repository'''
 
 import logging
 import os
@@ -43,16 +43,16 @@ def _try_remove(file_path, dry_run):
 
 
 class UploadFileset(nimp.command.Command):
-    ''' Uploads a fileset to the artifact repository '''
+    '''Uploads a fileset to the artifact repository'''
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run', 'revision', 'slice_job', 'free_parameters')
-        parser.add_argument('--archive', action = 'store_true', help = 'upload the files as a zip archive')
-        parser.add_argument('--compress', action = 'store_true', help = 'if uploading as an archive, compress it')
-        parser.add_argument('--torrent', action = 'store_true', help = 'create a torrent for the uploaded fileset')
-        parser.add_argument('--hash', metavar = '<hashlib>', default = None, help = 'create a hash for the uploaded fs')
-        parser.add_argument('--force', action = 'store_true', help = 'if the artifact already exists, overwrite it')
-        parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to upload')
+        parser.add_argument('--archive', action='store_true', help='upload the files as a zip archive')
+        parser.add_argument('--compress', action='store_true', help='if uploading as an archive, compress it')
+        parser.add_argument('--torrent', action='store_true', help='create a torrent for the uploaded fileset')
+        parser.add_argument('--hash', metavar='<hashlib>', default=None, help='create a hash for the uploaded fs')
+        parser.add_argument('--force', action='store_true', help='if the artifact already exists, overwrite it')
+        parser.add_argument('fileset', metavar='<fileset>', help='fileset to upload')
         return True
 
     def is_available(self, env):
@@ -91,14 +91,16 @@ class UploadFileset(nimp.command.Command):
 
         logging.info('Uploading to %s', artifact_path)
         if not env.dry_run:
-            os.makedirs(os.path.dirname(artifact_path), exist_ok = True)
+            os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
         nimp.system.try_execute(
-            lambda: nimp.artifacts.create_artifact(artifact_path, all_files,
-                                                   env.archive, env.compress, env.dry_run),
-            (OSError, ValueError, zipfile.BadZipFile))
+            lambda: nimp.artifacts.create_artifact(artifact_path, all_files, env.archive, env.compress, env.dry_run),
+            (OSError, ValueError, zipfile.BadZipFile),
+        )
         if env.torrent:
             logging.info('Creating torrent for %s', artifact_path)
-            nimp.system.try_execute(lambda: nimp.artifacts.create_torrent(artifact_path, env.torrent_tracker_announce, env.dry_run), OSError)
+            nimp.system.try_execute(
+                lambda: nimp.artifacts.create_torrent(artifact_path, env.torrent_tracker_announce, env.dry_run), OSError
+            )
         if env.hash is not None:
             logging.info(f'Creating hash for {artifact_path}')
             nimp.artifacts.create_hash(artifact_path, env.hash, env.dry_run)

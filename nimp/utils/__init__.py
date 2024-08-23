@@ -1,5 +1,4 @@
-
-''' Utility functions '''
+'''Utility functions'''
 
 __all__ = [
     'git',

@@ -28,10 +28,10 @@ import nimp.model.symbol_server
 
 
 class SymbolServer(nimp.command.CommandGroup):
-    ''' Commands for the symbol servers '''
+    '''Commands for the symbol servers'''
 
     def __init__(self):
-        super().__init__([ _Status(), _Update(), _Clean() ])
+        super().__init__([_Status(), _Update(), _Clean()])
 
     def is_available(self, env):
         if not hasattr(env, 'symbol_servers'):
@@ -39,14 +39,16 @@ class SymbolServer(nimp.command.CommandGroup):
         return True, ''
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('--identifier', required=True, metavar='<type>', help='select a symbol server from project configuration')
+        parser.add_argument(
+            '--identifier', required=True, metavar='<type>', help='select a symbol server from project configuration'
+        )
         parser.add_argument('--platform', required=True, metavar='<platform>', help='set the platform for the symbols')
 
         super().configure_arguments(env, parser)
 
 
 class _Status(nimp.command.Command):
-    ''' Show the symbol server status '''
+    '''Show the symbol server status'''
 
     def configure_arguments(self, env, parser):
         return True
@@ -68,7 +70,7 @@ class _Status(nimp.command.Command):
 
 
 class _Update(nimp.command.Command):
-    ''' Update the symbol server '''
+    '''Update the symbol server'''
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
@@ -92,7 +94,7 @@ class _Update(nimp.command.Command):
 
 
 class _Clean(nimp.command.Command):
-    ''' Clean the symbol server '''
+    '''Clean the symbol server'''
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
@@ -106,7 +108,9 @@ class _Clean(nimp.command.Command):
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.identifier)
 
-        logging.info("Cleaning symbol server at '%s'%s", symbol_server.server_path, " (Simulation)" if env.dry_run else "")
+        logging.info(
+            "Cleaning symbol server at '%s'%s", symbol_server.server_path, " (Simulation)" if env.dry_run else ""
+        )
 
         all_symbols = symbol_server.list_symbols()
         symbols_to_clean = symbol_server.list_symbols_to_clean(all_symbols)

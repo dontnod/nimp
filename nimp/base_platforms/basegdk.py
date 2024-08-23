@@ -1,8 +1,9 @@
 import nimp.sys.platform
 import os
 
+
 class BaseGDK(nimp.sys.platform.Platform):
-    ''' BaseGDK platform description '''
+    '''BaseGDK platform description'''
 
     def __init__(self, env):
         super().__init__(env)
@@ -20,5 +21,5 @@ class BaseGDK(nimp.sys.platform.Platform):
         if gdk:
             return gdk
         return 'C:\\Program Files (x86)\\Microsoft GDK'
-    
+
     GDK = find_gdk()

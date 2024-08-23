@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Perforce related commands. '''
+'''Perforce related commands.'''
 
 import abc
 import shutil
@@ -28,14 +28,15 @@ import shutil
 import nimp.command
 import nimp.utils.p4
 
+
 def _is_p4_available():
     if shutil.which('p4') is None:
-        return False, ('p4 executable was not found on your system, check your'
-                       'installation.')
+        return False, ('p4 executable was not found on your system, check your' 'installation.')
     return True, ''
 
+
 class P4Command(nimp.command.Command):
-    ''' Perforce command base class '''
+    '''Perforce command base class'''
 
     def __init__(self):
         super(P4Command, self).__init__()
@@ -48,15 +49,15 @@ class P4Command(nimp.command.Command):
 
     @abc.abstractmethod
     def run(self, env):
-        ''' Executes the command '''
+        '''Executes the command'''
         pass
 
+
 class P4(nimp.command.CommandGroup):
-    ''' Run Perforce commands '''
+    '''Run Perforce commands'''
+
     def __init__(self):
-        super(P4, self).__init__([_RevertWorkspace(),
-                                  _Submit(),
-                                  _Fileset()])
+        super(P4, self).__init__([_RevertWorkspace(), _Submit(), _Fileset()])
 
     def configure_arguments(self, env, parser):
         super(P4, self).configure_arguments(env, parser)
@@ -65,8 +66,10 @@ class P4(nimp.command.CommandGroup):
     def is_available(self, env):
         return _is_p4_available()
 
+
 class _RevertWorkspace(P4Command):
-    ''' Reverts and deletes all pending changelists '''
+    '''Reverts and deletes all pending changelists'''
+
     def __init__(self):
         super(_RevertWorkspace, self).__init__()
 
@@ -80,8 +83,10 @@ class _RevertWorkspace(P4Command):
         p4 = nimp.utils.p4.get_client(env)
         return p4.clean_workspace()
 
+
 class _Fileset(P4Command):
-    ''' Runs perforce commands operation on a fileset. '''
+    '''Runs perforce commands operation on a fileset.'''
+
     def __init__(self):
         super(_Fileset, self).__init__()
 
@@ -90,20 +95,21 @@ class _Fileset(P4Command):
         # really need them.
         super(_Fileset, self).configure_arguments(env, parser)
 
-        parser.add_argument('p4_operation',
-                            help = 'Operation to perform on the fileset.',
-                            choices = ['checkout', 'revert', 'reconcile', 'sync'])
+        parser.add_argument(
+            'p4_operation',
+            help='Operation to perform on the fileset.',
+            choices=['checkout', 'revert', 'reconcile', 'sync'],
+        )
 
-        parser.add_argument('fileset',
-                            metavar = '<fileset>',
-                            help = 'Fileset to load.')
+        parser.add_argument('fileset', metavar='<fileset>', help='Fileset to load.')
 
-        parser.add_argument('changelist_description',
-                            metavar = '<description>',
-                            help = 'Changelist description format, will be interpolated with environment value.')
+        parser.add_argument(
+            'changelist_description',
+            metavar='<description>',
+            help='Changelist description format, will be interpolated with environment value.',
+        )
 
-        nimp.command.add_common_arguments(parser, 'platform', 'configuration',
-                                          'target', 'revision', 'free_parameters')
+        nimp.command.add_common_arguments(parser, 'platform', 'configuration', 'target', 'revision', 'free_parameters')
         return True
 
     def is_available(self, env):
@@ -118,10 +124,12 @@ class _Fileset(P4Command):
         # Dictionary below has the following structure:
         # key: p4_operation
         # value: [method, uses_a_changelist]
-        operations = { 'checkout' : [p4.edit, True],
-                       'reconcile' : [p4.reconcile, True],
-                       'revert' : [p4.revert, False],
-                       'sync' : [p4.sync, False], }
+        operations = {
+            'checkout': [p4.edit, True],
+            'reconcile': [p4.reconcile, True],
+            'revert': [p4.revert, False],
+            'sync': [p4.sync, False],
+        }
 
         files = nimp.system.map_files(env)
         if files.load_set(env.fileset) is None:
@@ -140,7 +148,8 @@ class _Fileset(P4Command):
 
 
 class _Submit(P4Command):
-    ''' Submits a changelist identified by its description  '''
+    '''Submits a changelist identified by its description'''
+
     def __init__(self):
         super(_Submit, self).__init__()
 
@@ -149,9 +158,11 @@ class _Submit(P4Command):
         # really need them.
         super(_Submit, self).configure_arguments(env, parser)
 
-        parser.add_argument('changelist_description',
-                            metavar = '<description>',
-                            help = 'Changelist description format, will be interpolated with environment value.')
+        parser.add_argument(
+            'changelist_description',
+            metavar='<description>',
+            help='Changelist description format, will be interpolated with environment value.',
+        )
 
         return True
 

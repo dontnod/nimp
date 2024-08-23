@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' System utilities unit tests '''
+'''System utilities unit tests'''
 
 import contextlib
 import os
@@ -31,6 +31,7 @@ import argparse
 import nimp.tests.utils
 import nimp.utils.p4
 
+
 class _MockChangelist:
     def __init__(self, number, description):
         self.files = {}
@@ -38,8 +39,9 @@ class _MockChangelist:
         self.description = description
         self.status = 'pending'
 
+
 class P4Mock(nimp.tests.utils.MockCommand):
-    ''' Mocks p4 command '''
+    '''Mocks p4 command'''
 
     def __init__(self):
         super(P4Mock, self).__init__('p4')
@@ -47,11 +49,11 @@ class P4Mock(nimp.tests.utils.MockCommand):
         self._changelists = {}
         self._files = {}
         self._current_changelist = 0
-        self._parser = argparse.ArgumentParser(prog = 'p4')
+        self._parser = argparse.ArgumentParser(prog='p4')
         self._init_args(self._parser)
 
     def add_changelist(self, description, *files_content):
-        ''' Adds a fake changelist to this p4 mock '''
+        '''Adds a fake changelist to this p4 mock'''
         if not self._changelists:
             cl_number = '400'
         else:
@@ -87,7 +89,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
         for flag in ['-z', '-c', '-H', '-p', '-P', '-u', '-x']:
             parser.add_argument(flag)
 
-        subparsers  = parser.add_subparsers(title='Commands')
+        subparsers = parser.add_subparsers(title='Commands')
         P4Mock._init_infos(subparsers)
         P4Mock._init_user(subparsers)
         self._init_add(subparsers)
@@ -132,12 +134,12 @@ class P4Mock(nimp.tests.utils.MockCommand):
             return (0, '', '')
 
         parser = subparsers.add_parser('add')
-        parser.add_argument('-c', '--changelist', default = 'default')
+        parser.add_argument('-c', '--changelist', default='default')
         parser.add_argument('files', nargs='+')
-        parser.set_defaults(command_to_run = _add_command)
+        parser.set_defaults(command_to_run=_add_command)
 
     def _init_change(self, subparsers):
-        #pylint: disable=inconsistent-return-statements
+        # pylint: disable=inconsistent-return-statements
         def _change_command(args, stdin):
             if hasattr(args, 'd') and args.d is not None:
                 if args.d not in self._changelists:
@@ -169,8 +171,8 @@ class P4Mock(nimp.tests.utils.MockCommand):
 
         parser = subparsers.add_parser('change')
         parser.add_argument('-d')
-        parser.add_argument('-i', action = 'store_true')
-        parser.set_defaults(command_to_run = _change_command)
+        parser.add_argument('-i', action='store_true')
+        parser.set_defaults(command_to_run=_change_command)
 
     def _init_changes(self, subparsers):
         def _changes_command(args, _):
@@ -178,13 +180,15 @@ class P4Mock(nimp.tests.utils.MockCommand):
             change_id = 0
             for _, changelist in reversed(sorted(self._changelists.items())):
                 if args.status is None or args.status.strip() == changelist.status:
-                    template = ('... change %s\n'
-                                '... time 1464522677\n'
-                                '... user test_user\n'
-                                '... client test_client\n'
-                                '... status %s\n'
-                                '... changeType public\n'
-                                '... desc %s\n\n')
+                    template = (
+                        '... change %s\n'
+                        '... time 1464522677\n'
+                        '... user test_user\n'
+                        '... client test_client\n'
+                        '... status %s\n'
+                        '... changeType public\n'
+                        '... desc %s\n\n'
+                    )
                     output.append(template % (changelist.number, changelist.status, changelist.description))
                 if int(args.m) > 0 and change_id >= int(args.m):
                     break
@@ -193,9 +197,9 @@ class P4Mock(nimp.tests.utils.MockCommand):
 
         parser = subparsers.add_parser('changes')
         parser.add_argument('-c', '--changes_client')
-        parser.add_argument('-m', default = 0)
-        parser.add_argument('-s', '--status', choices = ['pending', 'submitted', 'shelved'])
-        parser.set_defaults(command_to_run = _changes_command)
+        parser.add_argument('-m', default=0)
+        parser.add_argument('-s', '--status', choices=['pending', 'submitted', 'shelved'])
+        parser.set_defaults(command_to_run=_changes_command)
 
     def _init_delete(self, subparsers):
         def _delete_command(args, stdin):
@@ -219,9 +223,9 @@ class P4Mock(nimp.tests.utils.MockCommand):
             return (0, '', '')
 
         parser = subparsers.add_parser('delete')
-        parser.add_argument('-c', '--changelist', default = 'default')
+        parser.add_argument('-c', '--changelist', default='default')
         parser.add_argument('files', nargs='*')
-        parser.set_defaults(command_to_run = _delete_command)
+        parser.set_defaults(command_to_run=_delete_command)
 
     def _init_describe(self, subparsers):
         def _describe_command(args, _):
@@ -229,13 +233,15 @@ class P4Mock(nimp.tests.utils.MockCommand):
             changelist = self._changelists[cl_number]
             if cl_number not in self._changelists:
                 return (1, '', '%s - no such changelist.' % cl_number)
-            output = ('... change %s\n'
-                      '... user test_user\n'
-                      '... client test_client\n'
-                      '... time 1464647491\n'
-                      '... desc %s\n'
-                      '... status pending\n'
-                      '... changeType public\n\n') % (cl_number, changelist.description)
+            output = (
+                '... change %s\n'
+                '... user test_user\n'
+                '... client test_client\n'
+                '... time 1464647491\n'
+                '... desc %s\n'
+                '... status pending\n'
+                '... changeType public\n\n'
+            ) % (cl_number, changelist.description)
             file_id = 0
             for filename, (rev, local_action) in changelist.files.items():
                 rel_path = os.path.relpath(filename, '/p4')
@@ -247,8 +253,8 @@ class P4Mock(nimp.tests.utils.MockCommand):
             return (0, output, '')
 
         parser = subparsers.add_parser('describe')
-        parser.add_argument('changelist', nargs = 1)
-        parser.set_defaults(command_to_run = _describe_command)
+        parser.add_argument('changelist', nargs=1)
+        parser.set_defaults(command_to_run=_describe_command)
 
     def _init_edit(self, subparsers):
         def _edit_command(args, stdin):
@@ -278,9 +284,9 @@ class P4Mock(nimp.tests.utils.MockCommand):
             return (result, '\n'.join(stdout), '\n'.join(stderr))
 
         parser = subparsers.add_parser('edit')
-        parser.add_argument('-c', '--changelist', default = 'default')
+        parser.add_argument('-c', '--changelist', default='default')
         parser.add_argument('files', nargs='*')
-        parser.set_defaults(command_to_run = _edit_command)
+        parser.set_defaults(command_to_run=_edit_command)
 
     def _init_fstat(self, subparsers):
         def _get_file_fstat(filename):
@@ -298,7 +304,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
                         stdout += file_stdout
                         stderr += file_stderr
             else:
-                if not filename.startswith('/p4') :
+                if not filename.startswith('/p4'):
                     return '', '%s - file(s) not in client view\n\n' % filename
 
                 rev, head_status, local_status = self._get_file_status(filename)
@@ -306,19 +312,18 @@ class P4Mock(nimp.tests.utils.MockCommand):
                 if head_status is None and local_status is None:
                     return '', '%s - no such file(s).\n\n' % filename
 
-                stdout = ('... depotFile //test_client/%s\n'
-                          '... clientFile %s\n'
-                          '... isMapped\n'
-                          '... headType text\n'
-                          '... headTime 1462880462\n'
-                          '... headRev %s\n'
-                          '... headChange 408051\n'
-                          '... headModTime 1454408928\n'
-                          '... haveRev %s\n')
-                stdout = stdout % (os.path.relpath(filename, '/p4'),
-                                   filename,
-                                   rev,
-                                   rev)
+                stdout = (
+                    '... depotFile //test_client/%s\n'
+                    '... clientFile %s\n'
+                    '... isMapped\n'
+                    '... headType text\n'
+                    '... headTime 1462880462\n'
+                    '... headRev %s\n'
+                    '... headChange 408051\n'
+                    '... headModTime 1454408928\n'
+                    '... haveRev %s\n'
+                )
+                stdout = stdout % (os.path.relpath(filename, '/p4'), filename, rev, rev)
                 if head_status is not None:
                     stdout += '... headAction %s\n' % head_status
                 if local_status is not None:
@@ -348,20 +353,25 @@ class P4Mock(nimp.tests.utils.MockCommand):
         parser = subparsers.add_parser('fstat')
         parser.add_argument('-e')
         parser.add_argument('files', nargs='*')
-        parser.set_defaults(command_to_run = _fstat_command)
+        parser.set_defaults(command_to_run=_fstat_command)
 
     @staticmethod
     def _init_infos(subparsers):
         def _infos_command(*_):
-            return (0,
-                    ('... userName test_user\n'
-                     '... clientName test_client\n'
-                     '... clientRoot /p4root\n'
-                     '... clientCwd /p4root\n'
-                     '... clientHost test_host\n'),
-                    '')
+            return (
+                0,
+                (
+                    '... userName test_user\n'
+                    '... clientName test_client\n'
+                    '... clientRoot /p4root\n'
+                    '... clientCwd /p4root\n'
+                    '... clientHost test_host\n'
+                ),
+                '',
+            )
+
         parser = subparsers.add_parser('info')
-        parser.set_defaults(command_to_run = _infos_command)
+        parser.set_defaults(command_to_run=_infos_command)
 
     def _init_reconcile(self, subparsers):
         def _reconcile_command(args, stdin):
@@ -408,11 +418,11 @@ class P4Mock(nimp.tests.utils.MockCommand):
 
         parser = subparsers.add_parser('reconcile')
         parser.add_argument('-c')
-        parser.set_defaults(command_to_run = _reconcile_command)
+        parser.set_defaults(command_to_run=_reconcile_command)
 
     def _init_revert(self, subparsers):
         def _revert(path, args):
-            ''' Reverts given path '''
+            '''Reverts given path'''
             if path == '//...':
                 for cl_number, changelist in self._changelists.items():
                     if args.changelist is not None and cl_number != args.changelist:
@@ -456,10 +466,10 @@ class P4Mock(nimp.tests.utils.MockCommand):
             return (0, '', '')
 
         parser = subparsers.add_parser('revert')
-        parser.add_argument('-c', '--changelist', default = None)
-        parser.add_argument('-a', action = 'store_true')
+        parser.add_argument('-c', '--changelist', default=None)
+        parser.add_argument('-a', action='store_true')
         parser.add_argument('paths', nargs='*')
-        parser.set_defaults(command_to_run = _revert_command)
+        parser.set_defaults(command_to_run=_revert_command)
 
     def _init_submit(self, subparsers):
         def _submit_command(args, _):
@@ -487,7 +497,7 @@ class P4Mock(nimp.tests.utils.MockCommand):
         parser = subparsers.add_parser('submit')
         parser.add_argument('-c')
         parser.add_argument('-f')
-        parser.set_defaults(command_to_run = _submit_command)
+        parser.set_defaults(command_to_run=_submit_command)
 
     def _init_sync(self, subparsers):
         def _sync_command(args, _):
@@ -512,7 +522,6 @@ class P4Mock(nimp.tests.utils.MockCommand):
                         if name_it not in self._files:
                             continue
 
-
                         head_revision = self._files[name_it][rev]
 
                         if head_revision is None and os.path.exists(name_it):
@@ -532,43 +541,46 @@ class P4Mock(nimp.tests.utils.MockCommand):
         parser = subparsers.add_parser('sync')
         parser.add_argument('-f')
         parser.add_argument('file_range', nargs='?')
-        parser.set_defaults(command_to_run = _sync_command)
+        parser.set_defaults(command_to_run=_sync_command)
 
     @staticmethod
     def _init_user(subparsers):
-        #pylint: disable=inconsistent-return-statements
+        # pylint: disable=inconsistent-return-statements
         def _user_command(args, _):
             if args.o:
-                return (0,
-                        ('... User test_user'
-                         '... Email test@test.test'
-                         '... Update 2013/06/12 15:33:16'
-                         '... Access 2016/05/31 00:09:46'
-                         '... FullName Test User'
-                         '... Password ******'
-                         '... Type standard'),
-                        '')
+                return (
+                    0,
+                    (
+                        '... User test_user'
+                        '... Email test@test.test'
+                        '... Update 2013/06/12 15:33:16'
+                        '... Access 2016/05/31 00:09:46'
+                        '... FullName Test User'
+                        '... Password ******'
+                        '... Type standard'
+                    ),
+                    '',
+                )
             assert False, 'Not supported by mock'
 
         parser = subparsers.add_parser('user')
-        parser.add_argument('-o', action ='store_true')
-        parser.set_defaults(command_to_run = _user_command)
+        parser.add_argument('-o', action='store_true')
+        parser.set_defaults(command_to_run=_user_command)
+
 
 @contextlib.contextmanager
 def mock_p4():
-    ''' Returns a p4 mock '''
+    '''Returns a p4 mock'''
     with nimp.tests.utils.mock_filesystem():
         p4_mock = P4Mock()
         with nimp.tests.utils.mock_capture_process_output(p4_mock):
             yield p4_mock
 
+
 class _P4Tests(unittest.TestCase):
     def __init__(self, test):
         super(_P4Tests, self).__init__(test)
-        self._p4 = nimp.utils.p4.P4(port = 'test_port',
-                                    user = 'test_user',
-                                    password = 'test_password',
-                                    client = 'test_client')
+        self._p4 = nimp.utils.p4.P4(port='test_port', user='test_user', password='test_password', client='test_client')
 
     def _assert_action_is(self, filename, action):
         files_status = list(self._p4.get_files_status(filename))
@@ -581,7 +593,7 @@ class _P4Tests(unittest.TestCase):
         self.assertEqual(files_status[0][1], head_action)
 
     def test_add(self):
-        ''' Checks if adding files to perforce is working '''
+        '''Checks if adding files to perforce is working'''
         with mock_p4():
             nimp.tests.utils.create_file('/p4/file_1', 'rev_1')
             nimp.tests.utils.create_file('/p4/file_2', 'rev_1')
@@ -597,11 +609,9 @@ class _P4Tests(unittest.TestCase):
             self.assertFalse(self._p4.add('999999', '/p4/file_2'))
 
     def test_delete(self):
-        ''' deletes should delete files '''
+        '''deletes should delete files'''
         with mock_p4() as mock:
-            mock.add_changelist('test changelist',
-                                ('/p4/file_1', 'rev 1'),
-                                ('/p4/file_2', 'rev 1'))
+            mock.add_changelist('test changelist', ('/p4/file_1', 'rev 1'), ('/p4/file_2', 'rev 1'))
             self._p4.sync()
             cl_number = self._p4.get_or_create_changelist('test_cl')
             self.assertIsNotNone(cl_number)
@@ -614,12 +624,11 @@ class _P4Tests(unittest.TestCase):
             self.assertFalse(self._p4.delete('9999999', '/p4/file_2'))
 
     def test_clean_workspace(self):
-        ''' clean_workspace should revert all files and delete pending changelist '''
+        '''clean_workspace should revert all files and delete pending changelist'''
         with mock_p4() as mock:
-            mock.add_changelist('test changelist',
-                                ('/p4/file_1', 'rev_1'),
-                                ('/p4/file_2', 'rev_2'),
-                                ('/p4/file_3', 'rev_1'))
+            mock.add_changelist(
+                'test changelist', ('/p4/file_1', 'rev_1'), ('/p4/file_2', 'rev_2'), ('/p4/file_3', 'rev_1')
+            )
             self._p4.sync()
 
             cl_number = self._p4.get_or_create_changelist('test changelist')
@@ -637,7 +646,7 @@ class _P4Tests(unittest.TestCase):
             self._assert_action_is('/p4/file_3', None)
 
     def test_get_or_create_changelist(self):
-        ''' get_or_create_changelist should create a new changelist '''
+        '''get_or_create_changelist should create a new changelist'''
         with mock_p4():
             self.assertListEqual([], list(self._p4.get_pending_changelists()))
             cl_number = self._p4.get_or_create_changelist('changelist description')
@@ -651,7 +660,7 @@ class _P4Tests(unittest.TestCase):
             self.assertEqual(already_existing_cl, cl_number)
 
     def test_delete_changelist(self):
-        ''' delete_changelist should delete pending changelist '''
+        '''delete_changelist should delete pending changelist'''
         with mock_p4():
             cl_number = self._p4.get_or_create_changelist('changelist description')
             self.assertTrue(self._p4.delete_changelist(cl_number))
@@ -665,19 +674,20 @@ class _P4Tests(unittest.TestCase):
             self.assertFalse(self._p4.delete_changelist('999999999'))
 
     def test_get_files_status(self):
-        ''' get_file_status should return correct file status '''
+        '''get_file_status should return correct file status'''
         # /... should be added to the end of a file if it's a directory
         with mock_p4() as mock:
-            mock.add_changelist('test changelist',
-                                ('/p4/file_1', 'rev_1'),
-                                ('/p4/file_2', 'rev_1'),
-                                ('/p4/file_3', 'rev_1'),
-                                ('/p4/dir/child_1', 'rev_1'))
+            mock.add_changelist(
+                'test changelist',
+                ('/p4/file_1', 'rev_1'),
+                ('/p4/file_2', 'rev_1'),
+                ('/p4/file_3', 'rev_1'),
+                ('/p4/dir/child_1', 'rev_1'),
+            )
 
-            mock.add_changelist('test changelist 2',
-                                ('/p4/file_2', None),
-                                ('/p4/file_3', None),
-                                ('/p4/dir/child_1', 'rev_2'))
+            mock.add_changelist(
+                'test changelist 2', ('/p4/file_2', None), ('/p4/file_3', None), ('/p4/dir/child_1', 'rev_2')
+            )
 
             self._p4.sync()
             nimp.tests.utils.create_file('/p4/dir/child_2', 'rev_1')
@@ -689,31 +699,26 @@ class _P4Tests(unittest.TestCase):
             self._p4.add(cl_number, '/p4/file_2')
             self._p4.add(cl_number, '/p4/dir/child_2')
 
-            result = self._p4.get_files_status('/p4/dir',
-                                               '/p4/file_1',
-                                               '/p4/file_2',
-                                               '/p4/file_3',
-                                               '/some_path/not_in_client',
-                                               '/p4/unknown_file')
+            result = self._p4.get_files_status(
+                '/p4/dir', '/p4/file_1', '/p4/file_2', '/p4/file_3', '/some_path/not_in_client', '/p4/unknown_file'
+            )
 
-            expected = [('/p4/dir/child_1', 'add', None),
-                        ('/p4/dir/child_2', None, 'add'),
-                        ('/p4/file_1', 'add', 'edit'),
-                        ('/p4/file_2', 'delete', 'add'),
-                        ('/p4/file_3', 'delete', None)]
+            expected = [
+                ('/p4/dir/child_1', 'add', None),
+                ('/p4/dir/child_2', None, 'add'),
+                ('/p4/file_1', 'add', 'edit'),
+                ('/p4/file_2', 'delete', 'add'),
+                ('/p4/file_3', 'delete', None),
+            ]
 
             self.assertListEqual(list(result), expected)
 
     def test_edit(self):
-        ''' edit should open correct files for edit'''
+        '''edit should open correct files for edit'''
         with mock_p4() as mock:
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_1', 'rev_1'),
-                                ('/p4/file_2', 'rev_1'))
+            mock.add_changelist('test_changelist', ('/p4/file_1', 'rev_1'), ('/p4/file_2', 'rev_1'))
 
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_1', 'rev_1'),
-                                ('/p4/file_2', None))
+            mock.add_changelist('test_changelist', ('/p4/file_1', 'rev_1'), ('/p4/file_2', None))
             self._p4.sync()
 
             cl_number = self._p4.get_or_create_changelist('test changelist')
@@ -728,15 +733,17 @@ class _P4Tests(unittest.TestCase):
             self.assertFalse(self._p4.edit(cl_number, '/p4/file_2'))
 
     def test_reconcile(self):
-        ''' reconcile should get a coherent workspace status '''
+        '''reconcile should get a coherent workspace status'''
         # files opened for edit and deleted on disk should be reverted then
         # deleted in perforce in order to have a good state
         with mock_p4() as mock:
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_1', 'rev 1'),
-                                ('/p4/file_2', 'rev 1'),
-                                ('/p4/file_3', 'rev 1'),
-                                ('/p4/dir/file_1', 'rev 1'))
+            mock.add_changelist(
+                'test_changelist',
+                ('/p4/file_1', 'rev 1'),
+                ('/p4/file_2', 'rev 1'),
+                ('/p4/file_3', 'rev 1'),
+                ('/p4/dir/file_1', 'rev 1'),
+            )
             self._p4.sync()
 
             cl_number = self._p4.get_or_create_changelist('Test changelist')
@@ -754,15 +761,19 @@ class _P4Tests(unittest.TestCase):
             self.assertTrue(self._p4.reconcile(cl_number, '/p4/dir', '/p4/file_1', '/p4/file_2', '/p4/file_3'))
             status = self._p4.get_files_status('/p4/dir', '/p4/file_1', '/p4/file_2', '/p4/file_3')
 
-            self.assertListEqual(list(status),
-                                 [('/p4/dir/file_1', 'add', None),
-                                  ('/p4/dir/file_2', None, 'add'),
-                                  ('/p4/file_1', 'add', 'delete'),
-                                  ('/p4/file_2', 'add', 'delete'),
-                                  ('/p4/file_3', 'add', 'edit')])
+            self.assertListEqual(
+                list(status),
+                [
+                    ('/p4/dir/file_1', 'add', None),
+                    ('/p4/dir/file_2', None, 'add'),
+                    ('/p4/file_1', 'add', 'delete'),
+                    ('/p4/file_2', 'add', 'delete'),
+                    ('/p4/file_3', 'add', 'edit'),
+                ],
+            )
 
     def test_describe(self):
-        ''' describe should return changelist description'''
+        '''describe should return changelist description'''
         # files opened for edit and deleted on disk should be reverted then
         # deleted in perforce in order to have a good state
         with mock_p4():
@@ -771,19 +782,15 @@ class _P4Tests(unittest.TestCase):
             self.assertEqual(result, 'test description')
 
     def test_sync(self):
-        ''' describe should return changelist description'''
+        '''describe should return changelist description'''
         with mock_p4() as mock:
-            rev_1 = mock.add_changelist('test_changelist',
-                                        ('/p4/file_1', 'rev 1'),
-                                        ('/p4/file_2', 'rev 1'),
-                                        ('/p4/file_3', 'rev 1'))
-            rev_2 = mock.add_changelist('test_changelist',
-                                        ('/p4/file_1', 'rev 2'),
-                                        ('/p4/file_2', 'rev 2'),
-                                        ('/p4/file_3', 'rev 2'))
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_2', None),
-                                ('/p4/file_3', 'rev 3'))
+            rev_1 = mock.add_changelist(
+                'test_changelist', ('/p4/file_1', 'rev 1'), ('/p4/file_2', 'rev 1'), ('/p4/file_3', 'rev 1')
+            )
+            rev_2 = mock.add_changelist(
+                'test_changelist', ('/p4/file_1', 'rev 2'), ('/p4/file_2', 'rev 2'), ('/p4/file_3', 'rev 2')
+            )
+            mock.add_changelist('test_changelist', ('/p4/file_2', None), ('/p4/file_3', 'rev 3'))
             self._p4.sync(rev_1)
             self._p4.sync()
 
@@ -805,7 +812,7 @@ class _P4Tests(unittest.TestCase):
             with open('/p4/file_3', 'r') as file_content:
                 self.assertEqual(file_content.read(), 'rev 2')
 
-            self._p4.sync(cl_number = rev_1)
+            self._p4.sync(cl_number=rev_1)
 
             self.assertTrue(os.path.exists('/p4/file_1'))
             self.assertTrue(os.path.exists('/p4/file_2'))
@@ -821,19 +828,15 @@ class _P4Tests(unittest.TestCase):
                 self.assertEqual(file_content.read(), 'rev 1')
 
     def test_is_file_versionned(self):
-        ''' describe should return changelist description'''
+        '''describe should return changelist description'''
         with mock_p4() as mock:
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_1', 'rev 1'),
-                                ('/p4/file_2', 'rev 1'),
-                                ('/p4/file_3', 'rev 1'))
+            mock.add_changelist(
+                'test_changelist', ('/p4/file_1', 'rev 1'), ('/p4/file_2', 'rev 1'), ('/p4/file_3', 'rev 1')
+            )
 
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_2', None),
-                                ('/p4/file_3', None))
+            mock.add_changelist('test_changelist', ('/p4/file_2', None), ('/p4/file_3', None))
 
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_3', 'recreated'))
+            mock.add_changelist('test_changelist', ('/p4/file_3', 'recreated'))
 
             self._p4.sync()
             nimp.tests.utils.create_file('/p4/file_4', 'rev 1')
@@ -844,7 +847,7 @@ class _P4Tests(unittest.TestCase):
             self.assertFalse(self._p4.is_file_versioned('/p4/file_4'))
 
     def test_get_last_synced_changelist(self):
-        ''' describe should return changelist description'''
+        '''describe should return changelist description'''
         with mock_p4() as mock:
             mock.add_changelist('test_changelist', ('/p4/file_1', 'rev 1'))
             cl_number = mock.add_changelist('test_changelist', ('/p4/file_1', 'rev 2'))
@@ -852,11 +855,9 @@ class _P4Tests(unittest.TestCase):
             self.assertEqual(self._p4.get_last_synced_changelist(), cl_number)
 
     def test_revert_changelist(self):
-        ''' should rever only files in specified changelist '''
+        '''should rever only files in specified changelist'''
         with mock_p4() as mock:
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_1', 'rev 1'),
-                                ('/p4/file_2', 'rev 1'))
+            mock.add_changelist('test_changelist', ('/p4/file_1', 'rev 1'), ('/p4/file_2', 'rev 1'))
 
             self._p4.sync()
             cl_1 = self._p4.get_or_create_changelist('test cl_1')
@@ -880,14 +881,12 @@ class _P4Tests(unittest.TestCase):
                 self.assertEqual(file_content.read(), 'rev 2')
 
     def test_revert_unchanged(self):
-        ''' should rever only files in specified changelist that have not changed '''
+        '''should rever only files in specified changelist that have not changed'''
         with mock_p4() as mock:
-            mock.add_changelist('test_changelist',
-                                ('/p4/file_1', 'rev 1'),
-                                ('/p4/file_2', 'rev 1'))
+            mock.add_changelist('test_changelist', ('/p4/file_1', 'rev 1'), ('/p4/file_2', 'rev 1'))
 
             self._p4.sync()
-            changelist  = self._p4.get_or_create_changelist('test changelist')
+            changelist = self._p4.get_or_create_changelist('test changelist')
 
             self._p4.edit(changelist, '/p4/file_1')
             self._p4.edit(changelist, '/p4/file_2')
@@ -901,9 +900,9 @@ class _P4Tests(unittest.TestCase):
             self._assert_action_is('/p4/file_2', None)
 
     def test_submit(self):
-        ''' test submit '''
+        '''test submit'''
         with mock_p4():
-            changelist  = self._p4.get_or_create_changelist('test changelist')
+            changelist = self._p4.get_or_create_changelist('test changelist')
 
             nimp.tests.utils.create_file('/p4/file_1', 'rev 1')
             self._p4.add(changelist, '/p4/file_1')
@@ -913,36 +912,31 @@ class _P4Tests(unittest.TestCase):
             self._assert_action_is('/p4/file_1', None)
             self._assert_head_action_is('/p4/file_1', 'add')
 
-            changelist  = self._p4.get_or_create_changelist('test changelist')
+            changelist = self._p4.get_or_create_changelist('test changelist')
             self.assertTrue(self._p4.submit(changelist))
 
     def test_get_modified_files(self):
-        ''' test submit '''
+        '''test submit'''
         with mock_p4() as mock:
-            cl_1 = mock.add_changelist('test_changelist',
-                                       ('/p4/file_1', 'rev 1'),
-                                       ('/p4/file_2', 'rev 1'),
-                                       ('/p4/file_3', 'rev 1'))
+            cl_1 = mock.add_changelist(
+                'test_changelist', ('/p4/file_1', 'rev 1'), ('/p4/file_2', 'rev 1'), ('/p4/file_3', 'rev 1')
+            )
 
-            cl_2 = mock.add_changelist('test_changelist',
-                                       ('/p4/file_2', 'rev 2'),
-                                       ('/p4/file_3', None))
+            cl_2 = mock.add_changelist('test_changelist', ('/p4/file_2', 'rev 2'), ('/p4/file_3', None))
 
-            cl_3 = mock.add_changelist('test_changelist',
-                                       ('/p4/file_3', 'recreated'))
+            cl_3 = mock.add_changelist('test_changelist', ('/p4/file_3', 'recreated'))
 
             cl_1_modified_files = list(self._p4.get_modified_files(cl_1))
             cl_2_modified_files = list(self._p4.get_modified_files(cl_2))
             cl_3_modified_files = list(self._p4.get_modified_files(cl_3))
 
-            self.assertListEqual([('/test_client/file_1', 'add'),
-                                  ('/test_client/file_2', 'add'),
-                                  ('/test_client/file_3', 'add')],
-                                 sorted(cl_1_modified_files))
+            self.assertListEqual(
+                [('/test_client/file_1', 'add'), ('/test_client/file_2', 'add'), ('/test_client/file_3', 'add')],
+                sorted(cl_1_modified_files),
+            )
 
-            self.assertListEqual([('/test_client/file_2', 'add'),
-                                  ('/test_client/file_3', 'add')],
-                                 sorted(cl_2_modified_files))
+            self.assertListEqual(
+                [('/test_client/file_2', 'add'), ('/test_client/file_3', 'add')], sorted(cl_2_modified_files)
+            )
 
-            self.assertListEqual([('/test_client/file_3', 'add')],
-                                 sorted(cl_3_modified_files))
+            self.assertListEqual([('/test_client/file_3', 'add')], sorted(cl_3_modified_files))

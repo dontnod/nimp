@@ -20,14 +20,16 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Dev & Testing related commands '''
+'''Dev & Testing related commands'''
 
 import logging
 
 import nimp.command
 
+
 class Dev(nimp.command.CommandGroup):
-    ''' Dev and test related commands. '''
+    '''Dev and test related commands.'''
+
     def __init__(self):
         super(Dev, self).__init__([_TestLogPatterns()])
 
@@ -37,8 +39,10 @@ class Dev(nimp.command.CommandGroup):
     def is_available(self, env):
         return True, ''
 
+
 class _TestLogPatterns(nimp.command.Command):
-    ''' Reads a file and outputs it to test logging patterns. '''
+    '''Reads a file and outputs it to test logging patterns.'''
+
     def __init__(self):
         super(_TestLogPatterns, self).__init__()
 
@@ -50,8 +54,7 @@ class _TestLogPatterns(nimp.command.Command):
         # really need them.
         super(_TestLogPatterns, self).configure_arguments(env, parser)
 
-        parser.add_argument('input_file',
-                            help = 'The file to pass through logging system')
+        parser.add_argument('input_file', help='The file to pass through logging system')
 
         return True
 

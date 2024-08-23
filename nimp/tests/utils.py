@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' System utilities unit tests '''
+'''System utilities unit tests'''
 
 import abc
 import contextlib
@@ -33,30 +33,33 @@ import nimp.system
 import nimp.sys.platform
 import nimp.sys.process
 
+
 class MockCommand(metaclass=abc.ABCMeta):
-    ''' Used to mock a call to a system command '''
+    '''Used to mock a call to a system command'''
+
     def __init__(self, command):
         self.command = command
 
     @abc.abstractmethod
-    def get_result(self, command, stdin = None):
-        ''' Returns a tuple containing return code, stdout and stderr when
-            calling command '''
+    def get_result(self, command, stdin=None):
+        '''Returns a tuple containing return code, stdout and stderr when
+        calling command'''
+
 
 @contextlib.contextmanager
 def mock_capture_process_output(*mock_commands):
-    ''' Mocks calls to popen '''
+    '''Mocks calls to popen'''
     mock_dict = {}
     for it in mock_commands:
         assert isinstance(it, MockCommand)
         mock_dict[it.command] = it
 
-    def _mock(directory, command, stdin = None, _ = True):
+    def _mock(directory, command, stdin=None, _=True):
         assert directory is not None
         executable = command[0]
         if executable not in mock_dict:
             return (0, '', '')
-        return mock_dict[executable].get_result(command[1:], stdin = stdin)
+        return mock_dict[executable].get_result(command[1:], stdin=stdin)
 
     with unittest.mock.patch('nimp.system.capture_process_output') as mock:
         with unittest.mock.patch('nimp.sys.platform.is_msys') as mock_is_msys:
@@ -64,30 +67,34 @@ def mock_capture_process_output(*mock_commands):
             mock.side_effect = _mock
             yield mock
 
+
 @contextlib.contextmanager
 def mock_call_process():
-    ''' Mocks calls to popen '''
+    '''Mocks calls to popen'''
     with unittest.mock.patch('nimp.sys.process.call') as mock:
         yield mock
 
+
 @contextlib.contextmanager
 def mock_filesystem():
-    ''' Sets up a mock filesystem '''
+    '''Sets up a mock filesystem'''
     patcher = pyfakefs.fake_filesystem_unittest.Patcher()
     patcher.setUp()
     yield patcher.fs
     patcher.tearDown()
 
-def create_file( name, content):
-    ''' Creates a file on the fake file system '''
+
+def create_file(name, content):
+    '''Creates a file on the fake file system'''
     dirname = os.path.dirname(name)
     nimp.system.safe_makedirs(dirname)
     with open(name, 'w') as file_content:
         file_content.write(content)
 
+
 @contextlib.contextmanager
 def dry_run_mock():
-    ''' Mocks methods to not actually perform any operation '''
+    '''Mocks methods to not actually perform any operation'''
     with mock_capture_process_output():
         with mock_call_process():
             yield

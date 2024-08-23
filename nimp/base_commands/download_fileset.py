@@ -20,8 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Downloads a previously uploaded fileset to the local workspace '''
-
+'''Downloads a previously uploaded fileset to the local workspace'''
 
 import copy
 import logging
@@ -35,25 +34,30 @@ import nimp.system
 
 
 class DownloadFileset(nimp.command.Command):
-    ''' Downloads a previously uploaded fileset to the local workspace '''
-
+    '''Downloads a previously uploaded fileset to the local workspace'''
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run', 'free_parameters')
-        parser.add_argument('--revision', metavar = '<revision>', help = 'find a revision equal to this one')
-        parser.add_argument('--max-revision', metavar = '<revision>', help = 'find a revision older or equal to this one')
-        parser.add_argument('--min-revision', metavar = '<revision>', help = 'find a revision newer or equal to this one')
-        parser.add_argument('--destination', metavar = '<path>', help = 'set a destination relative to the workspace')
-        parser.add_argument('--track', choices = [ 'binaries', 'symbols', 'package', 'staged' ], help = 'track the installed revision in the workspace status')
-        parser.add_argument('--prefer-http', action = 'store_true', help = 'If "artifact_http_repository_source" is provided in env, the download will be done through HTTP request intead of file copy')
+        parser.add_argument('--revision', metavar='<revision>', help='find a revision equal to this one')
+        parser.add_argument('--max-revision', metavar='<revision>', help='find a revision older or equal to this one')
+        parser.add_argument('--min-revision', metavar='<revision>', help='find a revision newer or equal to this one')
+        parser.add_argument('--destination', metavar='<path>', help='set a destination relative to the workspace')
+        parser.add_argument(
+            '--track',
+            choices=['binaries', 'symbols', 'package', 'staged'],
+            help='track the installed revision in the workspace status',
+        )
+        parser.add_argument(
+            '--prefer-http',
+            action='store_true',
+            help='If "artifact_http_repository_source" is provided in env, the download will be done through HTTP request intead of file copy',
+        )
 
-        parser.add_argument('fileset', metavar = '<fileset>', help = 'fileset to download')
+        parser.add_argument('fileset', metavar='<fileset>', help='fileset to download')
         return True
-
 
     def is_available(self, env):
         return True, ''
-
 
     def run(self, env):
         api_context = nimp.utils.git.initialize_gitea_api_context(env)
@@ -75,33 +79,49 @@ class DownloadFileset(nimp.command.Command):
         format_arguments = copy.deepcopy(vars(env))
         format_arguments['revision'] = '*'
         logging.info('Searching %s', artifact_uri_pattern.format(**format_arguments))
-        all_artifacts = nimp.system.try_execute(lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments, api_context), OSError)
-        artifact_to_download = DownloadFileset._find_matching_artifact(all_artifacts, env.revision, env.min_revision, env.max_revision, api_context)
+        all_artifacts = nimp.system.try_execute(
+            lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments, api_context), OSError
+        )
+        artifact_to_download = DownloadFileset._find_matching_artifact(
+            all_artifacts, env.revision, env.min_revision, env.max_revision, api_context
+        )
 
         logging.info('Downloading %s%s', artifact_to_download['uri'], ' (simulation)' if env.dry_run else '')
         if not env.dry_run:
-            local_artifact_path = nimp.system.try_execute(lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']), OSError)
+            local_artifact_path = nimp.system.try_execute(
+                lambda: nimp.artifacts.download_artifact(env.root_dir, artifact_to_download['uri']), OSError
+            )
 
-        logging.info('Installing %s in %s%s', artifact_to_download['uri'], install_directory, ' (simulation)' if env.dry_run else '')
+        logging.info(
+            'Installing %s in %s%s',
+            artifact_to_download['uri'],
+            install_directory,
+            ' (simulation)' if env.dry_run else '',
+        )
         if not env.dry_run:
             nimp.artifacts.install_artifact(local_artifact_path, install_directory)
             shutil.rmtree(local_artifact_path)
 
         if env.track:
             workspace_status = nimp.system.load_status(env)
-            old_revision = workspace_status[env.track][env.platform] if env.platform in workspace_status[env.track] else None
-            logging.info('Tracking for %s %s: %s => %s', env.track, env.platform, old_revision, artifact_to_download['revision'])
+            old_revision = (
+                workspace_status[env.track][env.platform] if env.platform in workspace_status[env.track] else None
+            )
+            logging.info(
+                'Tracking for %s %s: %s => %s', env.track, env.platform, old_revision, artifact_to_download['revision']
+            )
             workspace_status[env.track][env.platform] = artifact_to_download['revision']
             if env.track in ['package', 'staged']:
                 if hasattr(env, 'target'):
                     workspace_status[env.track]['variant'] = env.target
                 workspace_status[env.track]['path'] = nimp.system.sanitize_path(artifact_to_download['uri'])
-                workspace_status[env.track]['name'] = os.path.basename(os.path.normpath(workspace_status[env.track]['path']))
+                workspace_status[env.track]['name'] = os.path.basename(
+                    os.path.normpath(workspace_status[env.track]['path'])
+                )
             # if not env.dry_run:
             nimp.system.save_status(env, workspace_status)
 
         return True
-
 
     # TODO: Handle revision comparison when identified by a hash
     @staticmethod
@@ -118,13 +138,20 @@ class DownloadFileset(nimp.command.Command):
                 raise ValueError('Searched commit not found on gitea repo')
 
         if not api_context and (has_revision_input is not None and not has_revision_input.isdigit()):
-            raise ValueError('Revision seems to be a git commit hash but missing gitea api information. Please check project_branches in project configuration.')
+            raise ValueError(
+                'Revision seems to be a git commit hash but missing gitea api information. Please check project_branches in project configuration.'
+            )
 
         try:
             if exact_revision is not None:
                 return next(a for a in all_artifacts if a['sortable_revision'] == exact_revision)
             if minimum_revision is not None and maximum_revision is not None:
-                return next(a for a in all_artifacts if int(a['sortable_revision']) >= int(minimum_revision) and int(a['sortable_revision']) <= int(maximum_revision))
+                return next(
+                    a
+                    for a in all_artifacts
+                    if int(a['sortable_revision']) >= int(minimum_revision)
+                    and int(a['sortable_revision']) <= int(maximum_revision)
+                )
             if minimum_revision is not None:
                 return next(a for a in all_artifacts if int(a['sortable_revision']) >= int(minimum_revision))
             if maximum_revision is not None:

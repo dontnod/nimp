@@ -20,27 +20,24 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Unreal Engine commandlet execution command '''
+'''Unreal Engine commandlet execution command'''
 
 import argparse
 
 import nimp.command
 import nimp.unreal
 
+
 class Commandlet(nimp.command.Command):
-    ''' [DEPRECATED] (use nimp run) Run an Unreal Engine commandlet '''
+    '''[DEPRECATED] (use nimp run) Run an Unreal Engine commandlet'''
+
     def __init__(self):
         super(Commandlet, self).__init__()
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('commandlet',
-                            help    = 'Commandlet name',
-                            metavar = '<command>')
+        parser.add_argument('commandlet', help='Commandlet name', metavar='<command>')
 
-        parser.add_argument('args',
-                            help    = 'Commandlet arguments',
-                            metavar = '<args>',
-                            nargs   = argparse.REMAINDER)
+        parser.add_argument('args', help='Commandlet arguments', metavar='<args>', nargs=argparse.REMAINDER)
 
         return True
 

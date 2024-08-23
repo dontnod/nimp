@@ -30,25 +30,22 @@ logger = logging.getLogger("Jira")
 
 
 class JiraClient:
-
     def __init__(self, url, user, password):
         self.service_url = url
         self.service_user = user
         self.service_password = password
 
-
     def get_fields(self):
-        all_fields = [ { "id": "id", "name": "Id", "schema": { "type": "string" } } ]
+        all_fields = [{"id": "id", "name": "Id", "schema": {"type": "string"}}]
         all_fields += self.api_get("field")
 
         for field in all_fields:
             if field["id"] == "issuekey":
-                field["schema"] = { "type": "string" }
+                field["schema"] = {"type": "string"}
 
         return all_fields
 
-
-    def search_issues(self, query, skip = 0, limit = None):
+    def search_issues(self, query, skip=0, limit=None):
         results = []
         results_count = 0
         expected_count = limit
@@ -67,9 +64,12 @@ class JiraClient:
 
         return results
 
-
-    def api_get(self, relative_url, parameters = None):
+    def api_get(self, relative_url, parameters=None):
         parameters = parameters if parameters is not None else {}
-        response = requests.get(self.service_url + "/rest/api/2/" + relative_url, params = parameters, auth = (self.service_user, self.service_password))
+        response = requests.get(
+            self.service_url + "/rest/api/2/" + relative_url,
+            params=parameters,
+            auth=(self.service_user, self.service_password),
+        )
         response.raise_for_status()
         return response.json()

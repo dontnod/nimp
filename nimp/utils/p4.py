@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Perforce utilities '''
+'''Perforce utilities'''
 
 import argparse
 import logging
@@ -39,72 +39,68 @@ Status: pending\n\
 Description:\n\
         {description}"
 
+
 def add_arguments(parser):
-    ''' Adds p4port, p4user, p4pass and p4client arguments to a command argument
-        parser. Then you can Use :func:`nimp.utils.p4.sanitize` in your
-        :func:`Command.sanitize` override to report Perforce misconfiguration. '''
+    '''Adds p4port, p4user, p4pass and p4client arguments to a command argument
+    parser. Then you can Use :func:`nimp.utils.p4.sanitize` in your
+    :func:`Command.sanitize` override to report Perforce misconfiguration.'''
     assert isinstance(parser, argparse.ArgumentParser)
-    parser.add_argument('-P4Port', '--p4port',
-                        help = 'Perforce port',
-                        type = str)
+    parser.add_argument('-P4Port', '--p4port', help='Perforce port', type=str)
 
-    parser.add_argument('-P4User', '--p4user',
-                        help = 'Perforce user',
-                        type = str)
+    parser.add_argument('-P4User', '--p4user', help='Perforce user', type=str)
 
-    parser.add_argument('-P4Passwd', '--p4pass',
-                        help = 'Perforce pass',
-                        type = str)
+    parser.add_argument('-P4Passwd', '--p4pass', help='Perforce pass', type=str)
 
-    parser.add_argument('-P4Client', '--p4client',
-                        help = 'Perforce workspace',
-                        type = str)
+    parser.add_argument('-P4Client', '--p4client', help='Perforce workspace', type=str)
 
-    parser.add_argument('-AutoSubmit', '--auto-submit',
-                        action='store_true',
-                        help = 'Submit automatically')
+    parser.add_argument('-AutoSubmit', '--auto-submit', action='store_true', help='Submit automatically')
 
-    parser.add_argument('-AutoCheckout', '--auto-checkout',
-                        action='store_true',
-                        help = 'Checkout automatically')
+    parser.add_argument('-AutoCheckout', '--auto-checkout', action='store_true', help='Checkout automatically')
+
 
 def check_for_p4(env):
-    ''' Checks for perforce availability.
-        This will print an error message if perforce can't be used. '''
+    '''Checks for perforce availability.
+    This will print an error message if perforce can't be used.'''
     p4 = get_client(env)
     if p4.get_workspace() is None:
-        logging.error(('An error occured while checking Perforce availability. '
-                       'Please check that p4 is in your path, and either you '
-                       'specified correct p4port, p4client, p4user and p4pass '
-                       'on the command line, either your p4 environment '
-                       'settings are correctily set'))
+        logging.error(
+            (
+                'An error occured while checking Perforce availability. '
+                'Please check that p4 is in your path, and either you '
+                'specified correct p4port, p4client, p4user and p4pass '
+                'on the command line, either your p4 environment '
+                'settings are correctily set'
+            )
+        )
         return False
     return True
 
 
 def get_client(env):
-    ''' Returns a p4 client initialized with parameters from the environment.
-        Use the :func:`nimp.utils.p4.add_arguments` method to add needed
-        arguments to a command sub-parser '''
+    '''Returns a p4 client initialized with parameters from the environment.
+    Use the :func:`nimp.utils.p4.add_arguments` method to add needed
+    arguments to a command sub-parser'''
     assert isinstance(env, nimp.environment.Environment)
-    port   = env.p4port   if hasattr(env, 'p4port') else None
-    user   = env.p4user   if hasattr(env, 'p4user') else None
-    pwd    = env.p4pass   if hasattr(env, 'p4pass') else None
+    port = env.p4port if hasattr(env, 'p4port') else None
+    user = env.p4user if hasattr(env, 'p4user') else None
+    pwd = env.p4pass if hasattr(env, 'p4pass') else None
     client = env.p4client if hasattr(env, 'p4client') else None
     return P4(port, user, pwd, client)
 
-class P4:
-    ''' P4 Client '''
-    #pylint: disable=too-many-public-methods
 
-    def __init__(self, port = None, user = None, password = None, client = None):
+class P4:
+    '''P4 Client'''
+
+    # pylint: disable=too-many-public-methods
+
+    def __init__(self, port=None, user=None, password=None, client=None):
         self._port = port
         self._user = user
         self._password = password
         self._client = client
 
     def add(self, cl_number, path):
-        ''' Adds a file to source control '''
+        '''Adds a file to source control'''
         assert isinstance(cl_number, str)
         assert isinstance(path, str)
         # Use -f to allow filenames with # * @ % characters
@@ -112,7 +108,7 @@ class P4:
         return output is not None
 
     def clean_workspace(self):
-        ''' Revert and deletes all pending changelists in current workspace '''
+        '''Revert and deletes all pending changelists in current workspace'''
         result = True
         self._run("revert", "//...")
         pending_changelists = self.get_pending_changelists()
@@ -125,19 +121,19 @@ class P4:
         return result
 
     def delete(self, cl_number, path):
-        ''' Deletes given file in given changelist '''
+        '''Deletes given file in given changelist'''
         assert isinstance(cl_number, str)
         output = self._run("delete", "-c", cl_number, path)
         return output is not None
 
     def delete_changelist(self, cl_number):
-        ''' Deletes a changelist from client '''
+        '''Deletes a changelist from client'''
         output = self._run("change", "-d", cl_number)
         return output is not None
 
     def get_files_status(self, *files):
-        ''' Returns a tuple containing file name, head action and local action for
-            all files given '''
+        '''Returns a tuple containing file name, head action and local action for
+        all files given'''
         files = [self._escape_filename(x) for x in files]
         for i, filename in enumerate(files):
             if os.path.isdir(filename):
@@ -145,7 +141,7 @@ class P4:
 
         command = self._get_p4_command('-x', '-', 'fstat')
         _, output, error = nimp.sys.process.call(command, stdin='\n'.join(files), capture_output=True)
-        files_infos = (output .strip()+ '\n\n' + error.strip()).strip().replace('\r', '').split('\n\n')
+        files_infos = (output.strip() + '\n\n' + error.strip()).strip().replace('\r', '').split('\n\n')
 
         for file_info in files_infos:
             file_info = file_info.strip()
@@ -159,9 +155,9 @@ class P4:
             if 'is not under client\'s root' in file_info:
                 continue
 
-            file_name_match   = re.search(r"\.\.\.\s*clientFile\s*(.*)", file_info)
+            file_name_match = re.search(r"\.\.\.\s*clientFile\s*(.*)", file_info)
             head_action_match = re.search(r"\.\.\.\s*headAction\s*(\w*)", file_info)
-            action_match      = re.search(r"\.\.\.\s*action\s*(\w*)", file_info)
+            action_match = re.search(r"\.\.\.\s*action\s*(\w*)", file_info)
 
             assert file_name_match is not None
 
@@ -180,7 +176,7 @@ class P4:
             yield (file_name, head_action, action)
 
     def edit(self, cl_number, *files):
-        ''' Open given file for input in given changelist '''
+        '''Open given file for input in given changelist'''
         files_to_edit = []
         for file_name, head_action, _ in self.get_files_status(*files):
             if head_action == "delete":
@@ -190,30 +186,28 @@ class P4:
             files_to_edit.append(self._escape_filename(file_name))
 
         edit_input = '\n'.join(files_to_edit)
-        output = self._run('-x', '-', "edit", "-c",
-                           cl_number, stdin=edit_input)
+        output = self._run('-x', '-', "edit", "-c", cl_number, stdin=edit_input)
         return output is not None
 
     def reconcile(self, cl_number, *files):
-        ''' Reconciles given files in given cl '''
+        '''Reconciles given files in given cl'''
 
         files = [self._escape_filename(x) for x in files]
         ret = True
 
         # List all currently edited depot files in our changelist
         edited_files = []
-        for depot_file, action in self._parse_command_output(['describe', cl_number],
-                                                             r'^\.\.\. depotFile\d* (.*)$',
-                                                             r'^\.\.\. action\d* (.*)$'):
+        for depot_file, action in self._parse_command_output(
+            ['describe', cl_number], r'^\.\.\. depotFile\d* (.*)$', r'^\.\.\. action\d* (.*)$'
+        ):
             if action == 'edit':
                 edited_files.append(depot_file)
 
         # Find edited files that no longer exist on the filesystem
         files_to_delete = []
-        for depot_file, path in self._parse_command_output(['-x', '-', 'where'],
-                                                           r'^\.\.\. depotFile\d* (.*)$',
-                                                           r'^\.\.\. path\d* (.*)$',
-                                                           stdin='\n'.join(edited_files)):
+        for depot_file, path in self._parse_command_output(
+            ['-x', '-', 'where'], r'^\.\.\. depotFile\d* (.*)$', r'^\.\.\. path\d* (.*)$', stdin='\n'.join(edited_files)
+        ):
             if not os.path.exists(path):
                 logging.debug('Manually reverting and deleting checked out and missing file %s', path)
                 files_to_delete.append(path)
@@ -237,19 +231,21 @@ class P4:
         return ret
 
     def get_changelist_description(self, cl_number):
-        ''' Returns description of given changelist '''
-        desc, = next(self._parse_command_output(["describe", cl_number], r"\.\.\. desc (.*)"))
+        '''Returns description of given changelist'''
+        (desc,) = next(self._parse_command_output(["describe", cl_number], r"\.\.\. desc (.*)"))
         return desc
 
     def get_current_changelist(self, path):
-        ''' Returns the current changelist for the workspace '''
+        '''Returns the current changelist for the workspace'''
         perforce_path = (nimp.system.sanitize_path(path) + '/...') if path else '...'
-        cl_number, = next(self._parse_command_output(['changes', '--max', '1', perforce_path + '#have'], r'\.\.\. change (\d+)'))
+        (cl_number,) = next(
+            self._parse_command_output(['changes', '--max', '1', perforce_path + '#have'], r'\.\.\. change (\d+)')
+        )
         return cl_number
 
     def get_last_synced_changelist(self):
-        ''' Returns the last synced changelist '''
-        cl_number, = next(self._parse_command_output(['changes', '-s', 'submitted', '-m 1'], r'\.\.\. change (\d+)'))
+        '''Returns the last synced changelist'''
+        (cl_number,) = next(self._parse_command_output(['changes', '-s', 'submitted', '-m 1'], r'\.\.\. change (\d+)'))
 
         if cl_number is None:
             return None
@@ -257,7 +253,7 @@ class P4:
         return cl_number
 
     def get_or_create_changelist(self, description):
-        ''' Creates or returns changelist number if it's not already created '''
+        '''Creates or returns changelist number if it's not already created'''
         pending_changelists = self.get_pending_changelists()
 
         for cl_number in pending_changelists:
@@ -269,34 +265,38 @@ class P4:
                 return cl_number
 
         user = self.get_user()
-        change_list_form = _CREATE_CHANGELIST_FORM_TEMPLATE.format(user        = user,
-                                                                   workspace   = self.get_workspace(),
-                                                                   description = description)
+        change_list_form = _CREATE_CHANGELIST_FORM_TEMPLATE.format(
+            user=user, workspace=self.get_workspace(), description=description
+        )
 
-        for changelist, in self._parse_command_output(["change", "-i"], r"Change (\d+) created\.", stdin = change_list_form):
+        for (changelist,) in self._parse_command_output(
+            ["change", "-i"], r"Change (\d+) created\.", stdin=change_list_form
+        ):
             return changelist
 
     def get_pending_changelists(self):
-        ''' Returns pending changelists '''
+        '''Returns pending changelists'''
         workspace = self.get_workspace()
         assert isinstance(workspace, str)
-        for changelist, in self._parse_command_output(["changes", "-c", workspace, "-s", "pending"], r"\.\.\. change (\d+)"):
+        for (changelist,) in self._parse_command_output(
+            ["changes", "-c", workspace, "-s", "pending"], r"\.\.\. change (\d+)"
+        ):
             if changelist is not None:
                 yield changelist
 
     def get_user(self):
-        ''' Returns current perforce user '''
+        '''Returns current perforce user'''
         return next(self._parse_command_output(["user", "-o"], r"^\.\.\. User (.*)$"))[0]
 
     def get_workspace(self):
-        ''' Returns current workspace '''
-        workspace =  next(self._parse_command_output(["info"], r"^\.\.\. clientName (.*)$"))[0]
+        '''Returns current workspace'''
+        workspace = next(self._parse_command_output(["info"], r"^\.\.\. clientName (.*)$"))[0]
         if workspace == '*unknown*':
             return None
         return workspace
 
     def is_file_versioned(self, file_path):
-        ''' Checks if a file is known by the source control '''
+        '''Checks if a file is known by the source control'''
         command = self._get_p4_command("fstat", file_path)
         _, output, error = nimp.sys.process.call(command, capture_output=True)
         # Checks if the file was not added then deleted
@@ -305,7 +305,7 @@ class P4:
         return "no such file(s)" not in error and "file(s) not in client" not in error
 
     def revert(self, *files):
-        ''' Reverts given files (regardless of the changelist they're edited in) '''
+        '''Reverts given files (regardless of the changelist they're edited in)'''
         files_to_revert = []
         for file_name, _, action in self.get_files_status(*files):
             if action != "edit":
@@ -319,17 +319,17 @@ class P4:
         return output is not None
 
     def revert_changelist(self, cl_number):
-        ''' Reverts given changelist '''
+        '''Reverts given changelist'''
         output = self._run('revert', '-c', cl_number, '//...')
         return output is not None
 
     def revert_unchanged(self, cl_number):
-        ''' Reverts unchanged files in given changelist '''
+        '''Reverts unchanged files in given changelist'''
         output = self._run('revert', '-a', '-c', cl_number, '//...')
         return output is not None
 
     def submit(self, cl_number):
-        ''' Submits given changelist '''
+        '''Submits given changelist'''
         logging.info("Submiting changelist %s...", cl_number)
         command = self._get_p4_command('submit', '-f', 'revertunchanged', '-c', cl_number)
         _, _, error = nimp.sys.process.call(command, capture_output=True)
@@ -343,8 +343,8 @@ class P4:
 
         return True
 
-    def sync(self, *files, cl_number = None):
-        ''' Udpate given file '''
+    def sync(self, *files, cl_number=None):
+        '''Udpate given file'''
         command = ["sync"]
 
         file_list = [self._escape_filename(x) for x in files]
@@ -360,23 +360,19 @@ class P4:
 
         return True
 
-    def get_modified_files(self, *cl_numbers, root = '//...'):
-        ''' Returns files modified by given changelists '''
+    def get_modified_files(self, *cl_numbers, root='//...'):
+        '''Returns files modified by given changelists'''
         for cl_number in cl_numbers:
-            for filename, action in self._parse_command_output(["fstat", "-e", cl_number , root],
-                                                               r"^\.\.\. depotFile(.*)$",
-                                                               r"^\.\.\. headAction(.*)",
-                                                               hide_output=True):
+            for filename, action in self._parse_command_output(
+                ["fstat", "-e", cl_number, root], r"^\.\.\. depotFile(.*)$", r"^\.\.\. headAction(.*)", hide_output=True
+            ):
                 filename = os.path.normpath(filename) if filename is not None else ''
                 yield filename, action
 
     @staticmethod
     def _escape_filename(name):
         # As per https://www.perforce.com/perforce/r15.1/manuals/cmdref/filespecs.html
-        return name.replace('%', '%25') \
-                   .replace('@', '%40') \
-                   .replace('#', '%23') \
-                   .replace('*', '%2A')
+        return name.replace('%', '%25').replace('@', '%40').replace('#', '%23').replace('*', '%2A')
 
     def _get_p4_command(self, *args):
         command = ['p4', '-z', 'tag']
@@ -396,15 +392,15 @@ class P4:
         command = self._get_p4_command(*args)
 
         for _ in range(5):
-            result, output, error = nimp.sys.process.call(command, stdin=stdin, encoding=encoding, capture_output=True, hide_output=hide_output)
+            result, output, error = nimp.sys.process.call(
+                command, stdin=stdin, encoding=encoding, capture_output=True, hide_output=hide_output
+            )
 
             if 'Operation took too long ' in error:
                 continue
 
             has_fatal_errors = False
-            if 'can\'t update' in error or \
-               'can\'t clobber' in error or \
-               'can\'t overwrite' in error:
+            if 'can\'t update' in error or 'can\'t clobber' in error or 'can\'t overwrite' in error:
                 has_fatal_errors = True
 
             if result != 0 or has_fatal_errors:
@@ -413,8 +409,8 @@ class P4:
 
             return output
 
-    def _parse_command_output(self, command, *patterns, stdin = None, hide_output = False, encoding='cp437'):
-        output = self._run(*command, stdin = stdin, hide_output = hide_output, encoding=encoding)
+    def _parse_command_output(self, command, *patterns, stdin=None, hide_output=False, encoding='cp437'):
+        output = self._run(*command, stdin=stdin, hide_output=hide_output, encoding=encoding)
 
         if output is not None:
             match_list = []

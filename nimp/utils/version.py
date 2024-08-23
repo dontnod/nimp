@@ -20,11 +20,10 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Misc utilities '''
+'''Misc utilities'''
 
 
 def is_newer(str_a, str_b):
-
     tokens_a, tokens_b = str_a.split('.'), str_b.split('.')
 
     for a, b in zip(tokens_a, tokens_b):

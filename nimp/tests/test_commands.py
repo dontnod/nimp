@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' System utilities unit tests '''
+'''System utilities unit tests'''
 
 import unittest
 import unittest.mock
@@ -28,9 +28,9 @@ import unittest.mock
 import nimp.tests.utils
 import nimp.nimp_cli
 
-class _CommandTests(unittest.TestCase):
 
+class _CommandTests(unittest.TestCase):
     def test_build(self):
-        ''' Checks if adding files to perforce is working '''
+        '''Checks if adding files to perforce is working'''
         self.assertEqual(nimp.nimp_cli.main(['nimp', 'check', 'processes']), 0)
         self.assertEqual(nimp.nimp_cli.main(['nimp', 'check', 'status']), 0)

@@ -7,7 +7,8 @@ import re
 
 
 class FilteredLogging(object):
-    """ Context manager to filter logging with given python filter objects as params """
+    """Context manager to filter logging with given python filter objects as params"""
+
     def __init__(self, *filters):
         self.context_logger = logging.getLogger()
         self.filters = filters
@@ -26,13 +27,15 @@ class FilteredLogging(object):
 
 
 class SensitiveDataFilter(logging.Filter):
-    """ Custom filter to hide specific information from logging stream """
+    """Custom filter to hide specific information from logging stream"""
+
     def __init__(self, *args):
         super().__init__()
         self.pattern = re.compile(rf"({'|'.join(re.escape(a) for a in args)})")
 
     def hide_record_args(self, args, hide_string):
-        """ record args can be of various types, str, list, int """
+        """record args can be of various types, str, list, int"""
+
         def _hide_if_is_str(string_to_hide):
             if not isinstance(string_to_hide, str):
                 return string_to_hide

@@ -20,7 +20,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' System utilities unit tests '''
+'''System utilities unit tests'''
+
 import os
 
 import unittest.mock
@@ -41,6 +42,7 @@ def test_decorator(f):
 
     return wrapper
 
+
 @contextmanager
 def cwd(path):
     oldpwd = os.getcwd()
@@ -50,15 +52,17 @@ def cwd(path):
     finally:
         os.chdir(oldpwd)
 
+
 class _UnrealTests(unittest.TestCase):
     '''
-        Environment variables needed:
-            - TEST_GAME_CODE
-            - TEST_WORKSPACE_DIR
-            - P4PORT [optional]
-            - P4USER [optional]
-            - P4CLIENT [optional]
+    Environment variables needed:
+        - TEST_GAME_CODE
+        - TEST_WORKSPACE_DIR
+        - P4PORT [optional]
+        - P4USER [optional]
+        - P4CLIENT [optional]
     '''
+
     GAME_CODE = os.getenv('TEST_GAME_CODE')
     WORKSPACE_DIR = os.getenv('TEST_WORKSPACE_DIR')
     WORKSPACE_BRANCH = os.getenv('TEST_WORKSPACE_BRANCH', 'main')
@@ -71,20 +75,41 @@ class _UnrealTests(unittest.TestCase):
     P4_CLIENT = os.getenv('P4CLIENT')
 
     def _get_common_nimp_cmd(self, is_dry_run=True):
-        cmd_nimp = ['nimp', '-v', '--uproject', f'{self.GAME_CODE}/{self.GAME_CODE}.UPROJECT',
-                    '--branch', self.WORKSPACE_BRANCH,
-                    'run', 'commandlet']
+        cmd_nimp = [
+            'nimp',
+            '-v',
+            '--uproject',
+            f'{self.GAME_CODE}/{self.GAME_CODE}.UPROJECT',
+            '--branch',
+            self.WORKSPACE_BRANCH,
+            'run',
+            'commandlet',
+        ]
         if is_dry_run:
             cmd_nimp.append('--dry-run')
         return cmd_nimp
 
     def _get_common_p4(self):
-        return ['-SCCProvider=Perforce', f'-P4Port={self.P4_PORT}', f'-P4Port={self.P4_USER}', f'-P4Client={self.P4_CLIENT}']
+        return [
+            '-SCCProvider=Perforce',
+            f'-P4Port={self.P4_PORT}',
+            f'-P4Port={self.P4_USER}',
+            f'-P4Client={self.P4_CLIENT}',
+        ]
 
     @test_decorator
     def test_loadpackage(self):
-        cmd_to_test = self._get_common_nimp_cmd(is_dry_run=False) + \
-                      ['--', 'loadpackage', '-crashreports', '-skipmaps', '-nodev', '-notiled', '-fast',
-                       '-projectonly', '-nopreprod', '*Layout*.uasset']
+        cmd_to_test = self._get_common_nimp_cmd(is_dry_run=False) + [
+            '--',
+            'loadpackage',
+            '-crashreports',
+            '-skipmaps',
+            '-nodev',
+            '-notiled',
+            '-fast',
+            '-projectonly',
+            '-nopreprod',
+            '*Layout*.uasset',
+        ]
         with cwd(self.GAME_PATH):
             self.assertEqual(0, nimp.nimp_cli.main(cmd_to_test))

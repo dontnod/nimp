@@ -1,12 +1,12 @@
-
 import glob
 import logging
 
 from nimp.base_platforms.basegdk import BaseGDK
 import nimp.sys.process
 
+
 class WinGDK(BaseGDK):
-    ''' WinGDK platform description '''
+    '''WinGDK platform description'''
 
     def __init__(self, env):
         super().__init__(env)
@@ -14,7 +14,6 @@ class WinGDK(BaseGDK):
         self.unreal_name = 'WinGDK'
         self.unreal_config_name = 'WinGDK'
         self.unreal_cook_name = 'WinGDK'
-        
 
     def install_package(self, package_directory, env):
         msixvcs = glob.glob(package_directory + '/*.msixvc')
@@ -26,12 +25,9 @@ class WinGDK(BaseGDK):
                 logging.info('\t\t' + msixvc)
             raise RuntimeError('Multiple msixvc files in ' + package_directory)
 
-        args = [ 'install', msixvcs[0] ]
+        args = ['install', msixvcs[0]]
 
         return WinGDK.wdapp(args, env.dry_run)
-
-
-
 
     WDAPP = BaseGDK.GDK + '\\bin\\wdapp.exe'
 

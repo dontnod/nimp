@@ -1,4 +1,5 @@
-''' Main Nimp modules '''
+'''Main Nimp modules'''
+
 from pathlib import Path
 
 # you can use os.path and open() as well

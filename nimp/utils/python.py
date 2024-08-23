@@ -1,5 +1,4 @@
-
-''' Helper functions for module handling '''
+'''Helper functions for module handling'''
 
 import inspect
 import logging
@@ -13,12 +12,13 @@ def get_class_instances(module, instance_type, result, instance_args=[], instanc
         for sub_module_name_it in sub_modules_names:
             sub_module_complete_name = f'{module_name}.{sub_module_name_it}'
             try:
-                sub_module_it = __import__(sub_module_complete_name, fromlist = ['*'])
+                sub_module_it = __import__(sub_module_complete_name, fromlist=['*'])
             except (ImportError, TabError) as ex:
                 logging.warning('Error importing module %s: %s', sub_module_complete_name, ex)
                 continue
-            get_class_instances(sub_module_it, instance_type, result,
-                                instance_args=instance_args, instance_kwargs=instance_kwargs)
+            get_class_instances(
+                sub_module_it, instance_type, result, instance_args=instance_args, instance_kwargs=instance_kwargs
+            )
 
     module_attributes = dir(module)
     for attribute_name in module_attributes:

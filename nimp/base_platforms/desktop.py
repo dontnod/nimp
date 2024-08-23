@@ -1,8 +1,8 @@
-
 import nimp.sys.platform
 
+
 class Win32(nimp.sys.platform.Platform):
-    ''' Win32 platform description '''
+    '''Win32 platform description'''
 
     def __init__(self, env):
         super().__init__(env)
@@ -20,7 +20,7 @@ class Win32(nimp.sys.platform.Platform):
 
 
 class Win64(nimp.sys.platform.Platform):
-    ''' Win64 platform description '''
+    '''Win64 platform description'''
 
     def __init__(self, env):
         super().__init__(env)
@@ -38,12 +38,15 @@ class Win64(nimp.sys.platform.Platform):
 
     def launch_package(self, package_name, env):
         if not package_name:
-            package_name = env.uproject_dir + '/Saved/Packages/' + self.unreal_cook_name + '/Default/' + env.game + '.exe'
-        result = nimp.sys.process.call([ package_name ])
+            package_name = (
+                env.uproject_dir + '/Saved/Packages/' + self.unreal_cook_name + '/Default/' + env.game + '.exe'
+            )
+        result = nimp.sys.process.call([package_name])
         return result == 0
 
+
 class Linux(nimp.sys.platform.Platform):
-    ''' Linux platform description '''
+    '''Linux platform description'''
 
     def __init__(self, env):
         super().__init__(env)
@@ -59,7 +62,7 @@ class Linux(nimp.sys.platform.Platform):
 
 
 class Mac(nimp.sys.platform.Platform):
-    ''' Mac platform description '''
+    '''Mac platform description'''
 
     def __init__(self, env):
         super().__init__(env)

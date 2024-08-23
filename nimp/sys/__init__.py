@@ -20,10 +20,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' System functions '''
+'''System functions'''
 
-__all__ = [
-    'logging',
-    'platform',
-    'process'
-]
+__all__ = ['logging', 'platform', 'process']

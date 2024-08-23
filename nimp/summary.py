@@ -20,8 +20,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Class and function relative to the nimp environment, i.e. configuration
-values and command line parameters set for this nimp execution '''
+'''Class and function relative to the nimp environment, i.e. configuration
+values and command line parameters set for this nimp execution'''
 
 import collections
 import logging
@@ -30,10 +30,12 @@ import os
 import re
 import sys
 
+
 class SummaryHandler(logging.Handler):
-    """ Base class for summary handler.
-        Summary handlers are responsible for parsing output log and outputing
-        a comprehensive summary of what went wrong """
+    """Base class for summary handler.
+    Summary handlers are responsible for parsing output log and outputing
+    a comprehensive summary of what went wrong"""
+
     def __init__(self, env):
         super().__init__(logging.DEBUG)
 
@@ -51,26 +53,21 @@ class SummaryHandler(logging.Handler):
 
         error_patterns = [
             # GCC
-            r'[\/\w\W\-. ]+:\d+:\d+: (fatal )?error: .*', # GCC errors
-            r'[\/\w\W\-. ]+:\d+: undefined reference to .*', # GCC linker error
-
+            r'[\/\w\W\-. ]+:\d+:\d+: (fatal )?error: .*',  # GCC errors
+            r'[\/\w\W\-. ]+:\d+: undefined reference to .*',  # GCC linker error
             # Clang
             r'[\/\w\W\-. ]+\(\d+,\d+\): (fatal ?)error : .*',
             r'[\/\w\W\-. ]+ : error : [A-Z0-9]+: reference to undefined symbol.*',
             r'^duplicate symbol \w+ in:',
             r': multiple definition of ',
             r'clang: error: no such file or directory:.*',
-
-            #.NET / Mono
+            # .NET / Mono
             r'[\/\w\W\-. ]+\(\d+,\d+\) : error [A-Z\d]+: .*',
-
             # MSVC
             r'[\/\w\W\-. ]+\(\d+\): error [A-Z\d]+: .*',
             r'[\/\w\W\-. ]+\ : error [A-Z\d]+: unresolved external symbol .*',
-
             # PS4 SDK (Orbis)
             r'\[Error\]\t.*',
-
             # XboxOne SDK
             r' - Error Code: .*',
             r'Package was not created, error = .*',
@@ -81,32 +78,24 @@ class SummaryHandler(logging.Handler):
         ]
 
         warning_patterns = [
-            r'[\/\w\W\-.: ]+\(\d+,\d+\) : warning [A-Z\d]+: .*', # MSVC .NET / Mono
-            r'[\/\w\W\-.: ]+:\d+:\d+: warning: .*', # GCC
-            r'[\/\w\W\-.: ]+\(\d+,\d+\): warning : .*', # Clang
-            r'[\/\w\W\-.: ]+\(\d+\): warning [A-Z\d]+: .*', # MSVC
-            r'\[Warn\]\t.*', # PS4 SDK (Orbis)
+            r'[\/\w\W\-.: ]+\(\d+,\d+\) : warning [A-Z\d]+: .*',  # MSVC .NET / Mono
+            r'[\/\w\W\-.: ]+:\d+:\d+: warning: .*',  # GCC
+            r'[\/\w\W\-.: ]+\(\d+,\d+\): warning : .*',  # Clang
+            r'[\/\w\W\-.: ]+\(\d+\): warning [A-Z\d]+: .*',  # MSVC
+            r'\[Warn\]\t.*',  # PS4 SDK (Orbis)
         ]
 
         ignore_patterns = [
             r'  WARNING - appdata.bin is being created automatically for this package',
         ]
 
-        self._compile_patterns(ignore_patterns,
-                               'ignore_patterns',
-                               self._ignore_patterns)
+        self._compile_patterns(ignore_patterns, 'ignore_patterns', self._ignore_patterns)
 
-        self._compile_patterns(error_patterns,
-                               'error_patterns',
-                               self._error_patterns)
+        self._compile_patterns(error_patterns, 'error_patterns', self._error_patterns)
 
-        self._compile_patterns(warning_patterns,
-                               'warning_patterns',
-                               self._warning_patterns)
+        self._compile_patterns(warning_patterns, 'warning_patterns', self._warning_patterns)
 
-        self._compile_patterns([],
-                               'context_patterns',
-                               self._context_patterns)
+        self._compile_patterns([], 'context_patterns', self._context_patterns)
 
     def _compile_patterns(self, patterns, key, destination):
         config_key = 'summary_%s' % key
@@ -118,10 +107,9 @@ class SummaryHandler(logging.Handler):
         for pattern in patterns:
             try:
                 destination.append(re.compile(pattern))
-            #pylint: disable=broad-except
+            # pylint: disable=broad-except
             except Exception as ex:
-                logging.error('Error while compiling pattern %s: %s',
-                              pattern, ex)
+                logging.error('Error while compiling pattern %s: %s', pattern, ex)
 
     def __enter__(self):
         # Sets up logging
@@ -135,8 +123,7 @@ class SummaryHandler(logging.Handler):
         for handler in list(logging.root.handlers):
             root_logger.removeHandler(handler)
 
-        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s',
-                            level=log_level)
+        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=log_level)
 
         child_processes_logger = logging.getLogger('child_processes')
         child_processes_logger.propagate = False
@@ -165,11 +152,11 @@ class SummaryHandler(logging.Handler):
                     self._write_summary(out)
 
     def has_errors(self):
-        ''' Returns true if errors were emitted during program execution '''
+        '''Returns true if errors were emitted during program execution'''
         return len(self._summary['errors']) > 0
 
     def has_warnings(self):
-        ''' Returns true if warnings were emitted during program execution '''
+        '''Returns true if warnings were emitted during program execution'''
         return len(self._summary['warnings']) > 0
 
     def emit(self, record):
@@ -213,8 +200,9 @@ class SummaryHandler(logging.Handler):
 
 
 class DefaultSummaryHandler(SummaryHandler):
-    """ Default summary handler, showing one line by error / warning and
-    adding three lines of context before / after errors """
+    """Default summary handler, showing one line by error / warning and
+    adding three lines of context before / after errors"""
+
     def __init__(self, env):
         super().__init__(env)
         self._context = collections.deque([], 4)
@@ -237,6 +225,6 @@ class DefaultSummaryHandler(SummaryHandler):
         self._summary[f'{notif_lvl}s'].append(f'[ {notif_lvl.upper()} ] {msg}\n')
 
     def _write_summary(self, destination):
-        ''' Writes summary to destination '''
+        '''Writes summary to destination'''
         for lvl in ['errors', 'warnings']:
             destination.writelines(self._summary[lvl])

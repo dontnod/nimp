@@ -20,15 +20,17 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Nimp profiling utilities '''
+'''Nimp profiling utilities'''
 
 from contextlib import contextmanager
 
 try:
     from nimp.plugins.dne.agrou import profiling
+
     IS_PROFILING_API_AVAILABLE = True
 except ImportError:
     IS_PROFILING_API_AVAILABLE = False
+
 
 @contextmanager
 def nimp_profile(env):

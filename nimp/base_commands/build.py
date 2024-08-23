@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Build commands '''
+'''Build commands'''
 
 import logging
 import os
@@ -31,45 +31,41 @@ import nimp.command
 import nimp.environment
 import nimp.unreal_engine.build
 
+
 class Build(nimp.command.Command):
-    ''' Build a project '''
+    '''Build a project'''
+
     def __init__(self):
         super(Build, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser,
-                                          'platform',
-                                          'configuration',
-                                          'target',
-                                          'revision')
+        nimp.command.add_common_arguments(parser, 'platform', 'configuration', 'target', 'revision')
 
-        parser.add_argument('--sln',
-                            help='Visual Studio solution to build)',
-                            metavar = '<sln>')
+        parser.add_argument('--sln', help='Visual Studio solution to build)', metavar='<sln>')
 
-        parser.add_argument('--bootstrap',
-                            help='bootstrap or regenerate project files, if applicable',
-                            action='store_true')
+        parser.add_argument(
+            '--bootstrap', help='bootstrap or regenerate project files, if applicable', action='store_true'
+        )
 
-        parser.add_argument('--disable-unity',
-                            help='disable unity build',
-                            action='store_true')
+        parser.add_argument('--disable-unity', help='disable unity build', action='store_true')
 
-        parser.add_argument('--fastbuild',
-                            help='activate FASTBuild (implies --disable-unity for now)',
-                            action='store_true')
+        parser.add_argument(
+            '--fastbuild', help='activate FASTBuild (implies --disable-unity for now)', action='store_true'
+        )
 
-        parser.add_argument('--vs-version',
-                            help='version of Visual Studio to use, if applicable',
-                            default=(env.vs_version if hasattr(env, 'vs_version') else None))
+        parser.add_argument(
+            '--vs-version',
+            help='version of Visual Studio to use, if applicable',
+            default=(env.vs_version if hasattr(env, 'vs_version') else None),
+        )
 
-        parser.add_argument('--enable-binaries-versioning',
-                            help='activate binaries versioning, useful for build systems',
-                            action='store_true')
+        parser.add_argument(
+            '--enable-binaries-versioning',
+            help='activate binaries versioning, useful for build systems',
+            action='store_true',
+        )
 
-        parser.add_argument('--verbose',
-                            help='activate most verbose mode when available',
-                            action='store_true')
+        parser.add_argument('--verbose', help='activate most verbose mode when available', action='store_true')
 
         return True
 
@@ -77,7 +73,6 @@ class Build(nimp.command.Command):
         return True, ''
 
     def run(self, env):
-
         # Special support for Unreal projects
         if env.is_unreal:
             env.ubt_version = False
@@ -112,12 +107,16 @@ class Build(nimp.command.Command):
             config = env.configuration
 
         if hasattr(env, 'bootstrap') and env.bootstrap:
-            command = [ 'nuget.exe', 'update', '-self' ]
+            command = ['nuget.exe', 'update', '-self']
             if nimp.sys.process.call(command) != 0:
                 logging.warning('NuGet could not update itself.')
             command = [
-                'nuget.exe', 'restore', sln,
-                '-Recursive', '-Force', '-NonInteractive',
+                'nuget.exe',
+                'restore',
+                sln,
+                '-Recursive',
+                '-Force',
+                '-NonInteractive',
             ]
             if nimp.sys.process.call(command) != 0:
                 logging.warning('NuGet could not restore packages.')
@@ -130,10 +129,7 @@ class Build(nimp.command.Command):
             if 'MinimumVisualStudioVersion = 15' in contents:
                 vs_version = '15'
 
-        if not nimp.build.vsbuild(sln, platform, config,
-                                  project=env.target,
-                                  vs_version=vs_version,
-                                  target='Build'):
+        if not nimp.build.vsbuild(sln, platform, config, project=env.target, vs_version=vs_version, target='Build'):
             return False
 
         nimp.environment.execute_hook('postbuild', env)

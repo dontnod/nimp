@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Command to run executables or special commands '''
+'''Command to run executables or special commands'''
 
 import abc
 import argparse
@@ -39,18 +39,14 @@ from nimp.sys.platform import create_platform_desc
 
 
 class RunLegacy(nimp.command.CommandGroup):
-    ''' Run executables, hooks, and commandlets '''
+    '''Run executables, hooks, and commandlets'''
 
     def __init__(self):
-        super(RunLegacy, self).__init__([_Hook(),
-                                   _Commandlet(),
-                                   _Unreal_cli(),
-                                   _Exec_cmds(),
-                                   _Staged(),
-                                   _Package()])
+        super(RunLegacy, self).__init__([_Hook(), _Commandlet(), _Unreal_cli(), _Exec_cmds(), _Staged(), _Package()])
 
     def is_available(self, env):
         return True, ''
+
 
 class RunLegacyCommand(nimp.command.Command):
     def __init__(self):
@@ -58,17 +54,18 @@ class RunLegacyCommand(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
-        parser.add_argument('parameters',
-                            help='command to run',
-                            metavar='<command> [<argument>...]',
-                            nargs=argparse.REMAINDER)
+        parser.add_argument(
+            'parameters', help='command to run', metavar='<command> [<argument>...]', nargs=argparse.REMAINDER
+        )
         return True
 
     def is_available(self, env):
         return True, ''
 
+
 class _Hook(RunLegacyCommand):
-    ''' Runs a hook '''
+    '''Runs a hook'''
+
     def __init__(self):
         super(_Hook, self).__init__()
 
@@ -78,8 +75,9 @@ class _Hook(RunLegacyCommand):
             return False
         return nimp.environment.execute_hook(env.hook, env)
 
+
 class _Commandlet(RunLegacyCommand):
-    ''' Runs a commandlet '''
+    '''Runs a commandlet'''
 
     def __init__(self):
         super(_Commandlet, self).__init__()
@@ -93,7 +91,7 @@ class _Commandlet(RunLegacyCommand):
 
 
 class _Unreal_cli(RunLegacyCommand):
-    ''' Runs an unrel cli command '''
+    '''Runs an unrel cli command'''
 
     def __init__(self):
         super(_Unreal_cli, self).__init__()
@@ -104,8 +102,9 @@ class _Unreal_cli(RunLegacyCommand):
             return False
         return nimp.unreal.unreal_cli(env, *env.parameters)
 
+
 class _Exec_cmds(RunLegacyCommand):
-    ''' Runs executables on the local host '''
+    '''Runs executables on the local host'''
 
     def __init__(self):
         super(_Exec_cmds, self).__init__()
@@ -121,6 +120,7 @@ class _Exec_cmds(RunLegacyCommand):
 
         return ret == 0
 
+
 class ConsoleGameCommand(RunLegacyCommand):
     def __init__(self, buildbot_directory_ending, local_directory):
         super(ConsoleGameCommand, self).__init__()
@@ -132,9 +132,9 @@ class ConsoleGameCommand(RunLegacyCommand):
         nimp.utils.p4.add_arguments(parser)
         nimp.command.add_common_arguments(parser, 'platform', 'configuration')
 
-        parser.add_argument('--fetch',
-                            metavar='<path | CL# | "latest">',
-                            help='copies the game to the default location on this machine')
+        parser.add_argument(
+            '--fetch', metavar='<path | CL# | "latest">', help='copies the game to the default location on this machine'
+        )
 
         if shutil.which('robocopy'):
             restartable_fetch_help = "If '--fetch' is provided, will invoke robocopy with '/Z' (Recommended for users with poor or unstable connections)"
@@ -142,30 +142,32 @@ class ConsoleGameCommand(RunLegacyCommand):
             restartable_fetch_help = 'This option requires Robocopy which is unavailable on your system'
 
         # Basic cp does not handle restartable copy
-        parser.add_argument('--restartable-fetch', action = "store_true",
-                            help=restartable_fetch_help)
+        parser.add_argument('--restartable-fetch', action="store_true", help=restartable_fetch_help)
 
-        parser.add_argument('--write-version', action = "store_true",
-                            help='Will write a version.json file with package revision informations')
+        parser.add_argument(
+            '--write-version',
+            action="store_true",
+            help='Will write a version.json file with package revision informations',
+        )
 
-        parser.add_argument('--outdir',
-                            nargs='?', default='local',
-                            help='output directory for fetch')
+        parser.add_argument('--outdir', nargs='?', default='local', help='output directory for fetch')
 
-        parser.add_argument('--deploy',
-                            nargs='?', const='local',
-                            metavar='<path | CL# | "latest">',
-                            help="deploy the game to a devkit. If empty, deploys from the game's 'Saved' directory\
+        parser.add_argument(
+            '--deploy',
+            nargs='?',
+            const='local',
+            metavar='<path | CL# | "latest">',
+            help="deploy the game to a devkit. If empty, deploys from the game's 'Saved' directory\
                                   WARNING: if passing a CL number or 'latest', be aware that\
                                   the game will be downloaded from B:\\, then reuploaded to the devkit!!\
-                                  Avoid doing this over the VPN")
+                                  Avoid doing this over the VPN",
+        )
 
-        parser.add_argument('--launch',
-                            nargs='?', const='default',
-                            metavar='<package_name>',
-                            help='launch the game on a devkit')
+        parser.add_argument(
+            '--launch', nargs='?', const='default', metavar='<package_name>', help='launch the game on a devkit'
+        )
 
-        parser.add_argument('--device', metavar = '<host>', help = 'set target device')
+        parser.add_argument('--device', metavar='<host>', help='set target device')
         parser.add_argument('-v', '--variant', metavar="<variant_name>", help="name of variant")
 
     def run(self, env):
@@ -199,7 +201,6 @@ class ConsoleGameCommand(RunLegacyCommand):
 
         return True
 
-
     def write_fetched_revision(self, env, package_revision):
         if not str.isdigit(package_revision):
             logging.error('--write-revision is not compatible with package not from a CL')
@@ -225,7 +226,7 @@ class ConsoleGameCommand(RunLegacyCommand):
             logging.error('depotFile does not match clientFile')
             return False
 
-        depotRoot = depotFile[:-len(relClientFile)]
+        depotRoot = depotFile[: -len(relClientFile)]
 
         output = p4._run('-Mj', 'print', f"{depotRoot}DNE/Build/Build.version@{package_revision}", hide_output=True)
         # Ignore first line which is file infos
@@ -245,7 +246,6 @@ class ConsoleGameCommand(RunLegacyCommand):
 
         return True
 
-
     def fetch_with_robocopy(self, env):
         logging.info('Mirroring ' + env.fetch + ' into ' + env.outdir)
         cmdline = ['robocopy', '/MIR', '/R:5', '/W:5', '/TBD', '/NJH', '/ETA', '/MT', '/J']
@@ -255,9 +255,11 @@ class ConsoleGameCommand(RunLegacyCommand):
         logging.info('Running "%s"', cmdline)
         if env.dry_run:
             return True
-        result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)
-        return result <= 1 # 0: nothing to copy. 1: some files were copied
-    
+        result = subprocess.call(
+            cmdline
+        )  # Call subprocess directly to allow "dynamic" output (with progress percentage)
+        return result <= 1  # 0: nothing to copy. 1: some files were copied
+
     def fetch_with_copy(self, env):
         if os.path.exists(env.outdir):
             logging.warning(env.outdir + ' exists. Deleting it.')
@@ -268,7 +270,6 @@ class ConsoleGameCommand(RunLegacyCommand):
             return True
         return shutil.copytree(env.fetch, env.outdir)
 
-    
     def deploy(self, env):
         env.deploy = self.get_path_from_parameter(env.deploy, env)
         if not os.path.isdir(env.deploy):
@@ -296,8 +297,16 @@ class ConsoleGameCommand(RunLegacyCommand):
 
         logging.info('Looking for a %s test package at CL#%s' % (env.platform, rev))
         artifact_repository = env.format(env.artifact_repository_destination)
-        deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant + '/' +
-                                    ('%s-%s-%s-%s-%s/%s/' % (env.project, env.variant, rev, env.platform, self.buildbot_directory_ending, self.platform_directory)))
+        deploy_repository = nimp.system.sanitize_path(
+            artifact_repository
+            + '/packages/'
+            + env.variant
+            + '/'
+            + (
+                '%s-%s-%s-%s-%s/%s/'
+                % (env.project, env.variant, rev, env.platform, self.buildbot_directory_ending, self.platform_directory)
+            )
+        )
         return deploy_repository
 
     def get_latest_pgk_revision(self, env):
@@ -305,11 +314,15 @@ class ConsoleGameCommand(RunLegacyCommand):
             raise RuntimeError('"variant" parameter is required to fetch remote packages')
 
         artifact_repository = env.format(env.artifact_repository_destination)
-        deploy_repository =  nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant)
+        deploy_repository = nimp.system.sanitize_path(artifact_repository + '/packages/' + env.variant)
         logging.info('Looking for latest %s package in %s' % (env.platform, deploy_repository))
 
         rev = '0'
-        regex = re.compile(("%s-%s-" % (env.project, env.variant)) + r'(\d+)' + ('-%s-%s' % (env.platform, self.buildbot_directory_ending)))
+        regex = re.compile(
+            ("%s-%s-" % (env.project, env.variant))
+            + r'(\d+)'
+            + ('-%s-%s' % (env.platform, self.buildbot_directory_ending))
+        )
         for d in os.listdir(deploy_repository):
             m = regex.match(d)
             if m and m.group(1) > rev:
@@ -325,8 +338,9 @@ class ConsoleGameCommand(RunLegacyCommand):
     def _launch(self, env):
         pass
 
+
 class _Staged(ConsoleGameCommand):
-    ''' Deploys and runs staged console builds '''
+    '''Deploys and runs staged console builds'''
 
     def __init__(self):
         super(_Staged, self).__init__('staged', 'StagedBuilds')
@@ -334,13 +348,20 @@ class _Staged(ConsoleGameCommand):
     def _deploy(self, env):
         # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy [-configuration=Development] [-device=IP]
 
-        absolute_path = os.path.abspath(env.deploy + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
+        absolute_path = os.path.abspath(
+            env.deploy + '/..'
+        )  # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
         cmdline = [
             os.path.join(env.root_dir, 'Game', 'RunUAT.bat'),
-            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
-            '-stagingdirectory=' + absolute_path, 
-            '-skipcook', '-skipstage', '-deploy'
+            'BuildCookRun',
+            '-project=' + env.game,
+            '-platform=' + env.platform,
+            '-configuration=' + env.unreal_config,
+            '-stagingdirectory=' + absolute_path,
+            '-skipcook',
+            '-skipstage',
+            '-deploy',
         ]
         if env.device:
             cmdline.append('-device=' + env.device)
@@ -354,13 +375,21 @@ class _Staged(ConsoleGameCommand):
         if env.launch == 'default':
             env.launch = 'local'
         env.launch = self.get_path_from_parameter(env.launch, env)
-        absolute_path = os.path.abspath(env.launch + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
+        absolute_path = os.path.abspath(
+            env.launch + '/..'
+        )  # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
         cmdline = [
             os.path.join(env.root_dir, 'Game', 'RunUAT.bat'),
-            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
+            'BuildCookRun',
+            '-project=' + env.game,
+            '-platform=' + env.platform,
+            '-configuration=' + env.unreal_config,
             '-stagingdirectory=' + absolute_path,
-            '-skipcook', '-skipstage', '-deploy', '-run'
+            '-skipcook',
+            '-skipstage',
+            '-deploy',
+            '-run',
         ]
         if env.device:
             cmdline.append('-device=' + env.device)
@@ -368,8 +397,9 @@ class _Staged(ConsoleGameCommand):
         result = nimp.sys.process.call(cmdline, dry_run=env.dry_run)
         return result == 0
 
+
 class _Package(ConsoleGameCommand):
-    ''' Deploys and runs console packages '''
+    '''Deploys and runs console packages'''
 
     def __init__(self):
         super(_Package, self).__init__('package', 'Packages')

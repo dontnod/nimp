@@ -1,4 +1,3 @@
-
 import glob
 import json
 import logging
@@ -8,20 +7,28 @@ import subprocess
 
 import nimp.sys.platform
 
+
 class PS5(nimp.sys.platform.Platform):
-    ''' PS5 platform description '''
+    '''PS5 platform description'''
 
     def __init__(self, env):
         super().__init__(env)
 
         self.name = 'ps5'
-        #self.aliases = set(['prospero', 'dpx'])
+        # self.aliases = set(['prospero', 'dpx'])
         self.aliases = set(['prospero'])
         self.is_sony = True
 
         self.layout_file_extension = 'gp5'
         if not os.getenv('UE_SDKS_ROOT'):
-            self.package_tool_path = os.path.join(os.getenv('SCE_ROOT_DIR', default='.'), 'PROSPERO', 'Tools', 'Publishing Tools', 'bin', 'prospero-pub-cmd.exe')
+            self.package_tool_path = os.path.join(
+                os.getenv('SCE_ROOT_DIR', default='.'),
+                'PROSPERO',
+                'Tools',
+                'Publishing Tools',
+                'bin',
+                'prospero-pub-cmd.exe',
+            )
 
         self.unreal_name = 'PS5'
         self.unreal_config_name = 'PS5'
@@ -38,7 +45,7 @@ class PS5(nimp.sys.platform.Platform):
                 logging.info('\t\t' + pkg)
             raise RuntimeError('Multiple pkg files in ' + package_directory + ' for configuration ' + env.unreal_config)
 
-        return PS5.prospero_ctrl([ 'package', 'install', pkgs[0] ], env.device, dry_run=env.dry_run)
+        return PS5.prospero_ctrl(['package', 'install', pkgs[0]], env.device, dry_run=env.dry_run)
 
     def launch_package(self, package_name, env):
         if not package_name:
@@ -49,10 +56,11 @@ class PS5(nimp.sys.platform.Platform):
             installed_titles = self.get_installed_titles(env.device)
             title_id = self.pick_title_id(installed_titles, package_name)
 
-        return PS5.prospero_run([ '-app', title_id ], env.device, dry_run=env.dry_run)
+        return PS5.prospero_run(['-app', title_id], env.device, dry_run=env.dry_run)
 
     _TITLE_ID_RE = re.compile(r'- TitleId: (.*)')
     _TITLE_NAME_RE = re.compile(r'  TitleName: (.*)')
+
     def get_installed_titles(self, device_ip):
         cmdline = PS5.PROSPERO_CTRL + ' package list'
         if device_ip:
@@ -99,6 +107,7 @@ class PS5(nimp.sys.platform.Platform):
             raise RuntimeError('Multiple packages found for ' + package_name)
 
     _CONTENT_ID_RE = re.compile(r'[A-Z]{2}[0-9]{4}-([A-Z]{4}[0-9]{5})_00-[A-Z0-9]{16}')
+
     def get_title_id_from_json(self, project_directory, variant):
         if variant:
             json_file_path = project_directory + '/Platforms/PS5/Build/Variants/' + variant + '/TitleConfiguration.json'
@@ -115,13 +124,19 @@ class PS5(nimp.sys.platform.Platform):
         with open(json_file_path) as json_file:
             json_content = json.load(json_file)
         if 'DefaultContentID' not in json_content:
-            logging.warning('No "DefaultContentID" attribute found in ' + json_file_path + '. Looking for package name instead.')
+            logging.warning(
+                'No "DefaultContentID" attribute found in ' + json_file_path + '. Looking for package name instead.'
+            )
             return None
 
-        content_id = json_content['DefaultContentID'] # Use the same content ID as UE4's PS5TitleConfig.cs
+        content_id = json_content['DefaultContentID']  # Use the same content ID as UE4's PS5TitleConfig.cs
         m = PS5._CONTENT_ID_RE.match(content_id)
         if not m:
-            logging.warning('"DefaultContentID" attribute in ' + json_file_path + ' does not match the expected format. Looking for package name instaed.')
+            logging.warning(
+                '"DefaultContentID" attribute in '
+                + json_file_path
+                + ' does not match the expected format. Looking for package name instaed.'
+            )
             return None
 
         return m.group(1)
@@ -148,12 +163,13 @@ class PS5(nimp.sys.platform.Platform):
         if dry_run:
             return True
         result = subprocess.call(
-            cmdline)  # Call subprocess directly to allow "dynamic" output (with progress percentage)
+            cmdline
+        )  # Call subprocess directly to allow "dynamic" output (with progress percentage)
         return result == 0
 
     @staticmethod
     def prospero_run(args, ip=None, dry_run=False):
         if ip:
-            args = ['/target:' + ip] + args # "/target" needs to be before "/app"
+            args = ['/target:' + ip] + args  # "/target" needs to be before "/app"
         result = nimp.sys.process.call([PS5.PROSPERO_RUN] + args, dry_run=dry_run)
         return result == 0

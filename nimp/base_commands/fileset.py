@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Fileset related commands '''
+'''Fileset related commands'''
 
 import hashlib
 import logging
@@ -30,12 +30,13 @@ import shutil
 import nimp.command
 import nimp.system
 
+
 class FilesetCommand(nimp.command.Command):
-    ''' Perforce command base class '''
+    '''Perforce command base class'''
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'free_parameters')
-        parser.add_argument('fileset', metavar = '<fileset>', help = 'select the fileset to load')
+        parser.add_argument('fileset', metavar='<fileset>', help='select the fileset to load')
         return True
 
     def is_available(self, env):
@@ -49,16 +50,20 @@ class FilesetCommand(nimp.command.Command):
     def _run_fileset(self, env, file_mapper):
         pass
 
+
 class Fileset(nimp.command.CommandGroup):
-    ''' Fileset related commands '''
+    '''Fileset related commands'''
+
     def __init__(self):
-        super().__init__([ _List(), _Delete(), _Stash(), _Unstash() ])
+        super().__init__([_List(), _Delete(), _Stash(), _Unstash()])
 
     def is_available(self, env):
         return True, ''
 
+
 class _Delete(FilesetCommand):
-    ''' Loads a fileset and delete mapped files '''
+    '''Loads a fileset and delete mapped files'''
+
     def _run_fileset(self, env, file_mapper):
         for path, _ in file_mapper():
             logging.info("Deleting %s", path)
@@ -66,13 +71,14 @@ class _Delete(FilesetCommand):
 
         return True
 
+
 class _List(FilesetCommand):
-    ''' Lists mappings from a fileset '''
+    '''Lists mappings from a fileset'''
 
     def configure_arguments(self, env, parser):
         super().configure_arguments(env, parser)
-        parser.add_argument('--format', default = "{src} => {dst}", metavar = '<format>', help = 'set the output format')
-        parser.add_argument('--destination', metavar = '<path>', help = 'write output to a file instead of stdout')
+        parser.add_argument('--format', default="{src} => {dst}", metavar='<format>', help='set the output format')
+        parser.add_argument('--destination', metavar='<path>', help='write output to a file instead of stdout')
         return True
 
     def run(self, env):
@@ -83,15 +89,17 @@ class _List(FilesetCommand):
         if env.destination:
             with open(env.destination, 'w') as export_file:
                 for source, destination in all_files:
-                    export_file.write(env.format.format(src = source, dst = destination) + '\n')
+                    export_file.write(env.format.format(src=source, dst=destination) + '\n')
         else:
             for source, destination in all_files:
-                logging.info(env.format.format(src = source, dst = destination))
+                logging.info(env.format.format(src=source, dst=destination))
 
         return True
 
+
 class _Stash(FilesetCommand):
-    ''' Loads a fileset and moves files out of the way '''
+    '''Loads a fileset and moves files out of the way'''
+
     def _run_fileset(self, env, file_mapper):
         stash_name = env.format('{fileset}-{platform}-{target}-{configuration}')
         stash_directory = env.format('{root_dir}/.nimp/stash/' + stash_name)
@@ -112,8 +120,10 @@ class _Stash(FilesetCommand):
 
         return True
 
+
 class _Unstash(FilesetCommand):
-    ''' Restores a stashed fileset; does not actually use the fileset '''
+    '''Restores a stashed fileset; does not actually use the fileset'''
+
     def _run_fileset(self, env, file_mapper):
         stash_name = env.format('{fileset}-{platform}-{target}-{configuration}')
         stash_directory = env.format('{root_dir}/.nimp/stash/' + stash_name)
@@ -129,7 +139,7 @@ class _Unstash(FilesetCommand):
                     md5, dst = dst.strip().split()
                     src = os.path.join(stash_directory, md5)
                     logging.info('Unstashing %s as %s', md5, dst)
-                    os.makedirs(os.path.dirname(dst), exist_ok = True)
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
                     if os.path.exists(dst):
                         os.remove(dst)
                     shutil.move(src, dst)

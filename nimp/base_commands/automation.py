@@ -28,71 +28,73 @@ import nimp.command
 
 
 class Automation(nimp.command.Command):
-	''' Runs Unreal Automation Tests '''
+    '''Runs Unreal Automation Tests'''
 
-	def configure_arguments(self, env, parser):
-		parser.add_argument('tests', nargs = '*', help = 'list of test patterns to run')
-		parser.add_argument('--map', help = 'Specify a map to launch')
-		parser.add_argument('--loadlist', '-l', help = 'file containing a list of assets to check')
-		parser.add_argument('--filter', '-f', default = 'All', help = 'Automation Framework filter to use')
-		parser.add_argument('--dnefilter', action = 'store_true', help = 'use DNEAutomationTestFilter')
-		parser.add_argument('--loadenv', nargs = '*', help = 'load nimp env variables', default = [])
-		parser.add_argument('--extra-options', help = 'extra manual arguments, must be last', nargs=argparse.REMAINDER, default = [])
-		return True
+    def configure_arguments(self, env, parser):
+        parser.add_argument('tests', nargs='*', help='list of test patterns to run')
+        parser.add_argument('--map', help='Specify a map to launch')
+        parser.add_argument('--loadlist', '-l', help='file containing a list of assets to check')
+        parser.add_argument('--filter', '-f', default='All', help='Automation Framework filter to use')
+        parser.add_argument('--dnefilter', action='store_true', help='use DNEAutomationTestFilter')
+        parser.add_argument('--loadenv', nargs='*', help='load nimp env variables', default=[])
+        parser.add_argument(
+            '--extra-options', help='extra manual arguments, must be last', nargs=argparse.REMAINDER, default=[]
+        )
+        return True
 
-	def is_available(self, env):
-		return env.is_unreal, ''
+    def is_available(self, env):
+        return env.is_unreal, ''
 
-	def run(self, env):
-		load_env_args, error = self.load_env(env)
-		if error:
-			return False
+    def run(self, env):
+        load_env_args, error = self.load_env(env)
+        if error:
+            return False
 
-		extra_options = ['-stdout'] # this outputs command in console
-		extra_options += env.extra_options
-		extra_options += load_env_args
+        extra_options = ['-stdout']  # this outputs command in console
+        extra_options += env.extra_options
+        extra_options += load_env_args
 
-		dne_filter_cmd = 'dne.AutomationTestFilter 1, ' if env.dnefilter else ''
+        dne_filter_cmd = 'dne.AutomationTestFilter 1, ' if env.dnefilter else ''
 
-		tests = self.get_tests(env)
-		tests_cmd = f"RunTests {'+'.join(tests)}" if tests else 'RunAll'
+        tests = self.get_tests(env)
+        tests_cmd = f"RunTests {'+'.join(tests)}" if tests else 'RunAll'
 
-		map = f'{env.map}' if env.map else ''
+        map = f'{env.map}' if env.map else ''
 
-		cmd = f'{dne_filter_cmd}Automation SetFilter {env.filter}; {tests_cmd}; Quit'
+        cmd = f'{dne_filter_cmd}Automation SetFilter {env.filter}; {tests_cmd}; Quit'
 
-		return nimp.unreal.unreal_cli(env, f'{map}', *extra_options, f'-execcmds={cmd}')
+        return nimp.unreal.unreal_cli(env, f'{map}', *extra_options, f'-execcmds={cmd}')
 
-	def load_env(self, env):
-		error = False
-		args = []
-		if not env.loadenv:
-			return (args, error)
+    def load_env(self, env):
+        error = False
+        args = []
+        if not env.loadenv:
+            return (args, error)
 
-		env_args = env.loadenv
-		for env_arg in env_args:
-			if not hasattr(env, env_arg):
-				error = True
-				logging.error(f'{env_arg} not found in project env')
-				continue
+        env_args = env.loadenv
+        for env_arg in env_args:
+            if not hasattr(env, env_arg):
+                error = True
+                logging.error(f'{env_arg} not found in project env')
+                continue
 
-			nimp_env = getattr(env, env_arg)
-			if isinstance(nimp_env, list):
-				args += nimp_env
-			elif isinstance(nimp_env, str):
-				args.append(nimp_env)
-			else:
-				error = True
-				logging.error(f'{env_arg} type {type(nimp_env)} is not supported')
+            nimp_env = getattr(env, env_arg)
+            if isinstance(nimp_env, list):
+                args += nimp_env
+            elif isinstance(nimp_env, str):
+                args.append(nimp_env)
+            else:
+                error = True
+                logging.error(f'{env_arg} type {type(nimp_env)} is not supported')
 
-		return (list(set(args)), error)
+        return (list(set(args)), error)
 
-	def get_tests(self, env):
-		tests = []
-		if env.loadlist:
-			env.loadlist = env.format(env.loadlist)
-			with open(env.loadlist, 'r') as loadlist:
-				for file in loadlist:
-					tests.append(os.path.splitext(file)[0])
-		tests.extend(env.tests[1:])
-		return tests
+    def get_tests(self, env):
+        tests = []
+        if env.loadlist:
+            env.loadlist = env.format(env.loadlist)
+            with open(env.loadlist, 'r') as loadlist:
+                for file in loadlist:
+                    tests.append(os.path.splitext(file)[0])
+        tests.extend(env.tests[1:])
+        return tests
