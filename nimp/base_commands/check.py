@@ -153,11 +153,6 @@ class _Processes(CheckCommand):
             logging.warning("Command only available on Windows platform")
             return True
 
-        # Irrelevant if we’re not an Unreal project
-        if not getattr(env, 'is_unreal', False):
-            logging.warning("Command only available in an Unreal project context")
-            return True
-
         # Find all running processes running a program that any filter match either:
         #  - the program executable
         #  - an open file handle
