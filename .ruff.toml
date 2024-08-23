@@ -1,8 +1,10 @@
 
+line-length = 140
+
+target-version = "py39"
+
+[lint]
 # select = ['ALL']
 ignore = [
     'E501' # line too long...
 ]
-
-
-line-length = 140
