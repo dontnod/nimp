@@ -31,10 +31,14 @@ import platform
 import re
 import shutil
 import time
+from typing import Sequence
+
+import psutil
 
 import nimp.command
 import nimp.sys.platform
 import nimp.sys.process
+from nimp.environment import Environment as NimpEnvironment
 
 class Check(nimp.command.CommandGroup):
     ''' Check related commands '''
@@ -124,8 +128,11 @@ class _Status(CheckCommand):
 
 
 class _Processes(CheckCommand):
-    def __init__(self):
-        super(_Processes, self).__init__()
+
+    PROCESS_IGNORE_PATTERNS: Sequence[re.Pattern] = (
+        # re.compile(r'^CrashReportClient\.exe$', re.IGNORECASE),
+        re.compile(r'^dotnet\.exe$', re.IGNORECASE),
+    )
 
     def configure_arguments(self, env, parser):
         parser.add_argument('-k', '--kill',
@@ -137,73 +144,103 @@ class _Processes(CheckCommand):
                             default=[os.path.normpath(f'{os.path.abspath(env.root_dir)}/*')])
         return True
 
-    def _run_check(self, env):
+    def _run_check(self, env: NimpEnvironment):
         logging.info('Checking running processes…')
+        logging.debug('\tUsing filters: %s', env.filters)
 
         # Irrelevant on sane Unix platforms
         if not nimp.sys.platform.is_windows():
+            logging.warning("Command only available on Windows platform")
             return True
 
         # Irrelevant if we’re not an Unreal project
-        if not hasattr(env, 'is_unreal') or not env.is_unreal:
+        if not getattr(env, 'is_unreal', False):
+            logging.warning("Command only available in an Unreal project context")
             return True
 
-        # Find all running binaries launched from the project directory
+        # Find all running processes running a program that any filter match either:
+        #  - the program executable
+        #  - an open file handle
         # and optionally kill them, unless they’re in the exception list.
         # We get to try 5 times just in case
         for _ in range(5):
-            found_problem = False
-            processes = _Processes._list_windows_processes()
+            checked_processes_count = 0
+            problematic_processes: list[psutil.Process] = []
 
-            for pid, info in processes.items():
-                if not any(fnmatch.fnmatch(info[0], filter) for filter in env.filters):
+            # psutil.process_iter caches processes
+            # we want a fresh list since we might have killed/
+            # process completed since last iteration
+            psutil.process_iter.cache_clear()
+            current_process = psutil.Process()
+            ignore_process_ids = set((
+                current_process.pid,
+                *(p.pid for p in current_process.parents()),
+                *(p.pid for p in current_process.children(recursive=True)),
+            ))
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                logging.debug("Ignore processes:")
+                for pid in ignore_process_ids:
+                    ignored_process = psutil.Process(pid)
+                    logging.debug("\t%s (%s) %s", ignored_process.exe(), ignored_process.pid, ignored_process.cmdline())
+
+            for process in psutil.process_iter():
+                if process.pid in ignore_process_ids:
                     continue
-                process_basename = os.path.basename(info[0])
-                processes_ignore_patterns = _Processes.get_processes_ignore_patterns()
-                if any([re.match(p, process_basename, re.IGNORECASE) for p in processes_ignore_patterns]):
-                    logging.info(f'process {pid} {info[0]} will be kept alive')
+
+                checked_processes_count += 1
+                if not _Processes._process_matches_filters(process, env.filters):
                     continue
-                logging.warning('Found problematic process %s (%s)', pid, info[0])
-                found_problem = True
-                if info[1] in processes:
-                    logging.warning('Parent is %s (%s)', info[1], processes[info[1]][0])
-                if env.kill:
-                    logging.info('Killing process…')
-                    nimp.sys.process.call(['wmic', 'process', 'where', 'processid=' + pid, 'delete'])
-            logging.info('%s processes checked.', len(processes))
-            if not env.kill:
-                return not found_problem
-            if not found_problem:
+
+                process_executable_path = process.exe()
+                process_basename = os.path.basename(process_executable_path)
+                if any(p.match(process_basename) for p in _Processes.PROCESS_IGNORE_PATTERNS):
+                    logging.info('process %s (%s) will be kept alive', process.pid, process_executable_path)
+                    continue
+
+                problematic_processes.append(process)
+                logging.warning('Found problematic process %s (%s)', process.pid, process_executable_path)
+                if (parent_process := process.parent()) is not None:
+                    logging.warning('\tParent is %s (%s)', parent_process.pid, parent_process.exe())
+
+            logging.info('%d processes checked.', checked_processes_count)
+            if not problematic_processes:
+                # no problematic processes running, nothing to do.
                 return True
-            time.sleep(5)
+
+            if not env.kill:
+                # Wait a bit, give a chance to problematic processes to end,
+                # even if not killed
+                time.sleep(5)
+            else:
+                for p in problematic_processes:
+                    logging.info('Requesting process %s termination', p.pid)
+                    p.terminate()
+                _, alive = psutil.wait_procs(problematic_processes, timeout=5)
+                for p in alive:
+                    logging.info('Process %s not terminated. Send kill.', p.pid)
+                    p.kill()
 
         return False
 
     @staticmethod
-    def get_processes_ignore_patterns():
-        return [
-            # r'^CrashReportClient\.exe$',
-            r'^dotnet\.exe$',
-        ]
+    def _process_matches_filters(process: psutil.Process, filters: list[str]) -> bool:
+        """ Returns True if the process should be filtered out """
+        try:
+            for pattern in filters:
+                if fnmatch.fnmatch(process.exe(), pattern):
+                    logging.debug("process %s (%s), match filter '%s' with exe '%s'", process.pid, process.exe(), pattern, process.exe())
+                    return True
 
-    @staticmethod
-    def _list_windows_processes():
-        processes = {}
-        # List all processes
-        cmd = ['wmic', 'process', 'get', 'executablepath,parentprocessid,processid', '/value']
-        result, output, _ = nimp.sys.process.call(cmd, capture_output=True)
-        if result == 0:
-            # Build a dictionary of all processes
-            path, pid, ppid = '', 0, 0
-            for line in [line.strip() for line in output.splitlines()]:
-                if line.lower().startswith('executablepath='):
-                    path = re.sub('[^=]*=', '', line)
-                if line.lower().startswith('parentprocessid='):
-                    ppid = re.sub('[^=]*=', '', line)
-                if line.lower().startswith('processid='):
-                    pid = re.sub('[^=]*=', '', line)
-                    processes[pid] = (path, ppid)
-        return processes
+                for popen_file in process.open_files():
+                    if fnmatch.fnmatch(popen_file.path, pattern):
+                        logging.debug("process %s (%s), match filter '%s' with popen file '%s'", process.pid, process.exe(), pattern, popen_file.path)
+                        return True
+        except psutil.AccessDenied:
+            # failed to access a property of the process,
+            # assume it does not match to be safe
+            return False
+
+        return False
 
 
 class _Disks(CheckCommand):
