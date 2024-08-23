@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Environment check command '''
+'''Environment check command'''
 
 import abc
 import fnmatch
@@ -40,18 +40,20 @@ import nimp.sys.platform
 import nimp.sys.process
 from nimp.environment import Environment as NimpEnvironment
 
+
 class Check(nimp.command.CommandGroup):
-    ''' Check related commands '''
+    '''Check related commands'''
+
     def __init__(self):
-        super(Check, self).__init__([_Status(),
-                                     _Processes(),
-                                     _Disks()])
+        super(Check, self).__init__([_Status(), _Processes(), _Disks()])
+
     def is_available(self, env):
         return True, ''
 
 
 class CheckCommand(nimp.command.Command):
-    ''' Performs various checks on the local host '''
+    '''Performs various checks on the local host'''
+
     def __init__(self):
         super(CheckCommand, self).__init__()
 
@@ -65,7 +67,7 @@ class CheckCommand(nimp.command.Command):
         return self._run_check(env)
 
     @abc.abstractmethod
-    def _run_check(self,env):
+    def _run_check(self, env):
         pass
 
 
@@ -118,7 +120,10 @@ class _Status(CheckCommand):
 
     @staticmethod
     def _show_user_environment():
-        print('User Environment: %s' % json.dumps(dict(os.environ), default=_Status._json_serialize, indent=2, sort_keys=True))
+        print(
+            'User Environment: %s'
+            % json.dumps(dict(os.environ), default=_Status._json_serialize, indent=2, sort_keys=True)
+        )
         print()
 
     @staticmethod
@@ -128,20 +133,20 @@ class _Status(CheckCommand):
 
 
 class _Processes(CheckCommand):
-
     PROCESS_IGNORE_PATTERNS: Sequence[re.Pattern] = (
         # re.compile(r'^CrashReportClient\.exe$', re.IGNORECASE),
         re.compile(r'^dotnet\.exe$', re.IGNORECASE),
     )
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('-k', '--kill',
-                            help='Kill processes that can prevent builds',
-                            action='store_true')
-        parser.add_argument('-f', '--filters',
-                            nargs='*',
-                            help='fnmatch filters, defaults to workspace',
-                            default=[os.path.normpath(f'{os.path.abspath(env.root_dir)}/*')])
+        parser.add_argument('-k', '--kill', help='Kill processes that can prevent builds', action='store_true')
+        parser.add_argument(
+            '-f',
+            '--filters',
+            nargs='*',
+            help='fnmatch filters, defaults to workspace',
+            default=[os.path.normpath(f'{os.path.abspath(env.root_dir)}/*')],
+        )
         return True
 
     def _run_check(self, env: NimpEnvironment):
@@ -167,11 +172,13 @@ class _Processes(CheckCommand):
             # process completed since last iteration
             psutil.process_iter.cache_clear()
             current_process = psutil.Process()
-            ignore_process_ids = set((
-                current_process.pid,
-                *(p.pid for p in current_process.parents()),
-                *(p.pid for p in current_process.children(recursive=True)),
-            ))
+            ignore_process_ids = set(
+                (
+                    current_process.pid,
+                    *(p.pid for p in current_process.parents()),
+                    *(p.pid for p in current_process.children(recursive=True)),
+                )
+            )
             if logging.getLogger().isEnabledFor(logging.DEBUG):
                 logging.debug("Ignore processes:")
                 for pid in ignore_process_ids:
@@ -219,16 +226,28 @@ class _Processes(CheckCommand):
 
     @staticmethod
     def _process_matches_filters(process: psutil.Process, filters: list[str]) -> bool:
-        """ Returns True if the process should be filtered out """
+        """Returns True if the process should be filtered out"""
         try:
             for pattern in filters:
                 if fnmatch.fnmatch(process.exe(), pattern):
-                    logging.debug("process %s (%s), match filter '%s' with exe '%s'", process.pid, process.exe(), pattern, process.exe())
+                    logging.debug(
+                        "process %s (%s), match filter '%s' with exe '%s'",
+                        process.pid,
+                        process.exe(),
+                        pattern,
+                        process.exe(),
+                    )
                     return True
 
                 for popen_file in process.open_files():
                     if fnmatch.fnmatch(popen_file.path, pattern):
-                        logging.debug("process %s (%s), match filter '%s' with popen file '%s'", process.pid, process.exe(), pattern, popen_file.path)
+                        logging.debug(
+                            "process %s (%s), match filter '%s' with popen file '%s'",
+                            process.pid,
+                            process.exe(),
+                            pattern,
+                            popen_file.path,
+                        )
                         return True
         except psutil.AccessDenied:
             # failed to access a property of the process,
@@ -243,20 +262,35 @@ class _Disks(CheckCommand):
         super(_Disks, self).__init__()
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('-w', '--warning',
-                            help = 'emit warnings when free space is below threshold (default 5.0)',
-                            metavar = '<percent>', type = float, default = 5.0)
-        parser.add_argument('-e', '--error',
-                            help = 'error out when free space is below threshold (default 1.0)',
-                            metavar = '<percent>', type = float, default = 1.0)
-        parser.add_argument('-d', '--delay',
-                            help = 'wait X seconds before exiting with error (default 10)',
-                            metavar = 'X', type = int, default = 10)
+        parser.add_argument(
+            '-w',
+            '--warning',
+            help='emit warnings when free space is below threshold (default 5.0)',
+            metavar='<percent>',
+            type=float,
+            default=5.0,
+        )
+        parser.add_argument(
+            '-e',
+            '--error',
+            help='error out when free space is below threshold (default 1.0)',
+            metavar='<percent>',
+            type=float,
+            default=1.0,
+        )
+        parser.add_argument(
+            '-d',
+            '--delay',
+            help='wait X seconds before exiting with error (default 10)',
+            metavar='X',
+            type=int,
+            default=10,
+        )
         return True
 
     def _run_check(self, env):
         path = env.root_dir
-        wait_time = min(env.delay, 5 * 60) # Check at least every 5 minutes
+        wait_time = min(env.delay, 5 * 60)  # Check at least every 5 minutes
         total_wait_time = env.delay
 
         ran_callback = False
@@ -264,8 +298,15 @@ class _Disks(CheckCommand):
             total, used, free = shutil.disk_usage(path)
             byte2gib = 1.0 / 1024 / 1024 / 1024
             byte2pct = 100.0 / total
-            logging.info('Disk usage on %s: %.2f GiB total, %.2f GiB used (%.2f%%), %.2f GiB free (%.2f%%)',
-                         path, total * byte2gib, used * byte2gib, used * byte2pct, free * byte2gib, free * byte2pct)
+            logging.info(
+                'Disk usage on %s: %.2f GiB total, %.2f GiB used (%.2f%%), %.2f GiB free (%.2f%%)',
+                path,
+                total * byte2gib,
+                used * byte2gib,
+                used * byte2pct,
+                free * byte2gib,
+                free * byte2pct,
+            )
             free_percent = free * byte2pct
             if not ran_callback and free_percent < env.warning:
                 logging.warning('Only %.2f%% free space on disk, trying diskfull hook', free_percent)
@@ -279,8 +320,7 @@ class _Disks(CheckCommand):
                 break
             if total_wait_time <= 0:
                 return False
-            logging.warning('Only %.2f%% free on disk, waiting for %d seconds',
-                            free_percent, wait_time)
+            logging.warning('Only %.2f%% free on disk, waiting for %d seconds', free_percent, wait_time)
             time.sleep(wait_time)
             total_wait_time -= wait_time
         return True

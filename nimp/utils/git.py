@@ -20,7 +20,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Git utilities '''
+'''Git utilities'''
+
 import logging
 import giteapy
 from giteapy.rest import ApiException
@@ -31,7 +32,7 @@ import nimp.sys.process
 
 
 def get_branch():
-    ''' Get the current active branch '''
+    '''Get the current active branch'''
     command = 'git branch --contains HEAD'
     result, output, _ = nimp.sys.process.call(command.split(' '), capture_output=True)
     if result != 0:
@@ -43,7 +44,7 @@ def get_branch():
 
 
 def get_version():
-    ''' Build a version string from the date and hash of the last commit '''
+    '''Build a version string from the date and hash of the last commit'''
     command = 'git log -10 --date=short --pretty=format:%ct.%h'
     result, output, _ = nimp.sys.process.call(command.split(' '), capture_output=True)
     if result != 0 or '.' not in output:
@@ -63,17 +64,19 @@ def get_version():
 
     return '.'.join([date, str(revision_offset), shorthash])
 
+
 def get_commit_version(commit_hash):
-    ''' Build a version string from the date and hash of a given commit '''
-    command = 'git show --no-patch --date=short --pretty=format:%ct.%h ' +  commit_hash
+    '''Build a version string from the date and hash of a given commit'''
+    command = 'git show --no-patch --date=short --pretty=format:%ct.%h ' + commit_hash
     result, output, _ = nimp.sys.process.call(command.split(' '), capture_output=True, hide_output=True)
     if result != 0 or '.' not in output:
         return None
 
     return output
 
+
 def is_full_sha1(string):
-    ''' cheap logic to check if we have full git commit sha1 string '''
+    '''cheap logic to check if we have full git commit sha1 string'''
     if len(string) != 40:
         return False
     try:
@@ -81,6 +84,7 @@ def is_full_sha1(string):
     except ValueError:
         return False
     return True
+
 
 def gitea_has_missing_params(env):
     needed_params = ['gitea_host', 'gitea_access_token', 'gitea_repo_owner', 'gitea_repo_name']
@@ -91,12 +95,14 @@ def gitea_has_missing_params(env):
             logging.error(f"Please configure {param} parameter in project conf")
     return has_missing_params
 
+
 def check_for_gitea_env(env):
     if hasattr(env, 'gitea_branches') and env.branch in env.gitea_branches:
         return True
     if hasattr(env, 'gitea_branch') and env.branch in env.gitea_branch:
         return True
     return False
+
 
 def initialize_gitea_api_context(env):
     if not check_for_gitea_env(env):
@@ -108,11 +114,8 @@ def initialize_gitea_api_context(env):
     configuration.host = env.gitea_host
     configuration.api_key['access_token'] = env.gitea_access_token
     api_instance = giteapy.RepositoryApi(giteapy.ApiClient(configuration))
-    return {
-        'instance': api_instance,
-        'repo_owner': env.gitea_repo_owner,
-        'repo_name': env.gitea_repo_name
-    }
+    return {'instance': api_instance, 'repo_owner': env.gitea_repo_owner, 'repo_name': env.gitea_repo_name}
+
 
 def get_gitea_commit_timestamp(gitea_context, commit_sha):
     if not commit_sha:
@@ -121,9 +124,7 @@ def get_gitea_commit_timestamp(gitea_context, commit_sha):
     api_commit_timestamp = None
     try:
         api_response = gitea_context['instance'].repo_get_single_commit(
-            gitea_context['repo_owner'],
-            gitea_context['repo_name'],
-            commit_sha
+            gitea_context['repo_owner'], gitea_context['repo_name'], commit_sha
         )
         api_commit_date = api_response.commit.committer._date
         api_commit_date = datetime.fromisoformat(api_commit_date).astimezone(timezone.utc)

@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Utilities related to compilation '''
+'''Utilities related to compilation'''
 
 import logging
 import os
@@ -35,7 +35,7 @@ import nimp.system
 
 
 def _try_excecute(command, cwd='.', capture_output=True, max_attemtps=5, delay=5, time_out=120):
-    ''' retry in case autoSDK or devenv cache fails us '''
+    '''retry in case autoSDK or devenv cache fails us'''
     attempt = 0
     while attempt <= max_attemtps:
         retry = False
@@ -76,9 +76,16 @@ def _try_excecute(command, cwd='.', capture_output=True, max_attemtps=5, delay=5
     return result
 
 
-def msbuild(project_file, platform_name, configuration, project=None,
-            vs_version='14', dotnet_version='4.6', additional_flags=None ):
-    ''' Builds a project with MSBuild '''
+def msbuild(
+    project_file,
+    platform_name,
+    configuration,
+    project=None,
+    vs_version='14',
+    dotnet_version='4.6',
+    additional_flags=None,
+):
+    '''Builds a project with MSBuild'''
 
     # Windows
     if nimp.sys.platform.is_windows():
@@ -94,7 +101,8 @@ def msbuild(project_file, platform_name, configuration, project=None,
         needCapture = False
 
     command = [
-        msbuild_path, project_file,
+        msbuild_path,
+        project_file,
         '/verbosity:minimal',
         '/nologo',
     ]
@@ -117,9 +125,11 @@ def msbuild(project_file, platform_name, configuration, project=None,
 
     return result == 0
 
-def vsbuild(solution, platform_name, configuration, project=None,
-            vs_version='14', target='Build', dotnet_version='4.6'):
-    ''' Builds a project with Visual Studio '''
+
+def vsbuild(
+    solution, platform_name, configuration, project=None, vs_version='14', target='Build', dotnet_version='4.6'
+):
+    '''Builds a project with Visual Studio'''
 
     # Windows
     if nimp.sys.platform.is_windows():
@@ -127,25 +137,31 @@ def vsbuild(solution, platform_name, configuration, project=None,
         if devenv_path is None:
             logging.error('Unable to find Visual Studio %s', vs_version)
             return False
-        command = [ devenv_path, solution ]
-        command = command + [ '/' + target, configuration + '|' + platform_name ]
+        command = [devenv_path, solution]
+        command = command + ['/' + target, configuration + '|' + platform_name]
         if project is not None:
-            command = command + [ '/project', project ]
+            command = command + ['/project', project]
 
         result = _try_excecute(command)
 
         return result == 0
 
     # Mac and Linux alike
-    command = [ 'xbuild', solution, '/verbosity:quiet', '/nologo',
-                '/p:Configuration=' + configuration,
-                '/p:Platform=' + platform_name,
-                '/p:TargetFrameworkVersion=v' + dotnet_version,
-                '/p:TargetFrameworkProfile=' ]
+    command = [
+        'xbuild',
+        solution,
+        '/verbosity:quiet',
+        '/nologo',
+        '/p:Configuration=' + configuration,
+        '/p:Platform=' + platform_name,
+        '/p:TargetFrameworkVersion=v' + dotnet_version,
+        '/p:TargetFrameworkProfile=',
+    ]
     if project is not None:
-        command = command + [ '/target:' + project ]
+        command = command + ['/target:' + project]
 
     return nimp.sys.process.call(command) == 0
+
 
 def _find_msbuild_path(vs_version):
     msbuild_path = None
@@ -161,8 +177,8 @@ def _find_msbuild_path(vs_version):
         vs_version = 'Current'
 
     # For VS2017 and later, there is vswhere
-    vswhere_cmd = [ os.path.join(os.environ['ProgramFiles(x86)'], 'Microsoft Visual Studio/Installer/vswhere.exe') ]
-    vswhere_cmd += [ '-products', '*', '-requires', 'Microsoft.Component.MSBuild', '-property', 'installationPath' ]
+    vswhere_cmd = [os.path.join(os.environ['ProgramFiles(x86)'], 'Microsoft Visual Studio/Installer/vswhere.exe')]
+    vswhere_cmd += ['-products', '*', '-requires', 'Microsoft.Component.MSBuild', '-property', 'installationPath']
     result, output, _ = nimp.sys.process.call(vswhere_cmd, capture_output=True, hide_output=True)
     if result == 0:
         for line in output.split('\n'):
@@ -195,8 +211,9 @@ def _find_devenv_path(vs_version):
     # First try the registry, because the environment variable is unreliable
     # (case of Visual Studio installed on a different drive; it still sets
     # the envvar to point to C:\Program Files even if devenv.com is on D:\)
-    #pylint: disable=import-error
+    # pylint: disable=import-error
     from winreg import OpenKey, QueryValue, HKEY_LOCAL_MACHINE
+
     key_path = 'SOFTWARE\\Classes\\VisualStudio.accessor.' + vs_version + '.0\\shell\\Open'
     try:
         with OpenKey(HKEY_LOCAL_MACHINE, key_path) as key:
@@ -206,7 +223,7 @@ def _find_devenv_path(vs_version):
             elif ' ' in cmdline:
                 cmdline = cmdline.split(' ')[0]
             devenv_path = cmdline.replace('devenv.exe', 'devenv.com')
-    #pylint: disable=broad-except
+    # pylint: disable=broad-except
     except Exception:
         pass
 
@@ -228,7 +245,7 @@ def _find_devenv_path(vs_version):
         vstools_path = os.getenv('VS' + vs_version + '0COMNTOOLS')
         if vstools_path is not None:
             # Sanitize this because os.path.join sometimes gets confused
-            if vstools_path[-1] in [ '/', '\\' ]:
+            if vstools_path[-1] in ['/', '\\']:
                 vstools_path = vstools_path[:-1]
             devenv_path = os.path.join(vstools_path, '../../Common7/IDE/devenv.com')
 
@@ -239,9 +256,10 @@ def _find_devenv_path(vs_version):
     logging.info("Found Visual Studio at %s", devenv_path)
     return devenv_path
 
+
 def install_distcc_and_ccache():
-    """ Install environment variables suitable for distcc and ccache usage
-        if relevant.
+    """Install environment variables suitable for distcc and ccache usage
+    if relevant.
     """
     distcc_dir = '/usr/lib/distcc'
     ccache_dir = '/usr/lib/ccache'
@@ -277,7 +295,7 @@ def install_distcc_and_ccache():
 
 
 def upload_symbols(env, symbols, config, two_tier_mode=True):
-    ''' Uploads build symbols to a symbol server '''
+    '''Uploads build symbols to a symbol server'''
 
     sym_store = nimp.symstore.SymStore.get_symstore(env)
     if sym_store is None:
@@ -313,19 +331,21 @@ def upload_symbols(env, symbols, config, two_tier_mode=True):
 
 
 def get_symbol_transactions(symsrv):
-    ''' Retrieves all symbol transactions from a symbol server '''
-    server_txt_path =  os.path.join(symsrv, "000Admin", "server.txt")
+    '''Retrieves all symbol transactions from a symbol server'''
+    server_txt_path = os.path.join(symsrv, "000Admin", "server.txt")
     if not os.path.exists(server_txt_path):
         logging.error("Unable to find the file %s, aborting.", server_txt_path)
         return None
-    line_re = re.compile(r"^(?P<id>\d*),"
-                         r"(?P<operation>(add|del)),"
-                         r"(?P<type>(file|ptr)),"
-                         r"(?P<creation_date>\d{2}\/\d{2}\/\d{4}),"
-                         r"(?P<creation_time>\d{2}:\d{2}:\d{2}),"
-                         r"\"(?P<product_name>[^\"]*)\","
-                         r"\"(?P<version>[^\"]*)\","
-                         r"\"(?P<comment>[^\"]*)\",$")
+    line_re = re.compile(
+        r"^(?P<id>\d*),"
+        r"(?P<operation>(add|del)),"
+        r"(?P<type>(file|ptr)),"
+        r"(?P<creation_date>\d{2}\/\d{2}\/\d{4}),"
+        r"(?P<creation_time>\d{2}:\d{2}:\d{2}),"
+        r"\"(?P<product_name>[^\"]*)\","
+        r"\"(?P<version>[^\"]*)\","
+        r"\"(?P<comment>[^\"]*)\",$"
+    )
     transaction_infos = []
     with open(server_txt_path, "r") as server_txt:
         for line in server_txt.readlines():
@@ -336,14 +356,17 @@ def get_symbol_transactions(symsrv):
             transaction_infos += [match.groupdict()]
     return transaction_infos
 
+
 def delete_symbol_transaction(symsrv, transaction_id):
-    ''' Deletes a symbol transaction from a Microsoft symbol repository '''
-    command  = [ "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
-                 "del",
-                 "/i",
-                 transaction_id,
-                 "/s",
-                 symsrv]
+    '''Deletes a symbol transaction from a Microsoft symbol repository'''
+    command = [
+        "C:/Program Files (x86)/Windows Kits/8.1/Debuggers/x64/symstore.exe",
+        "del",
+        "/i",
+        transaction_id,
+        "/s",
+        symsrv,
+    ]
     if nimp.sys.process.call(command) != 0:
         return False
     return True

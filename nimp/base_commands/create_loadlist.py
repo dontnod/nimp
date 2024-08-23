@@ -30,15 +30,28 @@ import nimp.utils.p4
 
 
 class CreateLoadlist(nimp.command.Command):
-    ''' Generates a list of modified files from a set of Perforce changelists '''
+    '''Generates a list of modified files from a set of Perforce changelists'''
 
     def configure_arguments(self, env, parser):
-        parser.add_argument('changelists', nargs = argparse.ZERO_OR_MORE, help = 'select the changelists to list files from. Defaults to listing all files in havelist', default=[])
-        parser.add_argument('-o', '--output', help = 'output file')
-        parser.add_argument('-e', '--extensions', nargs = argparse.ZERO_OR_MORE, help = 'file extensions to include', default = [ 'uasset', 'umap' ])
-        parser.add_argument('--dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to include', default = ['//{p4client}/...'])
-        parser.add_argument('--exclude-dirs', nargs = argparse.ZERO_OR_MORE, help = 'directories to exclude', default = None)
-        parser.add_argument('--error-on-empty', action = 'store_true', help = 'return an error code if loadlist is empty')
+        parser.add_argument(
+            'changelists',
+            nargs=argparse.ZERO_OR_MORE,
+            help='select the changelists to list files from. Defaults to listing all files in havelist',
+            default=[],
+        )
+        parser.add_argument('-o', '--output', help='output file')
+        parser.add_argument(
+            '-e',
+            '--extensions',
+            nargs=argparse.ZERO_OR_MORE,
+            help='file extensions to include',
+            default=['uasset', 'umap'],
+        )
+        parser.add_argument(
+            '--dirs', nargs=argparse.ZERO_OR_MORE, help='directories to include', default=['//{p4client}/...']
+        )
+        parser.add_argument('--exclude-dirs', nargs=argparse.ZERO_OR_MORE, help='directories to exclude', default=None)
+        parser.add_argument('--error-on-empty', action='store_true', help='return an error code if loadlist is empty')
         nimp.utils.p4.add_arguments(parser)
         nimp.command.add_common_arguments(parser, 'dry_run', 'slice_job')
         return True
@@ -59,7 +72,6 @@ class CreateLoadlist(nimp.command.Command):
         if len(changelists) <= 0:
             changelists = ['#have']
         return list(itertools.product(paths, changelists))
-
 
     @staticmethod
     def _exclude_from_modified_files(exclude_dirs, filepath):
@@ -89,9 +101,9 @@ class CreateLoadlist(nimp.command.Command):
 
         self.has_deleted_files = False
         p4_deleted_files_command = ["fstat", "-F", "headAction=delete"]
-        for (filepath, ) in p4._parse_command_output(p4_deleted_files_command + filespecs,
-                                                     r"^\.\.\. depotFile(.*)$",
-                                                     hide_output=True, encoding='utf-8'):
+        for (filepath,) in p4._parse_command_output(
+            p4_deleted_files_command + filespecs, r"^\.\.\. depotFile(.*)$", hide_output=True, encoding='utf-8'
+        ):
             if not self.has_deleted_files:
                 self.has_deleted_files = True
                 logging.debug('file deletions not considered for loadlist')
@@ -100,13 +112,15 @@ class CreateLoadlist(nimp.command.Command):
         base_command = [
             "fstat",
             # Only list modified files currently accessible
-            "-F", "^headAction=delete & ^headAction=move/delete"
+            "-F",
+            "^headAction=delete & ^headAction=move/delete",
         ]
 
         modified_files = set()
         exclude_dirs = self._normpath_dirs(env.exclude_dirs)
-        for (filepath, ) in p4._parse_command_output(base_command + filespecs, r"^\.\.\. clientFile(.*)$",
-                                                     hide_output=True, encoding='utf-8'):
+        for (filepath,) in p4._parse_command_output(
+            base_command + filespecs, r"^\.\.\. clientFile(.*)$", hide_output=True, encoding='utf-8'
+        ):
             modified_file_path = os.path.normpath(filepath)
             if not self._exclude_from_modified_files(exclude_dirs, modified_file_path):
                 modified_files.add(modified_file_path)
@@ -127,7 +141,6 @@ class CreateLoadlist(nimp.command.Command):
             modified_files = slice
 
         return modified_files
-
 
     def run(self, env):
         loadlist_files = self.get_modified_files(env, env.extensions)

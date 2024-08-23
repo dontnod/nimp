@@ -20,9 +20,11 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Nimp custom excetpions  '''
+'''Nimp custom excetpions'''
+
 
 class NimpCommandFailed(Exception):
-    """ Catched process failure of a nimp command """
+    """Catched process failure of a nimp command"""
+
     def __init__(self, *args, **kwargs):
         pass

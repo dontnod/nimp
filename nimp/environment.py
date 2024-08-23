@@ -20,8 +20,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Class and function relative to the nimp environment, i.e. configuration
-values and command line parameters set for this nimp execution '''
+'''Class and function relative to the nimp environment, i.e. configuration
+values and command line parameters set for this nimp execution'''
 
 import argparse
 import re
@@ -40,18 +40,19 @@ import nimp.unreal
 import nimp.utils.profiling
 
 
-_LOG_FORMATS = { # pylint: disable = invalid-name
+_LOG_FORMATS = {  # pylint: disable = invalid-name
     'standard': '%(asctime)s [%(levelname)s] %(message)s'
 }
 
-_SUMMARY_HANDLERS = { # pylint: disable = invalid-name
+_SUMMARY_HANDLERS = {  # pylint: disable = invalid-name
     'default': nimp.summary.DefaultSummaryHandler,
-    'unreal': nimp.unreal.UnrealSummaryHandler
+    'unreal': nimp.unreal.UnrealSummaryHandler,
 }
 
 
 class Environment:
-    ''' Environment '''
+    '''Environment'''
+
     config_loaders = []
     argument_loaders = []
 
@@ -63,9 +64,8 @@ class Environment:
         self.summary = None
         self.debug_env = {}
 
-
     def load_argument_parser(self, parent_parser):
-        ''' Returns an argument parser for nimp and its subcommands '''
+        '''Returns an argument parser for nimp and its subcommands'''
         # prog_description = 'Script utilities to ship games, mostly Unreal Engine based ones.'
         # parser = argparse.ArgumentParser(description = prog_description)
         prog_description = 'Script utilities to ship games, mostly Unreal Engine based ones.'
@@ -73,40 +73,39 @@ class Environment:
         log_group = parser.add_argument_group("Logging")
         profiling_group = parser.add_argument_group("Profiling")
 
-        log_group.add_argument('-s',
-                               '--summary',
-                               metavar='<file>',
-                               help='Enables summary mode (c.f. documentation)',
-                               type=str,
-                               default=None)
+        log_group.add_argument(
+            '-s',
+            '--summary',
+            metavar='<file>',
+            help='Enables summary mode (c.f. documentation)',
+            type=str,
+            default=None,
+        )
 
         assert 'default' in _SUMMARY_HANDLERS
-        log_group.add_argument('--summary-format',
-                               metavar='<format>',
-                               help='Choose the summary format',
-                               type=str,
-                               choices = list(_SUMMARY_HANDLERS.keys()),
-                               default='default')
+        log_group.add_argument(
+            '--summary-format',
+            metavar='<format>',
+            help='Choose the summary format',
+            type=str,
+            choices=list(_SUMMARY_HANDLERS.keys()),
+            default='default',
+        )
 
-        log_group.add_argument('--do-nothing',
-                               help='Just parses arguments and exits (used for CIS tests)',
-                               action='store_true')
+        log_group.add_argument(
+            '--do-nothing', help='Just parses arguments and exits (used for CIS tests)', action='store_true'
+        )
 
-        log_group.add_argument('-v',
-                               '--verbose',
-                               help='Enable verbose mode',
-                               action='store_true')
+        log_group.add_argument('-v', '--verbose', help='Enable verbose mode', action='store_true')
 
-        profiling_group.add_argument('--nimp-profiling',
-                                     help='Profile nimp command',
-                                     action='store_true')
+        profiling_group.add_argument('--nimp-profiling', help='Profile nimp command', action='store_true')
 
         nimp.command.add_commands_subparser(self.command_list, parser, self)
 
         return parser
 
     def load_arguments(self):
-        ''' Executes arguments loader to clean and tweak argument variables '''
+        '''Executes arguments loader to clean and tweak argument variables'''
         for argument_loader in Environment.argument_loaders:
             if not argument_loader(self):
                 return False
@@ -123,30 +122,32 @@ class Environment:
                     action.default = default_value
 
     def run(self, argv):
-        ''' Runs nimp with argv and argc '''
+        '''Runs nimp with argv and argc'''
         exit_success = 0
         exit_error = 1
         exit_warnings = 2
 
         # parses sys.argv in search of a manual uproject input
         parent_parser = argparse.ArgumentParser(add_help=False)
-        parent_parser.add_argument('--uproject',
-                                   metavar='<unreal project>',
-                                   help='Select an Unreal project to work with, i.e. PRO/PRO.uproject',
-                                   type=str)
-        parent_parser.add_argument('--branch',
-                                   metavar='<project branch>',
-                                   help='Select a project branch to work with',
-                                   type=str)
-        parent_parser.add_argument('--user-config',
-                                   metavar='<config file>',
-                                   help='Custom nimp configuration file',
-                                   type=str)
-        parent_parser.add_argument('--default-to-config',
-                                   action='store_true',
-                                   default=False,
-                                   help='If enabled, missing arguments will be read from the configuration files')
-        parent_args, unkown_args  = parent_parser.parse_known_args(sys.argv[1:])
+        parent_parser.add_argument(
+            '--uproject',
+            metavar='<unreal project>',
+            help='Select an Unreal project to work with, i.e. PRO/PRO.uproject',
+            type=str,
+        )
+        parent_parser.add_argument(
+            '--branch', metavar='<project branch>', help='Select a project branch to work with', type=str
+        )
+        parent_parser.add_argument(
+            '--user-config', metavar='<config file>', help='Custom nimp configuration file', type=str
+        )
+        parent_parser.add_argument(
+            '--default-to-config',
+            action='store_true',
+            default=False,
+            help='If enabled, missing arguments will be read from the configuration files',
+        )
+        parent_args, unkown_args = parent_parser.parse_known_args(sys.argv[1:])
 
         # Set this early so we can use it from command.add_commands_subparser
         self.default_to_config = parent_args.default_to_config
@@ -239,7 +240,7 @@ class Environment:
                         success = self.command.run(self)
                         if not success:
                             raise NimpCommandFailed("Nimp command failed.")
-                #pylint: disable=broad-except
+                # pylint: disable=broad-except
                 except NimpCommandFailed:
                     pass
                 except Exception as exception:
@@ -252,7 +253,6 @@ class Environment:
             # If command succeed and summary mode is on, we check for captured
             # errors or warnings
             if self.summary is not None:
-
                 if log_handler.has_errors():
                     logging.error('Command succeeded with errors')
                     return exit_warnings
@@ -264,8 +264,8 @@ class Environment:
             return exit_success
 
     def format(self, fmt, **override_kwargs):
-        ''' Interpolates given string with config values & command line para-
-            meters set in the environment '''
+        '''Interpolates given string with config values & command line para-
+        meters set in the environment'''
         assert isinstance(fmt, str)
         kwargs = vars(self).copy()
         kwargs.update(override_kwargs)
@@ -274,13 +274,13 @@ class Environment:
         return result
 
     def call(self, method, *args, **override_kwargs):
-        ''' Calls a method after interpolating its arguments '''
+        '''Calls a method after interpolating its arguments'''
         kwargs = vars(self).copy()
         kwargs.update(override_kwargs)
         return method(*args, **kwargs)
 
     def check_config(self, *var_names):
-        ''' Checks all configuration values are set in nimp configuration '''
+        '''Checks all configuration values are set in nimp configuration'''
         all_ok = True
         for it in var_names:
             if not hasattr(self, it):
@@ -291,7 +291,7 @@ class Environment:
         return all_ok
 
     def load_config_file(self, filename):
-        ''' Loads a config file and adds its values to this environment '''
+        '''Loads a config file and adds its values to this environment'''
         settings_content = read_config_file(filename)
 
         if settings_content is None:
@@ -304,10 +304,10 @@ class Environment:
         return True
 
     def setup_envvars(self):
-        ''' Applies environment variables from .nimp.conf '''
+        '''Applies environment variables from .nimp.conf'''
 
     def _load_nimp_conf(self, conf_file):
-        ''' legacy - loads project conf before pg8 4.24 preiew - xpj_conf in the future ? '''
+        '''legacy - loads project conf before pg8 4.24 preiew - xpj_conf in the future ?'''
         nimp_conf_file = conf_file
         nimp_conf_dir = nimp.system.find_dir_containing_file(nimp_conf_file)
 
@@ -324,7 +324,7 @@ class Environment:
         return True
 
     def _load_project_conf(self):
-        ''' Loads project conf inside uproject folder - leaves ability to have xpj conf in xpj folder '''
+        '''Loads project conf inside uproject folder - leaves ability to have xpj conf in xpj folder'''
         if not hasattr(self, 'uproject_dir') or not self.uproject_dir:
             return True
         if not hasattr(self, 'unreal_dir') or not self.unreal_dir:
@@ -343,7 +343,6 @@ class Environment:
         # TODO: This is a clumsy way to find root, find another way.
         unreal_file = os.path.join(self.unreal_root_path, 'Engine', 'Build', 'Build.version')
         root_dir = nimp.system.find_dir_containing_file(unreal_file)
-
 
         if not root_dir:
             logging.error('%s not found. It is now a nimp requirement.' % unreal_file)
@@ -375,7 +374,7 @@ class Environment:
         logging.debug('uproject specified by user : %s' % self._uproject)
 
     def display_unreal_info(self):
-        ''' display engine and selected uproject info '''
+        '''display engine and selected uproject info'''
         if hasattr(self, 'unreal_full_version') and hasattr(self, 'unreal_dir'):
             logging.info(f'Found Unreal engine {self.unreal_full_version} in {self.unreal_dir}')
         else:
@@ -386,15 +385,15 @@ class Environment:
             logging.info('No Unreal project loaded')
 
     def has_attribute(self, attribute_name):
-        ''' Check that the attribute exists and has a value
-        '''
+        '''Check that the attribute exists and has a value'''
         return hasattr(self, attribute_name) and getattr(self, attribute_name) is not None
 
+
 def execute_hook(hook_name, *args):
-    ''' Executes a hook in the .nimp/hooks directory '''
+    '''Executes a hook in the .nimp/hooks directory'''
     # Always look for project level hook first
     hook_module = nimp.system.try_import('hooks.' + hook_name)
-    if hook_module is None: # If none found, try plugins level
+    if hook_module is None:  # If none found, try plugins level
         for entry in pkg_resources.iter_entry_points('nimp.plugins'):
             hook_module = nimp.system.try_import(entry.module_name + '.hooks.' + hook_name)
             if hook_module:
@@ -406,7 +405,7 @@ def execute_hook(hook_name, *args):
 
 
 def read_config_file(filename):
-    ''' Reads a config file and returns a dictionary with values defined in it '''
+    '''Reads a config file and returns a dictionary with values defined in it'''
     try:
         conf = open(filename, "rb").read()
     except IOError as ex:
@@ -415,12 +414,12 @@ def read_config_file(filename):
     # Parse configuration file
     try:
         local_vars = {}
-        #pylint: disable=exec-used
+        # pylint: disable=exec-used
         exec(compile(conf, filename, 'exec'), local_vars)
         if "config" in local_vars:
             return local_vars["config"]
         logging.error("Configuration file %s has no 'config' section.", filename)
-    #pylint: disable=broad-except
+    # pylint: disable=broad-except
     except Exception as ex:
         logging.error("Unable to load configuration file %s: %s", filename, str(ex))
         return None

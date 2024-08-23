@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Nimp entry point '''
+'''Nimp entry point'''
 
 import logging
 import os
@@ -42,26 +42,28 @@ sys.dont_write_bytecode = 1
 if 'MSYS_NT' in platform.system():
     raise NotImplementedError('MSYS Python is not supported; please use MinGW Python instead')
 
+
 def _clean_environment_variables():
     # Some Windows tools don’t like "duplicate" environment variables, i.e.
     # where only the case differs; we remove any lowercase version we find.
     # The loop is O(n²) but we don’t have that many entries so it’s all right.
     env_vars = [x.lower() for x in os.environ.keys()]
     for dupe in {x for x in env_vars if env_vars.count(x) > 1}:
-        dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe ])
+        dupelist = sorted([x for x in os.environ.keys() if x.lower() == dupe])
         logging.warning('Fixing duplicate environment variable: %s', '/'.join(dupelist))
         for duplicated in dupelist[1:]:
             del os.environ[duplicated]
     # … But in some cases (Windows Python) the duplicate variables are masked
     # by the os.environ wrapper, so we do it another way to make sure there
     # are no dupes:
-    for key in sorted(os.environ.keys()): #pylint: disable=consider-iterating-dictionary
+    for key in sorted(os.environ.keys()):  # pylint: disable=consider-iterating-dictionary
         val = os.environ[key]
         del os.environ[key]
         os.environ[key] = val
 
-def main(argv = sys.argv):
-    ''' Nimp entry point '''
+
+def main(argv=sys.argv):
+    '''Nimp entry point'''
 
     start = time.time()
 
@@ -76,8 +78,7 @@ def main(argv = sys.argv):
 
         nimp.environment.Environment.config_loaders += [nimp.unreal.load_config]
 
-        argument_loaders = [nimp.command.load_arguments,
-                            nimp.unreal.load_arguments]
+        argument_loaders = [nimp.command.load_arguments, nimp.unreal.load_arguments]
 
         nimp.environment.Environment.argument_loaders += argument_loaders
 
@@ -96,6 +97,7 @@ def main(argv = sys.argv):
     logging.info("Command took %f seconds.", end - start)
 
     return result
+
 
 if __name__ == "__main__":
     sys.exit(main())

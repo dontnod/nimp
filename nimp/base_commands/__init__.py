@@ -20,14 +20,14 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Nimp subcommands declarations '''
+'''Nimp subcommands declarations'''
 
 __all__ = [
-	'automation',
+    'automation',
     'build',
     'check',
     'commandlet',
-	'create_loadlist',
+    'create_loadlist',
     'dev',
     'download_fileset',
     'fileset',

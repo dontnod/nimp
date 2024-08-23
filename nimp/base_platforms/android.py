@@ -1,8 +1,8 @@
-
 import nimp.sys.platform
 
+
 class Android(nimp.sys.platform.Platform):
-    ''' Android platform description '''
+    '''Android platform description'''
 
     def __init__(self, env):
         super().__init__(env)

@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Uploading related commands '''
+'''Uploading related commands'''
 
 import itertools
 import os
@@ -29,38 +29,33 @@ import nimp.command
 import nimp.system
 import nimp.build
 
+
 class Upload(nimp.command.CommandGroup):
-    ''' Uploading commands '''
+    '''Uploading commands'''
+
     def __init__(self):
         super(Upload, self).__init__([_Symbols()])
 
     def is_available(self, env):
         return True, ''
 
+
 class _Symbols(nimp.command.Command):
-    ''' Uploads build symbols (and binaries!) to a symbol server '''
+    '''Uploads build symbols (and binaries!) to a symbol server'''
+
     def __init__(self):
         super(_Symbols, self).__init__()
 
     def configure_arguments(self, env, parser):
-        nimp.command.add_common_arguments(parser,
-                                          'dry_run',
-                                          'platform',
-                                          'target',
-                                          'revision')
-        parser.add_argument('-l',
-                            '--configurations',
-                            help    = 'Configurations and targets to upload',
-                            metavar = '<configurations>',
-                            nargs = '+')
-        parser.add_argument('-z',
-                            '--compress',
-                            help    = 'Compress symbols when uploading',
-                            action  = 'store_true')
+        nimp.command.add_common_arguments(parser, 'dry_run', 'platform', 'target', 'revision')
+        parser.add_argument(
+            '-l', '--configurations', help='Configurations and targets to upload', metavar='<configurations>', nargs='+'
+        )
+        parser.add_argument('-z', '--compress', help='Compress symbols when uploading', action='store_true')
 
-        parser.add_argument('--single-tier',
-                            help    = 'Do not use symstore /3 option even if available',
-                            action  = 'store_true')
+        parser.add_argument(
+            '--single-tier', help='Do not use symstore /3 option even if available', action='store_true'
+        )
 
         return True
 
@@ -85,19 +80,25 @@ class _Symbols(nimp.command.Command):
             tmp_binaries_to_publish = binaries_to_publish.override(configuration=config, target=target)
             tmp_binaries_to_publish.load_set("binaries")
 
-            iterators.append(_Symbols._chain_symbols_and_binaries(symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file))
+            iterators.append(
+                _Symbols._chain_symbols_and_binaries(
+                    symbols_to_publish(), binaries_to_publish(), has_symbols_inside_binary_file
+                )
+            )
 
-        return nimp.build.upload_symbols(env, itertools.chain(*iterators), '_'.join(env.configurations), two_tier_mode=not env.single_tier)
+        return nimp.build.upload_symbols(
+            env, itertools.chain(*iterators), '_'.join(env.configurations), two_tier_mode=not env.single_tier
+        )
 
     @staticmethod
     def _chain_symbols_and_binaries(symbols, binaries, has_symbols_inside_binary_file=False):
         # sort of itertools.chain, but binaries are pushed only if corresp. symbol is present
         symbol_roots = []
-        for (symbol_src, __symbol_dest) in symbols:
+        for symbol_src, __symbol_dest in symbols:
             symbol_root, _ = os.path.splitext(symbol_src)
             symbol_roots.append(symbol_root)
             yield symbol_src
-        for (binary_src, __binary_dest) in binaries:
+        for binary_src, __binary_dest in binaries:
             # (it's always Microsoft platform so OK to just splitext)
             binary_root, _ = os.path.splitext(binary_src)
             # symbols inside binaries, no symbols, just yield binaries and no corresponding symbols

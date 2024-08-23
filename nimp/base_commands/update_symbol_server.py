@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Command to update the symbol server '''
+'''Command to update the symbol server'''
 
 import os
 import shutil
@@ -52,21 +52,18 @@ def _copy_file(source, destination, dry_run):
 
 
 class UpdateSymbolServer(nimp.command.Command):
-    ''' [DEPRECATED} (use nimp symbol-server) Update the symbol server '''
-
+    '''[DEPRECATED} (use nimp symbol-server) Update the symbol server'''
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run', 'free_parameters')
-        parser.add_argument('--symbol-type', required = True, metavar = '<type>', help = 'Set the type of symbols to upload')
-        parser.add_argument('--platform', metavar = '<platform>', help = 'Set the platform to upload symbols for')
+        parser.add_argument('--symbol-type', required=True, metavar='<type>', help='Set the type of symbols to upload')
+        parser.add_argument('--platform', metavar='<platform>', help='Set the platform to upload symbols for')
         return True
-
 
     def is_available(self, env):
         if not hasattr(env, 'symbol_servers'):
             return False, 'symbol_servers is not defined'
         return True, ''
-
 
     def run(self, env):
         symbol_server = nimp.model.symbol_server.configure_symbol_server(env, env.symbol_type)

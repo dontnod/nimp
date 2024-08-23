@@ -1,5 +1,4 @@
-
-''' Nimp platform declarations '''
+'''Nimp platform declarations'''
 
 __all__ = [
     'android',

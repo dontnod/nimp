@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' System utilities (paths, processes) '''
+'''System utilities (paths, processes)'''
 
 import fnmatch
 import json
@@ -39,12 +39,13 @@ import nimp.environment
 import nimp.sys.platform
 import nimp.sys.process
 
+
 def try_import(module_name):
-    ''' Tries to import a module, return none if unavailable '''
+    '''Tries to import a module, return none if unavailable'''
     try:
         return importlib.import_module(module_name)
     except ModuleNotFoundError:
-        pass # Ignore this error
+        pass  # Ignore this error
     except ImportError as ex:
         if ex.name == module_name:
             logging.debug('No module %s found', module_name)
@@ -52,8 +53,9 @@ def try_import(module_name):
             logging.warning('%s', ex)
     return None
 
-def try_execute(action, exception_types, attempt_maximum = 5, retry_delay = 10):
-    ''' Attempts to execute an action, and retries when catching one of the specified exceptions '''
+
+def try_execute(action, exception_types, attempt_maximum=5, retry_delay=10):
+    '''Attempts to execute an action, and retries when catching one of the specified exceptions'''
     attempt = 1
     while attempt <= attempt_maximum:
         try:
@@ -64,6 +66,7 @@ def try_execute(action, exception_types, attempt_maximum = 5, retry_delay = 10):
                 raise exception
             time.sleep(retry_delay)
             attempt += 1
+
 
 def try_remove(file_path, dry_run):
     if os.path.exists(file_path):
@@ -77,8 +80,9 @@ def try_remove(file_path, dry_run):
             except OSError as exception:
                 logging.warning("Failed to remove %s: %s", file_path, exception)
 
+
 def split_path(path):
-    ''' Returns an array of path elements '''
+    '''Returns an array of path elements'''
     splitted_path = []
     while True:
         (path, folder) = os.path.split(path)
@@ -92,17 +96,20 @@ def split_path(path):
 
     return splitted_path
 
+
 def path_to_array(path):
-    ''' Splits a path to an array '''
+    '''Splits a path to an array'''
     directory, file = os.path.split(path)
-    return path_to_array(directory) + [file] if directory  else [file]
+    return path_to_array(directory) + [file] if directory else [file]
+
 
 def standardize_path(path):
-    ''' Transform a path to appear the same across operating systems '''
+    '''Transform a path to appear the same across operating systems'''
     return os.path.normpath(path).replace('\\', '/') if path else path
 
+
 def sanitize_path(path):
-    ''' Performs slash replacement to work on both msys and windows '''
+    '''Performs slash replacement to work on both msys and windows'''
     if path is None:
         return None
 
@@ -121,13 +128,14 @@ def safe_rmtree(path):
     def remove_readonly(func, path, excinfo):
         os.chmod(path, stat.S_IWRITE)
         func(path)
+
     shutil.rmtree(path, onerror=remove_readonly)
 
 
 def safe_makedirs(path):
-    ''' This function is necessary because Python’s makedirs cannot create a
-        directory such as d:\\data\\foo/bar because it’ll split it as "d:\\data"
-        and "foo/bar" then try to create a directory named "foo/bar" '''
+    '''This function is necessary because Python’s makedirs cannot create a
+    directory such as d:\\data\\foo/bar because it’ll split it as "d:\\data"
+    and "foo/bar" then try to create a directory named "foo/bar"'''
     path = sanitize_path(path)
 
     try:
@@ -140,7 +148,7 @@ def safe_makedirs(path):
 
 
 def robocopy(src, dest, ignore_older=False, preserve_metadata=True):
-    ''' 'Robust' copy. '''
+    ''' 'Robust' copy.'''
 
     # Retry up to 5 times after I/O errors
     max_retries = 10
@@ -148,8 +156,12 @@ def robocopy(src, dest, ignore_older=False, preserve_metadata=True):
     src = sanitize_path(src)
     dest = sanitize_path(dest)
 
-    if ignore_older and os.path.isfile(src) and os.path.isfile(dest) \
-       and os.stat(src).st_mtime - os.stat(dest).st_mtime < 1:
+    if (
+        ignore_older
+        and os.path.isfile(src)
+        and os.path.isfile(dest)
+        and os.stat(src).st_mtime - os.stat(dest).st_mtime < 1
+    ):
         logging.info('Skipping "%s", not newer than "%s"', src, dest)
         return True
 
@@ -176,7 +188,7 @@ def robocopy(src, dest, ignore_older=False, preserve_metadata=True):
                     return False
                 logging.warning('Retrying after 10 seconds (%s retries left)', max_retries)
                 time.sleep(10)
-            except Exception as ex: #pylint: disable=broad-except
+            except Exception as ex:  # pylint: disable=broad-except
                 logging.error('Copy error: %s', ex)
                 return False
     else:
@@ -185,8 +197,9 @@ def robocopy(src, dest, ignore_older=False, preserve_metadata=True):
 
     return True
 
+
 def safe_delete(path):
-    ''' 'Robust' delete. '''
+    ''' 'Robust' delete.'''
 
     path = sanitize_path(path)
 
@@ -199,8 +212,8 @@ def safe_delete(path):
 
 
 def all_map(mapper, fileset):
-    ''' Passes all the files in the given fileset and checks it returns true
-        for every file '''
+    '''Passes all the files in the given fileset and checks it returns true
+    for every file'''
     for src, dest in fileset:
         if src is None:
             pass
@@ -210,7 +223,7 @@ def all_map(mapper, fileset):
 
 
 def find_dir_containing_file(filename):
-    ''' Recursively search parent directories for a file '''
+    '''Recursively search parent directories for a file'''
     search_dir = '.'
     while os.path.abspath(os.sep) != os.path.abspath(search_dir):
         if os.path.exists(os.path.join(search_dir, filename)):
@@ -224,21 +237,24 @@ def find_dir_containing_file(filename):
 
 
 def map_files(env):
-    ''' Returns a file mapper using environment parameters '''
+    '''Returns a file mapper using environment parameters'''
     ctx = [None]
+
     def _default_mapper(_, dest):
         yield (env.root_dir if ctx[0].root_based else None, dest)
 
-    ret = FileMapper(_default_mapper, format_args = vars(env))
+    ret = FileMapper(_default_mapper, format_args=vars(env))
     ctx[0] = ret
     return ret
 
-class FileMapper():
-    ''' A file mapper is a tree of rules used to enumerate files.
-        TODO : Eventuellement utiliser les PurePath, de python 3.4, qui simplifieraient
-        quelque trucs, nottament dans les globs.
+
+class FileMapper:
+    '''A file mapper is a tree of rules used to enumerate files.
+    TODO : Eventuellement utiliser les PurePath, de python 3.4, qui simplifieraient
+    quelque trucs, nottament dans les globs.
     '''
-    def __init__(self, mapper, format_args = None):
+
+    def __init__(self, mapper, format_args=None):
         super(FileMapper, self).__init__()
         self._mapper = mapper
         self._next = []
@@ -247,9 +263,9 @@ class FileMapper():
         # Newer filesets should explicitly use {root_dir} or {unreal_dir} etc.
         self.root_based = True
 
-    def __call__(self, src = None, dest = None):
+    def __call__(self, src=None, dest=None):
         results = self._mapper(src, dest) if self._mapper else [(src, dest)]
-        for result in sorted(results, key = lambda t: t[1] or t[0] or ""):
+        for result in sorted(results, key=lambda t: t[1] or t[0] or ""):
             for next_mapper in self._next:
                 for next_result in next_mapper(*result):
                     yield next_result
@@ -258,7 +274,8 @@ class FileMapper():
                 yield result
 
     def glob(self, *patterns):
-        ''' Globs given patterns, feedding the resulting files '''
+        '''Globs given patterns, feedding the resulting files'''
+
         def _glob_mapper(src, dest):
             src = sanitize_path(src)
             dest = sanitize_path(dest)
@@ -292,20 +309,21 @@ class FileMapper():
                     yield (glob_source, new_dest)
                 if not found:
                     logging.info('No match for "%s" in "%s" (aka. "%s")', pattern, src, glob_path)
+
         return self.append(_glob_mapper)
 
-    def xglob(self, src = '.', dest = '.', pattern = '**'):
-        ''' More user-friendly glob '''
+    def xglob(self, src='.', dest='.', pattern='**'):
+        '''More user-friendly glob'''
         return self.src(src).to(dest).glob(pattern)
 
-    def append(self, mapper, format_args = None):
-        ''' Appends a filter / generator function to the end of this mapper '''
+    def append(self, mapper, format_args=None):
+        '''Appends a filter / generator function to the end of this mapper'''
         next_mapper = FileMapper(mapper, format_args or self._format_args)
         self._next.append(next_mapper)
         return next_mapper
 
     def load_set(self, set_name):
-        ''' Loads a file mapper from a configuration file '''
+        '''Loads a file mapper from a configuration file'''
         set_module_name = self._format(set_name)
         set_module = None
         try:
@@ -324,7 +342,7 @@ class FileMapper():
         return self.get_leaves()
 
     def get_leaves(self):
-        ''' Return all terminal leaves of the tree. '''
+        '''Return all terminal leaves of the tree.'''
         for mapper in self._next:
             for leaf in mapper.get_leaves():
                 yield leaf
@@ -332,7 +350,7 @@ class FileMapper():
             yield self
 
     def override(self, **fmt):
-        ''' Inserts a node adding or overriding given format arguments. '''
+        '''Inserts a node adding or overriding given format arguments.'''
 
         def _identity_mapper(src, dest):
             yield src, dest
@@ -347,14 +365,14 @@ class FileMapper():
             setattr(new_env, key, value)
         new_env.load_arguments()
         format_args = vars(new_env)
-        return self.append(_identity_mapper, format_args = format_args)
+        return self.append(_identity_mapper, format_args=format_args)
 
     def exclude(self, *patterns):
-        ''' Exclude file patterns from the set '''
+        '''Exclude file patterns from the set'''
         return self._exclude(False, *patterns)
 
     def exclude_ignore_case(self, *patterns):
-        ''' Exclude file patterns from the set ignoring case '''
+        '''Exclude file patterns from the set ignoring case'''
         return self._exclude(True, *patterns)
 
     def _exclude(self, ignore_case, *patterns):
@@ -367,19 +385,22 @@ class FileMapper():
                     logging.debug("Excluding file %s", src)
                     return
             yield (src, dest)
+
         return self.append(_exclude_mapper)
 
     def files(self):
-        ''' Discards directories from processed paths '''
+        '''Discards directories from processed paths'''
+
         def _files_mapper(src, dest):
             if os.path.isfile(src):
                 yield (src, dest)
+
         return self.append(_files_mapper)
 
     def src(self, from_src):
-        ''' Prepends 'src' to path given to subsequent calls.
-        '''
+        '''Prepends 'src' to path given to subsequent calls.'''
         from_src = self._format(from_src)
+
         def _src_mapper(src, dest):
             if src is None:
                 src = from_src
@@ -387,12 +408,13 @@ class FileMapper():
                 src = os.path.join(self._format(src), from_src)
             src = os.path.normpath(sanitize_path(src))
             yield (src, dest)
+
         return self.append(_src_mapper)
 
     def once(self):
-        ''' Stores processed files and don't process them if they already have been.
-        '''
+        '''Stores processed files and don't process them if they already have been.'''
         processed_files = set()
+
         def _once_mapper(src, dest):
             if src is None:
                 raise Exception("once() called on empty fileset")
@@ -403,8 +425,8 @@ class FileMapper():
         return self.append(_once_mapper)
 
     def newer(self):
-        ''' Ignore files when source is newer than destination.
-        '''
+        '''Ignore files when source is newer than destination.'''
+
         def _newer_mapper(src, dest):
             if src is None or dest is None:
                 raise Exception("newer() called on empty fileset")
@@ -416,9 +438,10 @@ class FileMapper():
         return self.append(_newer_mapper)
 
     def recursive(self):
-        ''' Recurvively list all children of processed source if it is a
-            directory.
+        '''Recurvively list all children of processed source if it is a
+        directory.
         '''
+
         def _recursive_mapper(src, dest):
             if src is None:
                 raise Exception("recursive() called on empty fileset")
@@ -432,26 +455,29 @@ class FileMapper():
                         child_dest = os.path.normpath(file)
                     for child_source, child_destination in _recursive_mapper(child_source, child_dest):
                         yield (child_source, child_destination)
+
         return self.append(_recursive_mapper)
 
-    def replace(self, pattern, repl, flags = 0):
-        ''' Performs a re.sub on destination
-        '''
+    def replace(self, pattern, repl, flags=0):
+        '''Performs a re.sub on destination'''
         pattern = self._format(pattern)
         repl = self._format(repl)
+
         def _replace_mapper(src, dest):
             if dest is None:
                 raise Exception("replace() called with dest = None")
-            dest = re.sub(pattern, repl, dest, flags = flags)
+            dest = re.sub(pattern, repl, dest, flags=flags)
             yield (src, dest)
+
         return self.append(_replace_mapper)
 
-    #pylint: disable=invalid-name
+    # pylint: disable=invalid-name
     def to(self, to_destination):
-        ''' Inserts a nodes prepending given 'to_destination' to each destination
-            path processed.
+        '''Inserts a nodes prepending given 'to_destination' to each destination
+        path processed.
         '''
         to_destination = self._format(to_destination)
+
         def _to_mapper(src, dest):
             if dest is None:
                 dest = to_destination
@@ -459,51 +485,53 @@ class FileMapper():
                 dest = os.path.join(dest, to_destination)
             dest = sanitize_path(dest)
             yield (src, dest)
+
         return self.append(_to_mapper)
 
     def upper(self):
-        ''' Yields all destination files uppercase
-        '''
+        '''Yields all destination files uppercase'''
+
         def _upper_mapper(src, dest):
             if dest is None:
                 raise Exception("upper() called with dest = None")
             yield (src, dest.upper())
+
         return self.append(_upper_mapper)
 
     def _format(self, fmt):
-        ''' Formats given string using format arguments defined on all the
-            nodes of the list.
+        '''Formats given string using format arguments defined on all the
+        nodes of the list.
         '''
         result = fmt.format(**self._format_args)
         result = time.strftime(result)
         return result
 
     def __getattr__(self, name):
-        ''' Usefull to simply retrieve format arguments, in config files for example.
-        '''
+        '''Usefull to simply retrieve format arguments, in config files for example.'''
         try:
             return self._format_args[name]
         except KeyError:
             raise AttributeError(name)
 
-    def to_list(self, mapper_source = None, mapper_destination = None):
-        ''' Helper to execute a file mapper and organize the result '''
+    def to_list(self, mapper_source=None, mapper_destination=None):
+        '''Helper to execute a file mapper and organize the result'''
         default_result = [(standardize_path(mapper_source), standardize_path(mapper_destination))]
         all_files = self(mapper_source, mapper_destination)
         all_files = list(sorted(set(((standardize_path(src), standardize_path(dest)) for src, dest in all_files))))
         return all_files if all_files != default_result else []
 
+
 def load_status(env):
-    ''' Loads the workspace status '''
+    '''Loads the workspace status'''
     status_file_path = os.path.join(env.root_dir, '.nimp', 'status.json')
     if not os.path.exists(status_file_path):
-        return { 'binaries': {}, 'symbols': {}, 'staged': {}, 'package': {} }
+        return {'binaries': {}, 'symbols': {}, 'staged': {}, 'package': {}}
     with open(status_file_path) as status_file:
         return json.load(status_file)
 
 
 def save_status(env, status):
-    ''' Saves the workspace status '''
+    '''Saves the workspace status'''
     status_file_path = os.path.join(env.root_dir, '.nimp', 'status.json')
     with open(status_file_path, 'w') as status_file:
-        return json.dump(status, status_file, indent = 4)
+        return json.dump(status, status_file, indent=4)

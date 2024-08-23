@@ -1,4 +1,3 @@
-
 import glob
 import logging
 import os
@@ -8,8 +7,9 @@ import subprocess
 from nimp.base_platforms.basegdk import BaseGDK
 import nimp.sys.process
 
+
 class XSX(BaseGDK):
-    ''' XSX platform description '''
+    '''XSX platform description'''
 
     def __init__(self, env):
         super().__init__(env)
@@ -30,7 +30,7 @@ class XSX(BaseGDK):
                 logging.info('\t\t' + xvc)
             raise RuntimeError('Multiple xvc files in ' + package_directory)
 
-        args = [ 'install', xvcs[0] ]
+        args = ['install', xvcs[0]]
         if env.device:
             args.append('/X:' + env.device)
         return XSX.xbapp(args, env.dry_run)
@@ -42,12 +42,13 @@ class XSX(BaseGDK):
         installed_packages = self.get_installed_packages(env.device)
         package_name = self.pick_package(installed_packages, package_name, env.unreal_config)
 
-        args = [ 'launch', package_name ]
+        args = ['launch', package_name]
         if env.device:
             args.append('/X:' + env.device)
         return XSX.xbapp(args, env.dry_run)
 
     _PACKAGE_NAME_RE = re.compile(r'        (\S+)$')
+
     def get_installed_packages(self, device_ip):
         cmdline = '"' + XSX.XBAPP + '" list'
         if device_ip:
@@ -55,7 +56,7 @@ class XSX(BaseGDK):
         status, output = subprocess.getstatusoutput(cmdline)
         if status != 0:
             raise RuntimeError('Failed to get list of packages')
-        
+
         installed_packages = []
         for line in output.split('\n'):
             m = XSX._PACKAGE_NAME_RE.match(line)
@@ -64,7 +65,7 @@ class XSX(BaseGDK):
             installed_packages.append(m.group(1))
 
         return installed_packages
- 
+
     def pick_package(self, installed_packages, package_name, configuration):
         matching_packages = []
         for candidate in installed_packages:
@@ -142,7 +143,7 @@ class XSX(BaseGDK):
         logging.info(XSX.XBCONNECT + ' /Q /B')
         status, output = subprocess.getstatusoutput('"' + XSX.XBCONNECT + '" /Q /B')
         if status != 0:
-            raise(ValueError('invalid xbox kit ip address'))
+            raise (ValueError('invalid xbox kit ip address'))
 
         return output
 
@@ -172,7 +173,7 @@ class XSX(BaseGDK):
             if m:
                 return str(m.group(1))
 
-        raise(ValueError('invalid xbox kit console type'))
+        raise (ValueError('invalid xbox kit console type'))
 
     @staticmethod
     def kit_console_name(kit):

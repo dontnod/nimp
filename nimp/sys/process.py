@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Process-related system utilities '''
+'''Process-related system utilities'''
 
 import ctypes
 import logging
@@ -35,9 +35,19 @@ import time
 import nimp.sys.platform
 
 
-def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
-         capture_output=False, capture_debug=False, hide_output=False, dry_run=False, timeout=None):
-    ''' Calls a process redirecting its output to nimp's output '''
+def call(
+    command,
+    cwd='.',
+    heartbeat=0,
+    stdin=None,
+    encoding='utf-8',
+    capture_output=False,
+    capture_debug=False,
+    hide_output=False,
+    dry_run=False,
+    timeout=None,
+):
+    '''Calls a process redirecting its output to nimp's output'''
     command = _sanitize_command(command)
 
     if not hide_output:
@@ -55,12 +65,14 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
     # going to make the callee lag a lot. In Python 3.3.1 this is now the
     # default behaviour, but it used to default to 0.
     try:
-        process = subprocess.Popen(command,
-                                   cwd     = cwd,
-                                   stdout  = subprocess.PIPE,
-                                   stderr  = subprocess.PIPE,
-                                   stdin   = subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
-                                   bufsize = -1)
+        process = subprocess.Popen(
+            command,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
+            bufsize=-1,
+        )
     except FileNotFoundError as ex:
         logging.error(ex)
         return 1
@@ -70,15 +82,11 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
         debug_pipe.start()
 
     # FIXME: put all this in a class instead!
-    all_pipes = [ process.stdout,
-                  process.stderr,
-                  debug_pipe.output if debug_pipe else None ]
+    all_pipes = [process.stdout, process.stderr, debug_pipe.output if debug_pipe else None]
 
-    all_captures = [ [] if capture_output else None,
-                     [] if capture_output else None,
-                     None ]
+    all_captures = [[] if capture_output else None, [] if capture_output else None, None]
 
-    debug_info = [ False ]
+    debug_info = [False]
 
     def _heartbeat_worker(heartbeat):
         last_time = time.monotonic()
@@ -107,7 +115,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
                 (decoding_format, 'strict'),
                 ('ascii', 'backslashreplace') if force_ascii else ('utf-8-sig', 'strict'),
                 ('cp850', 'strict') if nimp.sys.platform.is_windows() else ('utf-8-sig', 'replace'),
-                ('cp850', 'replace')
+                ('cp850', 'replace'),
             ]
             for data in iter(in_pipe.readline, b''):
                 for encoding, errors in encodings:
@@ -135,7 +143,6 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
             # or we’ll hog the CPU.
             time.sleep(0.010)
 
-
     # Default threads
     all_workers = [threading.Thread(target=_output_worker, args=(i, encoding)) for i in range(3)]
 
@@ -145,7 +152,7 @@ def call(command, cwd='.', heartbeat=0, stdin=None, encoding='utf-8',
 
     # Send keepalive to stderr if requested
     if heartbeat > 0:
-        all_workers.append(threading.Thread(target = _heartbeat_worker, args = (heartbeat, )))
+        all_workers.append(threading.Thread(target=_heartbeat_worker, args=(heartbeat,)))
 
     for thread in all_workers:
         thread.start()
@@ -192,38 +199,37 @@ def _sanitize_command(command):
 
 
 if nimp.sys.platform.is_windows():
-    _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None # pylint: disable = invalid-name
+    _KERNEL32 = ctypes.windll.kernel32 if hasattr(ctypes, 'windll') else None  # pylint: disable = invalid-name
     _KERNEL32.MapViewOfFile.restype = ctypes.c_void_p
     _KERNEL32.UnmapViewOfFile.argtypes = [ctypes.c_void_p]
 
-     # Should be c_void_p(-1).value but doesn’t work
-    INVALID_HANDLE_VALUE = -1 # pylint: disable = invalid-name
+    # Should be c_void_p(-1).value but doesn’t work
+    INVALID_HANDLE_VALUE = -1  # pylint: disable = invalid-name
 
-    WAIT_OBJECT_0 = 0x00000000 # pylint: disable = invalid-name
-    WAIT_OBJECT_1 = 0x00000001 # pylint: disable = invalid-name
-    INFINITE      = 0xFFFFFFFF # pylint: disable = invalid-name
+    WAIT_OBJECT_0 = 0x00000000  # pylint: disable = invalid-name
+    WAIT_OBJECT_1 = 0x00000001  # pylint: disable = invalid-name
+    INFINITE = 0xFFFFFFFF  # pylint: disable = invalid-name
 
-    PAGE_READWRITE = 0x4 # pylint: disable = invalid-name
+    PAGE_READWRITE = 0x4  # pylint: disable = invalid-name
 
-    FILE_MAP_READ = 0x0004 # pylint: disable = invalid-name
+    FILE_MAP_READ = 0x0004  # pylint: disable = invalid-name
 
-    SEM_FAILCRITICALERRORS = 0x0001 # pylint: disable = invalid-name
-    SEM_NOGPFAULTERRORBOX  = 0x0002 # pylint: disable = invalid-name
-    SEM_NOOPENFILEERRORBOX = 0x8000 # pylint: disable = invalid-name
+    SEM_FAILCRITICALERRORS = 0x0001  # pylint: disable = invalid-name
+    SEM_NOGPFAULTERRORBOX = 0x0002  # pylint: disable = invalid-name
+    SEM_NOOPENFILEERRORBOX = 0x8000  # pylint: disable = invalid-name
 
-    PROCESS_QUERY_INFORMATION = 0x0400 # pylint: disable = invalid-name
-    PROCESS_SYNCHRONIZE = 0x00100000 # pylint: disable = invalid-name
+    PROCESS_QUERY_INFORMATION = 0x0400  # pylint: disable = invalid-name
+    PROCESS_SYNCHRONIZE = 0x00100000  # pylint: disable = invalid-name
 
     def _disable_win32_dialogs():
-        ''' Disable "Entry Point Not Found" and "Application Error" dialogs for
-            child processes '''
+        '''Disable "Entry Point Not Found" and "Application Error" dialogs for
+        child processes'''
 
-        _KERNEL32.SetErrorMode(SEM_FAILCRITICALERRORS \
-                            | SEM_NOGPFAULTERRORBOX \
-                            | SEM_NOOPENFILEERRORBOX)
+        _KERNEL32.SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX)
 
     class _OutputDebugStringLogger(threading.Thread):
-        ''' Get output debug string from a process and writes it to a pipe '''
+        '''Get output debug string from a process and writes it to a pipe'''
+
         def __init__(self):
             super().__init__()
 
@@ -236,17 +242,11 @@ if nimp.sys.platform.is_windows():
             self._stop_ev = _KERNEL32.CreateEventW(None, 0, 0, None)
             self._bufsize = 4096
 
-            self._mapping = _KERNEL32.CreateFileMappingW(INVALID_HANDLE_VALUE,
-                                                         None,
-                                                         PAGE_READWRITE,
-                                                         0,
-                                                         self._bufsize,
-                                                         'DBWIN_BUFFER')
+            self._mapping = _KERNEL32.CreateFileMappingW(
+                INVALID_HANDLE_VALUE, None, PAGE_READWRITE, 0, self._bufsize, 'DBWIN_BUFFER'
+            )
 
-            self._buffer = _KERNEL32.MapViewOfFile(self._mapping,
-                                                   FILE_MAP_READ,
-                                                   0, 0,
-                                                   self._bufsize)
+            self._buffer = _KERNEL32.MapViewOfFile(self._mapping, FILE_MAP_READ, 0, 0, self._bufsize)
             self._pid = None
 
         @staticmethod
@@ -256,12 +256,12 @@ if nimp.sys.platform.is_windows():
             # which we retrieve in /proc
             try:
                 return int(open("/proc/%d/winpid" % (pid,)).read(10))
-            #pylint: disable=broad-except
+            # pylint: disable=broad-except
             except Exception:
                 return pid
 
         def attach(self, pid):
-            ''' Sets the process pid from which to capture output debug string '''
+            '''Sets the process pid from which to capture output debug string'''
             self._pid = _OutputDebugStringLogger._pid_to_winpid(pid)
             logging.debug("Attached to process %d (winpid %d)", pid, self._pid)
 
@@ -274,13 +274,12 @@ if nimp.sys.platform.is_windows():
 
             events = [self._data_ev, self._stop_ev]
             while True:
-                result = _KERNEL32.WaitForMultipleObjects(len(events),
-                                                          (ctypes.c_void_p * len(events))(*events),
-                                                          0,
-                                                          INFINITE)
+                result = _KERNEL32.WaitForMultipleObjects(
+                    len(events), (ctypes.c_void_p * len(events))(*events), 0, INFINITE
+                )
                 if result == WAIT_OBJECT_0:
                     pid_data = ctypes.string_at(self._buffer, pid_length)
-                    pid, = struct.unpack('I', pid_data)
+                    (pid,) = struct.unpack('I', pid_data)
                     data = ctypes.string_at(self._buffer + pid_length, data_length)
 
                     # Signal that the buffer is available
@@ -289,7 +288,7 @@ if nimp.sys.platform.is_windows():
                     if pid != self._pid:
                         continue
 
-                    self._pipe_in.write(data[:data.index(0)])
+                    self._pipe_in.write(data[: data.index(0)])
                     self._pipe_in.flush()
 
                 elif result == WAIT_OBJECT_1:
@@ -299,7 +298,7 @@ if nimp.sys.platform.is_windows():
                     time.sleep(0.100)
 
         def stop(self):
-            ''' Stops this OutputDebugStringLogger '''
+            '''Stops this OutputDebugStringLogger'''
             _KERNEL32.SetEvent(self._stop_ev)
             self.join()
             _KERNEL32.UnmapViewOfFile(self._buffer)
@@ -312,35 +311,42 @@ if nimp.sys.platform.is_windows():
 if nimp.sys.platform.is_windows():
 
     class Monitor(threading.Thread):
-        ''' Watchdog killing child processes when nimp ends '''
+        '''Watchdog killing child processes when nimp ends'''
+
         def __init__(self):
             super().__init__()
             self._watcher_event_handle = _KERNEL32.CreateEventW(None, 0, 0, None)
             if self._watcher_event_handle == 0:
                 logging.error("cannot create event")
-            self._nimp_handle = _KERNEL32.OpenProcess(PROCESS_SYNCHRONIZE | PROCESS_QUERY_INFORMATION, False, os.getppid())
+            self._nimp_handle = _KERNEL32.OpenProcess(
+                PROCESS_SYNCHRONIZE | PROCESS_QUERY_INFORMATION, False, os.getppid()
+            )
             if self._nimp_handle == 0:
                 logging.error("cannot open nimp process")
 
         def run(self):
             events = [self._nimp_handle, self._watcher_event_handle]
             while True:
-                result = _KERNEL32.WaitForMultipleObjects(len(events), (ctypes.c_void_p * len(events))(*events), 0, INFINITE)
+                result = _KERNEL32.WaitForMultipleObjects(
+                    len(events), (ctypes.c_void_p * len(events))(*events), 0, INFINITE
+                )
                 if result == WAIT_OBJECT_0:
-                    logging.debug("Parent nimp.exe is not running anymore: current python process and its subprocesses are going to be killed")
+                    logging.debug(
+                        "Parent nimp.exe is not running anymore: current python process and its subprocesses are going to be killed"
+                    )
                     call(['taskkill', '/F', '/T', '/PID', str(os.getpid())])
                     break
                 elif result == WAIT_OBJECT_1:
                     break
 
         def stop(self):
-            ''' Stops this monitor '''
+            '''Stops this monitor'''
             _KERNEL32.CloseHandle(self._nimp_handle)
             _KERNEL32.SetEvent(self._watcher_event_handle)
 
 else:
-    class Monitor():
 
+    class Monitor:
         def start(self):
             pass
 

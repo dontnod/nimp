@@ -1,5 +1,4 @@
-
-''' Platform-related configuration utilities '''
+'''Platform-related configuration utilities'''
 
 import abc
 import logging
@@ -16,7 +15,7 @@ _all_unreal_platforms = {}
 
 
 class Platform(metaclass=abc.ABCMeta):
-    ''' Describe a platform and its specific quirks '''
+    '''Describe a platform and its specific quirks'''
 
     def __init__(self, env):
         self.name = None
@@ -54,7 +53,7 @@ class NullPlatform(Platform):
 
 
 def create_platform_desc(name):
-    ''' Create a platform description from a short name (ps4, win64, …) '''
+    '''Create a platform description from a short name (ps4, win64, …)'''
     if name not in _all_aliases:
         logging.warn(f'No nimp support for platform {name}')
         return NullPlatform()
@@ -62,16 +61,15 @@ def create_platform_desc(name):
 
 
 def create_platform_desc_unreal(unreal_name):
-    ''' Create a platform description from a Unreal name (PS4, Win64, …) '''
+    '''Create a platform description from a Unreal name (PS4, Win64, …)'''
     if unreal_name not in _all_unreal_platforms:
         logging.warn(f'No Unreal support for platform {unreal_name}')
         return NullPlatform()
     return _all_unreal_platforms[unreal_name]
-    
 
 
 def discover(env):
-    ''' Import platforms from base nimp and from plugins '''
+    '''Import platforms from base nimp and from plugins'''
 
     discovered_platforms = {}
     get_class_instances(nimp.base_platforms, Platform, discovered_platforms, instance_args=[env])
@@ -84,7 +82,6 @@ def discover(env):
             logging.debug("Failed to get platforms from plugin %s", module_entrypoint.module_name, exc_info=exception)
 
     for platform_instance in discovered_platforms.values():
-
         # Set env.is_win32, env.is_linux, etc. to False by default
         setattr(env, f'is_{platform_instance.name}', False)
 
@@ -97,14 +94,15 @@ def discover(env):
 
 
 def is_windows():
-    ''' Return True if the runtime platform is Windows, including MSYS '''
+    '''Return True if the runtime platform is Windows, including MSYS'''
     return is_msys() or platform.system() == 'Windows'
 
+
 def is_msys():
-    ''' Returns True if the platform is msys. '''
+    '''Returns True if the platform is msys.'''
     return platform.system()[0:7] == 'MSYS_NT'
 
-def is_osx():
-    ''' Returns True if the platform is OS X. '''
-    return platform.system() == 'Darwin'
 
+def is_osx():
+    '''Returns True if the platform is OS X.'''
+    return platform.system() == 'Darwin'

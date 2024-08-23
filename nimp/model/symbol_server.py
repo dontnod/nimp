@@ -47,7 +47,7 @@ def configure_symbol_server(env, identifier):
         server_type=identifier,
         server_path=nimp.system.sanitize_path(env.format(symbol_server["path"])),
         platform=env.platform,
-        expiration=expiration
+        expiration=expiration,
     )
 
 
@@ -58,7 +58,6 @@ class ServerType:
 
 
 class SymbolServer:
-
     def __init__(self, env, server_type, server_path, platform, expiration):
         self.env = env
         self.server_type = ServerType(server_type)
@@ -94,15 +93,15 @@ class SymbolServer:
         if self.server_type.is_shaders:
             logging.info("Uploading from '%s' to '%s'%s", source, self.server_path, " (Simulation)" if dry_run else "")
 
-            all_files = glob.glob(os.path.join(source, "**"), recursive = True)
-            all_files = [ path for path in all_files if os.path.isfile(path) ]
+            all_files = glob.glob(os.path.join(source, "**"), recursive=True)
+            all_files = [path for path in all_files if os.path.isfile(path)]
 
             for source_file in all_files:
                 destination_file = os.path.join(self.server_path, os.path.relpath(source_file, source))
                 logging.info("Copying '%s' to '%s'", source_file, destination_file)
 
                 if not dry_run:
-                    os.makedirs(os.path.dirname(destination_file), exist_ok = True)
+                    os.makedirs(os.path.dirname(destination_file), exist_ok=True)
                     shutil.copyfile(source_file, destination_file)
 
     def list_symbols_to_clean(self, all_symbols):
@@ -113,7 +112,7 @@ class SymbolServer:
         if self.server_type.is_program:
             for symbol_path in all_symbols:
                 symbol_files = glob.glob(os.path.join(symbol_path, "*"))
-                if len(symbol_files) == 0: # pylint: disable = len-as-condition
+                if len(symbol_files) == 0:  # pylint: disable = len-as-condition
                     symbols_to_clean.append(symbol_path)
                     logging.debug(f"Adding for delete: {symbol_path}")
 

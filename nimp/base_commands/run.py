@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-''' Command to run executables or special commands '''
+'''Command to run executables or special commands'''
 
 import abc
 import logging
@@ -37,18 +37,14 @@ from nimp.base_commands.package import Package
 
 
 class Run(nimp.command.CommandGroup):
-    ''' Run executables, hooks, and commandlets '''
+    '''Run executables, hooks, and commandlets'''
 
     def __init__(self):
-        super(Run, self).__init__([_Hook(),
-                                   _Commandlet(),
-                                   _Unreal_cli(),
-                                   _Exec_cmd(),
-                                   _Staged(),
-                                   _Package()])
+        super(Run, self).__init__([_Hook(), _Commandlet(), _Unreal_cli(), _Exec_cmd(), _Staged(), _Package()])
 
     def is_available(self, env):
         return True, ''
+
 
 class RunCommand(nimp.command.Command):
     def __init__(self):
@@ -56,20 +52,17 @@ class RunCommand(nimp.command.Command):
 
     def configure_arguments(self, env, parser):
         nimp.command.add_common_arguments(parser, 'dry_run')
-        parser.add_argument('command_name',
-                            help='Command name to run',
-                            metavar='<command>')
-        parser.add_argument('parameters',
-                            help='Arguments of the command to run',
-                            metavar='<argument>...',
-                            nargs="*")
+        parser.add_argument('command_name', help='Command name to run', metavar='<command>')
+        parser.add_argument('parameters', help='Arguments of the command to run', metavar='<argument>...', nargs="*")
         return True
 
     def is_available(self, env):
         return True, ''
 
+
 class _Hook(RunCommand):
-    ''' Runs a hook '''
+    '''Runs a hook'''
+
     def __init__(self):
         super(_Hook, self).__init__()
 
@@ -80,8 +73,9 @@ class _Hook(RunCommand):
         hook = env.command_name
         return nimp.environment.execute_hook(hook, env)
 
+
 class BaseUnrealCli(RunCommand):
-    ''' Base for unreal cli type commands '''
+    '''Base for unreal cli type commands'''
 
     def __init__(self):
         super().__init__()
@@ -106,26 +100,28 @@ class BaseUnrealCli(RunCommand):
 
 
 class _Commandlet(BaseUnrealCli):
-    ''' Runs an unreal commandlet '''
+    '''Runs an unreal commandlet'''
 
     def run_unreal_command(self, env, args):
         return nimp.unreal.commandlet(env, env.command_name, *args)
 
+
 class _Unreal_cli(BaseUnrealCli):
-    ''' Runs an unreal cli command '''
+    '''Runs an unreal cli command'''
 
     def run_unreal_command(self, env, args):
         return nimp.unreal.unreal_cli(env, env.command_name, *args)
 
+
 class _Exec_cmd(RunCommand):
-    ''' Runs executables on the local host '''
+    '''Runs executables on the local host'''
 
     def __init__(self):
         super(_Exec_cmd, self).__init__()
 
     def run(self, env):
         if env.verbose:
-            logging.debug("Will run: %s"%shutil.which(env.command_name))
+            logging.debug("Will run: %s" % shutil.which(env.command_name))
         cmdline = [env.command_name]
         for arg in env.parameters:
             cmdline.append(env.format(arg))
@@ -135,6 +131,7 @@ class _Exec_cmd(RunCommand):
         nimp.environment.execute_hook('postrun', env)
 
         return ret == 0
+
 
 class ConsoleGameCommand(nimp.command.Command):
     def __init__(self, buildbot_directory_ending, local_directory):
@@ -146,9 +143,9 @@ class ConsoleGameCommand(nimp.command.Command):
         super(ConsoleGameCommand, self).configure_arguments(env, parser)
         nimp.command.add_common_arguments(parser, 'platform', 'configuration')
 
-        parser.add_argument('--fetch',
-                            metavar='<path | CL# | "latest">',
-                            help='copies the game to the default location on this machine')
+        parser.add_argument(
+            '--fetch', metavar='<path | CL# | "latest">', help='copies the game to the default location on this machine'
+        )
 
         if shutil.which('robocopy'):
             restartable_fetch_help = "If '--fetch' is provided, will invoke robocopy with '/Z' (Recommended for users with poor or unstable connections)"
@@ -156,27 +153,26 @@ class ConsoleGameCommand(nimp.command.Command):
             restartable_fetch_help = 'This option requires Robocopy which is unavailable on your system'
 
         # Basic cp does not handle restartable copy
-        parser.add_argument('--restartable-fetch', action = "store_true",
-                            help=restartable_fetch_help)
+        parser.add_argument('--restartable-fetch', action="store_true", help=restartable_fetch_help)
 
-        parser.add_argument('--outdir',
-                            nargs='?', default='local',
-                            help='output directory for fetch')
+        parser.add_argument('--outdir', nargs='?', default='local', help='output directory for fetch')
 
-        parser.add_argument('--deploy',
-                            nargs='?', const='local',
-                            metavar='<path | CL# | "latest">',
-                            help="deploy the game to a devkit. If empty, deploys from the game's 'Saved' directory\
+        parser.add_argument(
+            '--deploy',
+            nargs='?',
+            const='local',
+            metavar='<path | CL# | "latest">',
+            help="deploy the game to a devkit. If empty, deploys from the game's 'Saved' directory\
                                   WARNING: if passing a CL number or 'latest', be aware that\
                                   the game will be downloaded from B:\\, then reuploaded to the devkit!!\
-                                  Avoid doing this over the VPN")
+                                  Avoid doing this over the VPN",
+        )
 
-        parser.add_argument('--launch',
-                            nargs='?', const='default',
-                            metavar='<package_name>',
-                            help='launch the game on a devkit')
+        parser.add_argument(
+            '--launch', nargs='?', const='default', metavar='<package_name>', help='launch the game on a devkit'
+        )
 
-        parser.add_argument('--device', metavar = '<host>', help = 'set target device')
+        parser.add_argument('--device', metavar='<host>', help='set target device')
         parser.add_argument('-v', '--variant', metavar="<variant_name>", help="name of variant")
 
     def is_available(self, env):
@@ -213,9 +209,11 @@ class ConsoleGameCommand(nimp.command.Command):
         logging.info('Running %s', cmdline)
         if env.dry_run:
             return True
-        result = subprocess.call(cmdline) # Call subprocess directly to allow "dynamic" output (with progress percentage)
-        return result <= 1 # 0: nothing to copy. 1: some files were copied
-    
+        result = subprocess.call(
+            cmdline
+        )  # Call subprocess directly to allow "dynamic" output (with progress percentage)
+        return result <= 1  # 0: nothing to copy. 1: some files were copied
+
     def fetch_with_copy(self, env):
         if os.path.exists(env.outdir):
             logging.warning(f'{env.outdir} exists. Deleting it.')
@@ -226,7 +224,6 @@ class ConsoleGameCommand(nimp.command.Command):
             return True
         return shutil.copytree(env.fetch, env.outdir)
 
-    
     def deploy(self, env):
         env.deploy = self.get_path_from_parameter(env.deploy, env)
         if not os.path.isdir(env.deploy):
@@ -261,7 +258,11 @@ class ConsoleGameCommand(nimp.command.Command):
         return path
 
     def get_artifact_repository(self, env, rev):
-        return env.format(f'{env.artifact_repository_destination}/{env.artifact_collection[self.buildbot_directory_ending]}', target=env.variant, revision=rev)
+        return env.format(
+            f'{env.artifact_repository_destination}/{env.artifact_collection[self.buildbot_directory_ending]}',
+            target=env.variant,
+            revision=rev,
+        )
 
     def fetch_pkg_by_revision(self, env, rev):
         if not env.variant:
@@ -269,14 +270,16 @@ class ConsoleGameCommand(nimp.command.Command):
 
         logging.info(f'Looking for a {env.platform} test package at CL#{rev}')
         artifact_repository = self.get_artifact_repository(env, rev)
-        return  nimp.system.sanitize_path(artifact_repository)
+        return nimp.system.sanitize_path(artifact_repository)
 
     def fetch_pkg_latest(self, env):
         if not env.variant:
             raise RuntimeError('"variant" parameter is required to fetch remote packages')
 
-        artifact_repository = self.get_artifact_repository(env, '<revision>') # Path for a given revision
-        parent_directory =  os.path.dirname(nimp.system.sanitize_path(artifact_repository)) # Path containing all the revisions
+        artifact_repository = self.get_artifact_repository(env, '<revision>')  # Path for a given revision
+        parent_directory = os.path.dirname(
+            nimp.system.sanitize_path(artifact_repository)
+        )  # Path containing all the revisions
         logging.info(f'Looking for latest {env.platform} package in {parent_directory}')
 
         pkg_directory_format = os.path.basename(artifact_repository)
@@ -299,8 +302,9 @@ class ConsoleGameCommand(nimp.command.Command):
     def _launch(self, env):
         pass
 
+
 class _Staged(ConsoleGameCommand):
-    ''' Deploys and runs staged console builds '''
+    '''Deploys and runs staged console builds'''
 
     def __init__(self):
         super(_Staged, self).__init__('staged', 'StagedBuilds')
@@ -308,14 +312,21 @@ class _Staged(ConsoleGameCommand):
     def _deploy(self, env):
         # ./RunUAT.sh BuildCookRun -project=ALF -platform=xsx -skipcook -skipstage -deploy [-configuration=Development] [-device=IP]
 
-        absolute_path = os.path.abspath(env.deploy + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
+        absolute_path = os.path.abspath(
+            env.deploy + '/..'
+        )  # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
         with Package.configure_variant(env, nimp.system.standardize_path(env.format('{uproject_dir}'))):
             cmdline = [
                 os.path.join(env.root_dir, 'Game', 'RunUAT.bat'),
-                'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
+                'BuildCookRun',
+                '-project=' + env.game,
+                '-platform=' + env.platform,
+                '-configuration=' + env.unreal_config,
                 '-stagingdirectory=' + absolute_path,
-                '-skipcook', '-skipstage', '-deploy'
+                '-skipcook',
+                '-skipstage',
+                '-deploy',
             ]
             if env.device:
                 cmdline.append('-device=' + env.device)
@@ -329,13 +340,21 @@ class _Staged(ConsoleGameCommand):
         if env.launch == 'default':
             env.launch = 'local'
         env.launch = self.get_path_from_parameter(env.launch, env)
-        absolute_path = os.path.abspath(env.launch + '/..') # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
+        absolute_path = os.path.abspath(
+            env.launch + '/..'
+        )  # UAT expects this to point to StagedBuilds directory, not StagedBuilds/Platform
 
         cmdline = [
             os.path.join(env.root_dir, 'Game', 'RunUAT.bat'),
-            'BuildCookRun', '-project=' + env.game, '-platform=' + env.platform, '-configuration=' + env.unreal_config,
+            'BuildCookRun',
+            '-project=' + env.game,
+            '-platform=' + env.platform,
+            '-configuration=' + env.unreal_config,
             '-stagingdirectory=' + absolute_path,
-            '-skipcook', '-skipstage', '-deploy', '-run'
+            '-skipcook',
+            '-skipstage',
+            '-deploy',
+            '-run',
         ]
         if env.device:
             cmdline.append('-device=' + env.device)
@@ -343,8 +362,9 @@ class _Staged(ConsoleGameCommand):
         result = nimp.sys.process.call(cmdline, dry_run=env.dry_run)
         return result == 0
 
+
 class _Package(ConsoleGameCommand):
-    ''' Deploys and runs console packages '''
+    '''Deploys and runs console packages'''
 
     def __init__(self):
         super(_Package, self).__init__('package', 'Packages')

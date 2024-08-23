@@ -1,0 +1,97 @@
+[project]
+name = "nimp-cli"
+description = "Multipurpose build tool"
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "MIT License"}
+authors = [
+    {name = "Dontnod Entertainment", email = "root@dont-nod.com"},
+]
+# See list at https://pypi.python.org/pypi?:action=list_classifiers
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Build Tools",
+]
+keywords = ["build", "compile", "unrealengine"]
+dynamic = ["version"]
+
+dependencies = [
+    "glob2",
+    "packaging",
+    "python-magic",
+    "requests",
+    "giteapy",
+    # FIXME: sort out what is required by nimp-cli and what could be in nimp-dne
+    "jira",
+    "psutil>=6.0.0",
+]
+
+[project.scripts]
+nimp = "nimp.nimp_cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "ruff==0.6.2",
+    "pylint==3.2.6",
+]
+
+[project.urls]
+Repository = "https://github.com/dontnod/nimp"
+
+[build-system]
+requires = [ "setuptools>=41", "wheel", "setuptools-git-versioning>=2.0,<3", ]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = [
+    "nimp",
+    "nimp.base_commands",
+    "nimp.base_platforms",
+    "nimp.model",
+    "nimp.sys",
+    "nimp.unreal_engine",
+    "nimp.utils",
+]
+
+[tool.setuptools.package-data]
+nimp = ["VERSION"]
+
+[tool.setuptools-git-versioning]
+enabled = true
+version_file = "nimp/VERSION"
+count_commits_from_version_file = true
+dirty_template = "{tag}.dev{ccount}+{sha}"
+dev_template = "{tag}.dev{ccount}+{sha}"
+
+[tool.pylint.messages_control]
+max-line-length = 120
+disable = [
+    "missing-function-docstring",
+    "missing-module-docstring",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+ignore = [
+    "E501", # line too long
+    "E731", # lambda-assignment
+    "E741", # ambiguous-variable-name
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.ruff.format]
+quote-style = "preserve"
