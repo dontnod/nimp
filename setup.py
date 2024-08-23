@@ -56,6 +56,7 @@ setup_info = dict(
         'giteapy',
         # FIXME: sort out what is required by nimp-cli and what could be in nimp-dne
         'jira',
+        'psutil==6.0.0',
     ],
 
     entry_points = {
