@@ -63,6 +63,7 @@ def call(
     hide_output=False,
     dry_run=False,
     timeout=None,
+    **popen_kwargs,
 ):
     '''Calls a process redirecting its output to nimp's output'''
     command = _sanitize_command(command)
@@ -77,6 +78,16 @@ def call(
         debug_pipe = _OutputDebugStringLogger()
     else:
         debug_pipe = None
+
+    for reserved_popen_kwargs in [
+        'stdout',
+        'stderr',
+        'stdin',
+        'bufsize',
+    ]:
+        if reserved_popen_kwargs in popen_kwargs:
+            value = popen_kwargs.pop(reserved_popen_kwargs)
+            logging.debug("Ignoring reserved subprocess.Popen kwarg '%s=%s'", reserved_popen_kwargs, value)
 
     # The bufsize = -1 is important; if we don’t bufferise the output, we’re
     # going to make the callee lag a lot. In Python 3.3.1 this is now the
