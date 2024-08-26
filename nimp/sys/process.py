@@ -22,17 +22,34 @@
 
 '''Process-related system utilities'''
 
+from __future__ import annotations
+
 import ctypes
-import logging
 import locale
+import logging
 import os
 import os.path
 import struct
 import subprocess
 import threading
 import time
+from enum import Enum
+from typing import TYPE_CHECKING
 
 import nimp.sys.platform
+
+if TYPE_CHECKING:
+    from typing import Callable
+
+
+class ProcessOutputStream(Enum):
+    """
+    process output stream identifiers
+    """
+
+    STDOUT = 1
+    STDERR = 2
+    STDDBG = 3
 
 
 def call(
@@ -41,7 +58,7 @@ def call(
     heartbeat=0,
     stdin=None,
     encoding='utf-8',
-    capture_output=False,
+    capture_output: bool | Callable[[ProcessOutputStream, str], None] = False,
     capture_debug=False,
     hide_output=False,
     dry_run=False,
@@ -82,9 +99,26 @@ def call(
         debug_pipe.start()
 
     # FIXME: put all this in a class instead!
-    all_pipes = [process.stdout, process.stderr, debug_pipe.output if debug_pipe else None]
+    all_pipes = {
+        ProcessOutputStream.STDOUT: process.stdout,
+        ProcessOutputStream.STDERR: process.stderr,
+        ProcessOutputStream.STDDBG: debug_pipe.output if debug_pipe else None,
+    }
 
-    all_captures = [[] if capture_output else None, [] if capture_output else None, None]
+    all_captures = {
+        ProcessOutputStream.STDOUT: [],
+        ProcessOutputStream.STDERR: [],
+    }
+
+    def _capture_output_default(stream: ProcessOutputStream, value: str):
+        if (capture_array := all_captures.get(stream)) is not None:
+            capture_array.append(value)
+
+    capture_processor = None
+    if capture_output is True:
+        capture_processor = _capture_output_default
+    elif callable(capture_output):
+        capture_processor = capture_output
 
     debug_info = [False]
 
@@ -100,9 +134,8 @@ def call(
         in_pipe.write(data)
         in_pipe.close()
 
-    def _output_worker(index, decoding_format):
+    def _output_worker(index: ProcessOutputStream, decoding_format):
         in_pipe = all_pipes[index]
-        capture_array = all_captures[index]
         if in_pipe is None:
             return
         force_ascii = locale.getpreferredencoding().lower() != 'utf-8'
@@ -125,15 +158,15 @@ def call(
                     except UnicodeError:
                         pass
 
-                if capture_array is not None:
-                    capture_array.append(line)
+                if capture_processor is not None:
+                    capture_processor(line)
 
                 # Stop reading data from stdout if data has arrived on OutputDebugString
                 if index == 2:
                     debug_info[0] = True
                 elif index == 0 and debug_info[0]:
                     logging.info('Stopping stdout monitoring (OutputDebugString is active)')
-                    all_pipes[0].close()
+                    all_pipes[ProcessOutputStream.STDOUT].close()
                     return
 
                 if not hide_output:
@@ -144,7 +177,14 @@ def call(
             time.sleep(0.010)
 
     # Default threads
-    all_workers = [threading.Thread(target=_output_worker, args=(i, encoding)) for i in range(3)]
+    all_workers = [
+        threading.Thread(target=_output_worker, args=(i, encoding))
+        for i in [
+            ProcessOutputStream.STDOUT,
+            ProcessOutputStream.STDERR,
+            ProcessOutputStream.STDDBG,
+        ]
+    ]
 
     # Thread to feed stdin data if necessary
     if stdin is not None:
@@ -172,8 +212,12 @@ def call(
     if not hide_output:
         logging.info('Finished with exit code %d (0x%08x)', exit_code, exit_code)
 
-    if capture_output:
-        return exit_code, ''.join(all_captures[0]), ''.join(all_captures[1])
+    if capture_output is True:
+        return (
+            exit_code,
+            ''.join(all_captures[ProcessOutputStream.STDOUT]),
+            ''.join(all_captures[ProcessOutputStream.STDERR]),
+        )
     return exit_code
 
 
