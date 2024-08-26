@@ -186,7 +186,9 @@ class _Processes(CheckCommand):
                     logging.debug("\t%s (%s) %s", ignored_process.exe(), ignored_process.pid, ignored_process.cmdline())
 
             for process in psutil.process_iter():
+                logging.debug("Checking process %d", process.pid)
                 if process.pid in ignore_process_ids:
+                    logging.debug("[Process(%d)] ignore process (self, parent or child)", process.pid)
                     continue
 
                 checked_processes_count += 1
@@ -196,11 +198,11 @@ class _Processes(CheckCommand):
                 process_executable_path = process.exe()
                 process_basename = os.path.basename(process_executable_path)
                 if any(p.match(process_basename) for p in _Processes.PROCESS_IGNORE_PATTERNS):
-                    logging.info('process %s (%s) will be kept alive', process.pid, process_executable_path)
+                    logging.info('[Process(%d)] process (%s) will be kept alive', process.pid, process_executable_path)
                     continue
 
                 problematic_processes.append(process)
-                logging.warning('Found problematic process %s (%s)', process.pid, process_executable_path)
+                logging.warning('[Process(%d)] Found problematic process (%s)', process.pid, process_executable_path)
                 if (parent_process := process.parent()) is not None:
                     logging.warning('\tParent is %s (%s)', parent_process.pid, parent_process.exe())
 
@@ -228,7 +230,10 @@ class _Processes(CheckCommand):
     def _process_matches_filters(process: psutil.Process, filters: list[str]) -> bool:
         """Returns True if the process should be filtered out"""
         try:
-            for pattern in filters:
+            logging.debug("[Process(%d)] Check process against filters", process.pid)
+            for idx, pattern in enumerate(filters, start=1):
+                logging.debug("[Process(%d)] Filter: %s (%02d/%02d)", process.pid, pattern, idx, len(filters))
+                logging.debug("[Process(%d)]\tmatch exe '%s'?", process.pid, process.exe())
                 if fnmatch.fnmatch(process.exe(), pattern):
                     logging.debug(
                         "process %s (%s), match filter '%s' with exe '%s'",
@@ -239,7 +244,9 @@ class _Processes(CheckCommand):
                     )
                     return True
 
+                logging.debug("[Process(%d)]\tmatch open files?", process.pid)
                 for popen_file in process.open_files():
+                    logging.debug("[Process(%d)]\t\tfilepath: %s", process.pid, popen_file.path)
                     if fnmatch.fnmatch(popen_file.path, pattern):
                         logging.debug(
                             "process %s (%s), match filter '%s' with popen file '%s'",
@@ -249,7 +256,8 @@ class _Processes(CheckCommand):
                             popen_file.path,
                         )
                         return True
-        except psutil.AccessDenied:
+        except psutil.AccessDenied as exc:
+            logging.debug("[Process(%d)] Access Denied!", process.pid, exc_info=exc)
             # failed to access a property of the process,
             # assume it does not match to be safe
             return False
