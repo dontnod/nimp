@@ -116,7 +116,7 @@ def call(
         ProcessOutputStream.STDDBG: debug_pipe.output if debug_pipe else None,
     }
 
-    all_captures = {
+    all_captures: dict[ProcessOutputStream, list[str]] = {
         ProcessOutputStream.STDOUT: [],
         ProcessOutputStream.STDERR: [],
     }
@@ -125,7 +125,7 @@ def call(
         if (capture_array := all_captures.get(stream)) is not None:
             capture_array.append(value)
 
-    capture_processor = None
+    capture_processor: Callable[[ProcessOutputStream, str], None] | None = None
     if capture_output is True:
         capture_processor = _capture_output_default
     elif callable(capture_output):
@@ -145,7 +145,7 @@ def call(
         in_pipe.write(data)
         in_pipe.close()
 
-    def _output_worker(index: ProcessOutputStream, decoding_format):
+    def _output_worker(index: ProcessOutputStream, decoding_format) -> None:
         in_pipe = all_pipes[index]
         if in_pipe is None:
             return
@@ -170,7 +170,7 @@ def call(
                         pass
 
                 if capture_processor is not None:
-                    capture_processor(line)
+                    capture_processor(index, line)
 
                 # Stop reading data from stdout if data has arrived on OutputDebugString
                 if index == 2:
