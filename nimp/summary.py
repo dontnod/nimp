@@ -75,6 +75,8 @@ class SummaryHandler(logging.Handler):
             r'The layout contained an invalid chunk\.',
             r'Chunks must contain at least 1 non-empty file\.',
             r'FileGroup .* did not match any files\.',
+            # World partition missing external actors
+            r".*__ExternalActors__.*Can't find file",
         ]
 
         warning_patterns = [
