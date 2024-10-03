@@ -22,6 +22,8 @@
 
 '''Environment check command'''
 
+from __future__ import annotations
+
 import abc
 import fnmatch
 import json
@@ -147,6 +149,11 @@ class _Processes(CheckCommand):
             help='fnmatch filters, defaults to workspace',
             default=[os.path.normpath(f'{os.path.abspath(env.root_dir)}/*')],
         )
+        parser.add_argument(
+            '--all-users',
+            help='By default, only check processes owned by the current user. Use this to check all running processes.',
+            action='store_true',
+        )
         return True
 
     def _run_check(self, env: NimpEnvironment):
@@ -157,6 +164,11 @@ class _Processes(CheckCommand):
         if not nimp.sys.platform.is_windows():
             logging.warning("Command only available on Windows platform")
             return True
+
+        current_user: str | None = None
+        if not env.all_users:
+            current_user = psutil.Process().username()
+            logging.debug("Only act on processes owned by %s", current_user)
 
         # Find all running processes running a program that any filter match either:
         #  - the program executable
@@ -190,6 +202,26 @@ class _Processes(CheckCommand):
                 if process.pid in ignore_process_ids:
                     logging.debug("[Process(%d)] ignore process (self, parent or child)", process.pid)
                     continue
+
+                if current_user is not None:
+                    process_user = None
+                    try:
+                        process_user = process.username()
+                    except psutil.AccessDenied:
+                        logging.debug(
+                            "[Process(%d)] Failed to retrieve process user",
+                            process.pid,
+                        )
+                        continue
+
+                    if current_user != process_user:
+                        logging.debug(
+                            "[Process(%d)] ignore process from other user (self: %s, process user: %s)",
+                            process.pid,
+                            current_user,
+                            process_user,
+                        )
+                        continue
 
                 checked_processes_count += 1
                 if not _Processes._process_matches_filters(process, env.filters):
