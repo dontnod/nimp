@@ -182,8 +182,11 @@ class _Processes(CheckCommand):
             # psutil.process_iter caches processes
             # we want a fresh list since we might have killed/
             # process completed since last iteration
+            logging.debug("Clear psutil process cache")
             psutil.process_iter.cache_clear()
+            logging.debug("Get current process")
             current_process = psutil.Process()
+            logging.debug("Current process is %d", current_process.pid)
             ignore_process_ids = set(
                 (
                     current_process.pid,
@@ -246,7 +249,9 @@ class _Processes(CheckCommand):
             if not env.kill:
                 # Wait a bit, give a chance to problematic processes to end,
                 # even if not killed
-                time.sleep(5)
+                sleep_time = 5.0
+                logging.debug("Wait %.2fs. Giving a chance to processes for a natural exit", sleep_time)
+                time.sleep(sleep_time)
             else:
                 for p in problematic_processes:
                     logging.info('Requesting process %s termination', p.pid)
