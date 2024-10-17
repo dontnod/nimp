@@ -23,6 +23,7 @@
 '''System utilities (paths, processes)'''
 
 import fnmatch
+import importlib
 import json
 import logging
 import os
@@ -30,14 +31,13 @@ import re
 import shutil
 import stat
 import time
-import importlib
-import pkg_resources
 
 import glob2
 
 import nimp.environment
 import nimp.sys.platform
 import nimp.sys.process
+from nimp.utils.python import iter_plugins_entry_points
 
 
 def try_import(module_name):
@@ -329,9 +329,9 @@ class FileMapper:
         try:
             set_module = importlib.import_module('filesets.' + set_module_name)
         except ModuleNotFoundError:
-            for entry in pkg_resources.iter_entry_points('nimp.plugins'):
+            for entry in iter_plugins_entry_points():
                 try:
-                    set_module = importlib.import_module(entry.module_name + '.filesets.' + set_module_name)
+                    set_module = importlib.import_module(entry.module + '.filesets.' + set_module_name)
                     break
                 except ModuleNotFoundError:
                     pass

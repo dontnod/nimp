@@ -1,7 +1,15 @@
 '''Helper functions for module handling'''
 
+from __future__ import annotations
+
 import inspect
 import logging
+from importlib.metadata import entry_points
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from importlib.metadata import EntryPoint
+    from typing import Generator
 
 
 def get_class_instances(module, instance_type, result, instance_args=[], instance_kwargs={}):
@@ -32,3 +40,13 @@ def get_class_instances(module, instance_type, result, instance_args=[], instanc
                 result[attribute_value.__name__] = attribute_value(*instance_args, **instance_kwargs)
             except Exception as ex:
                 logging.warning('Error creating %s %s: %s', instance_type.__name__, attribute_value.__name__, ex)
+
+
+def iter_plugins_entry_points() -> Generator[EntryPoint, None, None]:
+    eps = entry_points()
+    if hasattr(eps, "select"):
+        yield from eps.select(group="nimp.plugins")
+    elif hasattr(eps, "get"):
+        yield from eps.get("nimp.plugins", [])
+    else:
+        raise NotImplementedError(f"unexpected value for importlib.metadata.entry_points ({type(eps)})")

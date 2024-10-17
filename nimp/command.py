@@ -23,17 +23,16 @@
 '''Abstract class for commands'''
 
 import abc
+import argparse
 import logging
 import os
-import pkg_resources
 import re
 import sys
-import argparse
 
 import nimp.base_commands
 import nimp.command
-
 from nimp.utils.python import get_class_instances
+from nimp.utils.python import iter_plugins_entry_points
 
 
 class Command(metaclass=abc.ABCMeta):
@@ -142,12 +141,12 @@ def discover(env):
         pass
 
     # Import commands from plugins
-    for entry_point in pkg_resources.iter_entry_points('nimp.plugins'):
+    for entry_point in iter_plugins_entry_points():
         try:
             module = entry_point.load()
             get_class_instances(module, nimp.command.Command, all_commands)
         except Exception as exception:
-            logging.debug("Failed to get platforms from plugin %s", entry_point.module_name, exc_info=exception)
+            logging.debug("Failed to get platforms from plugin %s", entry_point.module, exc_info=exception)
 
     env.command_list = sorted(
         [it for it in all_commands.values() if not it.__class__.__name__.startswith('_')],

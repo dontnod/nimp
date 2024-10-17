@@ -24,21 +24,20 @@
 values and command line parameters set for this nimp execution'''
 
 import argparse
-import re
 import logging
 import os
-import pkg_resources
+import re
 import sys
 import time
 
 import nimp.command
-from nimp.exceptions import NimpCommandFailed
 import nimp.summary
 import nimp.sys.platform
 import nimp.system
 import nimp.unreal
 import nimp.utils.profiling
-
+from nimp.exceptions import NimpCommandFailed
+from nimp.utils.python import iter_plugins_entry_points
 
 _LOG_FORMATS = {  # pylint: disable = invalid-name
     'standard': '%(asctime)s [%(levelname)s] %(message)s'
@@ -394,8 +393,8 @@ def execute_hook(hook_name, *args):
     # Always look for project level hook first
     hook_module = nimp.system.try_import('hooks.' + hook_name)
     if hook_module is None:  # If none found, try plugins level
-        for entry in pkg_resources.iter_entry_points('nimp.plugins'):
-            hook_module = nimp.system.try_import(entry.module_name + '.hooks.' + hook_name)
+        for entry in iter_plugins_entry_points():
+            hook_module = nimp.system.try_import(entry.module + '.hooks.' + hook_name)
             if hook_module:
                 break
     if hook_module is None:

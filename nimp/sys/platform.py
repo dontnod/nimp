@@ -3,11 +3,10 @@
 import abc
 import logging
 import platform
-import pkg_resources
 
 import nimp.base_platforms
-
 from nimp.utils.python import get_class_instances
+from nimp.utils.python import iter_plugins_entry_points
 
 _all_platforms = {}
 _all_aliases = {}
@@ -74,12 +73,12 @@ def discover(env):
     discovered_platforms = {}
     get_class_instances(nimp.base_platforms, Platform, discovered_platforms, instance_args=[env])
 
-    for module_entrypoint in pkg_resources.iter_entry_points('nimp.plugins'):
+    for module_entrypoint in iter_plugins_entry_points():
         try:
             module = module_entrypoint.load()
             get_class_instances(module, Platform, discovered_platforms, instance_args=[env])
         except Exception as exception:
-            logging.debug("Failed to get platforms from plugin %s", module_entrypoint.module_name, exc_info=exception)
+            logging.debug("Failed to get platforms from plugin %s", module_entrypoint.module, exc_info=exception)
 
     for platform_instance in discovered_platforms.values():
         # Set env.is_win32, env.is_linux, etc. to False by default
