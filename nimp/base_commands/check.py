@@ -235,7 +235,9 @@ class _Processes(CheckCommand):
                 except psutil.Error as exc:
                     logging.debug(
                         '[Process(%d)] failed to get parent process information for process "%s"',
-                        process.pid, process_exe, exc_info=exc
+                        process.pid,
+                        process_exe,
+                        exc_info=exc,
                     )
 
             logging.info('%d processes checked.', checked_processes_count)
@@ -289,38 +291,51 @@ class _Processes(CheckCommand):
     @staticmethod
     def _process_matches_filters(process: psutil.Process, filters: list[str]) -> bool:
         """Returns True if the process should be filtered out"""
-        try:
-            logging.debug("[Process(%d)] Check process against filters", process.pid)
-            for idx, pattern in enumerate(filters, start=1):
-                logging.debug("[Process(%d)] Filter: %s (%02d/%02d)", process.pid, pattern, idx, len(filters))
-                logging.debug("[Process(%d)]\tmatch exe '%s'?", process.pid, process.exe())
-                if fnmatch.fnmatch(process.exe(), pattern):
-                    logging.debug(
-                        "process %s (%s), match filter '%s' with exe '%s'",
-                        process.pid,
-                        process.exe(),
-                        pattern,
-                        process.exe(),
-                    )
-                    return True
+        if not process.is_running():
+            return False
 
-                logging.debug("[Process(%d)]\tmatch open files?", process.pid)
-                for popen_file in process.open_files():
-                    logging.debug("[Process(%d)]\t\tfilepath: %s", process.pid, popen_file.path)
-                    if fnmatch.fnmatch(popen_file.path, pattern):
-                        logging.debug(
-                            "process %s (%s), match filter '%s' with popen file '%s'",
-                            process.pid,
-                            process.exe(),
-                            pattern,
-                            popen_file.path,
-                        )
-                        return True
-        except psutil.Error as exc:
-            logging.debug("[Process(%d)] Error!", process.pid, exc_info=exc)
+        try:
+            process_exe = process.exe()
+        except Exception as exc:
+            logging.debug("[Process(%d)] Failed to determine process exe!", process.pid, exc_info=exc)
             # failed to access a property of the process,
             # assume it does not match to be safe
             return False
+
+        logging.debug("[Process(%d)] Check process against filters", process.pid)
+        for pattern in filters:
+            if fnmatch.fnmatch(process_exe, pattern):
+                logging.debug(
+                    "process %s (%s), match filter '%s' with exe '%s'",
+                    process.pid,
+                    process_exe,
+                    pattern,
+                    process_exe,
+                )
+                return True
+
+        if not process.is_running():
+            return False
+
+        try:
+            open_files = process.open_files()
+        except Exception as exc:
+            logging.debug("[Process(%d)] Failed to query process open_files", process.pid, exc_info=exc)
+            # failed to access a property of the process,
+            # assume it does not match to be safe
+            return False
+
+        for pattern in filters:
+            for popen_file in open_files:
+                if fnmatch.fnmatch(popen_file.path, pattern):
+                    logging.debug(
+                        "process %s (%s), match filter '%s' with popen file '%s'",
+                        process.pid,
+                        process_exe,
+                        pattern,
+                        popen_file.path,
+                    )
+                    return True
 
         return False
 
