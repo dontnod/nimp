@@ -32,7 +32,7 @@ dependencies = [
     "giteapy",
     # FIXME: sort out what is required by nimp-cli and what could be in nimp-dne
     "jira",
-    "psutil>=6.0.0",
+    "psutil>=6.1.0",
 ]
 
 [project.scripts]
