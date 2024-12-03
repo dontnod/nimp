@@ -70,7 +70,7 @@ class UploadFileset(nimp.command.Command):
         file_mapper = nimp.system.FileMapper(None, vars(env))
         file_mapper.load_set(env.fileset)
 
-        artifact_path = f'{env.artifact_repository_destination}/{env.artifact_collection[env.fileset]}'
+        artifact_path = f'{file_mapper.artifact_repository_destination}/{file_mapper.artifact_collection[env.fileset]}'
         if env.slice_job_index and env.slice_job_count:
             artifact_path = f'{artifact_path}/slice-{env.slice_job_index}-of-{env.slice_job_count}'
         artifact_path = nimp.system.sanitize_path(env.format(artifact_path))
