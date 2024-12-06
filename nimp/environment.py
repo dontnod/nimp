@@ -220,7 +220,14 @@ class Environment:
 
             if hasattr(self, 'environment'):
                 for key, val in self.environment.items():
-                    os.environ[key] = val
+                    try:  # TODO: should we throw?
+                        os.environ[key] = self.format(val)
+                    except KeyError:
+                        os.environ[key] = val
+                        logging.warning(
+                            "Could not interpolate %s. Adding un-interpolated %s=%s to environment",
+                            val, key, val
+                        )
 
             if self.command is None:
                 logging.error("No command specified. Please try nimp -h to get a list of available commands")
