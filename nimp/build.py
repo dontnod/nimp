@@ -34,13 +34,15 @@ import nimp.sys.process
 import nimp.system
 
 
-def _try_excecute(command, cwd='.', capture_output=True, max_attemtps=5, delay=5, time_out=120):
+def _try_excecute(command, cwd='.', capture_output=True, max_attemtps=5, delay=5, time_out=120, dry_run=False):
     '''retry in case autoSDK or devenv cache fails us'''
     attempt = 0
     while attempt <= max_attemtps:
         retry = False
         start_time = time.time()
-        result, output, err = nimp.sys.process.call(command, cwd=cwd, capture_output=True)
+        result, output, err = nimp.sys.process.call(command, cwd=cwd, capture_output=capture_output, dry_run=dry_run)
+        if dry_run:
+            return 0
         time_passed = time.time() - start_time
 
         if result != 0:

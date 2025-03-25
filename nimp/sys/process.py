@@ -71,7 +71,10 @@ def call(
     if not hide_output:
         logging.info('%s "%s" in "%s"', '[DRY-RUN]' if dry_run else 'Running', command, os.path.abspath(cwd))
     if dry_run:
-        return 0
+        if capture_output is True:
+            return 0, '', ''
+        else:
+            return 0
 
     if capture_debug and not hide_output and nimp.sys.platform.is_windows():
         _disable_win32_dialogs()
