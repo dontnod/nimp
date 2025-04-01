@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2014-2019 Dontnod Entertainment
+# Copyright © 2014–2025 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -25,6 +25,7 @@
 import logging
 import os
 import platform
+from rich.logging import RichHandler
 import sys
 import time
 import traceback
@@ -72,6 +73,8 @@ def main(argv=sys.argv):
         nimp_monitor = nimp.sys.process.Monitor()
         nimp_monitor.start()
 
+        logging.basicConfig(level=logging.INFO, format='%(message)s', datefmt='[%X]',
+                            handlers=[RichHandler()])
         logging.getLogger('urllib3').setLevel(logging.INFO)
         logging.getLogger('torf').setLevel(logging.INFO)
 
