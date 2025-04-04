@@ -70,7 +70,7 @@ enabled = true
 version_file = "nimp/VERSION"
 count_commits_from_version_file = true
 dirty_template = "{tag}.dev{ccount}+{sha}"
-dev_template = "{tag}.dev{ccount}+{sha}"
+dev_template = "{tag}.{ccount}"
 
 [tool.pylint.messages_control]
 max-line-length = 120
