@@ -23,8 +23,8 @@
 '''Provides functions for build artifacts'''
 
 import copy
+import datetime
 import hashlib
-import glob
 import json
 import logging
 import os
@@ -33,12 +33,12 @@ import re
 import shutil
 import stat
 import zipfile
+from pathlib import Path
 
 import requests
 
 import nimp.system
 import nimp.utils.git
-
 
 if platform.system() != 'Windows':
     try:
@@ -47,11 +47,9 @@ if platform.system() != 'Windows':
         magic = None
 
 try:
-    import BitTornado.Meta.Info
-    import BitTornado.Meta.BTTree
-    import BitTornado.Meta.bencode
+    import torf
 except ImportError:
-    BitTornado = None
+    torf = None
 
 
 def _is_http_url(string):
@@ -297,48 +295,38 @@ def create_artifact(artifact_path, file_collection, archive, compress, dry_run):
 def create_torrent(artifact_path, announce, dry_run):
     '''Create a torrent for an existing artifact'''
 
-    if BitTornado is None:
-        raise ImportError('Required module "BitTornado" is not available')
+    if torf is None:
+        raise ImportError("nimp require the 'torrent' extra dependency to handle torrent creation")
 
-    torrent_path = artifact_path + '.torrent'
+    artifact_path = Path(artifact_path)
+
+    torrent_path = artifact_path.with_suffix('.torrent')
+    tmp_torrent_path = torrent_path.with_suffix('.tmp')
     if not dry_run:
-        if os.path.isfile(torrent_path + '.tmp'):
-            os.remove(torrent_path + '.tmp')
-        if os.path.isfile(torrent_path):
-            os.remove(torrent_path)
+        tmp_torrent_path.unlink(missing_ok=True)
+        torrent_path.unlink(missing_ok=True)
 
-    if os.path.isfile(artifact_path + '.zip'):
-        torrent_name = os.path.basename(artifact_path + '.zip')
-        all_torrent_trees = [
-            BitTornado.Meta.BTTree.BTTree(artifact_path + '.zip', [os.path.basename(artifact_path + '.zip')])
-        ]
-    elif os.path.isdir(artifact_path):
-        torrent_name = os.path.basename(artifact_path)
-        all_torrent_trees = []
-        for source in glob.glob(os.path.join(artifact_path, '**'), recursive=True):
-            if os.path.isfile(source):
-                destination = os.path.relpath(source, artifact_path)
-                all_torrent_trees.append(
-                    BitTornado.Meta.BTTree.BTTree(source, os.path.normpath(destination).split(os.path.sep))
-                )
-    else:
-        raise FileNotFoundError('Artifact not found: %s' % artifact_path)
-
-    torrent_info = BitTornado.Meta.Info.Info(torrent_name, sum(tree.size for tree in all_torrent_trees))
-    for torrent_tree in all_torrent_trees:
-        torrent_tree.addFileToInfos([torrent_info])
-        BitTornado.Meta.Info.check_info(torrent_info)
-
-    torrent_metainfo_parameters = {'announce': announce}
-    torrent_metainfo_parameters = {
-        key: value for key, value in torrent_metainfo_parameters.items() if value is not None
-    }
-    torrent_metainfo = BitTornado.Meta.Info.MetaInfo(info=torrent_info, **torrent_metainfo_parameters)
+    torrent = torf.Torrent(
+        path=artifact_path,
+        name=artifact_path.name,
+        trackers=announce,
+        creation_date=datetime.datetime.now(),
+        created_by=None,
+        private=False,
+        piece_size=32768,
+    )
+    if (artifact_archive_path := artifact_path.with_suffix('.zip')) and artifact_archive_path.is_file():
+        torrent.name = artifact_archive_path.name
+        torrent.path = artifact_archive_path
+    elif not artifact_path.is_dir():
+        raise FileNotFoundError(f'Artifact not found: {artifact_path}')
 
     if not dry_run:
-        with open(torrent_path + '.tmp', 'wb') as torrent_file:
-            torrent_file.write(BitTornado.Meta.bencode.bencode(torrent_metainfo))
-        shutil.move(torrent_path + '.tmp', torrent_path)
+        if not torrent.generate():
+            raise RuntimeError("Failed to generate torrent. Unrecoverable.")
+
+        torrent.write(tmp_torrent_path, validate=True)
+        tmp_torrent_path.rename(torrent_path)
 
 
 def create_hash(artifact_path, hash_method, dry_run):
