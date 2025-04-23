@@ -226,7 +226,9 @@ class Environment:
                         os.environ[key] = val
                         logging.warning(
                             "Could not interpolate %s. Adding un-interpolated %s=%s to environment",
-                            val, key, val
+                            val,
+                            key,
+                            val,
                         )
 
             if self.command is None:
