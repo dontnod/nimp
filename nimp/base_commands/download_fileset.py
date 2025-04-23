@@ -22,15 +22,27 @@
 
 '''Downloads a previously uploaded fileset to the local workspace'''
 
+from __future__ import annotations
+
 import copy
 import logging
 import os
 import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
+from typing import Iterator
 
 import nimp.artifacts
 import nimp.command
 import nimp.system
+from nimp.environment import Environment
+from nimp.utils import git
+
+if TYPE_CHECKING:
+    from giteapy.models.repository import Repository
 
 
 class DownloadFileset(nimp.command.Command):
@@ -59,10 +71,10 @@ class DownloadFileset(nimp.command.Command):
     def is_available(self, env):
         return True, ''
 
-    def run(self, env):
-        api_context = nimp.utils.git.initialize_gitea_api_context(env)
+    def run(self, env: Environment) -> bool:
+        api_context = git.initialize_gitea_api_context(env)
 
-        artifacts_source = env.artifact_repository_source
+        artifacts_source: str = env.artifact_repository_source
         if env.prefer_http:
             artifacts_http_source = getattr(env, 'artifact_http_repository_source', None)
             if artifacts_http_source:
@@ -70,20 +82,24 @@ class DownloadFileset(nimp.command.Command):
             else:
                 logging.warning('prefer-http provided but no artifact_http_repository_source in configuration')
 
-        artifact_uri_pattern = artifacts_source.rstrip('/') + '/' + env.artifact_collection[env.fileset]
+        artifact_uri_pattern: str = artifacts_source.rstrip('/') + '/' + str(env.artifact_collection[env.fileset])
 
         install_directory = env.root_dir
         if env.destination:
             install_directory = str(PurePosixPath(install_directory) / env.format(env.destination))
 
         format_arguments = copy.deepcopy(vars(env))
-        format_arguments['revision'] = '*'
-        logging.info('Searching %s', artifact_uri_pattern.format(**format_arguments))
+        logging.info('Searching %s', artifact_uri_pattern.format_map({**format_arguments, 'revision': '*'}))
         all_artifacts = nimp.system.try_execute(
-            lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments, api_context), OSError
+            lambda: nimp.artifacts.list_artifacts(artifact_uri_pattern, format_arguments, api_context),
+            OSError,
         )
         artifact_to_download = DownloadFileset._find_matching_artifact(
-            all_artifacts, env.revision, env.min_revision, env.max_revision, api_context
+            all_artifacts,
+            env.revision,
+            env.min_revision,
+            env.max_revision,
+            api_context,
         )
 
         logging.info('Downloading %s%s', artifact_to_download['uri'], ' (simulation)' if env.dry_run else '')
@@ -123,39 +139,177 @@ class DownloadFileset(nimp.command.Command):
 
         return True
 
-    # TODO: Handle revision comparison when identified by a hash
     @staticmethod
-    def _find_matching_artifact(all_artifacts, exact_revision, minimum_revision, maximum_revision, api_context):
-        all_artifacts = sorted(all_artifacts, key=lambda artifact: int(artifact['sortable_revision'], 16), reverse=True)
-        has_revision_input = exact_revision or minimum_revision or maximum_revision
+    def _find_matching_artifact(
+        all_artifacts: list[nimp.artifacts.Artifact],
+        exact_revision: str | None,
+        minimum_revision: str | None,
+        maximum_revision: str | None,
+        api_context: git.GitApiContext | None,
+    ) -> nimp.artifacts.Artifact:
+        # fastpath for exact_revision
+        if exact_revision is not None:
+            if (artifact := next((a for a in all_artifacts if a['revision'] == exact_revision), None)) is not None:
+                return artifact
+            raise ValueError('Matching artifact not found')
 
-        if api_context:
-            exact_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, exact_revision)
-            minimum_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, minimum_revision)
-            maximum_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, maximum_revision)
-            revision_not_found = not exact_revision and not minimum_revision and not maximum_revision
-            if has_revision_input and revision_not_found:
-                raise ValueError('Searched commit not found on gitea repo')
+        # fastpath for maximum_revision
+        if maximum_revision is not None:
+            if (artifact := next((a for a in all_artifacts if a['revision'] == maximum_revision), None)) is not None:
+                return artifact
 
-        if not api_context and (has_revision_input is not None and not has_revision_input.isdigit()):
-            raise ValueError(
-                'Revision seems to be a git commit hash but missing gitea api information. Please check project_branches in project configuration.'
+        if (
+            any(git.maybe_git_revision(a['revision']) for a in all_artifacts)
+            or (minimum_revision is not None and git.maybe_git_revision(minimum_revision))
+            or (maximum_revision is not None and git.maybe_git_revision(maximum_revision))
+        ):
+            logging.debug("might be looking at git revisions")
+            if (
+                newest_rev := DownloadFileset._get_git_newest_revision(
+                    revisions=[a['revision'] for a in all_artifacts],
+                    minimum_revision=minimum_revision,
+                    maximum_revision=maximum_revision,
+                    api_context=api_context,
+                )
+            ) is not None:
+                return next(a for a in all_artifacts if a['revision'] == newest_rev)
+
+        probably_p4_rev = all(a['revision'].isdigit() for a in all_artifacts)
+        if probably_p4_rev:
+            iter_: Iterator[int] = iter(int(a['revision']) for a in all_artifacts)
+            if minimum_revision:
+                minimum_revision_int = int(minimum_revision)
+                iter_ = filter(lambda rev: rev >= minimum_revision_int, iter_)
+
+            if maximum_revision:
+                maximum_revision_int = int(maximum_revision)
+                iter_ = filter(lambda rev: rev <= maximum_revision_int, iter_)
+
+            if (revision := max(iter_, default=None)) is not None:
+                revision_str = str(revision)
+                return next(a for a in all_artifacts if a['revision'] == revision_str)
+
+        raise ValueError('Matching artifact not found')
+
+    @staticmethod
+    def _get_git_newest_revision(
+        revisions: list[str],
+        minimum_revision: str | None,
+        maximum_revision: str | None,
+        api_context: git.GitApiContext | None,
+    ) -> str | None:
+        remote: str | None = None
+        if api_context is not None:
+            repo: Repository = api_context['instance'].repo_get(
+                owner=api_context['repo_owner'],
+                repo=api_context['repo_name'],
+            )
+            remote = repo.clone_url
+            logging.debug("Using remote %s from api_context", remote)
+
+        cwd_git_dir = git.get_git_dir()
+        logging.debug("CWD git-dir: %s", cwd_git_dir)
+
+        if remote is not None:
+            with tempfile.TemporaryDirectory(prefix="nimp_git_") as tmp_git_dir:
+                Path(tmp_git_dir).mkdir(parents=True, exist_ok=True)
+                subprocess.check_call(['git', 'init', '--bare'], cwd=tmp_git_dir)
+
+                subprocess.check_call(['git', 'remote', 'add', 'origin', remote], cwd=tmp_git_dir)
+
+                # if current workdir contains a git repo, use it as alternate to prevent unnecessary burden on remote
+                if cwd_git_dir is not None and git.is_shallow_repository(cwd_git_dir) is False:
+                    logging.debug("Add CWD git as bare repository alternate")
+                    git.add_alternates(cwd_git_dir, cwd=tmp_git_dir)
+
+                return DownloadFileset._find_git_newest_revision(
+                    tmp_git_dir,
+                    revisions=revisions,
+                    minimum_revision=minimum_revision,
+                    maximum_revision=maximum_revision,
+                )
+
+        elif cwd_git_dir is not None:
+            # no remote, fallback to current git
+            return DownloadFileset._find_git_newest_revision(
+                cwd_git_dir,
+                revisions=revisions,
+                minimum_revision=minimum_revision,
+                maximum_revision=maximum_revision,
             )
 
-        try:
-            if exact_revision is not None:
-                return next(a for a in all_artifacts if a['sortable_revision'] == exact_revision)
-            if minimum_revision is not None and maximum_revision is not None:
-                return next(
-                    a
-                    for a in all_artifacts
-                    if int(a['sortable_revision']) >= int(minimum_revision)
-                    and int(a['sortable_revision']) <= int(maximum_revision)
-                )
-            if minimum_revision is not None:
-                return next(a for a in all_artifacts if int(a['sortable_revision']) >= int(minimum_revision))
-            if maximum_revision is not None:
-                return next(a for a in all_artifacts if int(a['sortable_revision']) <= int(maximum_revision))
-            return next(a for a in all_artifacts)
-        except StopIteration:
-            raise ValueError('Matching artifact not found')
+        # no current git. Can't find revisions information
+        return None
+
+    @staticmethod
+    def _find_git_newest_revision(
+        git_dir: str,
+        revisions: list[str],
+        minimum_revision: str | None,
+        maximum_revision: str | None,
+    ) -> str | None:
+        logging.debug("Find newest revisions in %s", git_dir)
+        logging.debug("\trevisions: %s", revisions)
+
+        remotes = git.get_remotes(git_dir)
+        logging.debug("Found remote %s in repository %s", remotes, git_dir)
+
+        to_fetch = [*revisions]
+        if minimum_revision is not None:
+            logging.debug("Filter newest revisions with minimum %s", minimum_revision)
+            to_fetch.append(minimum_revision)
+        if maximum_revision is not None:
+            logging.debug("Filter newest revisions with maximum %s", maximum_revision)
+            to_fetch.append(maximum_revision)
+
+        fetch_base_cmd = ['git', 'fetch', '--no-recurse-submodules', '--no-progress']
+        for remote in remotes:
+            logging.debug("Fetch revision from remote %s", remote)
+            if subprocess.call([*fetch_base_cmd, remote, *to_fetch], cwd=git_dir) != 0:
+                logging.debug("Failed to fetch revisions from %s", remote)
+                # might have failed due to one (or more) unknown ref,
+                # try one-by-one and ignore failures
+                for rev in to_fetch:
+                    if subprocess.call([*fetch_base_cmd, remote, rev], cwd=git_dir) != 0:
+                        logging.debug("\tFailed to fetch revision %s", rev)
+
+        if minimum_revision is not None:
+            minimum_revision = git.rev_parse_verify(minimum_revision, cwd=git_dir)
+            logging.debug("Resolved minimum revision to %s", minimum_revision)
+        if maximum_revision is not None:
+            maximum_revision = git.rev_parse_verify(maximum_revision, cwd=git_dir)
+            logging.debug("Resolved maximum revision to %s", maximum_revision)
+
+        rev_list_base_cmd = ['git', 'rev-list', '--ignore-missing', '--max-count=1', '--topo-order']
+
+        def _get_newest_between(rev_left: str, rev_right: str | None) -> str:
+            if rev_right is None:
+                return rev_left
+            return subprocess.check_output([*rev_list_base_cmd, rev_left, rev_right], text=True).strip()
+
+        # keep track of both to return the potentially un-shortened one
+        newest_revision: str | None = None
+        newest_resolved_revision: str | None = None
+        for revision in revisions:
+            logging.debug("Look at revision %s", revision)
+            # filter revisions by existing in repo and get the full rev if a short one was provided
+            resolved_revision = git.rev_parse_verify(revision, cwd=git_dir)
+            logging.debug("\tResolved to %s", resolved_revision)
+            if resolved_revision is None:
+                continue
+            revision = resolved_revision
+
+            if _get_newest_between(resolved_revision, maximum_revision) == resolved_revision:
+                logging.debug("\trevision %s is NEWER than maximum %s. Skip it.", revision, maximum_revision)
+                continue
+
+            if _get_newest_between(resolved_revision, minimum_revision) == minimum_revision:
+                logging.debug("\trevision %s is OLDER than minimum %s. Skip it.", revision, minimum_revision)
+                continue
+
+            newest_resolved_revision = _get_newest_between(resolved_revision, newest_resolved_revision)
+            if resolved_revision == newest_resolved_revision:
+                newest_revision = revision
+            logging.debug("newest revision is %s", newest_revision)
+
+        return newest_revision

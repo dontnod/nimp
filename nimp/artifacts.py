@@ -24,7 +24,6 @@
 
 from __future__ import annotations
 
-import copy
 import datetime
 import hashlib
 import json
@@ -66,7 +65,6 @@ if TYPE_CHECKING:
 
 class Artifact(TypedDict):
     revision: str
-    sortable_revision: str
     uri: str
 
 
@@ -74,7 +72,11 @@ def _is_http_url(string: str) -> bool:
     return re.match(r'^http[s]?:\/\/.*$', string) is not None
 
 
-def list_artifacts(artifact_pattern: str, format_arguments: Mapping[str, Any], api_context) -> list[Artifact]:
+def list_artifacts(
+    artifact_pattern: str,
+    format_arguments: Mapping[str, Any],
+    api_context_: nimp.utils.git.GitApiContext | None,
+) -> list[Artifact]:
     '''List all artifacts and their revision using the provided pattern after formatting'''
 
     artifact_pattern = artifact_pattern.format_map(
@@ -103,17 +105,12 @@ def list_artifacts(artifact_pattern: str, format_arguments: Mapping[str, Any], a
             continue
 
         group_revision = artifact_match.group('revision')
-        sortable_revision = copy.deepcopy(group_revision)
-        if api_context:
-            sortable_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, group_revision)
-        if sortable_revision is not None:
-            all_artifacts.append(
-                {
-                    'revision': group_revision,
-                    'sortable_revision': sortable_revision,
-                    'uri': file_uri,
-                }
-            )
+        all_artifacts.append(
+            {
+                'revision': group_revision,
+                'uri': file_uri,
+            }
+        )
     return all_artifacts
 
 

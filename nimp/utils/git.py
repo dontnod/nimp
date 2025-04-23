@@ -25,9 +25,12 @@
 from __future__ import annotations
 
 import logging
+import os
+import subprocess
 import time
 from datetime import datetime
 from datetime import timezone
+from pathlib import Path
 from typing import TypedDict
 
 import giteapy
@@ -84,6 +87,10 @@ def get_commit_version(commit_hash):
         return None
 
     return output
+
+
+def maybe_git_revision(candidate: str) -> bool:
+    return candidate.isalnum() and candidate.islower()
 
 
 def is_full_sha1(string):
@@ -144,3 +151,76 @@ def get_gitea_commit_timestamp(gitea_context: GitApiContext, commit_sha: str | N
         reason = str(e.reason).lower() if hasattr(e, 'reason') else ''
         logging.debug(f'[GITEA API] {gitea_context["repo_owner"]}@{gitea_context["repo_name"]}@{commit_sha} {reason}')
     return api_commit_timestamp
+
+
+def get_git_dir(cwd: os.PathLike[str] | str | None = None) -> str | None:
+    process = subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        text=True,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+    )
+    if process.returncode == 0:
+        return process.stdout.strip()
+
+    return None
+
+
+def is_shallow_repository(cwd: os.PathLike[str] | str | None = None) -> bool | None:
+    process = subprocess.run(
+        ["git", "rev-parse", "--is-shallow-repository"],
+        text=True,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+    )
+    if process.returncode == 0:
+        return {"true": True, "false": False}.get(process.stdout.strip().lower())
+
+    return None
+
+
+def add_alternates(*alternates: str, cwd: os.PathLike[str] | str | None = None) -> None:
+    git_dir = get_git_dir(cwd)
+    if git_dir is None:
+        return
+
+    if not Path(git_dir).is_dir():
+        # git-dir might be a file pointing to the real git-dir
+        # Ignore this case for now
+        return
+
+    alternates_file = Path(git_dir, "objects/info/alternates")
+    alternates_file.parent.mkdir(parents=True, exist_ok=True)
+
+    current_alternates = []
+    if alternates_file.is_file():
+        current_alternates = alternates_file.read_text().splitlines(keepends=False)
+
+    new_alternates = set(alternates).difference(current_alternates)
+
+    current_alternates.extend(new_alternates)
+
+    alternates_file.write_text('\n'.join(current_alternates))
+
+
+def get_remotes(cwd: os.PathLike[str] | str) -> list[str]:
+    return subprocess.run(
+        ['git', 'remote'],
+        text=True,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+    ).stdout.splitlines(keepends=False)
+
+
+def rev_parse_verify(revision: str, cwd: os.PathLike[str] | str | None = None) -> str | None:
+    process = subprocess.run(
+        ['git', 'rev-parse', '--verify', revision],
+        check=False,
+        capture_output=False,
+        stdout=subprocess.PIPE,
+        text=True,
+        cwd=cwd,
+    )
+    if process.returncode == 0:
+        return process.stdout.strip()
+    return None
