@@ -370,19 +370,16 @@ def create_hash(artifact_path: str, hash_method, dry_run: bool) -> None:
 
 def get_file_hash(file_path: StrPathLike, hash_method: str):
     '''helper function to parse potentially big files'''
-    assert getattr(hashlib, hash_method)()
-    hash_lib = getattr(hashlib, hash_method)()
+    hasher = hashlib.new(hash_method)
 
     _BLOCK_SIZE = 65536
 
     with open(file_path, 'rb') as fh:
-        file_buffer = fh.read(_BLOCK_SIZE)
-        while len(file_buffer) > 0:
-            hash_lib.update(file_buffer)
-            file_buffer = fh.read(_BLOCK_SIZE)
-    file_hash = hash_lib.hexdigest()
+        while buffer := fh.read(_BLOCK_SIZE):
+            hasher.update(buffer)
+    file_hash = hasher.hexdigest()
 
-    logging.debug(f"{file_path} {hash_method}: {file_hash}")
+    logging.debug("%s %s: %s", file_path, hash_method, file_hash)
     return file_hash
 
 
