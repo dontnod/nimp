@@ -77,9 +77,12 @@ def _is_http_url(string: str) -> bool:
 def list_artifacts(artifact_pattern: str, format_arguments: Mapping[str, Any], api_context) -> list[Artifact]:
     '''List all artifacts and their revision using the provided pattern after formatting'''
 
-    format_arguments = copy.deepcopy(format_arguments)
-    format_arguments['revision'] = '{revision}'
-    artifact_pattern = artifact_pattern.format(**format_arguments)
+    artifact_pattern = artifact_pattern.format_map(
+        {
+            **format_arguments,
+            'revision': '{revision}',
+        }
+    )
 
     if not _is_http_url(artifact_pattern):
         artifact_source = nimp.system.sanitize_path(os.path.dirname(artifact_pattern))
@@ -96,19 +99,21 @@ def list_artifacts(artifact_pattern: str, format_arguments: Mapping[str, Any], a
     for file_uri in all_files:
         file_name = os.path.basename(file_uri.rstrip('/'))
         artifact_match = artifact_regex.match(file_name)
-        if artifact_match:
-            group_revision = artifact_match.group('revision')
-            sortable_revision = copy.deepcopy(group_revision)
-            if api_context:
-                sortable_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, group_revision)
-            if sortable_revision is not None:
-                all_artifacts.append(
-                    {
-                        'revision': group_revision,
-                        'sortable_revision': sortable_revision,
-                        'uri': file_uri,
-                    }
-                )
+        if not artifact_match:
+            continue
+
+        group_revision = artifact_match.group('revision')
+        sortable_revision = copy.deepcopy(group_revision)
+        if api_context:
+            sortable_revision = nimp.utils.git.get_gitea_commit_timestamp(api_context, group_revision)
+        if sortable_revision is not None:
+            all_artifacts.append(
+                {
+                    'revision': group_revision,
+                    'sortable_revision': sortable_revision,
+                    'uri': file_uri,
+                }
+            )
     return all_artifacts
 
 
