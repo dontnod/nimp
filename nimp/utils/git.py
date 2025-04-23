@@ -22,13 +22,24 @@
 
 '''Git utilities'''
 
+from __future__ import annotations
+
 import logging
+import time
+from datetime import datetime
+from datetime import timezone
+from typing import TypedDict
+
 import giteapy
 from giteapy.rest import ApiException
-from datetime import datetime, timezone
-import time
 
 import nimp.sys.process
+
+
+class GitApiContext(TypedDict):
+    instance: giteapy.RepositoryApi
+    repo_owner: str
+    repo_name: str
 
 
 def get_branch():
@@ -96,7 +107,7 @@ def gitea_has_missing_params(env):
     return has_missing_params
 
 
-def check_for_gitea_env(env):
+def check_for_gitea_env(env) -> bool:
     if hasattr(env, 'gitea_branches') and env.branch in env.gitea_branches:
         return True
     if hasattr(env, 'gitea_branch') and env.branch in env.gitea_branch:
@@ -104,9 +115,9 @@ def check_for_gitea_env(env):
     return False
 
 
-def initialize_gitea_api_context(env):
+def initialize_gitea_api_context(env) -> GitApiContext | None:
     if not check_for_gitea_env(env):
-        return False
+        return None
     if gitea_has_missing_params(env):
         raise ValueError("You're missing mandatory gitea params in project conf")
 
@@ -117,7 +128,7 @@ def initialize_gitea_api_context(env):
     return {'instance': api_instance, 'repo_owner': env.gitea_repo_owner, 'repo_name': env.gitea_repo_name}
 
 
-def get_gitea_commit_timestamp(gitea_context, commit_sha):
+def get_gitea_commit_timestamp(gitea_context: GitApiContext, commit_sha: str | None) -> str | None:
     if not commit_sha:
         return None
 
