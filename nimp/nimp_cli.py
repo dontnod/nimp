@@ -73,6 +73,7 @@ def main(argv=sys.argv):
         nimp_monitor.start()
 
         logging.getLogger('urllib3').setLevel(logging.INFO)
+        logging.getLogger('torf').setLevel(logging.INFO)
 
         _clean_environment_variables()
 
