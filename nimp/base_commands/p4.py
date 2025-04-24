@@ -31,7 +31,7 @@ import nimp.utils.p4
 
 def _is_p4_available():
     if shutil.which('p4') is None:
-        return False, ('p4 executable was not found on your system, check your' 'installation.')
+        return False, ('p4 executable was not found on your system, check your installation.')
     return True, ''
 
 

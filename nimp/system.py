@@ -22,6 +22,8 @@
 
 '''System utilities (paths, processes)'''
 
+from __future__ import annotations
+
 import fnmatch
 import importlib
 import json
@@ -31,6 +33,7 @@ import re
 import shutil
 import stat
 import time
+from typing import TYPE_CHECKING
 
 import glob2
 
@@ -38,6 +41,9 @@ import nimp.environment
 import nimp.sys.platform
 import nimp.sys.process
 from nimp.utils.python import iter_plugins_entry_points
+
+if TYPE_CHECKING:
+    from typing import overload
 
 
 def try_import(module_name):
@@ -108,7 +114,16 @@ def standardize_path(path):
     return os.path.normpath(path).replace('\\', '/') if path else path
 
 
-def sanitize_path(path):
+if TYPE_CHECKING:
+
+    @overload
+    def sanitize_path(path: None) -> None: ...
+
+    @overload
+    def sanitize_path(path: str) -> str: ...
+
+
+def sanitize_path(path: str | None) -> str | None:
     '''Performs slash replacement to work on both msys and windows'''
     if path is None:
         return None
