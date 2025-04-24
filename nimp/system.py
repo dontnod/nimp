@@ -23,6 +23,7 @@
 '''System utilities (paths, processes)'''
 
 import fnmatch
+import glob
 import importlib
 import json
 import logging
@@ -292,7 +293,25 @@ class FileMapper:
                 else:
                     glob_path = os.path.join(src, pattern)
 
-                for glob_source in glob2.glob(glob_path, include_hidden=True):
+                glob2_res = glob2.glob(glob_path, include_hidden=True)
+                glob_res = set(glob.glob(glob_path, include_hidden=True, recursive=True))
+
+                if glob_add_elems := glob_res.difference(glob2_res):
+                    logging.warning(
+                        "[GLOB2->GLOB] Found elements in glob, that are not in glob2.\n"
+                        "Please open an issue at https://github.com/dontnod/nimp/issues\n"
+                        "elements: %s",
+                        glob_add_elems,
+                    )
+                if glob2_add_elems := set(glob2_res).difference(glob_res):
+                    logging.warning(
+                        "[GLOB2->GLOB] Found elements in glob2, that are not in glob.\n"
+                        "Please open an issue at https://github.com/dontnod/nimp/issues\n"
+                        "elements: %s",
+                        glob2_add_elems,
+                    )
+
+                for glob_source in glob2_res:
                     found = True
                     glob_source = str(glob_source)
                     # This is merely equivalent to os.path.relpath(src, self._source_path)
