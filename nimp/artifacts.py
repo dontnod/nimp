@@ -332,10 +332,15 @@ def create_torrent(artifact_path: StrPathLike, announce: str | None, dry_run: bo
     artifact_path = Path(artifact_path)
 
     torrent_path = artifact_path.with_suffix('.torrent')
-    tmp_torrent_path = torrent_path.with_suffix('.tmp')
+    tmp_torrent_path = torrent_path.with_suffix('.torrent.tmp')
     if not dry_run:
         tmp_torrent_path.unlink(missing_ok=True)
         torrent_path.unlink(missing_ok=True)
+
+    if (artifact_archive_path := artifact_path.with_suffix('.zip')) and artifact_archive_path.is_file():
+        artifact_path = artifact_archive_path
+    elif not artifact_path.is_dir():
+        raise FileNotFoundError(f'Artifact not found: {artifact_path}')
 
     torrent = torf.Torrent(
         path=artifact_path,
@@ -346,11 +351,6 @@ def create_torrent(artifact_path: StrPathLike, announce: str | None, dry_run: bo
         private=False,
         piece_size=32768,
     )
-    if (artifact_archive_path := artifact_path.with_suffix('.zip')) and artifact_archive_path.is_file():
-        torrent.name = artifact_archive_path.name
-        torrent.path = artifact_archive_path
-    elif not artifact_path.is_dir():
-        raise FileNotFoundError(f'Artifact not found: {artifact_path}')
 
     if not dry_run:
         if not torrent.generate():
