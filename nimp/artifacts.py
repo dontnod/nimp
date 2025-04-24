@@ -349,7 +349,6 @@ def create_torrent(artifact_path: StrPathLike, announce: str | None, dry_run: bo
         creation_date=datetime.datetime.now(),
         created_by=None,
         private=False,
-        piece_size=32768,
     )
 
     if not dry_run:
