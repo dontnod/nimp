@@ -27,8 +27,8 @@ import os
 import shutil
 import zipfile
 
-import nimp.command
 import nimp.artifacts
+import nimp.command
 
 
 def _try_remove(file_path, dry_run):
@@ -59,9 +59,8 @@ class UploadFileset(nimp.command.Command):
         return True, ''
 
     def run(self, env):
-        if env.torrent and nimp.system.try_import('BitTornado') is None:
-            logging.error('Failed to import BitTornado module (required for torrent option)')
-            return False
+        if env.torrent:
+            nimp.artifacts.ensure_can_create_torrent()
 
         if env.torrent and not hasattr(env, 'torrent_tracker_announce'):
             env.torrent_tracker_announce = None

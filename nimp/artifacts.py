@@ -319,11 +319,15 @@ def create_artifact(
             shutil.move(artifact_path_tmp, artifact_path)
 
 
+def ensure_can_create_torrent() -> None:
+    if torf is None:
+        raise ImportError("nimp require the 'torrent' extra dependency to handle torrent creation")
+
+
 def create_torrent(artifact_path: StrPathLike, announce: str | None, dry_run: bool) -> None:
     '''Create a torrent for an existing artifact'''
 
-    if torf is None:
-        raise ImportError("nimp require the 'torrent' extra dependency to handle torrent creation")
+    ensure_can_create_torrent()
 
     artifact_path = Path(artifact_path)
 
