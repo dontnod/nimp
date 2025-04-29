@@ -602,12 +602,23 @@ class Package(nimp.command.Command):
         DNE_ENGINE_VERSION_SECTION = '/Script/DNEEngineVersion.DNEEngineVersion'
         PROJECT_BINARY_VERSION_KEY = 'ProjectBinaryRevision'
         PROJECT_CONTENT_VERSION_KEY = 'ProjectContentRevision'
+        PROJECT_BRANCH_NAME_KEY = 'ProjectBranchName'
 
         write_dne_revisions = getattr(env, 'write_project_revisions', False)
 
         if write_dne_revisions:
             if DNE_ENGINE_VERSION_SECTION not in ini_config:
                 ini_config[DNE_ENGINE_VERSION_SECTION] = {}
+
+        if branch := getattr(env, 'branch'):
+            if write_dne_revisions:
+                logging.info(
+                    'Set [%s]%s to %s',
+                    DNE_ENGINE_VERSION_SECTION,
+                    PROJECT_BRANCH_NAME_KEY,
+                    branch,
+                )
+                ini_config[DNE_ENGINE_VERSION_SECTION][PROJECT_BRANCH_NAME_KEY] = branch
 
         workspace_status = nimp.system.load_status(env)
         if isinstance(workspace_status, dict):
