@@ -48,13 +48,17 @@ def load_config(env):
     unreal_base_paths = [
         'UE',
         'UE4',
-        '',
+        '.',
     ]
-    for unreal_path in unreal_base_paths:
-        unreal_dir = nimp.system.find_dir_containing_file(os.path.join(unreal_path, unreal_file))
-        if unreal_dir:
-            unreal_dir = os.path.join(unreal_dir, unreal_path)
-            break
+    for base in unreal_base_paths:
+        path_to_base = nimp.system.find_dir_containing_file(os.path.join(base, unreal_file))
+        if not path_to_base:
+            continue
+        # Sanity check: if `base` indicates a monorepo setup, check that it is really one
+        if base != '.' and not os.path.isfile(os.path.join(path_to_base, '.nimp/monorepo_commands/__init__.py')):
+            continue
+        unreal_dir = os.path.join(path_to_base, base)
+        break
 
     if not unreal_dir:
         env.is_unreal = env.is_ue4 = env.is_ue5 = False
