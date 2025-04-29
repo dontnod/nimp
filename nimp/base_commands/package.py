@@ -675,6 +675,7 @@ class Package(nimp.command.Command):
                     DNE_ENGINE_VERSION_SECTION,
                     PROJECT_BINARY_VERSION_KEY,
                     PROJECT_CONTENT_VERSION_KEY,
+                    PROJECT_BRANCH_NAME_KEY,
                 )
             ini_content = _update_ini_file(ini_content, ini_config, PROJECT_VERSION_SECTION, PROJECT_VERSION_KEY)
 
