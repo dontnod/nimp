@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2014-2022 Dontnod Entertainment
+# Copyright © 2014–2025 Dontnod Entertainment
 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -119,11 +119,12 @@ class SummaryHandler(logging.Handler):
 
         root_logger = logging.root
 
-        # Need to do that because some log may already have been output
-        for handler in list(logging.root.handlers):
-            root_logger.removeHandler(handler)
-
-        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=log_level)
+        # If stdout is not a TTY, fall back to the old log format. This is just in case there
+        # are external tools that parse the output, we don’t want to break them.
+        if not sys.stdout.isatty():
+            for handler in list(logging.root.handlers):
+                root_logger.removeHandler(handler)
+            logging.basicConfig(format='%(asctime)s [%(levelname)s] %(message)s', level=log_level)
 
         child_processes_logger = logging.getLogger('child_processes')
         child_processes_logger.propagate = False
