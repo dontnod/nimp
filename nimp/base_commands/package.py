@@ -541,7 +541,8 @@ class Package(nimp.command.Command):
 
             # add keys to section
             for key in keys:
-                sanitized_ini.insert(section_index + 1, f'{key}={ini_parser[section][key]}')
+                if (value := ini_parser[section].get(key)) is not None:
+                    sanitized_ini.insert(section_index + 1, f'{key}={value}')
 
             return '\n'.join(sanitized_ini)
 
