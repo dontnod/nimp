@@ -561,18 +561,22 @@ def get_default_args_for_cli(env):
         yield f"-DDC={ddc_env_override}"
 
 
-def get_p4_args_for_commandlet(env):
+def get_p4_args_for_commandlet(env) -> list[str]:
+    if getattr(env, 'nop4', False):
+        return ['-SCCProvider=None']
+
     p4_args_for_commandlet = []
-    if env.has_attribute('nop4submit'):
+
+    if getattr(env, 'nop4submit', False):
         p4_args_for_commandlet.append('-DisableSCCSubmit')
-    if env.has_attribute('p4port'):
-        p4_args_for_commandlet.append('-P4Port=%s' % env.p4port)
-    if env.has_attribute('p4user'):
-        p4_args_for_commandlet.append('-P4User=%s' % env.p4user)
-    if env.has_attribute('p4pass'):
-        p4_args_for_commandlet.append('-P4Passwd=%s' % env.p4pass)
-    if env.has_attribute('p4client'):
-        p4_args_for_commandlet.append('-P4Client=%s' % env.p4client)
+    if getattr(env, 'p4port', None):
+        p4_args_for_commandlet.append(f'-P4Port={env.p4port}')
+    if getattr(env, 'p4user', None):
+        p4_args_for_commandlet.append(f'-P4User={env.p4user}')
+    if getattr(env, 'p4pass', None):
+        p4_args_for_commandlet.append(f'-P4Passwd={env.p4pass}')
+    if getattr(env, 'p4client', None):
+        p4_args_for_commandlet.append(f'-P4Client={env.p4pass}')
     if len(p4_args_for_commandlet) > 0:
         p4_args_for_commandlet.append('-SCCProvider=Perforce')
     if getattr(env, "auto_submit", False):
