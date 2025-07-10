@@ -25,6 +25,7 @@ keywords = ["build", "compile", "unrealengine"]
 dynamic = ["version"]
 
 dependencies = [
+    "rich",
     "glob2",
     "packaging",
     "python-magic",
