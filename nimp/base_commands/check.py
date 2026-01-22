@@ -122,7 +122,9 @@ class _Status(CheckCommand):
             return f'<command {o.__class__.__name__}>'
         if isinstance(o, nimp.sys.platform.Platform):
             return f'<platform {o.__name__}>'
-        return o.__dict__
+        if hasattr(o, "__dict__"):
+            return o.__dict__
+        return str(o)
 
     @staticmethod
     def _show_user_environment():
